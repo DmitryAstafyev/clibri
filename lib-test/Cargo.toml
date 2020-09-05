@@ -1,0 +1,16 @@
+[package]
+name = "lib-test"
+version = "0.1.0"
+authors = ["DmitryAstafyev <dvastafyev@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fiber = { path = "../lib" }
+log = "0.4.8"
+log4rs = "0.11.0"
+uuid = { version = "0.8.1", features = ["serde", "v4"] }
+tungstenite = "0.11.0"
+serde = "1.0.110"
+serde_json = "1.0.53"

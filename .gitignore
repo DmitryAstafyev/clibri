@@ -1,0 +1,6 @@
+/lib/target
+/lib-test/target
+/lib-client/node_modules
+/lib-client/dist
+/lib-test-client/bundle/node_modules
+/lib-test-client/bundle/dist

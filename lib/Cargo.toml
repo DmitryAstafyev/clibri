@@ -1,0 +1,17 @@
+[package]
+name = "fiber"
+version = "0.1.0"
+authors = ["DmitryAstafyev <dvastafyev@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.8"
+log4rs = "0.11.0"
+serde = "1.0.110"
+serde_json = "1.0.53"
+bytes = "0.5.5"
+string = "0.2.1"
+uuid = { version = "0.8.1", features = ["serde", "v4"] }
+tungstenite = "0.11.0"
