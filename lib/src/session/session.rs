@@ -1,5 +1,5 @@
-use super::{ server };
-use server::{ Context };
+use super::{ context };
+use context::{ Context };
 use tungstenite::protocol::CloseFrame;
 
 #[derive(Debug, Clone)]

@@ -1,6 +1,9 @@
 #[path = "./server/server.rs"]
 pub mod server;
 
+#[path = "./server/server.context.rs"]
+pub mod context;
+
 #[path = "./connection/connection.rs"]
 pub mod connection;
 
