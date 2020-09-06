@@ -23,7 +23,8 @@ pub struct Server<T: Send + Sync + Clone + 'static> {
 }
 
 impl<T: Send + Sync + Clone + 'static> Server<T> {
-
+    
+    #[allow(unused_mut)]
     pub fn new(mut con: impl Controller + 'static) -> Self {
         Server {
             connections: Arc::new(RwLock::new(HashMap::new())),
@@ -35,8 +36,7 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
     pub fn add( &mut self,
                 stream: TcpStream,
                 mut session: impl Session<T> + 'static,
-                protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static,
-                exceptions: Option<impl Fn(session::Error) -> () + Send + Sync + 'static>) -> () {
+                protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static) -> () {
         match self.accept(stream) {
             Ok(socket) => {
                 let mut conn = connection::Connection::new(socket);
@@ -57,12 +57,13 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
                                     Ok(mut sessions) => {
                                         session.connected(cx.clone());
                                         sessions.entry(conn.get_uuid()).or_insert(Box::new(session));
-                                        self.redirect(rx_channel, cx.clone(), exceptions);
+                                        self.redirect(rx_channel, cx.clone());
                                     },
                                     Err(_e) => {
                                         warn!("Cannot get access to session after connection was done.");
-                                        if let Some(cb) = exceptions {
-                                            cb(session::Error::Session("Cannot get access to session after connection was done.".to_string()));
+                                        match self.controller.clone().write() {
+                                            Ok(mut contrl) => contrl.error(controller::Error::Session("Cannot get access to session after connection was done.".to_string())),
+                                            Err(e) => error!("Fail get access to controller due error: {}", e),
                                         }
                                     }
                                 }
@@ -89,26 +90,27 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
     fn redirect(
         &self,
         rx_channel: Receiver<connection_channel::Messages<T>>,
-        cx: SessionContext,
-        exceptions: Option<impl Fn(session::Error) -> () + Send + Sync + 'static>
+        cx: SessionContext
     ) {
         let sessions = self.sessions.clone();
+        let contrl = self.controller.clone();
         spawn(move || {
             let timeout = Duration::from_millis(50);
             let session_access_err = |e: Option<std::sync::PoisonError<RwLockWriteGuard<HashMap<String, Box<dyn Session<T> + Send + Sync>>>>>| {
-                match e {
-                    Some(e) => {
-                        error!("Fail to get sessions object due error: {}", e);
-                        if let Some(cb) = exceptions {
-                            cb(session::Error::Session(e.to_string()));
-                        }
-                    }
-                    None => {
-                        error!("Fail to find target session");
-                        if let Some(cb) = exceptions {
-                            cb(session::Error::Session("Fail to find target session".to_string()));
-                        }
-                    }
+                match contrl.write() {
+                    Ok(mut contrl) => {
+                        contrl.error(match e {
+                            Some(e) => {
+                                debug!("Fail to get sessions object due error: {}", e);
+                                controller::Error::Session(e.to_string())
+                            },
+                            None => {
+                                error!("Fail to find target session");
+                                controller::Error::Session("Fail to find target session".to_string())
+                            }
+                        });
+                    },
+                    Err(e) => error!("Fail get access to controller due error: {}", e),
                 }
             };
             loop {
@@ -208,6 +210,7 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
         });
     }
 
+    #[allow(unused_mut)]
     fn accept(&mut self, stream: TcpStream) -> Result<WebSocket<TcpStream>, String> {
         match stream.set_nonblocking(true) {
             Ok(_) => {

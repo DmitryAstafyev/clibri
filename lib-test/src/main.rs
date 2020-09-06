@@ -14,6 +14,10 @@ impl controller::Controller for ServerController {
         Ok(response)
     }
 
+    fn error(&mut self, e: controller::Error) {
+        info!("{:?}", e);
+    }
+
 }
 
 struct ClientSession { }
@@ -58,9 +62,7 @@ fn main() {
             Ok(stream) => {
                 println!(">>>>>> Connection!");
                 let session = ClientSession {};
-                serv.add(stream, session, pro.clone(), Some(|_err: session::Error| {
-                    info!("Err");
-                }));
+                serv.add(stream, session, pro.clone());
             },
             Err(_e) => {
 
