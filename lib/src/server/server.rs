@@ -1,44 +1,46 @@
-use super::{ connection, session, connection_channel, protocol, context };
-use context:: { Context };
+use super::{ connection, session, connection_channel, protocol, session_context, controller, Request, Response, ErrorResponse };
+use session_context::{ SessionContext };
+use controller::{ Controller };
+use session::{ Session };
 use std::time::{ Duration };
 use std::net::{ TcpStream };
 use log::{ error, warn, debug };
 use std::collections::{ HashMap };
-use connection:: { Connection };
+use connection::{ Connection };
 use std::sync::mpsc::{ Sender, Receiver };
 use std::sync::mpsc;
 use std::thread;
 use std::thread::spawn;
 use std::sync::{ Arc, RwLock, RwLockWriteGuard };
-// use buffer::msg::Outgoing::Message;
-use tungstenite::handshake::server::{ Request, Response, ErrorResponse };
 use tungstenite::accept_hdr;
 use tungstenite::protocol::WebSocket;
 
 // #[derive(Copy, Clone)]
 pub struct Server<T: Send + Sync + Clone + 'static> {
     connections: Arc<RwLock<HashMap<String, Connection>>>,
-    sessions: Arc<RwLock<HashMap<String, Box<dyn session::Session<T> + Send + Sync + 'static>>>>,
+    sessions: Arc<RwLock<HashMap<String, Box<dyn Session<T> + Send + Sync + 'static>>>>,
+    controller: Arc<RwLock<dyn Controller + Send + Sync + 'static>>,
 }
 
 impl<T: Send + Sync + Clone + 'static> Server<T> {
 
-    pub fn new() -> Self {
+    pub fn new(mut con: impl Controller + 'static) -> Self {
         Server {
             connections: Arc::new(RwLock::new(HashMap::new())),
             sessions: Arc::new(RwLock::new(HashMap::new())),
+            controller: Arc::new(RwLock::new(con)),
         }
     }
 
     pub fn add( &mut self,
                 stream: TcpStream,
-                mut session: impl session::Session<T> + 'static,
+                mut session: impl Session<T> + 'static,
                 protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static,
                 exceptions: Option<impl Fn(session::Error) -> () + Send + Sync + 'static>) -> () {
         match self.accept(stream) {
             Ok(socket) => {
                 let mut conn = connection::Connection::new(socket);
-                let cx = Context {
+                let cx = SessionContext {
                     uuid: conn.get_uuid(),
                     connections: self.connections.clone(),
                 };
@@ -87,13 +89,13 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
     fn redirect(
         &self,
         rx_channel: Receiver<connection_channel::Messages<T>>,
-        cx: Context,
+        cx: SessionContext,
         exceptions: Option<impl Fn(session::Error) -> () + Send + Sync + 'static>
     ) {
         let sessions = self.sessions.clone();
         spawn(move || {
             let timeout = Duration::from_millis(50);
-            let session_access_err = |e: Option<std::sync::PoisonError<RwLockWriteGuard<HashMap<String, Box<dyn session::Session<T> + Send + Sync>>>>>| {
+            let session_access_err = |e: Option<std::sync::PoisonError<RwLockWriteGuard<HashMap<String, Box<dyn Session<T> + Send + Sync>>>>>| {
                 match e {
                     Some(e) => {
                         error!("Fail to get sessions object due error: {}", e);
@@ -210,7 +212,17 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
         match stream.set_nonblocking(true) {
             Ok(_) => {
                 debug!("Stream is switched to nonblocking mode");
-                match accept_hdr(stream, Self::handshake) {
+                match accept_hdr(stream, |req: &Request, mut response: Response| {
+                    match self.controller.write() {
+                        Ok(mut controller) => {
+                            match controller.handshake(req, response) {
+                                Ok(response) => Ok(response),
+                                Err(e) => Err(e),
+                            }
+                        },
+                        Err(e) => Err(ErrorResponse::new(Some(e.to_string())))
+                    }
+                }) {
                     Ok(socket) => Ok(socket),
                     Err(e) => {
                         warn!("Connection handshake was failed due error: {}", e);
@@ -223,17 +235,6 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
                 Err(e.to_string())
             }
         }
-    }
-
-    fn handshake(req: &Request, mut response: Response) -> Result<Response, ErrorResponse> {
-        for (ref header, _value) in req.headers() {
-            println!("* {}", header);
-        }
-        // Let's add an additional header to our response to the client.
-        let headers = response.headers_mut();
-        headers.append("MyCustomHeader", ":)".parse().unwrap());
-        headers.append("SOME_TUNGSTENITE_HEADER", "header_value".parse().unwrap());
-        Ok(response)
     }
 
 }

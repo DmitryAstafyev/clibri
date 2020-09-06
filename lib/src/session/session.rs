@@ -1,6 +1,6 @@
-use super::{ context };
-use context::{ Context };
-use tungstenite::protocol::CloseFrame;
+use super::{ session_context };
+use session_context::{ SessionContext };
+use super::CloseFrame;
 
 #[derive(Debug, Clone)]
 pub enum Error {
@@ -15,23 +15,23 @@ pub enum Error {
 #[allow(unused_variables)]
 pub trait Session<T>: Send + Sync {
 
-    fn connected(&mut self, cx: Context) -> () {
+    fn connected(&mut self, cx: SessionContext) -> () {
         ()
     }
     
-    fn error(&mut self, err: Error, cx: Option<Context>) -> () {
+    fn error(&mut self, err: Error, cx: Option<SessionContext>) -> () {
         ()
     }
     
-    fn disconnect(&mut self, cx: Context, frame: Option<CloseFrame>) -> () {
+    fn disconnect(&mut self, cx: SessionContext, frame: Option<CloseFrame>) -> () {
         ()
     }
     
-    fn message(&mut self, msg: T, cx: Context) -> Result<(), String> {
+    fn message(&mut self, msg: T, cx: SessionContext) -> Result<(), String> {
         Ok(())
     }
     
-    fn text(&mut self, text: String, cx: Context) -> Result<(), String> {
+    fn text(&mut self, text: String, cx: SessionContext) -> Result<(), String> {
         Ok(())
     }
 

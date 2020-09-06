@@ -283,7 +283,6 @@ dependencies = [
  "log4rs",
  "serde",
  "serde_json",
- "tungstenite",
  "uuid",
 ]
 

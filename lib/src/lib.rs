@@ -1,8 +1,14 @@
+pub use tungstenite::handshake::server::{ Request, Response, ErrorResponse };
+pub use tungstenite::protocol::{ CloseFrame };
+
 #[path = "./server/server.rs"]
 pub mod server;
 
+#[path = "./controller/controller.rs"]
+pub mod controller;
+
 #[path = "./session/session.context.rs"]
-pub mod context;
+pub mod session_context;
 
 #[path = "./connection/connection.rs"]
 pub mod connection;

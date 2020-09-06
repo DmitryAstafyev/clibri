@@ -4,12 +4,12 @@ use std::sync::{ Arc, RwLock };
 use std::collections::{ HashMap };
 
 #[derive(Clone)]
-pub struct Context {
+pub struct SessionContext {
     pub uuid: String,
     pub connections: Arc<RwLock<HashMap<String, Connection>>>,
 }
 
-impl Context {
+impl SessionContext {
     
     #[allow(dead_code)]
     pub fn send(&mut self, buffer: Vec<u8>) -> Result<(), String> {
