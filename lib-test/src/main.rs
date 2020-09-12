@@ -62,7 +62,10 @@ fn main() {
             Ok(stream) => {
                 println!(">>>>>> Connection!");
                 let session = ClientSession {};
-                serv.add(stream, session, pro.clone());
+                match serv.add(stream, session, pro.clone()) {
+                    Ok(_) => {},
+                    Err(e) => info!("Fail to add connection due error: {}", e),
+                }
             },
             Err(_e) => {
 

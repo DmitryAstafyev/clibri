@@ -36,7 +36,7 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
     pub fn add( &mut self,
                 stream: TcpStream,
                 mut session: impl Session<T> + 'static,
-                protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static) -> () {
+                protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static) -> Result<(), String> {
         match self.accept(stream) {
             Ok(socket) => {
                 let mut conn = connection::Connection::new(socket);
@@ -58,31 +58,36 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
                                         session.connected(cx.clone());
                                         sessions.entry(conn.get_uuid()).or_insert(Box::new(session));
                                         self.redirect(rx_channel, cx.clone());
+                                        Ok(())
                                     },
                                     Err(_e) => {
                                         warn!("Cannot get access to session after connection was done.");
                                         match self.controller.clone().write() {
                                             Ok(mut contrl) => contrl.error(controller::Error::Session("Cannot get access to session after connection was done.".to_string())),
                                             Err(e) => error!("Fail get access to controller due error: {}", e),
-                                        }
+                                        };
+                                        Err("Cannot get access to session after connection was done.".to_string())
                                     }
                                 }
                             },
                             Err(e) => {
                                 session.error(session::Error::Connection(e.clone()), Some(cx.clone()));
                                 warn!("Client {} error: {}", uuid, e);
+                                Err(format!("Fail start listening client {} due error: {}", uuid, e))
                             },
                         }
                     },
                     Err(e) => {
                         session.error(session::Error::Connection(e.to_string().clone()), Some(cx.clone()));
                         error!("Fail get connections due error: {}", e);
+                        Err(format!("Fail get connections due error: {}", e))
                     }
                 }
             },
             Err(e) => {
                 session.error(session::Error::Socket(e.to_string().clone()), None);
                 error!("Fail accept connection due error: {}", e);
+                Err(format!("Fail accept connection due error: {}", e))
             },
         }
     }
