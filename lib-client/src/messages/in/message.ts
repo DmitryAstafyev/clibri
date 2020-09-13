@@ -1,4 +1,4 @@
-import { IMessage } from '../message.holder';
+import { IMessage } from './message.holder';
 
 export abstract class Message<T> {
 

@@ -1,21 +1,23 @@
 import { Emitter } from '../../tools/tools.emitter';
 import { MessageHolder, IMessage } from './message.holder';
 import { MessageHeader } from './message.header';
-import * as Income from './msgs/index';
+import { Protocol } from '../../protocol';
 
-export enum EEvents {
+export enum EBufferEvents {
     message = 'message',
     error = 'error',
 }
 
-export class BufferReader extends Emitter<EEvents>{
+export class BufferReader<TIncomeMessages> extends Emitter<EBufferEvents>{
 
-    public static readonly events = EEvents;
+    public static readonly events = EBufferEvents;
 
-    private _buffer: Buffer = new Buffer(0);
+    private _buffer: Buffer = Buffer.alloc(0);
+    private _protocol: Protocol<TIncomeMessages>;
 
-    constructor() {
+    constructor(protocol: Protocol<TIncomeMessages>) {
         super();
+        this._protocol = protocol;
     }
 
     public proceed(buffer: Buffer | ArrayBuffer | ArrayBufferLike) {
@@ -25,21 +27,21 @@ export class BufferReader extends Emitter<EEvents>{
             message = this._next();
             if (message instanceof Error) {
                 // Error during parsing
-                this.emit(EEvents.error, message);
+                this.emit(EBufferEvents.error, message);
                 break;
             }
-            const Msg = Income.getMsgClass(message);
+            const Msg: any = this._protocol.getMsgClass(message);
             if (Msg instanceof Error) {
-                this.emit(EEvents.error, Msg);
+                this.emit(EBufferEvents.error, Msg);
                 break;
             }
             const inst = new Msg(message);
             if (inst.validate() instanceof Error) {
-                this.emit(EEvents.error, inst.validate());
+                this.emit(EBufferEvents.error, inst.validate());
                 break;
             }
             // Trigger event
-            this.emit(EEvents.message, inst);
+            this.emit(EBufferEvents.message, inst);
             if (!MessageHeader.enow(this._buffer)) {
                 // Wait for more data
                 break;
@@ -49,7 +51,7 @@ export class BufferReader extends Emitter<EEvents>{
 
     public destroy() {
         // Drop buffer
-        this._buffer = new Buffer(0);
+        this._buffer = Buffer.alloc(0);
     }
 
     public size(): number {

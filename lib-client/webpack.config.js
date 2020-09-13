@@ -1,11 +1,11 @@
 module.exports = {
-    entry: "./src/protocol.ts",
+    entry: "./src/index.ts",
     mode: "production",
     output: {
-        filename: "toolkit.js",
+        filename: "protocol.js",
         path: __dirname + "/dist",
         libraryTarget: 'umd',
-        library: 'chipmunk.client.toolkit',
+        library: 'fiber',
         umdNamedDefine: true
     },
     // Enable sourcemaps for debugging webpack's output.

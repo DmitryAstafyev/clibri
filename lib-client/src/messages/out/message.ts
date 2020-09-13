@@ -1,4 +1,4 @@
-import * as Tools from '../../../tools';
+import * as Tools from '../../tools';
 
 export interface OutgoingMessage {
     encode(): ArrayBufferLike;

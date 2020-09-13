@@ -1,5 +1,15 @@
-import * as Out from './messages/out/msgs/index';
-import * as In from './messages/in/index';
-import * as Tools from './tools/index';
+import { IMessage } from './messages/in/message.holder';
 
-export { Out, In, Tools };
+
+export abstract class Protocol<TIncomeMessages> {
+
+    public abstract getMsgRefs(): { [key: number]: TIncomeMessages };
+
+    public getMsgClass(msg: IMessage): TIncomeMessages | Error {
+        if (this.getMsgRefs()[msg.id] === undefined) {
+            return new Error(`Fail to find implementation for message ID="${msg.id}"`);
+        }
+        return this.getMsgRefs()[msg.id];
+    }
+
+}
