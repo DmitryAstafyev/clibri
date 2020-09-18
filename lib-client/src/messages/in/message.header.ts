@@ -15,7 +15,7 @@ export class MessageHeader extends MessageBufferReader {
     public len: number | undefined;
 
     constructor(buffer: Buffer) {
-        super(buffer, true);
+        super(buffer, false);
         if (MessageHeader.enow(this._buffer) === false) {
             throw new Error(`Cannot parse header because size problem. Buffer: ${this._buffer.byteLength} bytes; header size: ${this.size()} bytes`);
         } else {

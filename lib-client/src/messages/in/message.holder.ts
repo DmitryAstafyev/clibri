@@ -1,4 +1,3 @@
-import { MessageBufferReader } from './message.buffer';
 import { MessageHeader } from './message.header';
 
 export interface IStruct {
