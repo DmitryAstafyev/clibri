@@ -1,14 +1,16 @@
 
-import * as Protocol from '../../../lib-client/src/protocol';
-import { Connection } from './connection';
+import { Connection, Tools } from '../../../lib-client/src/index';
+import { ProtocolImpl, IncomeMessages, PingOut } from './protocol';
 
 export class Application {
 
-    private _connection: Connection;
+    private readonly CONNECT_STR: string = 'ws://127.0.0.1:8088/ws/';
+    private _protocol: ProtocolImpl = new ProtocolImpl();
+    private _connection: Connection<IncomeMessages>;
     private _timer: any;
 
     constructor() {
-        this._connection = new Connection();
+        this._connection = new Connection<IncomeMessages>(this.CONNECT_STR, this._protocol);
         this._connection.subscribe(Connection.Events.connect, this._connected.bind(this));
         this._connection.subscribe(Connection.Events.message, this._message.bind(this));
         this._connection.subscribe(Connection.Events.error, this._close.bind(this));
@@ -35,8 +37,8 @@ export class Application {
 
     private _next() {
         this._timer = setTimeout(() => {
-            const ping: Protocol.Out.Ping = new Protocol.Out.Ping({ guid: Protocol.Tools.guid() });
-            this._connection.send(ping.encode());
+            const ping: PingOut = new PingOut({ uuid: Tools.guid() });
+            this._connection.send(ping);
             this._next();
         }, 1000);
     }

@@ -5,7 +5,7 @@ module.exports = {
         filename: "bundle.js",
         path: __dirname + "/dist",
         libraryTarget: 'umd',
-        library: 'chipmunk.client.toolkit',
+        library: 'fiber.lib.client.test',
         umdNamedDefine: true
     },
     // Enable sourcemaps for debugging webpack's output.
