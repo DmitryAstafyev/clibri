@@ -8,7 +8,7 @@ pub const ID: u32 = 1;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PingStruct {
-    pub guid: String,
+    pub uuid: String,
 }
 
 pub struct Ping {}

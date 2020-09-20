@@ -10,8 +10,9 @@ struct ServerController { }
 
 impl controller::Controller for ServerController {
 
-    fn handshake(&mut self, req: &Request, mut response: Response) -> Result<Response, ErrorResponse> {
-        Ok(response)
+    fn handshake(&mut self, _req: &Request, mut _response: Response) -> Result<Response, ErrorResponse> {
+        println!("Handshake requested");
+        Ok(_response)
     }
 
     fn error(&mut self, e: controller::Error) {
@@ -52,7 +53,7 @@ impl session::Session<protocol::Messages> for ClientSession {
 
 fn main() {
     log4rs::init_file("config/log4rs.yaml", Default::default()).unwrap();
-    info!("Started...");
+    info!("[LibTest] Started...");
     let listener = TcpListener::bind("127.0.0.1:8088").unwrap();
     let controller: ServerController = ServerController {};
     let mut serv: server::Server<protocol::Messages> = server::Server::new(controller);
@@ -60,11 +61,13 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                println!(">>>>>> Connection!");
+                info!("[LibTest] Income connection!");
                 let session = ClientSession {};
                 match serv.add(stream, session, pro.clone()) {
-                    Ok(_) => {},
-                    Err(e) => info!("Fail to add connection due error: {}", e),
+                    Ok(_) => {
+                        info!("[LibTest] Connection accepted!");
+                    },
+                    Err(e) => info!("[LibTest] Fail to add connection due error: {}", e),
                 }
             },
             Err(_e) => {

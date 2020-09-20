@@ -221,6 +221,7 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
             Ok(_) => {
                 debug!("Stream is switched to nonblocking mode");
                 match accept_hdr(stream, |req: &Request, mut response: Response| {
+                    debug!("Connection is assepted. Calling controller accept-callback");
                     match self.controller.write() {
                         Ok(mut controller) => {
                             match controller.handshake(req, response) {
@@ -233,7 +234,7 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
                 }) {
                     Ok(socket) => Ok(socket),
                     Err(e) => {
-                        warn!("Connection handshake was failed due error: {}", e);
+                        warn!("(accept_hdr) Connection handshake was failed due error: {}", e);
                         Err(e.to_string())
                     },
                 }
