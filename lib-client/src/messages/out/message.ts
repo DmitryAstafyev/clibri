@@ -28,8 +28,8 @@ export abstract class Message<T> implements OutgoingMessage {
     }
 
     private _bigIntToBuff(int: bigint): ArrayBufferLike {
-        if (window !== undefined && (window as any).BigInt64Array !== undefined) {
-            return (window as any).BigInt64Array.from([int]).buffer;
+        if (BigInt64Array !== undefined) {
+            return BigInt64Array.from([int]).buffer;
         } else {
             let hex: string = BigInt(int).toString(16);
             if (hex.length % 2) { hex = '0' + hex; }

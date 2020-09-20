@@ -10,6 +10,7 @@ export class Application {
     private _timer: any;
 
     constructor() {
+        console.log(`Creating connection...`);
         this._connection = new Connection<IncomeMessages>(this.CONNECT_STR, this._protocol);
         this._connection.subscribe(Connection.Events.connect, this._connected.bind(this));
         this._connection.subscribe(Connection.Events.message, this._message.bind(this));
@@ -18,6 +19,7 @@ export class Application {
     }
 
     private _connected() {
+        console.log(`Connected`);
         this._next();
     }
 
@@ -26,18 +28,18 @@ export class Application {
     }
 
     private _close(ev?: Error) {
+        console.log(`Connection is closed.`);
         this._stop();
-        if (ev !== undefined) {
-            console.log(`Will try reconnect in 2 sec`);
-            setTimeout(() => {
-                this._connection.reconnect();
-            }, 2000);
-        }
+        console.log(`Will try reconnect in 2 sec`);
+        setTimeout(() => {
+            this._connection.reconnect();
+        }, 2000);
     }
 
     private _next() {
         this._timer = setTimeout(() => {
             const ping: PingOut = new PingOut({ uuid: Tools.guid() });
+            console.log(`Sending: ${JSON.stringify(ping)}`);
             this._connection.send(ping);
             this._next();
         }, 1000);
