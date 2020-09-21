@@ -28,6 +28,8 @@ pub mod protocol;
 #[path = "./connection/connection.message.income.extractor.rs"]
 pub mod msg_income_extractor;
 
+#[path = "./connection/connection.message.outgoing.builder.rs"]
+pub mod msg_outgoing_builder;
 
 #[cfg(test)]
 mod tests {

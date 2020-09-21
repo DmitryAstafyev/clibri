@@ -1,4 +1,4 @@
-use super::{ buffer, connection_channel, protocol };
+use super::{ buffer, connection_channel, protocol, msg_outgoing_builder };
 use std::time::{ Duration, Instant };
 use log::{ error, warn, debug, trace };
 use std::net::{ TcpStream };
@@ -10,8 +10,7 @@ use std::sync::mpsc::{ Sender };
 use std::sync::{ Arc, RwLock };
 use std::thread;
 use std::io::{self};
-//use buffer::msg::Outgoing::disconnect_force::{DisconnectForce, DisconnectForceStruct};
-//use buffer::msg::Outgoing::{Message};
+use msg_outgoing_builder::Message as OutgoingMessage;
 
 pub struct Connection {
     pub uuid: Uuid,
@@ -180,7 +179,7 @@ impl Connection {
     }
 
     #[allow(dead_code)]
-    pub fn send(&mut self, buffer: Vec<u8>) -> Result<(), String> {
+    pub fn buffer(&mut self, buffer: Vec<u8>) -> Result<(), String> {
         let socket = self.socket.clone();
         debug!("{}:: try to get access to socket", self.uuid);
         match socket.write() {
@@ -196,6 +195,14 @@ impl Connection {
                 return Err(format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e));
             }
         };
+    }
+
+    #[allow(dead_code)]
+    pub fn msg(&mut self, mut msg: impl OutgoingMessage) -> Result<(), String> {
+        match msg.buffer() {
+            Ok(buf) => self.buffer(buf),
+            Err(e) => Err(e),
+        }
     }
 
 }

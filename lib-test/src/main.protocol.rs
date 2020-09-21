@@ -4,13 +4,9 @@ use msg_income_extractor::Extractor;
 #[path = "./main.protocol.ping.rs"]
 mod ping;
 
-#[path = "./main.protocol.handshake.rs"]
-mod handshake;
-
 #[derive(Debug, Clone)]
 pub enum Messages {
     Ping(ping::PingStruct),
-    Handshake(handshake::HandshakeStruct),
 }
 
 #[derive(Debug, Clone)]
@@ -28,12 +24,6 @@ impl protocol::Protocol<Messages> for Protocol {
                     Err(e) => Err(format!("Fail to parse \"Ping\" message due error: {}", e)),
                 }
             }
-            handshake::ID => {
-                match handshake::Handshake::new(payload) {
-                    Ok(msg) => Ok(Messages::Handshake(msg)),
-                    Err(e) => Err(format!("Fail to parse \"Handshake\" message due error: {}", e)),
-                }
-            }
             _ => Err(format!("Invalid id \"{:?}\"", id))
         }
     }
@@ -42,9 +32,6 @@ impl protocol::Protocol<Messages> for Protocol {
         match id {
             ping::ID => {
                 Ok(ping::PAYLOAD_LIMIT)
-            }
-            handshake::ID => {
-                Ok(handshake::PAYLOAD_LIMIT)
             }
             _ => Err(format!("Invalid id \"{:?}\"", id))
         }

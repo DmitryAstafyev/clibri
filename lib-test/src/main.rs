@@ -3,8 +3,12 @@ use log4rs;
 use std::net::TcpListener;
 use fiber:: { server, session, session_context, controller, CloseFrame, Request, Response, ErrorResponse };
 use session_context::{ SessionContext };
+
 #[path = "./main.protocol.rs"]
 mod protocol;
+
+#[path = "./main.protocol.pingout.rs"]
+mod pingout;
 
 struct ServerController { }
 
@@ -40,8 +44,18 @@ impl session::Session<protocol::Messages> for ClientSession {
         ()
     }
 
-    fn message(&mut self, _msg: protocol::Messages, mut _cx: SessionContext) -> Result<(), String> {
-        println!("{}:: {:?}", _cx.get_uuid(), _msg);
+    fn message(&mut self, _msg: protocol::Messages, mut cx: SessionContext) -> Result<(), String> {
+        let guid = cx.get_uuid();
+        println!("{}:: {:?}", guid.clone(), _msg);
+        let ping_out: pingout::PingOut = pingout::PingOut {};
+        match cx.send_msg_to(guid.clone(), ping_out) {
+            Ok(_) => {
+                println!("PingOut message was sent");
+            },
+            Err(e) => {
+                println!("Fail to send PingOut due error: {}", e);
+            }
+        }
         Ok(())
     }
 
