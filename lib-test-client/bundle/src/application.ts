@@ -1,6 +1,6 @@
 
 import { Connection, Tools, ConnectionError, MessageReadingError } from '../../../lib-client/src/index';
-import { ProtocolImpl, IncomeMessages, PingOut } from './protocol';
+import { ProtocolImpl, IncomeMessages, PingOut, PingIn } from './protocol';
 
 export class Application {
 
@@ -23,8 +23,12 @@ export class Application {
         this._next();
     }
 
-    private _message(event: MessageEvent) {
-        console.log(event);
+    private _message(msg: IncomeMessages) {
+        if (msg instanceof PingIn) {
+            console.log(`Has been gotten message: PingIn:: ${JSON.stringify(msg.getMsg())}`);
+        } else {
+            console.log(`Has been gotten unknown message: `, msg);
+        }
     }
 
     private _close() {

@@ -8,7 +8,7 @@ export interface PingInMsgBody {
 
 export class PingIn extends In.Message<PingInMsgBody> {
 
-    public static readonly id: number = 1;
+    public static readonly id: number = 2;
 
     public readonly id: number = PingIn.id;
 
