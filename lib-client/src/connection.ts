@@ -2,6 +2,7 @@ import { Emitter } from './tools/tools.emitter';
 import { BufferReader, EBufferEvents } from './messages/in/buffer.reader';
 import { Protocol } from './protocol';
 import { OutgoingMessage } from './messages/out/message';
+import { ConnectionError, MessageReadingError } from './connection.errors';
 
 enum EConnectionEvents {
     connect = 'connect',
@@ -27,7 +28,8 @@ export class Connection<TIncomeMessages> extends Emitter<EConnectionEvents> {
         this._error = this._error.bind(this);
         this._close = this._close.bind(this);
         this._buffer = new BufferReader(protocol);
-        this._buffer.subscribe(EBufferEvents.message, this._onProtocolMsg.bind(this))
+        this._buffer.subscribe(EBufferEvents.message, this._onProtocolMsg.bind(this));
+        this._buffer.subscribe(EBufferEvents.error, this._onProtocolMsgErr.bind(this))
         this.reconnect();
     }
 
@@ -82,6 +84,10 @@ export class Connection<TIncomeMessages> extends Emitter<EConnectionEvents> {
         this.emit(EConnectionEvents.message, msg);
     }
 
+    private _onProtocolMsgErr(err: Error) {
+        this.emit(EConnectionEvents.error, new MessageReadingError(err));
+    }
+
     private _close() {
         this._connected = false;
         this.emit(EConnectionEvents.close);
@@ -89,7 +95,7 @@ export class Connection<TIncomeMessages> extends Emitter<EConnectionEvents> {
 
     private _error(ev: Event) {
         this._connected = false;
-        this.emit(EConnectionEvents.error, ev);
+        this.emit(EConnectionEvents.error, new ConnectionError(ev));
     }
 
 }

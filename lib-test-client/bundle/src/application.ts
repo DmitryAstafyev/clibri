@@ -1,5 +1,5 @@
 
-import { Connection, Tools } from '../../../lib-client/src/index';
+import { Connection, Tools, ConnectionError, MessageReadingError } from '../../../lib-client/src/index';
 import { ProtocolImpl, IncomeMessages, PingOut } from './protocol';
 
 export class Application {
@@ -14,7 +14,7 @@ export class Application {
         this._connection = new Connection<IncomeMessages>(this.CONNECT_STR, this._protocol);
         this._connection.subscribe(Connection.Events.connect, this._connected.bind(this));
         this._connection.subscribe(Connection.Events.message, this._message.bind(this));
-        this._connection.subscribe(Connection.Events.error, this._close.bind(this));
+        this._connection.subscribe(Connection.Events.error, this._error.bind(this));
         this._connection.subscribe(Connection.Events.close, this._close.bind(this));
     }
 
@@ -27,13 +27,22 @@ export class Application {
         console.log(event);
     }
 
-    private _close(ev?: Error) {
+    private _close() {
         console.log(`Connection is closed.`);
         this._stop();
         console.log(`Will try reconnect in 2 sec`);
         setTimeout(() => {
             this._connection.reconnect();
         }, 2000);
+    }
+
+    private _error(error: ConnectionError | MessageReadingError) {
+        if (error instanceof ConnectionError) {
+            return this._close();
+        }
+        if (error instanceof MessageReadingError) {
+            console.log(`Fail to read message, due error: ${error.getErr().message}`);
+        }
     }
 
     private _next() {
