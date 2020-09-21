@@ -282,6 +282,7 @@ dependencies = [
  "log",
  "log4rs",
  "serde",
+ "uuid",
 ]
 
 [[package]]
