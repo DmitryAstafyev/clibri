@@ -8,6 +8,7 @@ export class Application {
     private _protocol: ProtocolImpl = new ProtocolImpl();
     private _connection: Connection<IncomeMessages>;
     private _timer: any;
+    private _reconnectTimer: any;
 
     constructor() {
         console.log(`Creating connection...`);
@@ -32,10 +33,14 @@ export class Application {
     }
 
     private _close() {
+        if (this._reconnectTimer !== undefined) {
+            return;
+        }
         console.log(`Connection is closed.`);
         this._stop();
         console.log(`Will try reconnect in 2 sec`);
-        setTimeout(() => {
+        this._reconnectTimer = setTimeout(() => {
+            this._reconnectTimer = undefined;
             this._connection.reconnect();
         }, 2000);
     }
