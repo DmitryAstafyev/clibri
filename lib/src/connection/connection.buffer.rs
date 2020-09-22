@@ -60,7 +60,7 @@ impl<T: Send + Sync + Clone + 'static> Processor<T> {
             return Err(format!("Message id '{}' has payload size {}, but limit is {}", id, len, limit));
         }
         match usize::try_from(len) {
-            Ok(len_usize) => Ok(MessageHeader { id: id, ts: ts, len: len, len_usize: len_usize }),
+            Ok(len_usize) => Ok(MessageHeader { id, ts, len, len_usize }),
             Err(e) => Err(e.to_string()),
         }
     }
@@ -87,12 +87,13 @@ impl<T: Send + Sync + Clone + 'static> Processor<T> {
 
     pub fn new(uuid: Uuid) -> Self {
         Processor {
-            uuid: uuid,
+            uuid,
             buffer: vec!(),
             queue: vec!(),
         }
     }
 
+    #[allow(clippy::ptr_arg)]
     pub fn read(
         &mut self,
         buf: &Vec<u8>,
@@ -119,30 +120,31 @@ impl<T: Send + Sync + Clone + 'static> Processor<T> {
                 match Self::get_message(self, &header, &payload, protocol.clone()) {
                     Ok(msg) => {
                         self.queue.push(IncomeMessage {
-                            header: header,
-                            msg: msg,
+                            header,
+                            msg,
                         });
-                        if self.buffer.len() > 0 {
-                            return self.read(&vec!(), protocol.clone());
+                        if !self.buffer.is_empty() {
+                            self.read(&vec!(), protocol)
                         } else {
-                            return Ok(());
+                            Ok(())
                         }
                     },
                     Err(e) => {
                         error!("{}:: fail parse message due error: {}", self.uuid, e);
-                        return Err(ReadError::Parsing(e.to_string()));
+                        Err(ReadError::Parsing(e))
                     },
-                };
+                }
             },
             Err(e) => {
                 warn!("{}:: fail get header due error: {}", self.uuid, e);
-                return Err(ReadError::Header(e.to_string()));
+                Err(ReadError::Header(e))
             },
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<IncomeMessage<T>> {
-        if self.queue.len() == 0 {
+        if self.queue.is_empty() {
             return None;
         }
         let message = Some(self.queue[0].clone());
@@ -151,7 +153,7 @@ impl<T: Send + Sync + Clone + 'static> Processor<T> {
         } else {
             self.queue.clear();
         }
-        return message;
+        message
     }
 
 }

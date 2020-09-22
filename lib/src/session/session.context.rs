@@ -22,10 +22,10 @@ impl SessionContext {
     pub fn send_buffer_to(&mut self, uuid: String, buffer: Vec<u8>) -> Result<(), String> {
         match self.connections.write() {
             Ok(mut connections) => {
-                if let Some(connection) = connections.get_mut(&uuid.clone()) {
-                    return connection.buffer(buffer);
+                if let Some(connection) = connections.get_mut(&uuid) {
+                    connection.buffer(buffer)
                 } else {
-                    return Err("Fail to get access to connection".to_string());
+                    Err("Fail to get access to connection".to_string())
                 }
             },
             Err(e) => Err(format!("Fail to get access to connections due error: {}", e))
@@ -42,10 +42,10 @@ impl SessionContext {
     pub fn send_msg_to(&mut self, uuid: String, msg: impl OutgoingMessage) -> Result<(), String> {
         match self.connections.write() {
             Ok(mut connections) => {
-                if let Some(connection) = connections.get_mut(&uuid.clone()) {
-                    return connection.msg(msg);
+                if let Some(connection) = connections.get_mut(&uuid) {
+                    connection.msg(msg)
                 } else {
-                    return Err("Fail to get access to connection".to_string());
+                    Err("Fail to get access to connection".to_string())
                 }
             },
             Err(e) => Err(format!("Fail to get access to connections due error: {}", e))

@@ -26,7 +26,7 @@ impl Connection {
     pub fn new(socket: WebSocket<TcpStream>) -> Self {
         let uuid: Uuid = Uuid::new_v4();
         Connection {
-            uuid: uuid.clone(),
+            uuid,
             heartbeat: Instant::now(),
             lat: None,
             lon: None,
@@ -47,7 +47,7 @@ impl Connection {
         let socket = self.socket.clone();
         let mut buffer: buffer::Processor<T> = buffer::Processor::new(self.uuid);
         let uuid = self.uuid;
-        let channel = tx_channel.clone();
+        let channel = tx_channel;
         spawn(move || {
             let timeout = Duration::from_millis(50);
             let mut connection_error: Option<connection_channel::Error> = None;
@@ -66,23 +66,17 @@ impl Connection {
                                 match msg {
                                     ProtocolMessage::Binary(buf) => {
                                         match buffer.read(&buf, protocol.clone()) {
-                                            Ok(_) => loop {
-                                                match buffer.next() {
-                                                    Some(msg) => {
-                                                        match channel.send(connection_channel::Messages::Message {
-                                                            uuid: uuid.clone(),
-                                                            msg: msg.msg,
-                                                        }) {
-                                                            Ok(_) => break,
-                                                            Err(e) => {
-                                                                error!("{}:: fail to send data to session due error: {}", uuid, e);
-                                                                connection_error = Some(connection_channel::Error::Channel(format!("{}", e).to_string()));
-                                                                break;
-                                                            },
-                                                        };
+                                            Ok(_) => if let Some(msg) = buffer.next() {
+                                                match channel.send(connection_channel::Messages::Message {
+                                                    uuid,
+                                                    msg: msg.msg,
+                                                }) {
+                                                    Ok(_) => {},
+                                                    Err(e) => {
+                                                        error!("{}:: fail to send data to session due error: {}", uuid, e);
+                                                        connection_error = Some(connection_channel::Error::Channel(format!("{}", e).to_string()));
                                                     },
-                                                    None => break
-                                                }
+                                                };
                                             },
                                             Err(e) => {
                                                 let error: String;
@@ -96,21 +90,6 @@ impl Connection {
                                                         warn!("{}:: fail to parse message payload due error: {}. Connection will be dropped.", uuid, error);
                                                     },
                                                 };
-                                                /*
-                                                TODO: should be move out here
-                                                match DisconnectForce::new(DisconnectForceStruct {
-                                                    reason: error.clone(),
-                                                }) {
-                                                    Ok(buf) => {
-                                                        // send message
-                                                        match socket.write_message(ProtocolMessage::from(buf)) {
-                                                            Ok(_) => debug!("{}:: connection would be dropped", uuid),
-                                                            Err(e) => warn!("{}:: fail to send message due error: {}", uuid, e)
-                                                        }
-                                                    },
-                                                    Err(e) => warn!("{}:: fail get message DisconnectForce due error: {}", uuid, e)
-                                                };
-                                                */
                                                 connection_error = Some(connection_channel::Error::Parsing(error));
                                                 break;
                                             }
@@ -118,24 +97,17 @@ impl Connection {
                                     },
                                     ProtocolMessage::Text(text) => {
                                         match channel.send(connection_channel::Messages::Text {
-                                            uuid: uuid.clone(),
-                                            text: text,
+                                            uuid,
+                                            text,
                                         }) {
                                             Ok(_) => break,
                                             Err(e) => {
                                                 error!("{}:: fail to send data to session due error: {}", uuid, e);
-                                                connection_error = Some(connection_channel::Error::Channel(format!("{}", e).to_string()));
+                                                connection_error = Some(connection_channel::Error::Channel(format!("{}", e)));
                                                 break;
                                             },
                                         };
                                     },
-                                    /*
-                                    ProtocolMessage::Ping(buf: Vec<u8>) => {
-
-                                    },
-                                    ProtocolMessage::Pong(buf: Vec<u8>) => {
-
-                                    },*/
                                     ProtocolMessage::Close(close_frame) => {
                                         if let Some(frame) = close_frame {
                                             disconnect_frame = Some(frame);
@@ -165,12 +137,12 @@ impl Connection {
                 thread::sleep(timeout);
             }
             if let Some(error) = connection_error {
-                match channel.send(connection_channel::Messages::Error { uuid: uuid, error: error }) {
+                match channel.send(connection_channel::Messages::Error { uuid, error }) {
                     Ok(_) => debug!("{}:: client would be disconnected", uuid),
                     Err(e) => error!("{}:: fail to notify server about disconnecting due error: {}", uuid, e),
                 };
             }
-            match channel.send(connection_channel::Messages::Disconnect { uuid: uuid, frame: disconnect_frame }) {
+            match channel.send(connection_channel::Messages::Disconnect { uuid, frame: disconnect_frame }) {
                 Ok(_) => debug!("{}:: client would be disconnected", uuid),
                 Err(e) => error!("{}:: fail to notify server about disconnecting due error: {}", uuid, e),
             };
@@ -182,19 +154,20 @@ impl Connection {
     pub fn buffer(&mut self, buffer: Vec<u8>) -> Result<(), String> {
         let socket = self.socket.clone();
         debug!("{}:: try to get access to socket", self.uuid);
-        match socket.write() {
+        let result = match socket.write() {
             Ok(mut socket) => {
                 debug!("{}:: access to socket has been gotten", self.uuid);
-                return match socket.write_message(ProtocolMessage::from(buffer)) {
+                match socket.write_message(ProtocolMessage::from(buffer)) {
                     Ok(_) => Ok(()),
                     Err(e) => Err(format!("{}:: fail to send message due error: {}", self.uuid, e)),
-                };
+                }
             },
             Err(e) => {
                 error!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e);   
-                return Err(format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e));
+                Err(format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e))
             }
         };
+        result
     }
 
     #[allow(dead_code)]

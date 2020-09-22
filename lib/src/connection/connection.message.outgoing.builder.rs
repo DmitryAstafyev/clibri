@@ -42,13 +42,13 @@ pub trait Message {
             Ok(str) => {
                 let bytes = str.as_bytes();
                 match self.get_header(bytes.len()) {
-                    Ok(header) => {
+                    Ok(mut header) => {
                         let mut buf: Vec<u8> = vec!();
-                        buf.append(&mut header.clone());
+                        buf.append(&mut header);
                         buf.append(&mut bytes.to_vec());
-                        return Ok(buf);
+                        Ok(buf)
                     },
-                    Err(e) => Err(e.to_string()),
+                    Err(e) => Err(e),
                 }
             },
             Err(e) => Err(e.to_string())

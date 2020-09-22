@@ -15,16 +15,13 @@ pub enum Error {
 #[allow(unused_variables)]
 pub trait Session<T>: Send + Sync {
 
-    fn connected(&mut self, cx: SessionContext) -> () {
-        ()
+    fn connected(&mut self, cx: SessionContext) {
     }
     
-    fn error(&mut self, err: Error, cx: Option<SessionContext>) -> () {
-        ()
+    fn error(&mut self, err: Error, cx: Option<SessionContext>) {
     }
     
-    fn disconnect(&mut self, cx: SessionContext, frame: Option<CloseFrame>) -> () {
-        ()
+    fn disconnect(&mut self, cx: SessionContext, frame: Option<CloseFrame>) {
     }
     
     fn message(&mut self, msg: T, cx: SessionContext) -> Result<(), String> {

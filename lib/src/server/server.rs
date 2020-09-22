@@ -2,7 +2,7 @@ use super::{ connection, session, connection_channel, protocol, session_context,
 use session_context::{ SessionContext };
 use controller::{ Controller };
 use session::{ Session };
-use std::time::{ Duration };
+use std::{sync::PoisonError, time::{ Duration }};
 use std::net::{ TcpStream };
 use log::{ error, warn, debug };
 use std::collections::{ HashMap };
@@ -15,10 +15,13 @@ use std::sync::{ Arc, RwLock, RwLockWriteGuard };
 use tungstenite::accept_hdr;
 use tungstenite::protocol::WebSocket;
 
+pub type TSession<T> = dyn Session<T> + Send + Sync + 'static;
+pub type TSessions<T> = HashMap<String, Box<TSession<T>>>;
+
 // #[derive(Copy, Clone)]
 pub struct Server<T: Send + Sync + Clone + 'static> {
     connections: Arc<RwLock<HashMap<String, Connection>>>,
-    sessions: Arc<RwLock<HashMap<String, Box<dyn Session<T> + Send + Sync + 'static>>>>,
+    sessions: Arc<RwLock<HashMap<String, Box<TSession<T>>>>>,
     controller: Arc<RwLock<dyn Controller + Send + Sync + 'static>>,
 }
 
@@ -56,8 +59,8 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
                                 match self.sessions.write() {
                                     Ok(mut sessions) => {
                                         session.connected(cx.clone());
-                                        sessions.entry(conn.get_uuid()).or_insert(Box::new(session));
-                                        self.redirect(rx_channel, cx.clone());
+                                        sessions.entry(conn.get_uuid()).or_insert_with(|| Box::new(session));
+                                        self.redirect(rx_channel, cx);
                                         Ok(())
                                     },
                                     Err(_e) => {
@@ -71,21 +74,21 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
                                 }
                             },
                             Err(e) => {
-                                session.error(session::Error::Connection(e.clone()), Some(cx.clone()));
+                                session.error(session::Error::Connection(e.clone()), Some(cx));
                                 warn!("Client {} error: {}", uuid, e);
                                 Err(format!("Fail start listening client {} due error: {}", uuid, e))
                             },
                         }
                     },
                     Err(e) => {
-                        session.error(session::Error::Connection(e.to_string().clone()), Some(cx.clone()));
+                        session.error(session::Error::Connection(e.to_string()), Some(cx));
                         error!("Fail get connections due error: {}", e);
                         Err(format!("Fail get connections due error: {}", e))
                     }
                 }
             },
             Err(e) => {
-                session.error(session::Error::Socket(e.to_string().clone()), None);
+                session.error(session::Error::Socket(e.to_string()), None);
                 error!("Fail accept connection due error: {}", e);
                 Err(format!("Fail accept connection due error: {}", e))
             },
@@ -101,7 +104,7 @@ impl<T: Send + Sync + Clone + 'static> Server<T> {
         let contrl = self.controller.clone();
         spawn(move || {
             let timeout = Duration::from_millis(50);
-            let session_access_err = |e: Option<std::sync::PoisonError<RwLockWriteGuard<HashMap<String, Box<dyn Session<T> + Send + Sync>>>>>| {
+            let session_access_err = |e: Option<PoisonError<RwLockWriteGuard<TSessions<T>>>>| {
                 match contrl.write() {
                     Ok(mut contrl) => {
                         contrl.error(match e {
