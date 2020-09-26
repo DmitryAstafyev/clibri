@@ -148,7 +148,7 @@ impl<T: Send + Sync + Clone + 'static> Processor<T> {
             return None;
         }
         let message = Some(self.queue[0].clone());
-        if self.queue.len() == 1 {
+        if self.queue.len() > 1 {
             self.queue = self.queue.drain(1..).collect();
         } else {
             self.queue.clear();

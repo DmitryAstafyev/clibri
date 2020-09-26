@@ -63,7 +63,7 @@ mod tests {
                         }
                     }
                 }
-                assert_eq!(count, 11);
+                assert_eq!(count, 10);
             },
             Err(_) => {
                 assert_eq!(true, false);
