@@ -4,7 +4,7 @@ use msg_outgoing_builder::Message;
 
 pub const PAYLOAD_LIMIT: u64 = 1000;
 
-pub const ID: u32 = 2;
+pub const ID: u32 = 1;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PingOutStruct {
