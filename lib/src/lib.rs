@@ -31,10 +31,5 @@ pub mod msg_income_extractor;
 #[path = "./connection/connection.message.outgoing.builder.rs"]
 pub mod msg_outgoing_builder;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+#[path = "./test/main.rs"]
+mod test;

@@ -1,5 +1,4 @@
 use log::{ info };
-use log4rs;
 use std::net::TcpListener;
 use fiber:: { server, session, session_context, controller, CloseFrame, Request, Response, ErrorResponse, msg_outgoing_builder };
 use session_context::{ SessionContext };
@@ -31,29 +30,26 @@ struct ClientSession { }
 
 impl session::Session<protocol::Messages> for ClientSession {
 
-    fn connected(&mut self, mut _cx: SessionContext) -> () {
+    fn connected(&mut self, mut _cx: SessionContext)  {
         println!("Connected: {}", _cx.get_uuid());
-        ()
     }
 
-    fn error(&mut self, _err: session::Error, mut _cx: Option<SessionContext>) -> () {
+    fn error(&mut self, _err: session::Error, mut _cx: Option<SessionContext>) {
         println!("Connected: {:?}", _err);
-        ()
     }
 
-    fn disconnect(&mut self, mut _cx: SessionContext, _frame: Option<CloseFrame>) -> () {
+    fn disconnect(&mut self, mut _cx: SessionContext, _frame: Option<CloseFrame>) {
         println!("Disconnected: {}", _cx.get_uuid());
-        ()
     }
 
     fn message(&mut self, _msg: protocol::Messages, mut cx: SessionContext) -> Result<(), String> {
         let guid = cx.get_uuid();
-        println!("{}:: {:?}", guid.clone(), _msg);
+        println!("{}:: {:?}", guid, _msg);
         let uuid: Uuid = Uuid::new_v4();
         let ping_out: pingout::PingOut = pingout::PingOut::new(pingout::PingOutStruct {
             uuid: uuid.to_string(),
         });
-        match cx.send_msg_to(guid.clone(), ping_out) {
+        match cx.send_msg_to(guid, ping_out) {
             Ok(_) => {
                 println!("PingOut message was sent");
             },

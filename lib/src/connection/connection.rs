@@ -15,9 +15,6 @@ use msg_outgoing_builder::Message as OutgoingMessage;
 pub struct Connection {
     pub uuid: Uuid,
     pub heartbeat: Instant,
-    pub lat: Option<f64>,
-    pub lon: Option<f64>,
-    pub alias: Option<String>,
     socket: Arc<RwLock<WebSocket<TcpStream>>>,
 }
 
@@ -28,9 +25,6 @@ impl Connection {
         Connection {
             uuid,
             heartbeat: Instant::now(),
-            lat: None,
-            lon: None,
-            alias: None,
             socket: Arc::new(RwLock::new(socket)),
         }
     }
