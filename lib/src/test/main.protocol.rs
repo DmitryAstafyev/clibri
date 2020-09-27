@@ -1,4 +1,4 @@
-use super:: { protocol, msg_income_extractor, PingOutStruct };
+use super:: { protocol, msg_income_extractor };
 use msg_income_extractor::Extractor;
 
 #[path = "./main.protocol.ping.rs"]

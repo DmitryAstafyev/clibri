@@ -1,7 +1,6 @@
+#[allow(unused_imports)]
 use super:: { protocol, buffer, msg_outgoing_builder, msg_income_extractor };
-use buffer::{Processor};
-use uuid::Uuid;
-use msg_outgoing_builder::Message;
+#[allow(unused_imports)]
 use pingout::{PingOut, PingOutStruct};
 
 #[path = "./main.protocol.rs"]
@@ -12,9 +11,11 @@ pub mod pingout;
 
 #[cfg(test)]
 mod tests {
-    use super::{PingOut, PingOutStruct, Uuid, msg_outgoing_builder, Processor, testprotocol };
+    use uuid::Uuid;
+    use super::{PingOut, PingOutStruct, msg_outgoing_builder, buffer, testprotocol };
     use testprotocol::{Messages, TestProtocol};
     use msg_outgoing_builder::Message;
+    use buffer::{Processor};
 
     #[test]
     fn out_message_encode() {
