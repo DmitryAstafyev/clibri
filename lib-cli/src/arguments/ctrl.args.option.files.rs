@@ -1,6 +1,7 @@
 use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 use super::{ CtrlArg, EArgumentsNames, EArgumentsValues };
+use super:: { helpers };
 
 mod keys {
     pub const SOURCE: &str = "--source";
@@ -77,7 +78,7 @@ impl CtrlArg for ArgsOptionFiles {
     }
 
     fn name(&self) -> EArgumentsNames {
-        EArgumentsNames::Files
+        EArgumentsNames::OptionFiles
     }
 
     fn value(&self) -> EArgumentsValues {
@@ -95,15 +96,28 @@ impl CtrlArg for ArgsOptionFiles {
         self._err.clone()
     }
 
+    fn is_action_available(&self) -> bool {
+        self._err.is_none()
+    }
+
     fn action(&self, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String> {
         Ok(())
     }
 
     fn get_help(&self) -> String {
         format!("{}\n{}\n{}",
-            format!("\t{} ({}, {})\t - [required] path to source file. Protocol file with description messages.", keys::SOURCE, keys::SRC, keys::S),
-            format!("\t{} ({}, {})\t - path to destination rs (rust) file. If value isn't defined, would be used path and name of source file", keys::DESTINATION_RS, keys::DEST_RS, keys::RS),
-            format!("\t{} ({}, {})\t - path to destination ts (typescript) file. If value isn't defined, would be used path and name of source file", keys::DESTINATION_TS, keys::DEST_TS, keys::TS)
+            format!("{}{}",
+                helpers::output::keys(&format!("{} ({}, {})", keys::SOURCE, keys::SRC, keys::S)),
+                helpers::output::desk("[required] path to source file. Protocol file with description messages."),
+            ),
+            format!("{}{}",
+                helpers::output::keys(&format!("{} ({}, {})", keys::DESTINATION_RS, keys::DEST_RS, keys::RS)),
+                helpers::output::desk("path to destination rs (rust) file. If value isn't defined, would be used path and name of source file"),
+            ),
+            format!("{}{}",
+                helpers::output::keys(&format!("{} ({}, {})", keys::DESTINATION_TS, keys::DEST_TS, keys::TS)),
+                helpers::output::desk("path to destination ts (typescript) file. If value isn't defined, would be used path and name of source file"),
+            )
         )
     }
 

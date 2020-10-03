@@ -1,6 +1,7 @@
 use std::path::{ Path };
 use std::collections::{ HashMap };
 use super::{ CtrlArg, EArgumentsNames, EArgumentsValues };
+use super:: { helpers };
 
 mod keys {
     pub const OVERWRITE: &str = "--overwrite";
@@ -34,12 +35,19 @@ impl CtrlArg for ArgsOptionOverwrite {
         None
     }
 
+    fn is_action_available(&self) -> bool {
+        false
+    }
+
     fn action(&self, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String> {
         Ok(())
     }
 
     fn get_help(&self) -> String {
-        format!("\t{} ({}, {})\t - if key exist, destination files would be overwritten.", keys::OVERWRITE, keys::OW, keys::O)
+        format!("{}{}",
+            helpers::output::keys(&format!("{} ({}, {})", keys::OVERWRITE, keys::OW, keys::O)),
+            helpers::output::desk("if key exist, destination files would be overwritten."),
+        )
     }
 
 }

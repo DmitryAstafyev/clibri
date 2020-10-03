@@ -1,6 +1,7 @@
 use std::env;
 use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
+use super:: { helpers };
 
 #[path = "./arguments/ctrl.args.option.files.rs"]
 pub mod arg_option_files;
@@ -11,8 +12,9 @@ pub mod arg_option_help;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum EArgumentsNames {
-    Files,
+    OptionFiles,
     OptionOverwrite,
+    OptionHelp,
 }
 
 pub enum EArgumentsValues {
@@ -27,6 +29,7 @@ pub trait CtrlArg {
     fn value(&self) -> EArgumentsValues;
     fn get_err(&self) -> Option<String>;
     fn action(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String>;
+    fn is_action_available(&self) -> bool;
     fn get_help(&self) -> String;
 
 }
@@ -50,15 +53,9 @@ impl CtrlArgs {
         };
         let mut args: Vec<String> = env::args().collect();
         args.remove(0);
-        let unknown = Self::get_unknown_args(args.clone());
-        
-        if !unknown.is_empty() {
-            println!("Unknown keys/arguments: \n\t- {}", unknown.join("\n\t- "));
-            std::process::exit(0);
-        }
         let mut ctrls: HashMap<EArgumentsNames, Box<dyn CtrlArg>> = HashMap::new();
         ctrls.insert(
-            EArgumentsNames::OptionOverwrite, 
+            EArgumentsNames::OptionHelp, 
             Box::new(arg_option_help::ArgsOptionHelp::new(&pwd, args.clone(), &ctrls))
         );
         ctrls.insert(
@@ -66,7 +63,7 @@ impl CtrlArgs {
             Box::new(arg_option_overwrite::ArgsOptionOverwrite::new(&pwd, args.clone(), &ctrls))
         );
         ctrls.insert(
-            EArgumentsNames::Files, 
+            EArgumentsNames::OptionFiles, 
             Box::new(arg_option_files::ArgsOptionFiles::new(&pwd, args, &ctrls))
         );
         CtrlArgs { _ctrls: ctrls }
@@ -74,10 +71,27 @@ impl CtrlArgs {
 
     pub fn errors(&self) -> Result<(), ()> {
         let mut errors: bool = false;
-        for ctrl in self._ctrls.values() {
-            if let Some(err) = ctrl.as_ref().get_err() {
-                errors = true;
-                println!("{}", err);
+        let mut args: Vec<String> = env::args().collect();
+        args.remove(0);
+        let unknown = Self::get_unknown_args(args);
+        if !unknown.is_empty() {
+            println!("Unknown keys/arguments: \n\t- {}", unknown.join("\n\t- "));
+            errors = true;
+        } else {
+            if let Some(ctrl) = self._ctrls.get(&EArgumentsNames::OptionHelp) {
+                if ctrl.as_ref().is_action_available() {
+                    if let Err(err) = ctrl.as_ref().action(&self._ctrls) {
+                        println!("{}", err);
+                        return Err(());
+                    }
+                    return Ok(());
+                }
+            }
+            for ctrl in self._ctrls.values() {
+                if let Some(err) = ctrl.as_ref().get_err() {
+                    errors = true;
+                    println!("{}", err);
+                }
             }
         }
         if errors {
@@ -109,9 +123,9 @@ impl CtrlArgs {
             match ctrl.as_ref().value() {
                 EArgumentsValues::OptionOverwrite(ow) => println!("{:?} = {}", EArgumentsNames::OptionOverwrite, ow),
                 EArgumentsValues::Files((src, dest_rs, dest_ts)) => {
-                    println!("{:?}: src = {}", EArgumentsNames::Files, src.as_path().display().to_string());
-                    println!("{:?}: dest_rs = {}", EArgumentsNames::Files, dest_rs.as_path().display().to_string());
-                    println!("{:?}: dest_ts = {}", EArgumentsNames::Files, dest_ts.as_path().display().to_string());
+                    println!("{:?}: src = {}", EArgumentsNames::OptionFiles, src.as_path().display().to_string());
+                    println!("{:?}: dest_rs = {}", EArgumentsNames::OptionFiles, dest_rs.as_path().display().to_string());
+                    println!("{:?}: dest_ts = {}", EArgumentsNames::OptionFiles, dest_ts.as_path().display().to_string());
                 },
                 _ => println!("Empty value has been found"),
             }

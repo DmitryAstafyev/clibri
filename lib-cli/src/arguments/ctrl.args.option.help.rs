@@ -1,10 +1,11 @@
 use std::path::{ Path };
 use std::collections::{ HashMap };
 use super::{ CtrlArg, EArgumentsNames, EArgumentsValues };
+use super:: { helpers };
 
 mod keys {
     pub const HELP: &str = "--help";
-    pub const H: &str = "--h";
+    pub const H: &str = "-h";
 }
 
 pub struct ArgsOptionHelp {
@@ -22,7 +23,7 @@ impl CtrlArg for ArgsOptionHelp {
     }
 
     fn name(&self) -> EArgumentsNames {
-        EArgumentsNames::OptionOverwrite
+        EArgumentsNames::OptionHelp
     }
 
     fn value(&self) -> EArgumentsValues {
@@ -31,6 +32,10 @@ impl CtrlArg for ArgsOptionHelp {
 
     fn get_err(&self) -> Option<String> {
         None
+    }
+
+    fn is_action_available(&self) -> bool {
+        self._requested
     }
 
     fn action(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String> {
@@ -43,7 +48,10 @@ impl CtrlArg for ArgsOptionHelp {
     }
 
     fn get_help(&self) -> String {
-        format!("\t{} ({})\t - shows this help.", keys::HELP, keys::H)
+        format!("{}{}",
+            helpers::output::keys(&format!("{} ({})", keys::HELP, keys::H)),
+            helpers::output::desk("shows this help."),
+        )
     }
 
 
