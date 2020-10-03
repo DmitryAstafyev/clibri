@@ -7,5 +7,7 @@ fn main() {
         Ok(_) => {},
         Err(_) => std::process::exit(1),
     }
-    ctrl.print();
+    if let Err(errors) = ctrl.actions() {
+        println!("{}", errors.join("\n"))
+    }
 }

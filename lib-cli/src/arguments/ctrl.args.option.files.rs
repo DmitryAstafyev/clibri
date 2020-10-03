@@ -2,31 +2,43 @@ use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 use super::{ CtrlArg, EArgumentsNames, EArgumentsValues };
 
-pub struct ArgsSrcDest {
+mod keys {
+    pub const SOURCE: &str = "--source";
+    pub const SRC: &str = "--src";
+    pub const S: &str = "--s";
+    pub const DESTINATION_RS: &str = "--destination-rs";
+    pub const DEST_RS: &str = "--dest-rs";
+    pub const RS: &str = "--rs";
+    pub const DESTINATION_TS: &str = "--destination-ts";
+    pub const DEST_TS: &str = "--dest-ts";
+    pub const TS: &str = "--ts";
+}
+
+pub struct ArgsOptionFiles {
     _src: Option<PathBuf>,
     _dest_rs: Option<PathBuf>,
     _dest_ts: Option<PathBuf>,
     _err: Option<String>,
 }
 
-impl CtrlArg for ArgsSrcDest {
+impl CtrlArg for ArgsOptionFiles {
 
     fn new(pwd: &Path, args: Vec<String>, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
         let mut src: Option<PathBuf> = None;
         let mut dest_rs: Option<PathBuf> = None;
         let mut dest_ts: Option<PathBuf> = None;
         let mut err: Option<String> = None;
-        if let Some(src_index) = args.iter().position(|arg| arg == "--source" || arg == "--src" || arg == "-s") {
+        if let Some(src_index) = args.iter().position(|arg| arg == keys::SOURCE || arg == keys::SRC || arg == keys::S) {
             if let Some(arg_str_src) = args.get(src_index + 1) {
                 src = Some(Path::new(pwd).join(arg_str_src));
             }
         }
-        if let Some(dest_index) = args.iter().position(|arg| arg == "--destination-rs" || arg == "--dest-rs" || arg == "-rs") {
+        if let Some(dest_index) = args.iter().position(|arg| arg == keys::DESTINATION_RS || arg == keys::DEST_RS || arg == keys::RS) {
             if let Some(arg_str_dest) = args.get(dest_index + 1) {
                 dest_rs = Some(Path::new(pwd).join(arg_str_dest));
             }
         }
-        if let Some(dest_index) = args.iter().position(|arg| arg == "--destination-ts" || arg == "--dest-ts" || arg == "-ts") {
+        if let Some(dest_index) = args.iter().position(|arg| arg == keys::DESTINATION_TS || arg == keys::DEST_TS || arg == keys::TS) {
             if let Some(arg_str_dest) = args.get(dest_index + 1) {
                 dest_ts = Some(Path::new(pwd).join(arg_str_dest));
             }
@@ -61,7 +73,7 @@ impl CtrlArg for ArgsSrcDest {
                 ));
             }            
         }
-        ArgsSrcDest { _src: src, _dest_rs: dest_rs, _dest_ts: dest_ts, _err: err }
+        ArgsOptionFiles { _src: src, _dest_rs: dest_rs, _dest_ts: dest_ts, _err: err }
     }
 
     fn name(&self) -> EArgumentsNames {
@@ -83,32 +95,56 @@ impl CtrlArg for ArgsSrcDest {
         self._err.clone()
     }
 
+    fn action(&self, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn get_help(&self) -> String {
+        format!("{}\n{}\n{}",
+            format!("\t{} ({}, {})\t - [required] path to source file. Protocol file with description messages.", keys::SOURCE, keys::SRC, keys::S),
+            format!("\t{} ({}, {})\t - path to destination rs (rust) file. If value isn't defined, would be used path and name of source file", keys::DESTINATION_RS, keys::DEST_RS, keys::RS),
+            format!("\t{} ({}, {})\t - path to destination ts (typescript) file. If value isn't defined, would be used path and name of source file", keys::DESTINATION_TS, keys::DEST_TS, keys::TS)
+        )
+    }
+
 }
 
-pub fn clean(mut args: Vec<String>) -> Vec<String> {
-    if let Some(index) = args.iter().position(|arg| arg == "--source" || arg == "--src" || arg == "-s") {
-        if let Some(_) = args.get(index + 1) {
-            args.remove(index + 1);
-            args.remove(index);
-        } else {
-            args.remove(index);
+pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
+    move |mut args: Vec<String>| {
+        if let Some(index) = args.iter().position(|arg| arg == keys::SOURCE || arg == keys::SRC || arg == keys::S) {
+            match args.get(index + 1) {
+                Some(_) => {
+                    args.remove(index + 1);
+                    args.remove(index);
+                }
+                None => {
+                    args.remove(index);
+                }
+            }
         }
-    }
-    if let Some(index) = args.iter().position(|arg| arg == "--destination-rs" || arg == "--dest-rs" || arg == "-rs") {
-        if let Some(_) = args.get(index + 1) {
-            args.remove(index + 1);
-            args.remove(index);
-        } else {
-            args.remove(index);
+        if let Some(index) = args.iter().position(|arg| arg == keys::DESTINATION_RS || arg == keys::DEST_RS || arg == keys::RS) {
+            match args.get(index + 1) {
+                Some(_) => {
+                    args.remove(index + 1);
+                    args.remove(index);
+                }
+                None => {
+                    args.remove(index);
+                }
+            }
         }
-    }
-    if let Some(index) = args.iter().position(|arg| arg == "--destination-ts" || arg == "--dest-ts" || arg == "-ts") {
-        if let Some(_) = args.get(index + 1) {
-            args.remove(index + 1);
-            args.remove(index);
-        } else {
-            args.remove(index);
+        if let Some(index) = args.iter().position(|arg| arg == keys::DESTINATION_TS || arg == keys::DEST_TS || arg == keys::TS) {
+            match args.get(index + 1) {
+                Some(_) => {
+                    args.remove(index + 1);
+                    args.remove(index);
+                }
+                None => {
+                    args.remove(index);
+                }
+            }
         }
+        args
     }
-    args
+    
 }

@@ -2,10 +2,12 @@ use std::env;
 use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 
-#[path = "./arguments/ctrl.args.src.rs"]
-pub mod arg_option_src;
+#[path = "./arguments/ctrl.args.option.files.rs"]
+pub mod arg_option_files;
 #[path = "./arguments/ctrl.args.option.overwrite.rs"]
 pub mod arg_option_overwrite;
+#[path = "./arguments/ctrl.args.option.help.rs"]
+pub mod arg_option_help;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum EArgumentsNames {
@@ -24,12 +26,16 @@ pub trait CtrlArg {
     fn name(&self) -> EArgumentsNames;
     fn value(&self) -> EArgumentsValues;
     fn get_err(&self) -> Option<String>;
+    fn action(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String>;
+    fn get_help(&self) -> String;
 
 }
 
 pub struct CtrlArgs {
     _ctrls: HashMap<EArgumentsNames, Box<dyn CtrlArg>>,
 }
+
+pub type TCleaner = Box<dyn Fn(Vec<String>) -> Vec<String>>;
 
 #[allow(clippy::new_without_default)]
 impl CtrlArgs {
@@ -44,20 +50,24 @@ impl CtrlArgs {
         };
         let mut args: Vec<String> = env::args().collect();
         args.remove(0);
-        let mut _args = arg_option_overwrite::clean(args.clone());
-        _args = arg_option_src::clean(_args);
-        if !_args.is_empty() {
-            println!("Unknown keys: \n\t- {}", _args.join("\n\t- "));
+        let unknown = Self::get_unknown_args(args.clone());
+        
+        if !unknown.is_empty() {
+            println!("Unknown keys/arguments: \n\t- {}", unknown.join("\n\t- "));
             std::process::exit(0);
         }
         let mut ctrls: HashMap<EArgumentsNames, Box<dyn CtrlArg>> = HashMap::new();
+        ctrls.insert(
+            EArgumentsNames::OptionOverwrite, 
+            Box::new(arg_option_help::ArgsOptionHelp::new(&pwd, args.clone(), &ctrls))
+        );
         ctrls.insert(
             EArgumentsNames::OptionOverwrite, 
             Box::new(arg_option_overwrite::ArgsOptionOverwrite::new(&pwd, args.clone(), &ctrls))
         );
         ctrls.insert(
             EArgumentsNames::Files, 
-            Box::new(arg_option_src::ArgsSrcDest::new(&pwd, args.clone(), &ctrls))
+            Box::new(arg_option_files::ArgsOptionFiles::new(&pwd, args, &ctrls))
         );
         CtrlArgs { _ctrls: ctrls }
     }
@@ -74,6 +84,18 @@ impl CtrlArgs {
             Err(())
         } else {
             Ok(())
+        }
+    }
+
+    pub fn actions(&self) -> Result<(), Vec<String>> {
+        let mut errors: Vec<String> = vec![];
+        for ctrl in self._ctrls.values() {
+            if let Err(e) = ctrl.as_ref().action(&self._ctrls) { errors.push(e) }
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
         }
     }
 
@@ -99,6 +121,18 @@ impl CtrlArgs {
         } else {
             Ok(())
         }
+    }
+
+    pub fn get_unknown_args(mut args: Vec<String>) -> Vec<String> {
+        let cleaners: Vec<TCleaner>= vec![
+            Box::new(arg_option_help::get_cleaner()),
+            Box::new(arg_option_overwrite::get_cleaner()),
+            Box::new(arg_option_files::get_cleaner()),
+        ];
+        for cleaner in cleaners {
+            args = cleaner.as_ref()(args);
+        }
+        args
     }
 
 }

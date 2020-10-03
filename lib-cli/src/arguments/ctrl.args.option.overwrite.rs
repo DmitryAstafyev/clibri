@@ -2,6 +2,12 @@ use std::path::{ Path };
 use std::collections::{ HashMap };
 use super::{ CtrlArg, EArgumentsNames, EArgumentsValues };
 
+mod keys {
+    pub const OVERWRITE: &str = "--overwrite";
+    pub const OW: &str = "--ow";
+    pub const O: &str = "--o";
+}
+
 pub struct ArgsOptionOverwrite {
     _overwrite: bool,
 }
@@ -10,7 +16,7 @@ impl CtrlArg for ArgsOptionOverwrite {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
         let mut overwrite: bool = false;
-        if let Some(_) = args.iter().position(|arg| arg == "--overwrite" || arg == "--ow" || arg == "-o") {
+        if args.iter().any(|arg| arg == keys::OVERWRITE || arg == keys::OW || arg == keys::O) {
             overwrite = true;
         }
         ArgsOptionOverwrite { _overwrite: overwrite }
@@ -28,11 +34,21 @@ impl CtrlArg for ArgsOptionOverwrite {
         None
     }
 
+    fn action(&self, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn get_help(&self) -> String {
+        format!("\t{} ({}, {})\t - if key exist, destination files would be overwritten.", keys::OVERWRITE, keys::OW, keys::O)
+    }
+
 }
 
-pub fn clean(mut args: Vec<String>) -> Vec<String> {
-    if let Some(index) = args.iter().position(|arg| arg == "--overwrite" || arg == "--ow" || arg == "-o") {
-        args.remove(index);
+pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
+    move |mut args: Vec<String>| {
+        if let Some(index) = args.iter().position(|arg| arg == keys::OVERWRITE || arg == keys::OW || arg == keys::O) {
+            args.remove(index);
+        }
+        args
     }
-    args
 }
