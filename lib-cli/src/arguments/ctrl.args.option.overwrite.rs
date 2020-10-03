@@ -10,7 +10,7 @@ impl CtrlArg for ArgsOptionOverwrite {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
         let mut overwrite: bool = false;
-        if let Some(_opt_index) = args.iter().position(|arg| arg == "--overwrite" || arg == "--ow" || arg == "-o") {
+        if let Some(_) = args.iter().position(|arg| arg == "--overwrite" || arg == "--ow" || arg == "-o") {
             overwrite = true;
         }
         ArgsOptionOverwrite { _overwrite: overwrite }
@@ -28,4 +28,11 @@ impl CtrlArg for ArgsOptionOverwrite {
         None
     }
 
+}
+
+pub fn clean(mut args: Vec<String>) -> Vec<String> {
+    if let Some(index) = args.iter().position(|arg| arg == "--overwrite" || arg == "--ow" || arg == "-o") {
+        args.remove(index);
+    }
+    args
 }

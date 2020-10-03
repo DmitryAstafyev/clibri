@@ -84,3 +84,31 @@ impl CtrlArg for ArgsSrcDest {
     }
 
 }
+
+pub fn clean(mut args: Vec<String>) -> Vec<String> {
+    if let Some(index) = args.iter().position(|arg| arg == "--source" || arg == "--src" || arg == "-s") {
+        if let Some(_) = args.get(index + 1) {
+            args.remove(index + 1);
+            args.remove(index);
+        } else {
+            args.remove(index);
+        }
+    }
+    if let Some(index) = args.iter().position(|arg| arg == "--destination-rs" || arg == "--dest-rs" || arg == "-rs") {
+        if let Some(_) = args.get(index + 1) {
+            args.remove(index + 1);
+            args.remove(index);
+        } else {
+            args.remove(index);
+        }
+    }
+    if let Some(index) = args.iter().position(|arg| arg == "--destination-ts" || arg == "--dest-ts" || arg == "-ts") {
+        if let Some(_) = args.get(index + 1) {
+            args.remove(index + 1);
+            args.remove(index);
+        } else {
+            args.remove(index);
+        }
+    }
+    args
+}

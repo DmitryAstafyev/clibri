@@ -3,7 +3,7 @@ use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 
 #[path = "./arguments/ctrl.args.src.rs"]
-pub mod arg_src;
+pub mod arg_option_src;
 #[path = "./arguments/ctrl.args.option.overwrite.rs"]
 pub mod arg_option_overwrite;
 
@@ -37,10 +37,19 @@ impl CtrlArgs {
     pub fn new() -> Self {
         let pwd: PathBuf = match env::current_dir() {
             Ok(pwd) => pwd,
-            Err(e) => panic!(format!("Fail to detect pwd folder: {}", e)),
+            Err(e) => {
+                println!("Fail to detect pwd folder: {}", e);
+                std::process::exit(0);
+            },
         };
         let mut args: Vec<String> = env::args().collect();
         args.remove(0);
+        let mut _args = arg_option_overwrite::clean(args.clone());
+        _args = arg_option_src::clean(_args);
+        if !_args.is_empty() {
+            println!("Unknown keys: \n\t- {}", _args.join("\n\t- "));
+            std::process::exit(0);
+        }
         let mut ctrls: HashMap<EArgumentsNames, Box<dyn CtrlArg>> = HashMap::new();
         ctrls.insert(
             EArgumentsNames::OptionOverwrite, 
@@ -48,7 +57,7 @@ impl CtrlArgs {
         );
         ctrls.insert(
             EArgumentsNames::Files, 
-            Box::new(arg_src::ArgsSrcDest::new(&pwd, args, &ctrls))
+            Box::new(arg_option_src::ArgsSrcDest::new(&pwd, args.clone(), &ctrls))
         );
         CtrlArgs { _ctrls: ctrls }
     }
