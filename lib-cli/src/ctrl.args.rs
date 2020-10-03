@@ -14,7 +14,7 @@ pub enum EArgumentsNames {
 }
 
 pub enum EArgumentsValues {
-    Files((PathBuf, PathBuf)),
+    Files((PathBuf, PathBuf, PathBuf)),
     OptionOverwrite(bool),
     Empty(()),
 }
@@ -77,9 +77,10 @@ impl CtrlArgs {
             }
             match ctrl.as_ref().value() {
                 EArgumentsValues::OptionOverwrite(ow) => println!("{:?} = {}", EArgumentsNames::OptionOverwrite, ow),
-                EArgumentsValues::Files((src, dest)) => {
+                EArgumentsValues::Files((src, dest_rs, dest_ts)) => {
                     println!("{:?}: src = {}", EArgumentsNames::Files, src.as_path().display().to_string());
-                    println!("{:?}: dest = {}", EArgumentsNames::Files, dest.as_path().display().to_string());
+                    println!("{:?}: dest_rs = {}", EArgumentsNames::Files, dest_rs.as_path().display().to_string());
+                    println!("{:?}: dest_ts = {}", EArgumentsNames::Files, dest_ts.as_path().display().to_string());
                 },
                 _ => println!("Empty value has been found"),
             }
