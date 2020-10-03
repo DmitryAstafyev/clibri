@@ -80,10 +80,6 @@ impl CtrlArgs {
         } else {
             if let Some(ctrl) = self._ctrls.get(&EArgumentsNames::OptionHelp) {
                 if ctrl.as_ref().is_action_available() {
-                    if let Err(err) = ctrl.as_ref().action(&self._ctrls) {
-                        println!("{}", err);
-                        return Err(());
-                    }
                     return Ok(());
                 }
             }

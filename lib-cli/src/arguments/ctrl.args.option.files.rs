@@ -9,10 +9,10 @@ mod keys {
     pub const S: &str = "--s";
     pub const DESTINATION_RS: &str = "--destination-rs";
     pub const DEST_RS: &str = "--dest-rs";
-    pub const RS: &str = "--rs";
+    pub const RS: &str = "-rs";
     pub const DESTINATION_TS: &str = "--destination-ts";
     pub const DEST_TS: &str = "--dest-ts";
-    pub const TS: &str = "--ts";
+    pub const TS: &str = "-ts";
 }
 
 pub struct ArgsOptionFiles {
