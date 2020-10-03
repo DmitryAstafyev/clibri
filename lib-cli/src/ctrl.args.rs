@@ -48,11 +48,47 @@ impl CtrlArgs {
         );
         ctrls.insert(
             EArgumentsNames::Files, 
-            Box::new(arg_src::ArgsSrcDest::new(&pwd, args.clone(), &ctrls))
+            Box::new(arg_src::ArgsSrcDest::new(&pwd, args, &ctrls))
         );
         CtrlArgs { _ctrls: ctrls }
     }
 
+    pub fn errors(&self) -> Result<(), ()> {
+        let mut errors: bool = false;
+        for ctrl in self._ctrls.values() {
+            if let Some(err) = ctrl.as_ref().get_err() {
+                errors = true;
+                println!("{}", err);
+            }
+        }
+        if errors {
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
 
+    pub fn print(&self) -> Result<(), ()> {
+        let mut errors: bool = false;
+        for ctrl in self._ctrls.values() {
+            if let Some(err) = ctrl.as_ref().get_err() {
+                errors = true;
+                println!("Error: {}", err);
+            }
+            match ctrl.as_ref().value() {
+                EArgumentsValues::OptionOverwrite(ow) => println!("{:?} = {}", EArgumentsNames::OptionOverwrite, ow),
+                EArgumentsValues::Files((src, dest)) => {
+                    println!("{:?}: src = {}", EArgumentsNames::Files, src.as_path().display().to_string());
+                    println!("{:?}: dest = {}", EArgumentsNames::Files, dest.as_path().display().to_string());
+                },
+                _ => println!("Empty value has been found"),
+            }
+        }
+        if errors {
+            Err(())
+        } else {
+            Ok(())
+        }
+    }
 
 }

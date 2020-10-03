@@ -14,34 +14,24 @@ impl CtrlArg for ArgsSrcDest {
         let mut src: Option<PathBuf> = None;
         let mut dest: Option<PathBuf> = None;
         let mut err: Option<String> = None;
-        if args.len() == 2 {
-            if let (Some(arg_str_src), Some(arg_str_dest)) = (args.get(0), args.get(1)) {
+        if let Some(src_index) = args.iter().position(|arg| arg == "--source" || arg == "--src" || arg == "-s") {
+            if let Some(arg_str_src) = args.get(src_index + 1) {
                 src = Some(Path::new(pwd).join(arg_str_src));
-                dest = Some(Path::new(pwd).join(arg_str_dest));
             }
-        } else if let (
-            Some(src_index),
-            Some(dest_index)
-        ) = (
-            args.iter().position(|arg| arg == "--source" || arg == "--src" || arg == "-s"),
-            args.iter().position(|arg| arg == "--destination" || arg == "--dest" || arg == "-d")
-        ) {
-            if let (Some(arg_str_src), Some(arg_str_dest)) = (args.get(src_index), args.get(dest_index)) {
-                src = Some(Path::new(pwd).join(arg_str_src));
+        }
+        if let Some(dest_index) = args.iter().position(|arg| arg == "--destination" || arg == "--dest" || arg == "-d") {
+            if let Some(arg_str_dest) = args.get(dest_index + 1) {
                 dest = Some(Path::new(pwd).join(arg_str_dest));
             }
         }
         if src.is_none() {
             err = Some("Source filename has to be defined. Use key --source (--src or -s) to set source file".to_string());
         } else if dest.is_none() {
-            // Rename source
-            if let Some(src_path_buf) = src.take() {
-                let mut dest_path = src_path_buf;
-                dest_path.push(".rs");
-                dest = Some(dest_path);
+            if let Some(src_path_buf) = src.clone().take() {
+                dest = Some(src_path_buf);
             }
         }
-        if let (Some(src_path_buf), Some(dest_path_buf)) = (src.take(), dest.take()) {
+        if let (Some(src_path_buf), Some(dest_path_buf)) = (src.clone().take(), dest.clone().take()) {
             if !src_path_buf.exists() {
                 err = Some(format!("Source file doesn't exist. Path: {}", src_path_buf.as_path().display().to_string()));
             }
@@ -51,9 +41,14 @@ impl CtrlArg for ArgsSrcDest {
                     overwrite = ow;
                 }
             }
-            if !overwrite && dest_path_buf.exists() {
-                err = Some(format!("File {} already exist. Use key --overwrite (--ow or -o) to overwrite destination file.", dest_path_buf.as_path().display().to_string()));
-            }
+            let dest_path_buf_rs = dest_path_buf.join(".rs");
+            let dest_path_buf_ts = dest_path_buf.join(".ts");
+            if !overwrite && (dest_path_buf_rs.exists() || dest_path_buf_ts.exists()) {
+                err = Some(format!("File(s) already exist. Use key --overwrite (--ow or -o) to overwrite destination file. Files: \n{}\n{}",
+                    dest_path_buf_rs.as_path().display().to_string(),
+                    dest_path_buf_ts.as_path().display().to_string(),
+                ));
+            }            
         }
         ArgsSrcDest { _src: src, _dest: dest, _err: err }
     }
