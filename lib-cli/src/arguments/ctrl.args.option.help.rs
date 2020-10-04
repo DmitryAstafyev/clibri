@@ -16,7 +16,7 @@ impl CtrlArg for ArgsOptionHelp {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
         ArgsOptionHelp { 
-            _requested: if args.iter().any(|arg| arg == keys::HELP || arg == keys::H) { true } else { false }
+            _requested: args.iter().any(|arg| arg == keys::HELP || arg == keys::H)
         }
     }
 
