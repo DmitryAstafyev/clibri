@@ -15,11 +15,9 @@ pub struct ArgsOptionHelp {
 impl CtrlArg for ArgsOptionHelp {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
-        let mut requested: bool = false;
-        if args.iter().any(|arg| arg == keys::HELP || arg == keys::H) {
-            requested = true;
+        ArgsOptionHelp { 
+            _requested: if args.iter().any(|arg| arg == keys::HELP || arg == keys::H) { true } else { false }
         }
-        ArgsOptionHelp { _requested: requested }
     }
 
     fn name(&self) -> EArgumentsNames {

@@ -16,11 +16,9 @@ pub struct ArgsOptionOverwrite {
 impl CtrlArg for ArgsOptionOverwrite {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
-        let mut overwrite: bool = false;
-        if args.iter().any(|arg| arg == keys::OVERWRITE || arg == keys::OW || arg == keys::O) {
-            overwrite = true;
+        ArgsOptionOverwrite {
+            _overwrite: args.iter().any(|arg| arg == keys::OVERWRITE || arg == keys::OW || arg == keys::O)
         }
-        ArgsOptionOverwrite { _overwrite: overwrite }
     }
 
     fn name(&self) -> EArgumentsNames {
