@@ -3,6 +3,8 @@ use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 use super:: { helpers };
 
+#[path = "./parser/parser.rs"]
+pub mod parser;
 #[path = "./arguments/ctrl.args.option.files.rs"]
 pub mod arg_option_files;
 #[path = "./arguments/ctrl.args.option.overwrite.rs"]
