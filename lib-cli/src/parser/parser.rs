@@ -2,6 +2,10 @@ use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 use std::fs;
 use std::str::{Chars};
+use types::{PrimitiveTypes};
+
+#[path = "./parser.types.rs"]
+pub mod types;
 
 enum ENext {
     Word((String, usize)),
