@@ -1,6 +1,25 @@
 pub mod PrimitiveTypes {
 
-    pub mod CTypes {
+    pub enum ETypes {
+        Ebool,
+        Echar,
+        Ei8,
+        Ei16,
+        Ei32,
+        Ei64,
+        Eisize,
+        Eu8,
+        Eu16,
+        Eu32,
+        Eu64,
+        Eusize,
+        Ef32,
+        Ef64,
+        Estr,
+    }
+
+    #[allow(non_upper_case_globals)]
+    pub mod ctypes {
         pub const Tbool: &str = "bool";
         pub const Tchar: &str = "char";
         pub const Ti8: &str = "i8";
@@ -18,28 +37,28 @@ pub mod PrimitiveTypes {
         pub const Tstr: &str = "&str";
     }
 
-    const Available: Vec<&str> = vec![
-        CTypes::Tbool,
-        CTypes::Tchar,
-        CTypes::Ti8,
-        CTypes::Ti16,
-        CTypes::Ti32,
-        CTypes::Ti64,
-        CTypes::Tisize,
-        CTypes::Tu8,
-        CTypes::Tu16,
-        CTypes::Tu32,
-        CTypes::Tu64,
-        CTypes::Tusize,
-        CTypes::Tf32,
-        CTypes::Tf64,
-        CTypes::Tstr,
-    ];
+    pub fn is_valid(str: &str) -> bool {
+        get_entity(str).is_some()
+    }
 
-    pub fn isValid(str: &str) -> bool {
-        match Available.iter().position(|&t| t == str) {
-            Some(_) => true,
-            _ => false,
+    pub fn get_entity(str: &str) -> Option<ETypes> {
+        match str {
+            ctypes::Tbool => Some(ETypes::Ebool),
+            ctypes::Tchar => Some(ETypes::Echar),
+            ctypes::Ti8 => Some(ETypes::Ei8),
+            ctypes::Ti16 => Some(ETypes::Ei16),
+            ctypes::Ti32 => Some(ETypes::Ei32),
+            ctypes::Ti64 => Some(ETypes::Ei64),
+            ctypes::Tisize => Some(ETypes::Eisize),
+            ctypes::Tu8 => Some(ETypes::Eu8),
+            ctypes::Tu16 => Some(ETypes::Eu16),
+            ctypes::Tu32 => Some(ETypes::Eu32),
+            ctypes::Tu64 => Some(ETypes::Eu64),
+            ctypes::Tusize => Some(ETypes::Eusize),
+            ctypes::Tf32 => Some(ETypes::Ef32),
+            ctypes::Tf64 => Some(ETypes::Ef64),
+            ctypes::Tstr => Some(ETypes::Estr),
+            _ => None
         }
     }
 

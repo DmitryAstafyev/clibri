@@ -1,11 +1,15 @@
 use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 use std::fs;
-use std::str::{Chars};
-use types::{PrimitiveTypes};
+use std::str::{ Chars };
+use types::{ PrimitiveTypes };
+use entities::{ Entities };
 
 #[path = "./parser.types.rs"]
 pub mod types;
+
+#[path = "./parser.entities.rs"]
+pub mod entities;
 
 enum ENext {
     Word((String, usize)),
@@ -45,6 +49,11 @@ impl Parser {
                 Ok(enext) => {
                     let offset: usize = match enext {
                         ENext::Word((word, offset)) => {
+                            if let Some(entity) = Entities::get_entity(&word) {
+                                println!("Found entity: {:?}", entity);
+                            } else {
+
+                            }
                             println!("Word: {}", word);
                             offset
                         },
