@@ -26,6 +26,21 @@ enum ENextErr {
     NotSupported(String),
 }
 
+#[derive(Debug)]
+enum EExpectation {
+    Word,
+    EntityDef,
+    StructDef,
+    EnumDef,
+    EnumValue,
+    Type,
+    FieldName,
+    EntityName,
+    EntityOpen,
+    EntityClose,
+    Semicolon,
+}
+
 pub struct Parser {
     _src: PathBuf,
     _rs: PathBuf,
@@ -43,25 +58,54 @@ impl Parser {
             Ok(c) => c,
             Err(e) => return Err(vec![e]),
         };
-        let errs: Vec<String> = vec![];
+        let mut errs: Vec<String> = vec![];
+        let mut expectation: EExpectation = EExpectation::EntityDef;
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
                     let offset: usize = match enext {
                         ENext::Word((word, offset)) => {
-                            if let Some(entity) = Entities::get_entity(&word) {
-                                println!("Found entity: {:?}", entity);
-                            } else {
-
+                            match expectation {
+                                EExpectation::EntityDef => {
+                                    if let Some(entity) = Entities::get_entity(&word) {
+                                        println!("Found entity: {:?}", entity);
+                                        expectation = EExpectation::EntityName;
+                                    } else {
+                                        errs.push(format!("Expecting {:?}. Value {}", EExpectation::EntityDef, word));
+                                        break;
+                                    }
+                                },
+                                EExpectation::EntityName => {
+                                    expectation = EExpectation::EntityOpen;
+                                },
+                                EExpectation::FieldName => {
+                                    expectation = EExpectation::Type;
+                                },
+                                _ => {
+                                    errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
+                                    break;
+                                }
                             }
                             println!("Word: {}", word);
                             offset
                         },
                         ENext::OpenStruct(offset) => {
+                            if let EExpectation::EntityOpen = expectation {
+                                expectation = EExpectation::Word;
+                            } else {
+                                errs.push(format!("Unexpecting next step: {:?}. Value: OpenStruct", expectation));
+                                break;
+                            }
                             println!("open");
                             offset
                         },
                         ENext::CloseStruct(offset) => {
+                            if let EExpectation::EntityClose = expectation {
+
+                            } else {
+                                errs.push(format!("Unexpecting next step: {:?}. Value: CloseStruct", expectation));
+                                break;
+                            }
                             println!("close");
                             offset
                         },
@@ -81,13 +125,16 @@ impl Parser {
                     content = String::from(&content[offset..]);
                 },
                 Err(e) => {
-                    println!("POINT 2");
+                    // errs.push(e);
                     return Err(errs);
                 },
             }
         }
-        Err(vec![])
-        // Ok(())
+        if errs.is_empty() {
+            Ok(())
+        } else {
+            Err(errs)
+        }
     }
 
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
