@@ -91,26 +91,28 @@ impl Parser {
                             offset
                         },
                         ENext::OpenStruct(offset) => {
-                            if is_in(&expectation, &EExpectation::EntityOpen) {
-                                expectation = vec![
-                                    EExpectation::FieldType,
-                                    EExpectation::StructDef,
-                                    EExpectation::EnumDef
-                                ];
-                            } else {
+                            if !is_in(&expectation, &EExpectation::EntityOpen) {
                                 errs.push(format!("Unexpecting next step: {:?}. Value: OpenStruct", expectation));
                                 break;
                             }
+                            expectation = vec![
+                                EExpectation::FieldType,
+                                EExpectation::StructDef,
+                                EExpectation::EnumDef
+                            ];
                             println!("open");
                             offset
                         },
                         ENext::CloseStruct(offset) => {
-                            if is_in(&expectation, &EExpectation::EntityClose) {
-
-                            } else {
+                            if !is_in(&expectation, &EExpectation::EntityClose) {
                                 errs.push(format!("Unexpecting next step: {:?}. Value: CloseStruct", expectation));
                                 break;
                             }
+                            expectation = vec![
+                                EExpectation::FieldType, // Only if it's nested struct
+                                EExpectation::StructDef,
+                                EExpectation::EnumDef
+                            ];
                             println!("close");
                             offset
                         },
