@@ -115,6 +115,10 @@ impl Parser {
                             offset
                         },
                         ENext::Semicolon(offset) => {
+                            if !is_in(&expectation, &EExpectation::Semicolon) {
+                                errs.push(format!("Unexpecting next step: {:?}. Value: Semicolon", expectation));
+                                break;
+                            }
                             expectation = vec![
                                 EExpectation::FieldType,
                                 EExpectation::StructDef,
