@@ -1,5 +1,6 @@
 pub mod PrimitiveTypes {
-
+    
+    #[derive(Debug)]
     pub enum ETypes {
         Ebool,
         Echar,
@@ -34,7 +35,7 @@ pub mod PrimitiveTypes {
         pub const Tusize: &str = "usize";
         pub const Tf32: &str = "f32";
         pub const Tf64: &str = "f64";
-        pub const Tstr: &str = "&str";
+        pub const Tstr: &str = "str";
     }
 
     pub fn is_valid(str: &str) -> bool {

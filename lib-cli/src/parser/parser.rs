@@ -26,14 +26,12 @@ enum ENextErr {
     NotSupported(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum EExpectation {
-    Word,
-    EntityDef,
     StructDef,
     EnumDef,
     EnumValue,
-    Type,
+    FieldType,
     FieldName,
     EntityName,
     EntityOpen,
@@ -54,44 +52,51 @@ impl Parser {
     }
 
     fn parse(&mut self) -> Result<(), Vec<String>> {
+        fn is_in(src: &Vec<EExpectation>, target: &EExpectation) -> bool {
+            src.iter().position(|e| e == target).is_some()
+        }
         let mut content: String = match self.get_content(self._src.clone()) {
             Ok(c) => c,
             Err(e) => return Err(vec![e]),
         };
         let mut errs: Vec<String> = vec![];
-        let mut expectation: EExpectation = EExpectation::EntityDef;
+        let mut expectation: Vec<EExpectation> = vec![EExpectation::StructDef];
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
                     let offset: usize = match enext {
                         ENext::Word((word, offset)) => {
-                            match expectation {
-                                EExpectation::EntityDef => {
-                                    if let Some(entity) = Entities::get_entity(&word) {
-                                        println!("Found entity: {:?}", entity);
-                                        expectation = EExpectation::EntityName;
-                                    } else {
-                                        errs.push(format!("Expecting {:?}. Value {}", EExpectation::EntityDef, word));
-                                        break;
-                                    }
-                                },
-                                EExpectation::EntityName => {
-                                    expectation = EExpectation::EntityOpen;
-                                },
-                                EExpectation::FieldName => {
-                                    expectation = EExpectation::Type;
-                                },
-                                _ => {
-                                    errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
+                            if Entities::get_entity(&word).is_some() && 
+                               (is_in(&expectation, &EExpectation::StructDef) ||
+                                is_in(&expectation, &EExpectation::EnumDef)) {                                    
+                                println!("Found entity: {:?}", Entities::get_entity(&word));
+                                expectation = vec![EExpectation::EntityName];
+                            } else if is_in(&expectation, &EExpectation::EntityName) {
+                                expectation = vec![EExpectation::EntityOpen];
+                            } else if is_in(&expectation, &EExpectation::FieldName) {
+                                expectation = vec![EExpectation::Semicolon];
+                            } else if is_in(&expectation, &EExpectation::FieldType) {
+                                if let Some(primitive) = PrimitiveTypes::get_entity(&word) {
+                                    println!("Found type: {:?}", primitive);
+                                    expectation = vec![EExpectation::FieldName];
+                                } else {
+                                    errs.push(format!("Expecting {:?}. Value {}", EExpectation::FieldType, word));
                                     break;
                                 }
+                            } else {
+                                errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
+                                break;
                             }
                             println!("Word: {}", word);
                             offset
                         },
                         ENext::OpenStruct(offset) => {
-                            if let EExpectation::EntityOpen = expectation {
-                                expectation = EExpectation::Word;
+                            if is_in(&expectation, &EExpectation::EntityOpen) {
+                                expectation = vec![
+                                    EExpectation::FieldType,
+                                    EExpectation::StructDef,
+                                    EExpectation::EnumDef
+                                ];
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value: OpenStruct", expectation));
                                 break;
@@ -100,7 +105,7 @@ impl Parser {
                             offset
                         },
                         ENext::CloseStruct(offset) => {
-                            if let EExpectation::EntityClose = expectation {
+                            if is_in(&expectation, &EExpectation::EntityClose) {
 
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value: CloseStruct", expectation));
@@ -110,7 +115,12 @@ impl Parser {
                             offset
                         },
                         ENext::Semicolon(offset) => {
-                            println!(";");
+                            expectation = vec![
+                                EExpectation::FieldType,
+                                EExpectation::StructDef,
+                                EExpectation::EnumDef,
+                                EExpectation::EntityClose
+                            ];
                             offset
                         },
                         ENext::Space(offset) => {
@@ -125,7 +135,11 @@ impl Parser {
                     content = String::from(&content[offset..]);
                 },
                 Err(e) => {
-                    // errs.push(e);
+                    match e {
+                        ENextErr::NotAscii(msg) => errs.push(format!("ASCII error: {}", msg)),
+                        ENextErr::NotSupported(msg) => errs.push(format!("Not supported char(s) error: {}", msg)),
+                        ENextErr::NumericFirst() => errs.push("Numeric symbols cannot be used as first in names.".to_string()),
+                    };
                     return Err(errs);
                 },
             }
@@ -198,19 +212,24 @@ mod tests {
 
     #[test]
     fn parsing() {
-        let src = Path::new("/Users/dmitry.astafyev/projects/fiber/lib-cli/test/protocol.prot");
-        let ts = Path::new("/Users/dmitry.astafyev/projects/fiber/lib-cli/test/protocol.prot.ts");
-        let rs = Path::new("/Users/dmitry.astafyev/projects/fiber/lib-cli/test/protocol.prot.rs");
-        let mut parser: Parser = Parser::new(src.to_path_buf(), rs.to_path_buf(), ts.to_path_buf());
-        match parser.parse() {
-            Ok(buf) => {
-                assert_eq!(true, true);
-            },
-            Err(e) => {
-                // println!("{}", e);
-                assert_eq!(true, false);
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(path) = exe.as_path().parent() {
+                let src = path.join("../../../test/protocol.prot");
+                let ts = path.join("../../../test/protocol.prot.ts");
+                let rs = path.join("../../../test/protocol.prot.rs");
+                let mut parser: Parser = Parser::new(src.to_path_buf(), rs.to_path_buf(), ts.to_path_buf());
+                match parser.parse() {
+                    Ok(buf) => {
+                        assert_eq!(true, true);
+                    },
+                    Err(e) => {
+                        println!("{}", e[0]);
+                        assert_eq!(true, false);
+                    }
+                }        
             }
         }
+
     }
 
 }
