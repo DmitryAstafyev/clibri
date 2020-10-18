@@ -39,6 +39,37 @@ enum EExpectation {
     Semicolon,
 }
 
+struct PrimitiveField {
+    name: String,
+    kind: String,
+}
+
+enum EnumValue {
+    StringValue(String),
+    NumericValue(usize),
+}
+
+struct EnumItem {
+    name: String,
+    value: EnumValue,
+}
+
+struct Enum {
+    name: String,
+    variants: Vec<EnumItem>,
+}
+struct Struct {
+    fields: Vec<PrimitiveField>,
+    structs: Vec<Struct>,
+    enums: Vec<Enum>,
+}
+
+enum EStructValue {
+    PrimitiveField(PrimitiveField),
+    Struct(Struct),
+    Enum(Enum),
+}
+
 pub struct Parser {
     _src: PathBuf,
     _rs: PathBuf,
@@ -52,8 +83,8 @@ impl Parser {
     }
 
     fn parse(&mut self) -> Result<(), Vec<String>> {
-        fn is_in(src: &Vec<EExpectation>, target: &EExpectation) -> bool {
-            src.iter().position(|e| e == target).is_some()
+        fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
+            src.iter().any(|e| e == target)
         }
         let mut content: String = match self.get_content(self._src.clone()) {
             Ok(c) => c,
@@ -61,6 +92,7 @@ impl Parser {
         };
         let mut errs: Vec<String> = vec![];
         let mut expectation: Vec<EExpectation> = vec![EExpectation::StructDef];
+        let mut structs: HashMap<String, Vec<Struct>> = HashMap::new();
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
