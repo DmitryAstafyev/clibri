@@ -62,12 +62,25 @@ struct Enum {
     name: String,
     variants: Vec<EnumItem>,
 }
+
+impl Enum {
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+}
 struct Struct {
     id: usize,
     parent: usize,
+    name: String,
     fields: Vec<PrimitiveField>,
     structs: Vec<Struct>,
     enums: Vec<Enum>,
+}
+
+impl Struct {
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
 }
 
 enum EStructValue {
@@ -100,6 +113,8 @@ impl Parser {
         let mut expectation: Vec<EExpectation> = vec![EExpectation::StructDef];
         let mut structs: HashMap<usize, Vec<Struct>> = HashMap::new();
         let mut sequence: usize = 0;
+        let mut current_struct: Option<Struct> = None;
+        let mut current_enum: Option<Enum> = None;
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
@@ -109,8 +124,32 @@ impl Parser {
                                (is_in(&expectation, &EExpectation::StructDef) ||
                                 is_in(&expectation, &EExpectation::EnumDef)) {                                    
                                 println!("Found entity: {:?}", Entities::get_entity(&word));
+                                if is_in(&expectation, &EExpectation::StructDef) {
+                                    sequence += 1;
+                                    current_struct = Some(Struct {
+                                        id: sequence.clone(),
+                                        parent: 0,
+                                        name: String::new(),
+                                        fields: vec![],
+                                        enums: vec![],
+                                        structs: vec![],
+                                    });
+                                } else if is_in(&expectation, &EExpectation::EnumDef) {
+                                    sequence += 1;
+                                    current_enum = Some(Enum {
+                                        id: sequence.clone(),
+                                        parent: 0,
+                                        variants: vec![],
+                                        name: String::new(),
+                                    });
+                                }
                                 expectation = vec![EExpectation::EntityName];
                             } else if is_in(&expectation, &EExpectation::EntityName) {
+                                if let Some(val) = current_struct.as_mut() {
+                                    val.set_name(word.clone());
+                                } else if let Some(val) = current_enum.as_mut() {
+                                    val.set_name(word.clone());
+                                }
                                 expectation = vec![EExpectation::EntityOpen];
                             } else if is_in(&expectation, &EExpectation::FieldName) {
                                 expectation = vec![EExpectation::Semicolon];
