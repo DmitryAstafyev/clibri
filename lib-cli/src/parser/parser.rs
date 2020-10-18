@@ -40,6 +40,8 @@ enum EExpectation {
 }
 
 struct PrimitiveField {
+    id: usize,
+    parent: usize,
     name: String,
     kind: String,
 }
@@ -55,10 +57,14 @@ struct EnumItem {
 }
 
 struct Enum {
+    id: usize,
+    parent: usize,
     name: String,
     variants: Vec<EnumItem>,
 }
 struct Struct {
+    id: usize,
+    parent: usize,
     fields: Vec<PrimitiveField>,
     structs: Vec<Struct>,
     enums: Vec<Enum>,
@@ -92,7 +98,8 @@ impl Parser {
         };
         let mut errs: Vec<String> = vec![];
         let mut expectation: Vec<EExpectation> = vec![EExpectation::StructDef];
-        let mut structs: HashMap<String, Vec<Struct>> = HashMap::new();
+        let mut structs: HashMap<usize, Vec<Struct>> = HashMap::new();
+        let mut sequence: usize = 0;
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
