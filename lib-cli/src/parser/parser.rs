@@ -4,12 +4,28 @@ use std::fs;
 use std::str::{ Chars };
 use types::{ PrimitiveTypes };
 use entities::{ Entities };
+use primitives::{ PrimitiveField };
+use enums::{ Enum };
+use structs::{ Struct };
+use store::{ Store };
 
 #[path = "./parser.types.rs"]
 pub mod types;
 
 #[path = "./parser.entities.rs"]
 pub mod entities;
+
+#[path = "./parser.primitive.rs"]
+pub mod primitives;
+
+#[path = "./parser.enum.rs"]
+pub mod enums;
+
+#[path = "./parser.struct.rs"]
+pub mod structs;
+
+#[path = "./parser.store.rs"]
+pub mod store;
 
 enum ENext {
     Word((String, usize)),
@@ -38,222 +54,6 @@ enum EExpectation {
     EntityOpen,
     EntityClose,
     Semicolon,
-}
-
-#[derive(Debug)]
-struct PrimitiveField {
-    id: usize,
-    parent: usize,
-    name: String,
-    kind: String,
-}
-
-impl PrimitiveField {
-
-    pub fn new(id: usize, parent: usize, kind: String) -> Self {
-        PrimitiveField {
-            id,
-            parent,
-            name: String::new(),
-            kind,
-        }
-    }
-
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
-    }
-
-    pub fn set_type(&mut self, kind: PrimitiveTypes::ETypes) {
-        if let Some(primitive) = PrimitiveTypes::get_entity_as_string(kind) {
-            self.kind = primitive;
-        } else {
-            panic!("Unknown type");
-        }
-    }
-
-}
-
-#[derive(Debug)]
-enum EnumValue {
-    StringValue(String),
-    NumericValue(usize),
-}
-
-#[derive(Debug)]
-struct EnumItem {
-    name: String,
-    value: EnumValue,
-}
-
-#[derive(Debug)]
-struct Enum {
-    id: usize,
-    parent: usize,
-    name: String,
-    variants: Vec<EnumItem>,
-}
-
-impl Enum {
-
-    pub fn new(id: usize, parent: usize, name: String) -> Self {
-        Enum {
-            id,
-            parent,
-            name,
-            variants: vec![],
-        }
-    }
-
-}
-
-#[derive(Debug)]
-struct Struct {
-    id: usize,
-    parent: usize,
-    name: String,
-    fields: Vec<PrimitiveField>,
-    structs: Vec<Struct>,
-    enums: Vec<Enum>,
-}
-
-impl Struct {
-
-    pub fn new(id: usize, parent: usize, name: String) -> Self {
-        Struct {
-            id,
-            parent,
-            name,
-            fields: vec![],
-            structs: vec![],
-            enums: vec![],
-        }
-    }
-
-    pub fn find(&mut self, id: usize) -> Option<&mut Struct> {
-        for child in self.structs.iter_mut() {
-            if child.id == id {
-                return Some(child);
-            }
-            if let Some(found) = child.find(id) {
-                return Some(found);
-            }
-        }
-        None
-    }
-
-    pub fn add_field(&mut self, mut field: PrimitiveField) {
-        if self.fields.iter().any(|f| f.name == field.name) {
-            panic!("Fail to add field \"{}\" into \"{}\" because field with same name already exist", field.name, self.name);
-        }
-        field.parent = self.id;
-        self.fields.push(field);
-    }
-
-}
-
-enum EStructValue {
-    PrimitiveField(PrimitiveField),
-    Struct(Struct),
-    Enum(Enum),
-}
-
-#[derive(Debug)]
-pub struct Store {
-    sequence: usize,
-    structs: Vec<Struct>,
-    enums: Vec<Enum>,
-    c_struct: Option<Struct>,
-    c_enum: Option<Enum>,
-    c_field: Option<PrimitiveField>,
-    path: Vec<usize>,
-}
-
-impl Store {
-
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Store {
-            sequence: 0,
-            structs: vec![],
-            enums: vec![],
-            c_struct: None,
-            c_enum: None,
-            c_field: None,
-            path: vec![],
-        }
-    }
-
-    pub fn open_struct(&mut self, name: String) {
-        let mut parent: usize = 0;
-        if let Some(c_struct) = self.c_struct.take() {
-            parent = c_struct.id;
-        }
-        self.sequence += 1;
-        self.c_struct = Some(Struct::new(self.sequence, parent, name));
-        self.path.push(self.sequence);
-    }
-
-    pub fn open_enum(&mut self, name: String) {
-        let mut parent: usize = 0;
-        if let Some(c_struct) = self.c_struct.take() {
-            parent = c_struct.id;
-            self.c_struct = Some(c_struct);
-        }
-        if self.c_enum.is_some() {
-            panic!("Nested enums arn't supported");
-        }
-        self.sequence += 1;
-        self.c_enum = Some(Enum::new(self.sequence, parent, name));
-    }
-
-    pub fn set_field_type(&mut self, type_str: &str) {
-        if self.c_field.is_some() {
-            panic!("Fail to create new field, while previous isn't closed.");
-        }
-        let mut parent: usize = 0;
-        if let Some(c_struct) = self.c_struct.take() {
-            parent = c_struct.id;
-            self.c_struct = Some(c_struct);
-        } else {
-            panic!("Fail to create new field, because no open struct.");
-        }
-        if PrimitiveTypes::get_entity(type_str).is_some() {
-            self.sequence += 1;
-            self.c_field = Some(PrimitiveField::new(self.sequence, parent, type_str.to_string()));
-        } else {
-            panic!("Expecting {:?}. Value {}", EExpectation::FieldType, type_str)
-        }
-    }
-
-    pub fn set_field_name(&mut self, name_str: &str) {
-        if let Some(mut c_struct) = self.c_struct.take() {
-            if let Some(mut c_field) = self.c_field.take() {
-                c_field.set_name(name_str.to_string());
-                c_struct.add_field(c_field);
-                self.c_struct = Some(c_struct);
-                self.c_field = None;
-            } else {
-                panic!("Fail to close field, while it wasn't opened.");
-            }
-        } else {
-            panic!("Fail to close new field, because no open struct.");
-        }
-    }
-
-    pub fn open(&mut self) {
-        if self.c_struct.is_none() && self.c_enum.is_none() {
-            panic!("No created struct or enum");
-        }
-        println!("open");
-    }
-
-    pub fn close(&mut self) {
-        if self.c_struct.is_none() && self.c_enum.is_none() {
-            panic!("No opened struct or enum");
-        }
-        println!("close");
-    }
-
 }
 
 pub struct Parser {
