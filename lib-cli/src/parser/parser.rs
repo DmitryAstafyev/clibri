@@ -33,12 +33,14 @@ enum EExpectation {
     EnumValue,
     FieldType,
     FieldName,
-    EntityName,
+    StructName,
+    EnumName,
     EntityOpen,
     EntityClose,
     Semicolon,
 }
 
+#[derive(Debug)]
 struct PrimitiveField {
     id: usize,
     parent: usize,
@@ -46,16 +48,44 @@ struct PrimitiveField {
     kind: String,
 }
 
+impl PrimitiveField {
+
+    pub fn new(id: usize, parent: usize, kind: String) -> Self {
+        PrimitiveField {
+            id,
+            parent,
+            name: String::new(),
+            kind,
+        }
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    pub fn set_type(&mut self, kind: PrimitiveTypes::ETypes) {
+        if let Some(primitive) = PrimitiveTypes::get_entity_as_string(kind) {
+            self.kind = primitive;
+        } else {
+            panic!("Unknown type");
+        }
+    }
+
+}
+
+#[derive(Debug)]
 enum EnumValue {
     StringValue(String),
     NumericValue(usize),
 }
 
+#[derive(Debug)]
 struct EnumItem {
     name: String,
     value: EnumValue,
 }
 
+#[derive(Debug)]
 struct Enum {
     id: usize,
     parent: usize,
@@ -64,10 +94,19 @@ struct Enum {
 }
 
 impl Enum {
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
+
+    pub fn new(id: usize, parent: usize, name: String) -> Self {
+        Enum {
+            id,
+            parent,
+            name,
+            variants: vec![],
+        }
     }
+
 }
+
+#[derive(Debug)]
 struct Struct {
     id: usize,
     parent: usize,
@@ -78,15 +117,143 @@ struct Struct {
 }
 
 impl Struct {
-    pub fn set_name(&mut self, name: String) {
-        self.name = name;
+
+    pub fn new(id: usize, parent: usize, name: String) -> Self {
+        Struct {
+            id,
+            parent,
+            name,
+            fields: vec![],
+            structs: vec![],
+            enums: vec![],
+        }
     }
+
+    pub fn find(&mut self, id: usize) -> Option<&mut Struct> {
+        for child in self.structs.iter_mut() {
+            if child.id == id {
+                return Some(child);
+            }
+            if let Some(found) = child.find(id) {
+                return Some(found);
+            }
+        }
+        None
+    }
+
+    pub fn add_field(&mut self, mut field: PrimitiveField) {
+        if self.fields.iter().any(|f| f.name == field.name) {
+            panic!("Fail to add field \"{}\" into \"{}\" because field with same name already exist", field.name, self.name);
+        }
+        field.parent = self.id;
+        self.fields.push(field);
+    }
+
 }
 
 enum EStructValue {
     PrimitiveField(PrimitiveField),
     Struct(Struct),
     Enum(Enum),
+}
+
+#[derive(Debug)]
+pub struct Store {
+    sequence: usize,
+    structs: Vec<Struct>,
+    enums: Vec<Enum>,
+    c_struct: Option<Struct>,
+    c_enum: Option<Enum>,
+    c_field: Option<PrimitiveField>,
+    path: Vec<usize>,
+}
+
+impl Store {
+
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Store {
+            sequence: 0,
+            structs: vec![],
+            enums: vec![],
+            c_struct: None,
+            c_enum: None,
+            c_field: None,
+            path: vec![],
+        }
+    }
+
+    pub fn open_struct(&mut self, name: String) {
+        let mut parent: usize = 0;
+        if let Some(c_struct) = self.c_struct.take() {
+            parent = c_struct.id;
+        }
+        self.sequence += 1;
+        self.c_struct = Some(Struct::new(self.sequence, parent, name));
+        self.path.push(self.sequence);
+    }
+
+    pub fn open_enum(&mut self, name: String) {
+        let mut parent: usize = 0;
+        if let Some(c_struct) = self.c_struct.take() {
+            parent = c_struct.id;
+            self.c_struct = Some(c_struct);
+        }
+        if self.c_enum.is_some() {
+            panic!("Nested enums arn't supported");
+        }
+        self.sequence += 1;
+        self.c_enum = Some(Enum::new(self.sequence, parent, name));
+    }
+
+    pub fn set_field_type(&mut self, type_str: &str) {
+        if self.c_field.is_some() {
+            panic!("Fail to create new field, while previous isn't closed.");
+        }
+        let mut parent: usize = 0;
+        if let Some(c_struct) = self.c_struct.take() {
+            parent = c_struct.id;
+            self.c_struct = Some(c_struct);
+        } else {
+            panic!("Fail to create new field, because no open struct.");
+        }
+        if PrimitiveTypes::get_entity(type_str).is_some() {
+            self.sequence += 1;
+            self.c_field = Some(PrimitiveField::new(self.sequence, parent, type_str.to_string()));
+        } else {
+            panic!("Expecting {:?}. Value {}", EExpectation::FieldType, type_str)
+        }
+    }
+
+    pub fn set_field_name(&mut self, name_str: &str) {
+        if let Some(mut c_struct) = self.c_struct.take() {
+            if let Some(mut c_field) = self.c_field.take() {
+                c_field.set_name(name_str.to_string());
+                c_struct.add_field(c_field);
+                self.c_struct = Some(c_struct);
+                self.c_field = None;
+            } else {
+                panic!("Fail to close field, while it wasn't opened.");
+            }
+        } else {
+            panic!("Fail to close new field, because no open struct.");
+        }
+    }
+
+    pub fn open(&mut self) {
+        if self.c_struct.is_none() && self.c_enum.is_none() {
+            panic!("No created struct or enum");
+        }
+        println!("open");
+    }
+
+    pub fn close(&mut self) {
+        if self.c_struct.is_none() && self.c_enum.is_none() {
+            panic!("No opened struct or enum");
+        }
+        println!("close");
+    }
+
 }
 
 pub struct Parser {
@@ -111,56 +278,32 @@ impl Parser {
         };
         let mut errs: Vec<String> = vec![];
         let mut expectation: Vec<EExpectation> = vec![EExpectation::StructDef];
-        let mut structs: HashMap<usize, Vec<Struct>> = HashMap::new();
-        let mut sequence: usize = 0;
-        let mut current_struct: Option<Struct> = None;
-        let mut current_enum: Option<Enum> = None;
+        let mut store: Store = Store::new();
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
                     let offset: usize = match enext {
                         ENext::Word((word, offset)) => {
                             if Entities::get_entity(&word).is_some() && 
-                               (is_in(&expectation, &EExpectation::StructDef) ||
-                                is_in(&expectation, &EExpectation::EnumDef)) {                                    
+                               (is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
                                 println!("Found entity: {:?}", Entities::get_entity(&word));
                                 if is_in(&expectation, &EExpectation::StructDef) {
-                                    sequence += 1;
-                                    current_struct = Some(Struct {
-                                        id: sequence.clone(),
-                                        parent: 0,
-                                        name: String::new(),
-                                        fields: vec![],
-                                        enums: vec![],
-                                        structs: vec![],
-                                    });
+                                    expectation = vec![EExpectation::StructName];
                                 } else if is_in(&expectation, &EExpectation::EnumDef) {
-                                    sequence += 1;
-                                    current_enum = Some(Enum {
-                                        id: sequence.clone(),
-                                        parent: 0,
-                                        variants: vec![],
-                                        name: String::new(),
-                                    });
+                                    expectation = vec![EExpectation::EnumName];
                                 }
-                                expectation = vec![EExpectation::EntityName];
-                            } else if is_in(&expectation, &EExpectation::EntityName) {
-                                if let Some(val) = current_struct.as_mut() {
-                                    val.set_name(word.clone());
-                                } else if let Some(val) = current_enum.as_mut() {
-                                    val.set_name(word.clone());
-                                }
+                            } else if is_in(&expectation, &EExpectation::StructName) {
+                                store.open_struct(word.to_string());
+                                expectation = vec![EExpectation::EntityOpen];
+                            } else if is_in(&expectation, &EExpectation::EnumName) {
+                                store.open_enum(word.to_string());
                                 expectation = vec![EExpectation::EntityOpen];
                             } else if is_in(&expectation, &EExpectation::FieldName) {
+                                store.set_field_name(&word);
                                 expectation = vec![EExpectation::Semicolon];
                             } else if is_in(&expectation, &EExpectation::FieldType) {
-                                if let Some(primitive) = PrimitiveTypes::get_entity(&word) {
-                                    println!("Found type: {:?}", primitive);
-                                    expectation = vec![EExpectation::FieldName];
-                                } else {
-                                    errs.push(format!("Expecting {:?}. Value {}", EExpectation::FieldType, word));
-                                    break;
-                                }
+                                store.set_field_type(&word);
+                                expectation = vec![EExpectation::FieldName];
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
                                 break;
@@ -178,7 +321,7 @@ impl Parser {
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef
                             ];
-                            println!("open");
+                            store.open();
                             offset
                         },
                         ENext::CloseStruct(offset) => {
@@ -191,7 +334,7 @@ impl Parser {
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef
                             ];
-                            println!("close");
+                            store.close();
                             offset
                         },
                         ENext::Semicolon(offset) => {
@@ -229,6 +372,7 @@ impl Parser {
             }
         }
         if errs.is_empty() {
+            println!("{:?}", store);
             Ok(())
         } else {
             Err(errs)
@@ -304,7 +448,7 @@ mod tests {
                 let mut parser: Parser = Parser::new(src.to_path_buf(), rs.to_path_buf(), ts.to_path_buf());
                 match parser.parse() {
                     Ok(buf) => {
-                        assert_eq!(true, true);
+                        assert_eq!(true, false);
                     },
                     Err(e) => {
                         println!("{}", e[0]);

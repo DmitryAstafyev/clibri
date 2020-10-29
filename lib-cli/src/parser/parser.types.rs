@@ -63,4 +63,25 @@ pub mod PrimitiveTypes {
         }
     }
 
+    pub fn get_entity_as_string(kind: ETypes) -> Option<String> {
+        match kind {
+            ETypes::Ebool => Some(ctypes::Tbool.to_string()),
+            ETypes::Echar => Some(ctypes::Tchar.to_string()),
+            ETypes::Ei8 => Some(ctypes::Ti8.to_string()),
+            ETypes::Ei16 => Some(ctypes::Ti16.to_string()),
+            ETypes::Ei32 => Some(ctypes::Ti32.to_string()),
+            ETypes::Ei64 => Some(ctypes::Ti64.to_string()),
+            ETypes::Eisize => Some(ctypes::Tisize.to_string()),
+            ETypes::Eu8 => Some(ctypes::Tu8.to_string()),
+            ETypes::Eu16 => Some(ctypes::Tu16.to_string()),
+            ETypes::Eu32 => Some(ctypes::Tu32.to_string()),
+            ETypes::Eu64 => Some(ctypes::Tu64.to_string()),
+            ETypes::Eusize => Some(ctypes::Tusize.to_string()),
+            ETypes::Ef32 => Some(ctypes::Tf32.to_string()),
+            ETypes::Ef64 => Some(ctypes::Tf64.to_string()),
+            ETypes::Estr => Some(ctypes::Tstr.to_string()),
+            _ => None
+        }
+    }
+
 }
