@@ -14,6 +14,7 @@ pub struct Field {
     pub kind: String,
     pub ref_type: Option<EReferenceToType>,
     pub ref_type_id: Option<usize>,
+    pub repeated: bool,
 }
 
 impl Field {
@@ -26,6 +27,7 @@ impl Field {
             kind,
             ref_type: None,
             ref_type_id: None,
+            repeated: false,
         }
     }
 
@@ -44,6 +46,10 @@ impl Field {
     pub fn set_type_ref(&mut self, ref_type: EReferenceToType, ref_type_id: usize) {
         self.ref_type = Some(ref_type);
         self.ref_type_id = Some(ref_type_id);
+    }
+
+    pub fn set_as_repeated(&mut self) {
+        self.repeated = true;
     }
 
 }

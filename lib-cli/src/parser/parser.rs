@@ -33,6 +33,7 @@ enum ENext {
     CloseStruct(usize),
     Semicolon(usize),
     Space(usize),
+    Repeated(usize),
     End(),
 }
 
@@ -49,6 +50,7 @@ enum EExpectation {
     EnumValue,
     FieldType,
     FieldName,
+    FieldRepeatedMark,
     StructName,
     EnumName,
     EntityOpen,
@@ -126,7 +128,10 @@ impl Parser {
                                     expectation = vec![EExpectation::Semicolon];
                                 } else {
                                     store.set_field_type(&word);
-                                    expectation = vec![EExpectation::FieldName];
+                                    expectation = vec![
+                                        EExpectation::FieldName,
+                                        EExpectation::FieldRepeatedMark,
+                                    ];
                                 }
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
@@ -181,6 +186,15 @@ impl Parser {
                             println!("space");
                             offset
                         },
+                        ENext::Repeated(offset) => {
+                            if !is_in(&expectation, &EExpectation::FieldRepeatedMark) {
+                                errs.push(format!("Unexpecting next step: {:?}. Value: RepeatedMark", expectation));
+                                break;
+                            }
+                            expectation = vec![EExpectation::FieldName];
+                            store.set_field_type_as_repeated();
+                            offset
+                        },
                         ENext::End() => {
                             println!("end");
                             break;
@@ -210,6 +224,7 @@ impl Parser {
         let mut str: String = String::new();
         let mut pass: usize = 0;
         let break_chars: Vec<char> = vec![';', '{', '}'];
+        let special_chars: Vec<char> = vec!['[', ']'];
         let allowed_chars: Vec<char> = vec!['_'];
         for char in content.chars() {
             pass += 1;
@@ -222,12 +237,33 @@ impl Parser {
             if char.is_ascii_whitespace() && str.is_empty() {
                 continue;
             }
-            let breakable: bool = break_chars.iter().any(|&c| c == char);
+            let mut breakable: bool = break_chars.iter().any(|&c| c == char);
             if breakable && str.is_empty() {
                 match char {
                     ';' => return Ok(ENext::Semicolon(pass)),
                     '{' => return Ok(ENext::OpenStruct(pass)),
                     '}' => return Ok(ENext::CloseStruct(pass)),
+                    _ => {}
+                };
+            }
+            let special: bool = special_chars.iter().any(|&c| c == char);
+            if special {
+                match char {
+                    '[' => {
+                        if !str.is_empty() {
+                            breakable = true;
+                        } else {
+                            continue;
+                        }
+                    },
+                    ']' => {
+                        if let Some(c) = str.chars().next() {
+                            if c != '[' {
+                                return Err(ENextErr::NotSupported(format!("found not supportable char: {}", char)))
+                            }
+                        }
+                        return Ok(ENext::Repeated(pass));
+                    },
                     _ => {}
                 };
             }

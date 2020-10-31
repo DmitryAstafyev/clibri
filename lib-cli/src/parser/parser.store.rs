@@ -74,6 +74,15 @@ impl Store {
         }
     }
 
+    pub fn set_field_type_as_repeated(&mut self) {
+        if let Some(mut c_field) = self.c_field.take() {
+            c_field.set_as_repeated();
+            self.c_field = Some(c_field);
+        } else {
+            panic!("Fail to close field, while it wasn't opened.");
+        }
+    }
+
     pub fn set_field_name(&mut self, name_str: &str) {
         if let Some(mut c_struct) = self.c_struct.take() {
             if let Some(mut c_field) = self.c_field.take() {

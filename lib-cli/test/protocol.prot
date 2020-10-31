@@ -9,7 +9,7 @@ struct StructName {
     Ways way;
 }
 struct User {
-    str name;
+    str[] username;
     str email;
 }
 struct Login {
