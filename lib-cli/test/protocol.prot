@@ -6,4 +6,12 @@ struct StructName {
         WayB;
         WayC;
     }
+    Ways way;
+}
+struct User {
+    str name;
+    str email;
+}
+struct Login {
+    User user;
 }

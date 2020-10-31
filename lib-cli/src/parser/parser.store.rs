@@ -1,4 +1,4 @@
-use super::{ PrimitiveField, Enum, Struct, PrimitiveTypes };
+use super::{ Field, Enum, Struct, PrimitiveTypes, EReferenceToType };
 
 #[derive(Debug)]
 pub struct Store {
@@ -7,7 +7,7 @@ pub struct Store {
     enums: Vec<Enum>,
     c_struct: Option<Struct>,
     c_enum: Option<Enum>,
-    c_field: Option<PrimitiveField>,
+    c_field: Option<Field>,
     path: Vec<usize>,
 }
 
@@ -60,9 +60,17 @@ impl Store {
         }
         if PrimitiveTypes::get_entity(type_str).is_some() {
             self.sequence += 1;
-            self.c_field = Some(PrimitiveField::new(self.sequence, 0, type_str.to_string()));
+            self.c_field = Some(Field::new(self.sequence, 0, type_str.to_string()));
         } else {
-            panic!("Expecting type definition but has been gotten value {}", type_str)
+            let mut c_field = Field::new(self.sequence, 0, type_str.to_string());
+            if let Some(enum_ref) = self.enums.iter().find(|i| i.name == type_str) {
+                c_field.set_type_ref(EReferenceToType::Enum, enum_ref.id);
+            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str) {
+                c_field.set_type_ref(EReferenceToType::Struct, struct_ref.id);
+            } else {
+                panic!("Expecting type definition but has been gotten value {}", type_str)
+            }
+            self.c_field = Some(c_field);
         }
     }
 

@@ -1,21 +1,31 @@
 use super::{ PrimitiveTypes };
 
 #[derive(Debug)]
-pub struct PrimitiveField {
+pub enum EReferenceToType {
+    Struct,
+    Enum,
+}
+
+#[derive(Debug)]
+pub struct Field {
     pub id: usize,
     pub parent: usize,
     pub name: String,
     pub kind: String,
+    pub ref_type: Option<EReferenceToType>,
+    pub ref_type_id: Option<usize>,
 }
 
-impl PrimitiveField {
+impl Field {
 
     pub fn new(id: usize, parent: usize, kind: String) -> Self {
-        PrimitiveField {
+        Field {
             id,
             parent,
             name: String::new(),
             kind,
+            ref_type: None,
+            ref_type_id: None,
         }
     }
 
@@ -29,6 +39,11 @@ impl PrimitiveField {
         } else {
             panic!("Unknown type");
         }
+    }
+
+    pub fn set_type_ref(&mut self, ref_type: EReferenceToType, ref_type_id: usize) {
+        self.ref_type = Some(ref_type);
+        self.ref_type_id = Some(ref_type_id);
     }
 
 }

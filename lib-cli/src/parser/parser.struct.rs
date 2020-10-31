@@ -1,11 +1,11 @@
-use super::{ PrimitiveField, Enum };
+use super::{ Field, Enum };
 
 #[derive(Debug)]
 pub struct Struct {
     pub id: usize,
     pub parent: usize,
     pub name: String,
-    pub fields: Vec<PrimitiveField>,
+    pub fields: Vec<Field>,
     pub structs: Vec<usize>,
     pub enums: Vec<usize>,
 }
@@ -23,7 +23,7 @@ impl Struct {
         }
     }
 
-    pub fn add_field(&mut self, mut field: PrimitiveField) {
+    pub fn add_field(&mut self, mut field: Field) {
         if self.fields.iter().any(|f| f.name == field.name) {
             panic!("Fail to add field \"{}\" into \"{}\" because field with same name already exist", field.name, self.name);
         }

@@ -4,7 +4,7 @@ use std::fs;
 use std::str::{ Chars };
 use types::{ PrimitiveTypes };
 use entities::{ Entities };
-use primitives::{ PrimitiveField };
+use fields::{ Field, EReferenceToType };
 use enums::{ Enum };
 use structs::{ Struct };
 use store::{ Store };
@@ -15,8 +15,8 @@ pub mod types;
 #[path = "./parser.entities.rs"]
 pub mod entities;
 
-#[path = "./parser.primitive.rs"]
-pub mod primitives;
+#[path = "./parser.field.rs"]
+pub mod fields;
 
 #[path = "./parser.enum.rs"]
 pub mod enums;
