@@ -1,4 +1,9 @@
 struct StructName {
     u8 age;
     str name;
+    enum Ways {
+        WayA;
+        WayB;
+        WayC;
+    }
 }

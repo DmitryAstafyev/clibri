@@ -15,7 +15,7 @@ pub struct Enum {
     pub id: usize,
     pub parent: usize,
     pub name: String,
-    pub variants: Vec<EnumItem>,
+    pub variants: Vec<String>,
 }
 
 impl Enum {
@@ -27,6 +27,13 @@ impl Enum {
             name,
             variants: vec![],
         }
+    }
+
+    pub fn add(&mut self, val: String) {
+        if self.variants.iter().any(|i| i.trim() == val.trim()) {
+            panic!("Enum item \"{}\" is already defined", val);
+        }
+        self.variants.push(val);
     }
 
 }

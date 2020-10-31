@@ -6,8 +6,8 @@ pub struct Struct {
     pub parent: usize,
     pub name: String,
     pub fields: Vec<PrimitiveField>,
-    pub structs: Vec<Struct>,
-    pub enums: Vec<Enum>,
+    pub structs: Vec<usize>,
+    pub enums: Vec<usize>,
 }
 
 impl Struct {
@@ -23,24 +23,20 @@ impl Struct {
         }
     }
 
-    pub fn find(&mut self, id: usize) -> Option<&mut Struct> {
-        for child in self.structs.iter_mut() {
-            if child.id == id {
-                return Some(child);
-            }
-            if let Some(found) = child.find(id) {
-                return Some(found);
-            }
-        }
-        None
-    }
-
     pub fn add_field(&mut self, mut field: PrimitiveField) {
         if self.fields.iter().any(|f| f.name == field.name) {
             panic!("Fail to add field \"{}\" into \"{}\" because field with same name already exist", field.name, self.name);
         }
         field.parent = self.id;
         self.fields.push(field);
+    }
+
+    pub fn bind_struct(&mut self, id: usize) {
+        self.structs.push(id);
+    }
+
+    pub fn bind_enum(&mut self, id: usize) {
+        self.enums.push(id);
     }
 
 }

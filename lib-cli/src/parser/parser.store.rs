@@ -28,10 +28,12 @@ impl Store {
 
     pub fn open_struct(&mut self, name: String) {
         let mut parent: usize = 0;
-        if let Some(c_struct) = self.c_struct.take() {
-            parent = c_struct.id;
-        }
         self.sequence += 1;
+        if let Some(mut c_struct) = self.c_struct.take() {
+            parent = c_struct.id;
+            c_struct.bind_struct(self.sequence);
+            self.structs.push(c_struct);
+        }
         self.c_struct = Some(Struct::new(self.sequence, parent, name));
         self.path.push(self.sequence);
     }
@@ -79,6 +81,19 @@ impl Store {
         }
     }
 
+    pub fn set_enum_value(&mut self, val: &str) {
+        if let Some(mut c_enum) = self.c_enum.take() {
+            c_enum.add(val.to_string());
+            self.c_enum = Some(c_enum);
+        } else {
+            panic!("Fail to add enum value because enum isn't opened");
+        }
+    }
+
+    pub fn is_enum_opened(&mut self) -> bool {
+        self.c_enum.is_some()
+    }
+
     pub fn open(&mut self) {
         if self.c_struct.is_none() && self.c_enum.is_none() {
             panic!("No created struct or enum");
@@ -90,7 +105,20 @@ impl Store {
         if self.c_struct.is_none() && self.c_enum.is_none() {
             panic!("No opened struct or enum");
         }
-        println!("close");
+        if let Some(c_enum) = self.c_enum.take() {
+            self.enums.push(c_enum);
+            self.c_enum = None;
+        } else if let Some(c_struct) = self.c_struct.take() {
+            self.structs.push(c_struct);
+            self.path.remove(self.path.len() - 1);
+            if self.path.is_empty() {
+                self.c_struct = None;
+            } else if let Some(pos) = self.structs.iter().position(|s| s.id == self.path[self.path.len() - 1]) {
+                self.c_struct = Some(self.structs.remove(pos));
+            } else {
+                panic!("Cannot find struct from path");
+            }
+        }
     }
 
 }

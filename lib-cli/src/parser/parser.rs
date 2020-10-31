@@ -87,6 +87,25 @@ impl Parser {
                             if Entities::get_entity(&word).is_some() && 
                                (is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
                                 println!("Found entity: {:?}", Entities::get_entity(&word));
+                                match Entities::get_entity(&word) {
+                                    Some(Entities::EEntities::EStruct) => {
+                                        if is_in(&expectation, &EExpectation::StructDef) {
+                                            expectation = vec![EExpectation::StructName];
+                                        } else {
+                                            panic!("Has been gotten Struct Def, but expections is {:?}", expectation);
+                                        }
+                                    },
+                                    Some(Entities::EEntities::EEnum) => {
+                                        if is_in(&expectation, &EExpectation::EnumDef) {
+                                            expectation = vec![EExpectation::EnumName];
+                                        } else {
+                                            panic!("Has been gotten Enum Def, but expections is {:?}", expectation);
+                                        }
+                                    },
+                                    None => {
+                                        panic!("Has been gotten unkonwn definition {:?}", Entities::get_entity(&word));
+                                    }
+                                };
                                 if is_in(&expectation, &EExpectation::StructDef) {
                                     expectation = vec![EExpectation::StructName];
                                 } else if is_in(&expectation, &EExpectation::EnumDef) {
@@ -102,8 +121,13 @@ impl Parser {
                                 store.set_field_name(&word);
                                 expectation = vec![EExpectation::Semicolon];
                             } else if is_in(&expectation, &EExpectation::FieldType) {
-                                store.set_field_type(&word);
-                                expectation = vec![EExpectation::FieldName];
+                                if store.is_enum_opened() {
+                                    store.set_enum_value(&word);
+                                    expectation = vec![EExpectation::Semicolon];
+                                } else {
+                                    store.set_field_type(&word);
+                                    expectation = vec![EExpectation::FieldName];
+                                }
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
                                 break;
@@ -119,7 +143,8 @@ impl Parser {
                             expectation = vec![
                                 EExpectation::FieldType,
                                 EExpectation::StructDef,
-                                EExpectation::EnumDef
+                                EExpectation::EnumDef,
+                                EExpectation::EnumValue,
                             ];
                             store.open();
                             offset
@@ -132,7 +157,8 @@ impl Parser {
                             expectation = vec![
                                 EExpectation::FieldType, // Only if it's nested struct
                                 EExpectation::StructDef,
-                                EExpectation::EnumDef
+                                EExpectation::EnumDef,
+                                EExpectation::EntityClose
                             ];
                             store.close();
                             offset
@@ -146,6 +172,7 @@ impl Parser {
                                 EExpectation::FieldType,
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef,
+                                EExpectation::EnumValue,
                                 EExpectation::EntityClose
                             ];
                             offset
