@@ -35,6 +35,7 @@ enum ENext {
     Semicolon(usize),
     Space(usize),
     Repeated(usize),
+    Optional(usize),
     End(),
 }
 
@@ -54,6 +55,7 @@ enum EExpectation {
     FieldType,
     FieldName,
     FieldRepeatedMark,
+    FieldOptionalMark,
     StructName,
     EnumName,
     EnumItemValue,
@@ -137,7 +139,10 @@ impl Parser {
                                     ];
                                 } else {
                                     store.set_field_name(&word);
-                                    expectation = vec![EExpectation::Semicolon];
+                                    expectation = vec![
+                                        EExpectation::Semicolon,
+                                        EExpectation::FieldOptionalMark,
+                                    ];
                                 }
                             } else if is_in(&expectation, &EExpectation::FieldType) {
                                 if store.is_enum_opened() {
@@ -213,6 +218,9 @@ impl Parser {
                                 errs.push(format!("Unexpecting next step: {:?}. Value: Semicolon", expectation));
                                 break;
                             }
+                            if !store.is_enum_opened() {
+                                store.close_field();
+                            }
                             expectation = vec![
                                 EExpectation::FieldType,
                                 EExpectation::StructDef,
@@ -228,11 +236,20 @@ impl Parser {
                         },
                         ENext::Repeated(offset) => {
                             if !is_in(&expectation, &EExpectation::FieldRepeatedMark) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: RepeatedMark", expectation));
+                                errs.push(format!("Unexpecting next step: {:?}. Value: FieldRepeatedMark", expectation));
                                 break;
                             }
                             expectation = vec![EExpectation::FieldName];
                             store.set_field_type_as_repeated();
+                            offset
+                        },
+                        ENext::Optional(offset) => {
+                            if !is_in(&expectation, &EExpectation::FieldOptionalMark) {
+                                errs.push(format!("Unexpecting next step: {:?}. Value: FieldOptionalMark", expectation));
+                                break;
+                            }
+                            expectation = vec![EExpectation::Semicolon];
+                            store.set_field_type_as_optional();
                             offset
                         },
                         ENext::End() => {
@@ -263,7 +280,7 @@ impl Parser {
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
         let mut str: String = String::new();
         let mut pass: usize = 0;
-        let break_chars: Vec<char> = vec![';', '{', '}', '='];
+        let break_chars: Vec<char> = vec![';', '{', '}', '=', '?'];
         let special_chars: Vec<char> = vec!['[', ']'];
         let allowed_chars: Vec<char> = vec!['_'];
         let mut num_first_allowed: bool = false;
@@ -291,6 +308,7 @@ impl Parser {
                     '{' => return Ok(ENext::OpenStruct(pass)),
                     '}' => return Ok(ENext::CloseStruct(pass)),
                     '=' => return Ok(ENext::OpenValue(pass)),
+                    '?' => return Ok(ENext::Optional(pass)),
                     _ => {}
                 };
             }

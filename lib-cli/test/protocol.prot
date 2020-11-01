@@ -26,7 +26,7 @@ enum UserType {
 }
 struct User {
     str[] username;
-    str email;
+    str email?;
     UserType type;
 }
 struct Login {

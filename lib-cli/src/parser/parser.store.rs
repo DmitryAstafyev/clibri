@@ -79,14 +79,34 @@ impl Store {
             c_field.set_as_repeated();
             self.c_field = Some(c_field);
         } else {
-            panic!("Fail to close field, while it wasn't opened.");
+            panic!("Fail to set field as repeated, because it wasn't opened.");
+        }
+    }
+
+    pub fn set_field_type_as_optional(&mut self) {
+        if let Some(mut c_field) = self.c_field.take() {
+            c_field.set_as_optional();
+            self.c_field = Some(c_field);
+        } else {
+            panic!("Fail to set field as optional, because it wasn't opened.");
         }
     }
 
     pub fn set_field_name(&mut self, name_str: &str) {
+        if self.c_struct.is_none() {
+            panic!("Fail to set name of field, because no open struct.");
+        }
+        if let Some(mut c_field) = self.c_field.take() {
+            c_field.set_name(name_str.to_string());
+            self.c_field = Some(c_field);
+        } else {
+            panic!("Fail to set name of field, while it wasn't opened.");
+        }
+    }
+
+    pub fn close_field(&mut self) {
         if let Some(mut c_struct) = self.c_struct.take() {
-            if let Some(mut c_field) = self.c_field.take() {
-                c_field.set_name(name_str.to_string());
+            if let Some(c_field) = self.c_field.take() {
                 c_struct.add_field(c_field);
                 self.c_struct = Some(c_struct);
                 self.c_field = None;

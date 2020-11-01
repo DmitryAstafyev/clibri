@@ -15,6 +15,7 @@ pub struct Field {
     pub ref_type: Option<EReferenceToType>,
     pub ref_type_id: Option<usize>,
     pub repeated: bool,
+    pub optional: bool,
 }
 
 impl Field {
@@ -28,6 +29,7 @@ impl Field {
             ref_type: None,
             ref_type_id: None,
             repeated: false,
+            optional: false,
         }
     }
 
@@ -50,6 +52,10 @@ impl Field {
 
     pub fn set_as_repeated(&mut self) {
         self.repeated = true;
+    }
+
+    pub fn set_as_optional(&mut self) {
+        self.optional = true;
     }
 
 }
