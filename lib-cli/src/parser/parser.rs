@@ -27,10 +27,12 @@ pub mod structs;
 #[path = "./parser.store.rs"]
 pub mod store;
 
+#[derive(Debug, Clone)]
 enum ENext {
-    Word((String, usize)),
+    Word((String, usize, Option<char>)),
     OpenStruct(usize),
     CloseStruct(usize),
+    OpenValue(usize),
     Semicolon(usize),
     Space(usize),
     Repeated(usize),
@@ -53,6 +55,8 @@ enum EExpectation {
     FieldRepeatedMark,
     StructName,
     EnumName,
+    EnumItemValue,
+    OpenValue,
     EntityOpen,
     EntityClose,
     Semicolon,
@@ -62,12 +66,13 @@ pub struct Parser {
     _src: PathBuf,
     _rs: PathBuf,
     _ts: PathBuf,
+    _prev: Option<ENext>,
 }
 
 impl Parser {
 
     fn new(src: PathBuf, rs: PathBuf, ts: PathBuf) -> Parser {
-        Parser { _src: src, _rs: rs, _ts: ts }
+        Parser { _src: src, _rs: rs, _ts: ts, _prev: None }
     }
 
     fn parse(&mut self) -> Result<(), Vec<String>> {
@@ -84,8 +89,10 @@ impl Parser {
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
+                    self._prev = Some(enext.clone());
                     let offset: usize = match enext {
-                        ENext::Word((word, offset)) => {
+                        ENext::Word((word, offset, next_char)) => {
+                            let next_char: char = if let Some(c) = next_char { c } else { '.' };
                             if Entities::get_entity(&word).is_some() && 
                                (is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
                                 println!("Found entity: {:?}", Entities::get_entity(&word));
@@ -120,18 +127,38 @@ impl Parser {
                                 store.open_enum(word.to_string());
                                 expectation = vec![EExpectation::EntityOpen];
                             } else if is_in(&expectation, &EExpectation::FieldName) {
-                                store.set_field_name(&word);
-                                expectation = vec![EExpectation::Semicolon];
+                                if store.is_enum_opened() {
+                                    store.set_enum_name(&word);
+                                    expectation = vec![
+                                        EExpectation::OpenValue,
+                                    ];
+                                } else {
+                                    store.set_field_name(&word);
+                                    expectation = vec![EExpectation::Semicolon];
+                                }
                             } else if is_in(&expectation, &EExpectation::FieldType) {
                                 if store.is_enum_opened() {
-                                    store.set_enum_value(&word);
-                                    expectation = vec![EExpectation::Semicolon];
+                                    if next_char == ';' {
+                                        store.set_simple_enum_item(&word);
+                                        expectation = vec![EExpectation::Semicolon];
+                                    } else {
+                                        store.set_enum_type(&word);
+                                        expectation = vec![EExpectation::FieldName];
+                                    }
                                 } else {
                                     store.set_field_type(&word);
                                     expectation = vec![
                                         EExpectation::FieldName,
                                         EExpectation::FieldRepeatedMark,
                                     ];
+                                }
+                            } else if is_in(&expectation, &EExpectation::EnumItemValue) {
+                                if store.is_enum_opened() {
+                                    store.set_enum_value(Some(word.to_string()));
+                                    expectation = vec![EExpectation::Semicolon];
+                                } else {
+                                    errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
+                                    break;
                                 }
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
@@ -166,6 +193,16 @@ impl Parser {
                                 EExpectation::EntityClose
                             ];
                             store.close();
+                            offset
+                        },
+                        ENext::OpenValue(offset) => {
+                            if !is_in(&expectation, &EExpectation::OpenValue) {
+                                errs.push(format!("Unexpecting next step: {:?}. Value: CloseStruct", expectation));
+                                break;
+                            }
+                            expectation = vec![
+                                EExpectation::EnumItemValue, // Only if it's nested struct
+                            ];
                             offset
                         },
                         ENext::Semicolon(offset) => {
@@ -223,26 +260,34 @@ impl Parser {
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
         let mut str: String = String::new();
         let mut pass: usize = 0;
-        let break_chars: Vec<char> = vec![';', '{', '}'];
+        let break_chars: Vec<char> = vec![';', '{', '}', '='];
         let special_chars: Vec<char> = vec!['[', ']'];
         let allowed_chars: Vec<char> = vec!['_'];
+        let mut num_first_allowed: bool = false;
+        if let Some(prev) = self._prev.take() {
+            if let ENext::OpenValue(_) = prev { num_first_allowed = true }
+        }
         for char in content.chars() {
             pass += 1;
             if !char.is_ascii() {
                 return Err(ENextErr::NotAscii(format!("found not ascii char: {}", char)))
             }
-            if char.is_ascii_digit() && str.is_empty() {
+            if char.is_ascii_digit() && str.is_empty() && !num_first_allowed {
                 return Err(ENextErr::NumericFirst());
             }
             if char.is_ascii_whitespace() && str.is_empty() {
                 continue;
             }
-            let mut breakable: bool = break_chars.iter().any(|&c| c == char);
-            if breakable && str.is_empty() {
+            let mut breakable: Option<char> = None; 
+            if break_chars.iter().any(|&c| c == char) {
+                breakable = Some(char.clone());
+            }
+            if breakable.is_some() && str.is_empty() {
                 match char {
                     ';' => return Ok(ENext::Semicolon(pass)),
                     '{' => return Ok(ENext::OpenStruct(pass)),
                     '}' => return Ok(ENext::CloseStruct(pass)),
+                    '=' => return Ok(ENext::OpenValue(pass)),
                     _ => {}
                 };
             }
@@ -251,7 +296,7 @@ impl Parser {
                 match char {
                     '[' => {
                         if !str.is_empty() {
-                            breakable = true;
+                            breakable = Some(char.clone());
                         } else {
                             continue;
                         }
@@ -267,8 +312,8 @@ impl Parser {
                     _ => {}
                 };
             }
-            if char.is_ascii_whitespace() || breakable {
-                return Ok(ENext::Word((str, pass - 1)));
+            if char.is_ascii_whitespace() || breakable.is_some() {
+                return Ok(ENext::Word((str, pass - 1, breakable)));
             }
             let allowed: bool = allowed_chars.iter().any(|&c| c == char);
             if !char.is_ascii_alphanumeric() && !allowed {
@@ -279,7 +324,7 @@ impl Parser {
         if str.is_empty() {
             Ok(ENext::End())
         } else {
-            Ok(ENext::Word((str, pass - 1)))
+            Ok(ENext::Word((str, pass - 1, None)))
         }
     }
 

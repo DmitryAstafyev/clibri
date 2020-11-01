@@ -1,17 +1,22 @@
 struct StructName {
     u8 age;
     str name;
-    enum Ways {
-        WayA;
-        WayB;
-        WayC;
-    }
-    Ways way;
+}
+enum SyntaxSugarEnum {
+    VariantA;
+    VariantB;
+    VariantC;
+}
+enum UserType {
+    u8 pointA=1;
+    u8 pointB=2;
+    u8 pointC=3;
 }
 struct User {
     str[] username;
     str email;
+    UserType type;
 }
 struct Login {
-    User user;
+    User[] users;
 }

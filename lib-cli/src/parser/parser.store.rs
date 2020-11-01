@@ -98,12 +98,45 @@ impl Store {
         }
     }
 
-    pub fn set_enum_value(&mut self, val: &str) {
+    pub fn set_enum_type(&mut self, type_str: &str) {
         if let Some(mut c_enum) = self.c_enum.take() {
-            c_enum.add(val.to_string());
+            if let Some(types) = PrimitiveTypes::get_entity(type_str) {
+                c_enum.set_type(types);
+            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str) {
+                c_enum.set_type_ref(struct_ref.id);
+            } else {
+                panic!("Expecting type definition but has been gotten value {}", type_str)
+            }
             self.c_enum = Some(c_enum);
         } else {
-            panic!("Fail to add enum value because enum isn't opened");
+            panic!("Fail to create new enum item, because no open enum.");
+        }
+    }
+
+    pub fn set_simple_enum_item(&mut self, word: &str) {
+        if let Some(mut c_enum) = self.c_enum.take() {
+            c_enum.set_simple(word);
+            self.c_enum = Some(c_enum);
+        } else {
+            panic!("Fail to create new enum item, because no open enum.");
+        }
+    }
+
+    pub fn set_enum_name(&mut self, name: &str) {
+        if let Some(mut c_enum) = self.c_enum.take() {
+            c_enum.set_name(name.to_string());
+            self.c_enum = Some(c_enum);
+        } else {
+            panic!("Fail to set enum item name, because no open enum.");
+        }
+    }
+
+    pub fn set_enum_value(&mut self, value: Option<String>) {
+        if let Some(mut c_enum) = self.c_enum.take() {
+            c_enum.set_inital_value(value);
+            self.c_enum = Some(c_enum);
+        } else {
+            panic!("Fail to set enum item inital value, because no open enum.");
         }
     }
 
