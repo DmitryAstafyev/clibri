@@ -1,3 +1,4 @@
+#[allow(non_snake_case)]
 pub mod PrimitiveTypes {
     
     #[derive(Debug)]
@@ -79,8 +80,7 @@ pub mod PrimitiveTypes {
             ETypes::Eusize => Some(ctypes::Tusize.to_string()),
             ETypes::Ef32 => Some(ctypes::Tf32.to_string()),
             ETypes::Ef64 => Some(ctypes::Tf64.to_string()),
-            ETypes::Estr => Some(ctypes::Tstr.to_string()),
-            _ => None
+            ETypes::Estr => Some(ctypes::Tstr.to_string())
         }
     }
 

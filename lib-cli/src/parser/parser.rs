@@ -1,7 +1,5 @@
-use std::path::{ PathBuf, Path };
-use std::collections::{ HashMap };
+use std::path::{ PathBuf };
 use std::fs;
-use std::str::{ Chars };
 use types::{ PrimitiveTypes };
 use entities::{ Entities };
 use fields::{ Field, EReferenceToType };
@@ -27,6 +25,7 @@ pub mod structs;
 #[path = "./parser.store.rs"]
 pub mod store;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum ENext {
     Word((String, usize, Option<char>)),
@@ -39,12 +38,14 @@ enum ENext {
     End(),
 }
 
+#[allow(dead_code)]
 enum ENextErr {
     NotAscii(String),
     NumericFirst(),
     NotSupported(String),
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 enum EExpectation {
     StructDef,
@@ -69,6 +70,7 @@ pub struct Parser {
     _prev: Option<ENext>,
 }
 
+#[allow(dead_code)]
 impl Parser {
 
     fn new(src: PathBuf, rs: PathBuf, ts: PathBuf) -> Parser {
@@ -280,7 +282,7 @@ impl Parser {
             }
             let mut breakable: Option<char> = None; 
             if break_chars.iter().any(|&c| c == char) {
-                breakable = Some(char.clone());
+                breakable = Some(char);
             }
             if breakable.is_some() && str.is_empty() {
                 match char {
@@ -296,7 +298,7 @@ impl Parser {
                 match char {
                     '[' => {
                         if !str.is_empty() {
-                            breakable = Some(char.clone());
+                            breakable = Some(char);
                         } else {
                             continue;
                         }
@@ -343,7 +345,6 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use std::path::{ PathBuf, Path };
     use super::{Parser};
 
     #[test]
@@ -353,9 +354,9 @@ mod tests {
                 let src = path.join("../../../test/protocol.prot");
                 let ts = path.join("../../../test/protocol.prot.ts");
                 let rs = path.join("../../../test/protocol.prot.rs");
-                let mut parser: Parser = Parser::new(src.to_path_buf(), rs.to_path_buf(), ts.to_path_buf());
+                let mut parser: Parser = Parser::new(src, rs, ts);
                 match parser.parse() {
-                    Ok(buf) => {
+                    Ok(_buf) => {
                         assert_eq!(true, false);
                     },
                     Err(e) => {

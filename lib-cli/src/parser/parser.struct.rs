@@ -1,4 +1,4 @@
-use super::{ Field, Enum };
+use super::{ Field };
 
 #[derive(Debug)]
 pub struct Struct {
