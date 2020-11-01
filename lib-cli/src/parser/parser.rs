@@ -133,6 +133,7 @@ impl Parser {
                                     store.set_enum_name(&word);
                                     expectation = vec![
                                         EExpectation::OpenValue,
+                                        EExpectation::Semicolon,
                                     ];
                                 } else {
                                     store.set_field_name(&word);

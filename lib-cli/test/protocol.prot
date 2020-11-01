@@ -2,6 +2,18 @@ struct StructName {
     u8 age;
     str name;
 }
+struct OptionA {
+    str option_a_field_a;
+    str option_a_field_b;
+}
+struct OptionB {
+    str option_b_field_a;
+    str option_b_field_b;
+}
+enum EnumWithSctructs {
+    OptionA a;
+    OptionB b;
+}
 enum SyntaxSugarEnum {
     VariantA;
     VariantB;

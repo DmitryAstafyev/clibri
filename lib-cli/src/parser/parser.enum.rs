@@ -33,7 +33,12 @@ impl Enum {
     pub fn set_name(&mut self, name: String) {
         if let Some(mut current) = self.current.take() {
             current.name = name;
-            self.current = Some(current);
+            if current.ref_type_id.is_some() {
+                self.variants.push(current);
+                self.current = None;
+            } else {
+                self.current = Some(current);
+            }
         } else {
             panic!("Cannot set name of enum item, because enum item wasn't opened");
         }
