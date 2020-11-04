@@ -139,6 +139,19 @@ mod StructEncodeDecode {
         }
     }
 
+    pub fn get_value_buffer(name: String, size: u32, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        let (buf, len) = match get_name(name) {
+            Ok((name_buf, len)) => (name_buf, len),
+            Err(e) => { return  Err(e); }
+        };
+        buffer.append(&mut len.to_le_bytes().to_vec());
+        buffer.append(&mut buf.to_vec());
+        buffer.append(&mut size.to_le_bytes().to_vec());
+        buffer.append(&mut value);
+        Ok(buffer)
+    }
+
 }
 
 trait StructDecode {
@@ -149,7 +162,7 @@ trait StructDecode {
 
 trait StructEncode {
 
-    fn encode(self) -> Result<Vec<u8>, String>;
+    fn encode(&mut self) -> Result<Vec<u8>, String>;
 
 }
 
@@ -185,24 +198,22 @@ impl StructDecode for Target {
 
 impl StructEncode for Target {
 
-    fn encode(self) -> Result<Vec<u8>, String> {
+    fn encode(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        let (buf, len) = match StructEncodeDecode::get_name(String::from("prop_a")) {
-            Ok((name_buf, len)) => (name_buf, len),
+        match StructEncodeDecode::get_value_buffer(
+            String::from("prop_a"),
+            U16_LEN as u32,
+            self.prop_a.to_le_bytes().to_vec()) {
+            Ok(mut buf) => { buffer. append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
-        buffer.append(&mut len.to_le_bytes().to_vec());
-        buffer.append(&mut buf.to_vec());
-        buffer.append(&mut (U16_LEN as u32).to_le_bytes().to_vec());
-        buffer.append(&mut self.prop_a.to_le_bytes().to_vec());
-        let (buf, len) = match StructEncodeDecode::get_name(String::from("prop_b")) {
-            Ok((name_buf, len)) => (name_buf, len),
+        match StructEncodeDecode::get_value_buffer(
+            String::from("prop_b"),
+            U32_LEN as u32,
+            self.prop_b.to_le_bytes().to_vec()) {
+            Ok(mut buf) => { buffer. append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
-        buffer.append(&mut len.to_le_bytes().to_vec());
-        buffer.append(&mut buf.to_vec());
-        buffer.append(&mut (U32_LEN as u32).to_le_bytes().to_vec());
-        buffer.append(&mut self.prop_b.to_le_bytes().to_vec());
         Ok(buffer)
     }
 
@@ -214,7 +225,7 @@ mod tests {
 
     #[test]
     fn encode_decode() {
-        let a: Target = Target {
+        let mut a: Target = Target {
             prop_a: 9,
             prop_b: 99,
         };
@@ -239,7 +250,8 @@ mod tests {
         };
         b.decode(s);
         println!("{:?}", b);
-        assert_eq!(false, true);
+        assert_eq!(a.prop_a, b.prop_a);
+        assert_eq!(a.prop_b, b.prop_b);
     }
 }
 
