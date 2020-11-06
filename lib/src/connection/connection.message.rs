@@ -130,6 +130,20 @@ impl Storage {
 mod StructEncodeDecode {
 
     use std::convert::TryFrom;
+    use std::mem;
+
+    const U8_LEN: usize = mem::size_of::<u8>();
+    const U16_LEN: usize = mem::size_of::<u16>();
+    const U32_LEN: usize = mem::size_of::<u32>();
+    const U64_LEN: usize = mem::size_of::<u64>();
+    const I8_LEN: usize = mem::size_of::<i8>();
+    const I16_LEN: usize = mem::size_of::<i16>();
+    const I32_LEN: usize = mem::size_of::<i32>();
+    const I64_LEN: usize = mem::size_of::<i64>();
+    const USIZE_LEN: usize = mem::size_of::<usize>();
+    const F32_LEN: usize = mem::size_of::<f32>();
+    const F64_LEN: usize = mem::size_of::<f64>();
+    const BOOL_LEN: usize = mem::size_of::<bool>();
 
     pub fn get_name(name: String) -> Result<(Vec<u8>, u16), String> {
         let bytes = name.as_bytes();
@@ -151,6 +165,54 @@ mod StructEncodeDecode {
         buffer.append(&mut value);
         Ok(buffer)
     }
+
+    pub fn get_u8(name: String, value: u8) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, U8_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_u16(name: String, value: u16) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, U16_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_u32(name: String, value: u32) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, U32_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_u64(name: String, value: u64) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, U64_LEN as u32, value.to_le_bytes().to_vec())
+    }
+    pub fn get_i8(name: String, value: i8) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, I8_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_i16(name: String, value: i16) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, I16_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_i32(name: String, value: i32) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, I32_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_i64(name: String, value: i64) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, I64_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_usize(name: String, value: usize) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, USIZE_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_f32(name: String, value: f32) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, F32_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_f64(name: String, value: f64) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, F64_LEN as u32, value.to_le_bytes().to_vec())
+    }
+
+    pub fn get_bool(name: String, value: bool) -> Result<Vec<u8>, String> {
+        get_value_buffer(name, BOOL_LEN as u32, if value { vec![1] } else { vec![0] })
+    }
+
 
 }
 
@@ -200,17 +262,11 @@ impl StructEncode for Target {
 
     fn encode(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match StructEncodeDecode::get_value_buffer(
-            String::from("prop_a"),
-            U16_LEN as u32,
-            self.prop_a.to_le_bytes().to_vec()) {
+        match StructEncodeDecode::get_u16(String::from("prop_a"), self.prop_a) {
             Ok(mut buf) => { buffer. append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
-        match StructEncodeDecode::get_value_buffer(
-            String::from("prop_b"),
-            U32_LEN as u32,
-            self.prop_b.to_le_bytes().to_vec()) {
+        match StructEncodeDecode::get_u32(String::from("prop_b"), self.prop_b) {
             Ok(mut buf) => { buffer. append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
