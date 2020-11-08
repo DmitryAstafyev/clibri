@@ -47,7 +47,6 @@ mod Sizes {
     pub const I16_LEN: usize = mem::size_of::<i16>();
     pub const I32_LEN: usize = mem::size_of::<i32>();
     pub const I64_LEN: usize = mem::size_of::<i64>();
-    pub const USIZE_LEN: usize = mem::size_of::<usize>();
     pub const F32_LEN: usize = mem::size_of::<f32>();
     pub const F64_LEN: usize = mem::size_of::<f64>();
     pub const BOOL_LEN: usize = mem::size_of::<bool>();
@@ -262,6 +261,38 @@ mod DecodeTools {
         }
     }
 
+    pub fn get_f32(storage: &mut Storage, name: String) -> Result<f32, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            if buf.len() < Sizes::F32_LEN {
+                return Err(format!("To extract f32 value buffer should have length at least {} bytes, but length is {}", Sizes::F32_LEN, buf.len()));
+            }
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            Ok(cursor.get_f32_le())
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_f64(storage: &mut Storage, name: String) -> Result<f64, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            if buf.len() < Sizes::F64_LEN {
+                return Err(format!("To extract f64 value buffer should have length at least {} bytes, but length is {}", Sizes::F64_LEN, buf.len()));
+            }
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            Ok(cursor.get_f64_le())
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_utf8_string(storage: &mut Storage, name: String) -> Result<String, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            Ok(String::from_utf8_lossy(buf).to_string())
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    } 
+
     pub fn get_u8_vec(storage: &mut Storage, name: String) -> Result<Vec<u8>, String> {
         if let Some(buf) = storage.get(name.clone()) {
             let mut res: Vec<u8> = vec!();
@@ -414,6 +445,34 @@ mod DecodeTools {
         }
     }
 
+    pub fn get_utf8_string_vec(storage: &mut Storage, name: String) -> Result<Vec<String>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<String> = vec!();
+            let mut buffer = vec![0; buf.len()];
+            buffer.copy_from_slice(&buf[0..buf.len()]);
+            loop {
+                if buffer.is_empty() {
+                    break;
+                }
+                let mut cursor: Cursor<&[u8]> = Cursor::new(&buffer);
+                if buffer.len() < Sizes::U32_LEN {
+                    return Err(format!("To extract length of string (u32) value from array buffer should have length at least {} bytes, but length is {}", Sizes::U32_LEN, buf.len()));
+                }
+                let item_len: u32 = cursor.get_u32_le();
+                if buffer.len() < Sizes::U32_LEN + item_len as usize {
+                    return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - Sizes::U32_LEN)));
+                }
+                let mut item_buf = vec![0; item_len as usize];
+                item_buf.copy_from_slice(&buffer[Sizes::U32_LEN..(Sizes::U32_LEN + item_len as usize)]);
+                buffer = buffer.drain((Sizes::U32_LEN + item_len as usize)..).collect();
+                res.push(String::from_utf8_lossy(&item_buf).to_string());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
 }
 
 #[allow(non_snake_case)]
@@ -475,10 +534,6 @@ mod EncodeTools {
         get_value_buffer(name, Sizes::I64_LEN as u32, value.to_le_bytes().to_vec())
     }
 
-    pub fn get_usize(name: String, value: usize) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::USIZE_LEN as u32, value.to_le_bytes().to_vec())
-    }
-
     pub fn get_f32(name: String, value: f32) -> Result<Vec<u8>, String> {
         get_value_buffer(name, Sizes::F32_LEN as u32, value.to_le_bytes().to_vec())
     }
@@ -491,10 +546,10 @@ mod EncodeTools {
         get_value_buffer(name, Sizes::BOOL_LEN as u32, if value { vec![1] } else { vec![0] })
     }
 
-    pub fn get_string(name: String, value: String) -> Result<Vec<u8>, String> {
+    pub fn get_utf8_string(name: String, value: String) -> Result<Vec<u8>, String> {
         let buf = value.as_bytes();
         get_value_buffer(name, buf.len() as u32, buf.to_vec())
-    } 
+    }
 
     pub fn get_u8_vec(name: String, value: Vec<u8>) -> Result<Vec<u8>, String> {
         let len = value.len() * Sizes::U8_LEN;
@@ -568,6 +623,16 @@ mod EncodeTools {
         get_value_buffer(name, len as u32, buffer.to_vec())
     }
 
+    pub fn get_utf8_string_vec(name: String, value: Vec<String>) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            let val_as_bytes = val.as_bytes();
+            buffer.append(&mut (val_as_bytes.len() as u32).to_le_bytes().to_vec());
+            buffer.append(&mut val_as_bytes.to_vec());
+        }
+        get_value_buffer(name, buffer.len() as u32, buffer.to_vec())
+    }
+
 }
 
 trait StructDecode {
@@ -600,6 +665,10 @@ struct Target {
     pub prop_i16_vec: Vec<i16>,
     pub prop_i32_vec: Vec<i32>,
     pub prop_i64_vec: Vec<i64>,
+    pub prop_string: String,
+    pub prop_f32: f32,
+    pub prop_f64: f64,
+    pub prop_utf8_string_vec: Vec<String>,
 }
 
 impl StructDecode for Target {
@@ -666,6 +735,22 @@ impl StructDecode for Target {
             Err(e) => { return Err(e) },
         };
         self.prop_i64_vec = match DecodeTools::get_i64_vec(&mut storage, String::from("prop_i64_vec")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.prop_string = match DecodeTools::get_utf8_string(&mut storage, String::from("prop_string")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.prop_f32 = match DecodeTools::get_f32(&mut storage, String::from("prop_f32")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.prop_f64 = match DecodeTools::get_f64(&mut storage, String::from("prop_f64")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.prop_utf8_string_vec = match DecodeTools::get_utf8_string_vec(&mut storage, String::from("prop_utf8_string_vec")) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -742,6 +827,22 @@ impl StructEncode for Target {
             Ok(mut buf) => { buffer.append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
+        match EncodeTools::get_utf8_string(String::from("prop_string"), self.prop_string.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        match EncodeTools::get_f32(String::from("prop_f32"), self.prop_f32) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        match EncodeTools::get_f64(String::from("prop_f64"), self.prop_f64) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        match EncodeTools::get_utf8_string_vec(String::from("prop_utf8_string_vec"), self.prop_utf8_string_vec.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
         Ok(buffer)
     }
 
@@ -750,24 +851,7 @@ impl StructEncode for Target {
 #[cfg(test)]
 mod tests { 
     use super::*;
-/* 
-    pub prop_u8: u8,
-    pub prop_u16: u16,
-    pub prop_u32: u32,
-    pub prop_u64: u64,
-    pub prop_i8: i8,
-    pub prop_i16: i16,
-    pub prop_i32: i32,
-    pub prop_i64: i64,
-    pub prop_u8_vec: Vec<u8>,
-    pub prop_u16_vec: Vec<u16>,
-    pub prop_u32_vec: Vec<u32>,
-    pub prop_u64_vec: Vec<u64>,
-    pub prop_i8_vec: Vec<i8>,
-    pub prop_i16_vec: Vec<i16>,
-    pub prop_i32_vec: Vec<i32>,
-    pub prop_i64_vec: Vec<i64>,
-*/
+
     #[test]
     fn encode_decode() {
         let mut a: Target = Target {
@@ -787,6 +871,10 @@ mod tests {
             prop_i16_vec: vec![-5, -6, -7, -8, -9],
             prop_i32_vec: vec![-10, -11, -12, -13, -14],
             prop_i64_vec: vec![-15, -16, -17, -18, -19],
+            prop_string: String::from("Hello, World!"),
+            prop_f32: 0.1,
+            prop_f64: 0.00002,
+            prop_utf8_string_vec: vec![String::from("UTF8 String 1"), String::from("UTF8 String 2")],
         };
         let buf = match a.encode() {
             Ok(buf) => buf,
@@ -813,6 +901,10 @@ mod tests {
             prop_i16_vec: vec![],
             prop_i32_vec: vec![],
             prop_i64_vec: vec![],
+            prop_string: String::from(""),
+            prop_f32: 0.0,
+            prop_f64: 0.0,
+            prop_utf8_string_vec: vec![],
         };
         let s = match Storage::new(buf) {
             Ok(s) => s,
@@ -839,6 +931,9 @@ mod tests {
         assert_eq!(a.prop_i16_vec, b.prop_i16_vec);
         assert_eq!(a.prop_i32_vec, b.prop_i32_vec);
         assert_eq!(a.prop_i64_vec, b.prop_i64_vec);
+        assert_eq!(a.prop_f32, b.prop_f32);
+        assert_eq!(a.prop_f64, b.prop_f64);
+        assert_eq!(a.prop_utf8_string_vec, b.prop_utf8_string_vec);
         assert_eq!(true, false);
 
     }
