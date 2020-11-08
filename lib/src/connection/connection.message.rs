@@ -281,9 +281,125 @@ mod DecodeTools {
                     break;
                 }
                 if len - cursor.position() < U16_LEN as u64 {
-                    return Err(format!("To extract u16 value from array buffer should have length at least {} bytes, but length is {}", U8_LEN, buf.len()));
+                    return Err(format!("To extract u16 value from array buffer should have length at least {} bytes, but length is {}", U16_LEN, buf.len()));
                 }
                 res.push(cursor.get_u16_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_u32_vec(storage: &mut Storage, name: String) -> Result<Vec<u32>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<u32> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < U32_LEN as u64 {
+                    return Err(format!("To extract u32 value from array buffer should have length at least {} bytes, but length is {}", U32_LEN, buf.len()));
+                }
+                res.push(cursor.get_u32_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_u64_vec(storage: &mut Storage, name: String) -> Result<Vec<u64>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<u64> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < U64_LEN as u64 {
+                    return Err(format!("To extract u64 value from array buffer should have length at least {} bytes, but length is {}", U64_LEN, buf.len()));
+                }
+                res.push(cursor.get_u64_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_i8_vec(storage: &mut Storage, name: String) -> Result<Vec<i8>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<i8> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            loop {
+                if cursor.position() == buf.len() as u64 {
+                    break;
+                }
+                res.push(cursor.get_i8());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_i16_vec(storage: &mut Storage, name: String) -> Result<Vec<i16>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<i16> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < I16_LEN as u64 {
+                    return Err(format!("To extract i16 value from array buffer should have length at least {} bytes, but length is {}", I16_LEN, buf.len()));
+                }
+                res.push(cursor.get_i16_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_i32_vec(storage: &mut Storage, name: String) -> Result<Vec<i32>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<i32> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < I32_LEN as u64 {
+                    return Err(format!("To extract i32 value from array buffer should have length at least {} bytes, but length is {}", I32_LEN, buf.len()));
+                }
+                res.push(cursor.get_i32_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+
+    pub fn get_i64_vec(storage: &mut Storage, name: String) -> Result<Vec<i64>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<i64> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < I64_LEN as u64 {
+                    return Err(format!("To extract i64 value from array buffer should have length at least {} bytes, but length is {}", I64_LEN, buf.len()));
+                }
+                res.push(cursor.get_i64_le());
             }
             Ok(res)
         } else {
@@ -385,11 +501,70 @@ mod EncodeTools {
     } 
 
     pub fn get_u8_vec(name: String, value: Vec<u8>) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, value.len() as u32, value.to_vec())
+        let len = value.len() * U8_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
     }
 
     pub fn get_u16_vec(name: String, value: Vec<u16>) -> Result<Vec<u8>, String> {
         let len = value.len() * U16_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
+    }
+
+    pub fn get_u32_vec(name: String, value: Vec<u32>) -> Result<Vec<u8>, String> {
+        let len = value.len() * U32_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
+    }
+
+    pub fn get_u64_vec(name: String, value: Vec<u64>) -> Result<Vec<u8>, String> {
+        let len = value.len() * U64_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
+    }
+
+    pub fn get_i8_vec(name: String, value: Vec<i8>) -> Result<Vec<u8>, String> {
+        let len = value.len() * I8_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
+    }
+
+    pub fn get_i16_vec(name: String, value: Vec<i16>) -> Result<Vec<u8>, String> {
+        let len = value.len() * I16_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
+    }
+
+    pub fn get_i32_vec(name: String, value: Vec<i32>) -> Result<Vec<u8>, String> {
+        let len = value.len() * I32_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        get_value_buffer(name, len as u32, buffer.to_vec())
+    }
+
+    pub fn get_i64_vec(name: String, value: Vec<u64>) -> Result<Vec<u8>, String> {
+        let len = value.len() * I64_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
@@ -417,6 +592,8 @@ struct Target {
     pub prop_b: u32,
     pub prop_c: Vec<u8>,
     pub prop_d: Vec<u16>,
+    pub prop_e: Vec<u32>,
+    pub prop_f: Vec<u64>,
 }
 
 impl StructDecode for Target {
@@ -435,6 +612,14 @@ impl StructDecode for Target {
             Err(e) => { return Err(e) },
         };
         self.prop_d = match DecodeTools::get_u16_vec(&mut storage, String::from("prop_d")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.prop_e = match DecodeTools::get_u32_vec(&mut storage, String::from("prop_e")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.prop_f = match DecodeTools::get_u64_vec(&mut storage, String::from("prop_f")) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -463,6 +648,14 @@ impl StructEncode for Target {
             Ok(mut buf) => { buffer.append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
+        match EncodeTools::get_u32_vec(String::from("prop_e"), self.prop_e.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        match EncodeTools::get_u64_vec(String::from("prop_f"), self.prop_f.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
         Ok(buffer)
     }
 
@@ -479,6 +672,8 @@ mod tests {
             prop_b: 99,
             prop_c: vec![0, 1, 2, 3, 4],
             prop_d: vec![5, 6, 7, 8, 9],
+            prop_e: vec![10, 11, 12, 13, 14],
+            prop_f: vec![15, 16, 17, 18, 19],
         };
         let buf = match a.encode() {
             Ok(buf) => buf,
@@ -493,6 +688,8 @@ mod tests {
             prop_b: 0,
             prop_c: vec![],
             prop_d: vec![],
+            prop_e: vec![],
+            prop_f: vec![],
         };
         let s = match Storage::new(buf) {
             Ok(s) => s,
@@ -507,6 +704,8 @@ mod tests {
         assert_eq!(a.prop_b, b.prop_b);
         assert_eq!(a.prop_c, b.prop_c);
         assert_eq!(a.prop_d, b.prop_d);
+        assert_eq!(a.prop_e, b.prop_e);
+        assert_eq!(a.prop_f, b.prop_f);
         assert_eq!(true, false);
 
     }
