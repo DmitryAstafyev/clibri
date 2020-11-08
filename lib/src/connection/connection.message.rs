@@ -51,6 +51,13 @@ mod Sizes {
     pub const F64_LEN: usize = mem::size_of::<f64>();
     pub const BOOL_LEN: usize = mem::size_of::<bool>();
 
+    pub enum ESize {
+        U8(u8),
+        U16(u16),
+        U32(u32),
+        U64(u64),
+    }
+
 }
 
 pub struct Storage {
@@ -62,8 +69,8 @@ impl Storage {
 
     fn new(buf: Vec<u8>) -> Result<Self, String> {
         /* 
-        | PROP_NAME_LEN | NAME    | PROP_BODY_LEN | PROP_BODY | ... |
-        | 2 bytes       | n bytes | 4 bytes       | n bytes   | ... |
+        | PROP_NAME_LEN | NAME    | PROP_BODY_LEN_GRAD | PROP_BODY_LEN | PROP_BODY | ... |
+        | 2 bytes       | n bytes | 1 byte             | 1 - 8 bytes   | n bytes   | ... |
         */
         let mut position: usize = 0;
         let mut map: HashMap<String, Vec<u8>> = HashMap::new();
@@ -115,16 +122,42 @@ impl Storage {
         } else {
             return Err("Fail to set cursor position".to_string());
         }
-        let prop_body_len_u32 = cursor.get_u32_le();
+        let prop_body_len_rank = cursor.get_u8();
         let prop_body_len_usize: usize;
-        if let Ok(val) = usize::try_from(prop_body_len_u32) {
-            prop_body_len_usize = val;
-        } else {
-            return Err("Fail convert length of name from u16 to usize".to_string());
-        }
+        let prop_rank_len: usize = 1;
+        let prop_size_len: usize;
+        match prop_body_len_rank {
+            8 => if let Ok(val) = usize::try_from(cursor.get_u8()) {
+                prop_body_len_usize = val;
+                prop_size_len = Sizes::U8_LEN;
+            } else {
+                return Err("Fail convert length of name from u8 to usize".to_string());
+            }
+            16 => if let Ok(val) = usize::try_from(cursor.get_u16_le()) {
+                prop_body_len_usize = val;
+                prop_size_len = Sizes::U16_LEN;
+            } else {
+                return Err("Fail convert length of name from u16 to usize".to_string());
+            },
+            32 => if let Ok(val) = usize::try_from(cursor.get_u32_le()) {
+                prop_body_len_usize = val;
+                prop_size_len = Sizes::U32_LEN;
+            } else {
+                return Err("Fail convert length of name from u32 to usize".to_string());
+            },
+            64 => if let Ok(val) = usize::try_from(cursor.get_u64_le()) {
+                prop_body_len_usize = val;
+                prop_size_len = Sizes::U64_LEN;
+            } else {
+                return Err("Fail convert length of name from u64 to usize".to_string());
+            },
+            v => {
+                return Err(format!("Unknown rank has been gotten: {}", v));
+            }
+        };
         let mut prop_body_buf = vec![0; prop_body_len_usize];
-        prop_body_buf.copy_from_slice(&buf[(pos + Sizes::U32_LEN)..(pos + Sizes::U32_LEN + prop_body_len_usize)]);
-        Ok((prop_body_buf, pos + Sizes::U32_LEN + prop_body_len_usize))
+        prop_body_buf.copy_from_slice(&buf[(pos + prop_rank_len + prop_size_len)..(pos + prop_rank_len + prop_size_len + prop_body_len_usize)]);
+        Ok((prop_body_buf, pos + prop_rank_len + prop_size_len + prop_body_len_usize))
     }
 
     fn next(buf: &[u8], pos: usize) -> Result<(String, Vec<u8>, usize), String> {
@@ -481,6 +514,7 @@ mod EncodeTools {
 
     use std::convert::TryFrom;
     use super::{ Sizes };
+    use Sizes::{ ESize };
 
     pub fn get_name(name: String) -> Result<(Vec<u8>, u16), String> {
         let bytes = name.as_bytes();
@@ -490,7 +524,7 @@ mod EncodeTools {
         }
     }
 
-    pub fn get_value_buffer(name: String, size: u32, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
+    pub fn get_value_buffer(name: String, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         let (buf, len) = match get_name(name) {
             Ok((name_buf, len)) => (name_buf, len),
@@ -498,57 +532,74 @@ mod EncodeTools {
         };
         buffer.append(&mut len.to_le_bytes().to_vec());
         buffer.append(&mut buf.to_vec());
-        buffer.append(&mut size.to_le_bytes().to_vec());
+        match size {
+            ESize::U8(size) => {
+                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U16(size) => {
+                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U32(size) => {
+                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U64(size) => {
+                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+        };
         buffer.append(&mut value);
         Ok(buffer)
     }
 
     pub fn get_u8(name: String, value: u8) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::U8_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::U8_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_u16(name: String, value: u16) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::U16_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::U16_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_u32(name: String, value: u32) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::U32_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::U32_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_u64(name: String, value: u64) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::U64_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::U64_LEN as u8), value.to_le_bytes().to_vec())
     }
     pub fn get_i8(name: String, value: i8) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::I8_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::I8_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_i16(name: String, value: i16) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::I16_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::I16_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_i32(name: String, value: i32) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::I32_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::I32_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_i64(name: String, value: i64) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::I64_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::I64_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_f32(name: String, value: f32) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::F32_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::F32_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_f64(name: String, value: f64) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::F64_LEN as u32, value.to_le_bytes().to_vec())
+        get_value_buffer(name, ESize::U8(Sizes::F64_LEN as u8), value.to_le_bytes().to_vec())
     }
 
     pub fn get_bool(name: String, value: bool) -> Result<Vec<u8>, String> {
-        get_value_buffer(name, Sizes::BOOL_LEN as u32, if value { vec![1] } else { vec![0] })
+        get_value_buffer(name, ESize::U8(Sizes::BOOL_LEN as u8), if value { vec![1] } else { vec![0] })
     }
 
     pub fn get_utf8_string(name: String, value: String) -> Result<Vec<u8>, String> {
         let buf = value.as_bytes();
-        get_value_buffer(name, buf.len() as u32, buf.to_vec())
+        get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec())
     }
 
     pub fn get_u8_vec(name: String, value: Vec<u8>) -> Result<Vec<u8>, String> {
@@ -557,7 +608,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_u16_vec(name: String, value: Vec<u16>) -> Result<Vec<u8>, String> {
@@ -566,7 +617,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_u32_vec(name: String, value: Vec<u32>) -> Result<Vec<u8>, String> {
@@ -575,7 +626,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_u64_vec(name: String, value: Vec<u64>) -> Result<Vec<u8>, String> {
@@ -584,7 +635,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_i8_vec(name: String, value: Vec<i8>) -> Result<Vec<u8>, String> {
@@ -593,7 +644,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_i16_vec(name: String, value: Vec<i16>) -> Result<Vec<u8>, String> {
@@ -602,7 +653,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_i32_vec(name: String, value: Vec<i32>) -> Result<Vec<u8>, String> {
@@ -611,7 +662,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_i64_vec(name: String, value: Vec<i64>) -> Result<Vec<u8>, String> {
@@ -620,7 +671,7 @@ mod EncodeTools {
         for val in value.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
-        get_value_buffer(name, len as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
     }
 
     pub fn get_utf8_string_vec(name: String, value: Vec<String>) -> Result<Vec<u8>, String> {
@@ -630,7 +681,7 @@ mod EncodeTools {
             buffer.append(&mut (val_as_bytes.len() as u32).to_le_bytes().to_vec());
             buffer.append(&mut val_as_bytes.to_vec());
         }
-        get_value_buffer(name, buffer.len() as u32, buffer.to_vec())
+        get_value_buffer(name, ESize::U64(buffer.len() as u64), buffer.to_vec())
     }
 
 }
