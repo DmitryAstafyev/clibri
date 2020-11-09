@@ -3,6 +3,7 @@ use std::io::Cursor;
 use std::collections::{HashMap};
 use bytes::{Buf};
 use std::str;
+use std::cmp::{ PartialEq };
 
 /*
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -996,7 +997,7 @@ impl StructEncode for Target {
 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Nested {
     field_u16: u16,
     field_utf8_string: String,
@@ -1143,7 +1144,9 @@ mod tests {
         assert_eq!(a.prop_f32, b.prop_f32);
         assert_eq!(a.prop_f64, b.prop_f64);
         assert_eq!(a.prop_utf8_string_vec, b.prop_utf8_string_vec);
-        assert_eq!(true, false);
+        assert_eq!(a.prop_nested, b.prop_nested);
+        assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
+        // assert_eq!(true, false);
 
     }
 }
