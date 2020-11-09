@@ -1,10 +1,8 @@
 use std::convert::TryFrom;
-use std::time::{ SystemTime, UNIX_EPOCH };
 use std::io::Cursor;
 use std::collections::{HashMap};
 use bytes::{Buf};
 use std::str;
-use std::mem;
 
 /*
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -183,8 +181,8 @@ impl Storage {
 mod DecodeTools {
 
     use std::io::Cursor;
-    use bytes::{Buf};
-    use super::{ Storage, Sizes };
+    use bytes::{ Buf };
+    use super::{ Storage, Sizes, StructDecode };
 
     pub fn get_u8(storage: &mut Storage, name: String) -> Result<u8, String> {
         if let Some(buf) = storage.get(name.clone()) {
@@ -506,6 +504,23 @@ mod DecodeTools {
         }
     }
 
+    pub fn get_struct(storage: &mut Storage, name: String, strct: &mut impl StructDecode) -> Result<(), String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let sctruct_storage = match Storage::new(buf.to_vec()) {
+                Ok(storage) => storage,
+                Err(e) => {
+                    return Err(e);
+                }
+            };
+            match strct.decode(sctruct_storage) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    } 
+
 }
 
 #[allow(non_snake_case)]
@@ -513,7 +528,7 @@ mod DecodeTools {
 mod EncodeTools {
 
     use std::convert::TryFrom;
-    use super::{ Sizes };
+    use super::{ Sizes, StructEncode };
     use Sizes::{ ESize };
 
     pub fn get_name(name: String) -> Result<(Vec<u8>, u16), String> {
@@ -684,15 +699,22 @@ mod EncodeTools {
         get_value_buffer(name, ESize::U64(buffer.len() as u64), buffer.to_vec())
     }
 
+    pub fn get_struct(name: String, mut value: impl StructEncode) -> Result<Vec<u8>, String> {
+        match value.encode() {
+            Ok(buf) => get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec()),
+            Err(e) => Err(e)
+        }
+    }
+
 }
 
-trait StructDecode {
+pub trait StructDecode {
 
     fn decode(&mut self, storage: Storage) -> Result<(), String>;
 
 }
 
-trait StructEncode {
+pub trait StructEncode {
 
     fn encode(&mut self) -> Result<Vec<u8>, String>;
 
@@ -720,6 +742,7 @@ struct Target {
     pub prop_f32: f32,
     pub prop_f64: f64,
     pub prop_utf8_string_vec: Vec<String>,
+    pub prop_nested: Nested,
 }
 
 impl StructDecode for Target {
@@ -803,6 +826,10 @@ impl StructDecode for Target {
         };
         self.prop_utf8_string_vec = match DecodeTools::get_utf8_string_vec(&mut storage, String::from("prop_utf8_string_vec")) {
             Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        match DecodeTools::get_struct(&mut storage, String::from("prop_nested"), &mut self.prop_nested) {
+            Ok(_) => {},
             Err(e) => { return Err(e) },
         };
         Ok(())
@@ -894,10 +921,52 @@ impl StructEncode for Target {
             Ok(mut buf) => { buffer.append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
+        match EncodeTools::get_struct(String::from("prop_nested"), self.prop_nested.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
         Ok(buffer)
     }
 
 }
+
+#[derive(Debug, Clone)]
+struct Nested {
+    field_u16: u16,
+    field_utf8_string: String,
+}
+
+impl StructDecode for Nested {
+    fn decode(&mut self, mut storage: Storage) -> Result<(), String> {
+        self.field_u16 = match DecodeTools::get_u16(&mut storage, String::from("field_u16")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.field_utf8_string = match DecodeTools::get_utf8_string(&mut storage, String::from("field_utf8_string")) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        Ok(())
+    }
+}
+
+impl StructEncode for Nested {
+
+    fn encode(&mut self) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        match EncodeTools::get_u16(String::from("field_u16"), self.field_u16) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        match EncodeTools::get_utf8_string(String::from("field_utf8_string"), self.field_utf8_string.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        Ok(buffer)
+    }
+
+}
+
 
 #[cfg(test)]
 mod tests { 
@@ -926,6 +995,10 @@ mod tests {
             prop_f32: 0.1,
             prop_f64: 0.00002,
             prop_utf8_string_vec: vec![String::from("UTF8 String 1"), String::from("UTF8 String 2")],
+            prop_nested: Nested {
+                field_u16: 333,
+                field_utf8_string: String::from("Hello from Nested"),
+            }
         };
         let buf = match a.encode() {
             Ok(buf) => buf,
@@ -956,6 +1029,10 @@ mod tests {
             prop_f32: 0.0,
             prop_f64: 0.0,
             prop_utf8_string_vec: vec![],
+            prop_nested: Nested {
+                field_u16: 0,
+                field_utf8_string: String::from(""),
+            }
         };
         let s = match Storage::new(buf) {
             Ok(s) => s,
