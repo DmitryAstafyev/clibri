@@ -322,7 +322,24 @@ mod DecodeTools {
         } else {
             Err(format!("Buffer for property {} isn't found", name))
         }
-    } 
+    }
+
+    pub fn get_struct(storage: &mut Storage, name: String, strct: &mut impl StructDecode) -> Result<(), String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let sctruct_storage = match Storage::new(buf.to_vec()) {
+                Ok(storage) => storage,
+                Err(e) => {
+                    return Err(e);
+                }
+            };
+            match strct.decode(sctruct_storage) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
 
     pub fn get_u8_vec(storage: &mut Storage, name: String) -> Result<Vec<u8>, String> {
         if let Some(buf) = storage.get(name.clone()) {
@@ -504,18 +521,40 @@ mod DecodeTools {
         }
     }
 
-    pub fn get_struct(storage: &mut Storage, name: String, strct: &mut impl StructDecode) -> Result<(), String> {
+    pub fn get_struct_vec<F, T: StructDecode>(storage: &mut Storage, name: String, getter: F) -> Result<Vec<T>, String> where F: Fn() -> T {
         if let Some(buf) = storage.get(name.clone()) {
-            let sctruct_storage = match Storage::new(buf.to_vec()) {
-                Ok(storage) => storage,
-                Err(e) => {
-                    return Err(e);
+            let mut res: Vec<T> = vec!();
+            let mut buffer = vec![0; buf.len()];
+            buffer.copy_from_slice(&buf[0..buf.len()]);
+            loop {
+                if buffer.is_empty() {
+                    break;
                 }
-            };
-            match strct.decode(sctruct_storage) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
+                let mut cursor: Cursor<&[u8]> = Cursor::new(&buffer);
+                if buffer.len() < Sizes::U64_LEN {
+                    return Err(format!("To extract length of string (u64) value from array buffer should have length at least {} bytes, but length is {}", Sizes::U64_LEN, buf.len()));
+                }
+                let item_len: u64 = cursor.get_u64_le();
+                if buffer.len() < Sizes::U64_LEN + item_len as usize {
+                    return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - Sizes::U64_LEN)));
+                }
+                let mut item_buf = vec![0; item_len as usize];
+                item_buf.copy_from_slice(&buffer[Sizes::U64_LEN..(Sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer.drain((Sizes::U64_LEN + item_len as usize)..).collect();
+                let sctruct_storage = match Storage::new(item_buf) {
+                    Ok(storage) => storage,
+                    Err(e) => {
+                        return Err(e);
+                    }
+                };
+                let mut strct = getter();
+                match strct.decode(sctruct_storage) {
+                    Ok(_) => {},
+                    Err(e) => { return Err(e); },
+                }
+                res.push(strct);
             }
+            Ok(res)
         } else {
             Err(format!("Buffer for property {} isn't found", name))
         }
@@ -617,6 +656,13 @@ mod EncodeTools {
         get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec())
     }
 
+    pub fn get_struct(name: String, mut value: impl StructEncode) -> Result<Vec<u8>, String> {
+        match value.encode() {
+            Ok(buf) => get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec()),
+            Err(e) => Err(e)
+        }
+    }
+
     pub fn get_u8_vec(name: String, value: Vec<u8>) -> Result<Vec<u8>, String> {
         let len = value.len() * Sizes::U8_LEN;
         let mut buffer: Vec<u8> = vec!();
@@ -699,11 +745,17 @@ mod EncodeTools {
         get_value_buffer(name, ESize::U64(buffer.len() as u64), buffer.to_vec())
     }
 
-    pub fn get_struct(name: String, mut value: impl StructEncode) -> Result<Vec<u8>, String> {
-        match value.encode() {
-            Ok(buf) => get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec()),
-            Err(e) => Err(e)
+    pub fn get_struct_vec(name: String, mut value: Vec<impl StructEncode>) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        for val in value.iter_mut() {
+            let val_as_bytes = match val.encode() {
+                Ok(buf) => buf,
+                Err(e) => { return Err(e); }
+            };
+            buffer.append(&mut (val_as_bytes.len() as u64).to_le_bytes().to_vec());
+            buffer.append(&mut val_as_bytes.to_vec());
         }
+        get_value_buffer(name, ESize::U64(buffer.len() as u64), buffer.to_vec())
     }
 
 }
@@ -743,6 +795,7 @@ struct Target {
     pub prop_f64: f64,
     pub prop_utf8_string_vec: Vec<String>,
     pub prop_nested: Nested,
+    pub prop_nested_vec: Vec<Nested>,
 }
 
 impl StructDecode for Target {
@@ -830,6 +883,15 @@ impl StructDecode for Target {
         };
         match DecodeTools::get_struct(&mut storage, String::from("prop_nested"), &mut self.prop_nested) {
             Ok(_) => {},
+            Err(e) => { return Err(e) },
+        };
+        self.prop_nested_vec = match DecodeTools::get_struct_vec(&mut storage, String::from("prop_nested_vec"), || {
+            Nested {
+                field_u16: 0,
+                field_utf8_string: String::from("")
+            }
+        }) {
+            Ok(val) => val,
             Err(e) => { return Err(e) },
         };
         Ok(())
@@ -925,6 +987,10 @@ impl StructEncode for Target {
             Ok(mut buf) => { buffer.append(&mut buf); },
             Err(e) => { return  Err(e); }
         };
+        match EncodeTools::get_struct_vec(String::from("prop_nested_vec"), self.prop_nested_vec.clone()) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
         Ok(buffer)
     }
 
@@ -996,9 +1062,23 @@ mod tests {
             prop_f64: 0.00002,
             prop_utf8_string_vec: vec![String::from("UTF8 String 1"), String::from("UTF8 String 2")],
             prop_nested: Nested {
-                field_u16: 333,
-                field_utf8_string: String::from("Hello from Nested"),
-            }
+                field_u16: 444,
+                field_utf8_string: String::from("4 Hello from Nested"),
+            },
+            prop_nested_vec: vec![
+                Nested {
+                    field_u16: 111,
+                    field_utf8_string: String::from("1 Hello from Nested"),
+                },
+                Nested {
+                    field_u16: 222,
+                    field_utf8_string: String::from("2 Hello from Nested"),
+                },
+                Nested {
+                    field_u16: 333,
+                    field_utf8_string: String::from("3 Hello from Nested"),
+                }
+            ]
         };
         let buf = match a.encode() {
             Ok(buf) => buf,
@@ -1032,7 +1112,8 @@ mod tests {
             prop_nested: Nested {
                 field_u16: 0,
                 field_utf8_string: String::from(""),
-            }
+            },
+            prop_nested_vec: vec![],
         };
         let s = match Storage::new(buf) {
             Ok(s) => s,
