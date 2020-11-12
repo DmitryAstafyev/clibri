@@ -125,7 +125,7 @@ impl Encode for String {
     }
 }
 
-impl Encode for dyn StructEncode {
+impl<T> Encode for T where T: StructEncode {
     fn encode(&mut self, name: String) -> Result<Vec<u8>, String> {
         match self.encode() {
             Ok(buf) => self.get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec()),

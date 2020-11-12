@@ -17,6 +17,50 @@ mod tests {
     use decode::{ StructDecode, Decode };
     use storage::{ Storage };
 
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct Nested {
+        field_u16: u16,
+        field_utf8_string: String,
+    }
+
+    impl StructDecode for Nested {
+
+        fn defaults() -> Nested {
+            Nested {
+                field_u16: 0,
+                field_utf8_string: String::from(""),
+            }
+        }
+
+        fn decode(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.field_u16 = match u16::decode(&mut storage, String::from("field_u16")) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_utf8_string = match String::decode(&mut storage, String::from("field_utf8_string")) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+
+    impl StructEncode for Nested {
+
+        fn encode(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.field_u16.encode(String::from("field_u16")) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
+            match self.field_utf8_string.encode(String::from("field_utf8_string")) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
+            Ok(buffer)
+        }
+    }
+
     #[derive(Debug, Clone)]
     struct Target {
         pub prop_u8: u8,
@@ -41,6 +85,8 @@ mod tests {
         pub prop_f32: f32,
         pub prop_f64: f64,
         pub prop_utf8_string_vec: Vec<String>,
+        prop_nested: Nested,
+        prop_nested_vec: Vec<Nested>,
     }
 
     impl StructDecode for Target {
@@ -68,6 +114,8 @@ mod tests {
                 prop_f32: 0.0,
                 prop_f64: 0.0,
                 prop_utf8_string_vec: vec![],
+                prop_nested: Nested::defaults(),
+                prop_nested_vec: vec![],
             }
         }
         fn decode(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -156,6 +204,14 @@ mod tests {
                 Err(e) => { return Err(e) },
             };
             self.prop_utf8_string_vec = match Vec::<String>::decode(&mut storage, String::from("prop_utf8_string_vec")) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.prop_nested = match <Nested as Decode<Nested>>::decode(&mut storage, String::from("prop_nested")) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.prop_nested_vec = match Vec::<Nested>::decode(&mut storage, String::from("prop_nested_vec")) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -255,6 +311,14 @@ mod tests {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
+            match Encode::encode(&mut self.prop_nested, String::from("prop_nested")) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
+            match self.prop_nested_vec.encode(String::from("prop_nested_vec")) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
             Ok(buffer)
         }
 
@@ -285,8 +349,26 @@ mod tests {
             prop_f32: 0.1,
             prop_f64: 0.00002,
             prop_utf8_string_vec: vec![String::from("UTF8 String 1"), String::from("UTF8 String 2")],
+            prop_nested: Nested {
+                field_u16: 999,
+                field_utf8_string: String::from("Hello, from Nested!")
+            },
+            prop_nested_vec: vec![
+                Nested {
+                    field_u16: 333,
+                    field_utf8_string: String::from("Hello, from Nested (333)!")
+                },
+                Nested {
+                    field_u16: 444,
+                    field_utf8_string: String::from("Hello, from Nested (444)!")
+                },
+                Nested {
+                    field_u16: 555,
+                    field_utf8_string: String::from("Hello, from Nested (555)!")
+                },
+            ],
         };
-        let buf = match a.encode() {
+        let buf = match StructEncode::encode(&mut a) {
             Ok(buf) => buf,
             Err(e) => {
                 println!("{}", e);
@@ -325,6 +407,9 @@ mod tests {
         assert_eq!(a.prop_f32, b.prop_f32);
         assert_eq!(a.prop_f64, b.prop_f64);
         assert_eq!(a.prop_utf8_string_vec, b.prop_utf8_string_vec);
+        assert_eq!(a.prop_nested, b.prop_nested);
+        assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
+
         // assert_eq!(true, false);
     }
 
