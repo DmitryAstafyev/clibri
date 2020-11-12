@@ -1,3 +1,4 @@
+
 pub trait Protocol<T> {
     
     fn get_msg(&self, id: u32, payload: &str) -> Result<T, String>;

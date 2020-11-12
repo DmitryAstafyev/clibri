@@ -3,3 +3,5 @@ authors = ["dmitry.astafyev <dmitry.astafyev@esrlabs.com>"]
 edition = "2018"
 name = "fiber-cli"
 version = "0.1.0"
+[dependencies]
+bytes = "*"
