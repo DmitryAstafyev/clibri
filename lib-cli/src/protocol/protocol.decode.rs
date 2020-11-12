@@ -368,6 +368,50 @@ impl Decode<Vec<i64>> for Vec<i64> {
     }
 }
 
+impl Decode<Vec<f32>> for Vec<f32> {
+    fn decode(&mut self, storage: &mut Storage, name: String) -> Result<Vec<f32>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<f32> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < sizes::F32_LEN as u64 {
+                    return Err(format!("To extract f32 value from array buffer should have length at least {} bytes, but length is {}", sizes::F32_LEN, buf.len()));
+                }
+                res.push(cursor.get_f32_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+}
+
+impl Decode<Vec<f64>> for Vec<f64> {
+    fn decode(&mut self, storage: &mut Storage, name: String) -> Result<Vec<f64>, String> {
+        if let Some(buf) = storage.get(name.clone()) {
+            let mut res: Vec<f64> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            let len = buf.len() as u64;
+            loop {
+                if cursor.position() == len {
+                    break;
+                }
+                if len - cursor.position() < sizes::F64_LEN as u64 {
+                    return Err(format!("To extract f64 value from array buffer should have length at least {} bytes, but length is {}", sizes::F64_LEN, buf.len()));
+                }
+                res.push(cursor.get_f64_le());
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", name))
+        }
+    }
+}
+
 impl Decode<Vec<String>> for Vec<String> {
     fn decode(&mut self, storage: &mut Storage, name: String) -> Result<Vec<String>, String> {
         if let Some(buf) = storage.get(name.clone()) {
