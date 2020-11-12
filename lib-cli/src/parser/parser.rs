@@ -376,7 +376,7 @@ mod tests {
                 let mut parser: Parser = Parser::new(src, rs, ts);
                 match parser.parse() {
                     Ok(_buf) => {
-                        assert_eq!(true, false);
+                        assert_eq!(true, true);
                     },
                     Err(e) => {
                         println!("{}", e[0]);
