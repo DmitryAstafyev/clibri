@@ -222,6 +222,28 @@ impl Encode for Vec<i64> {
     }
 }
 
+impl Encode for Vec<f32> {
+    fn encode(&mut self, name: String) -> Result<Vec<u8>, String> {
+        let len = self.len() * sizes::F32_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in self.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        self.get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
+    }
+}
+
+impl Encode for Vec<f64> {
+    fn encode(&mut self, name: String) -> Result<Vec<u8>, String> {
+        let len = self.len() * sizes::F64_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in self.iter() {
+            buffer.append(&mut val.to_le_bytes().to_vec());
+        }
+        self.get_value_buffer(name, ESize::U64(len as u64), buffer.to_vec())
+    }
+}
+
 impl Encode for Vec<String> {
     fn encode(&mut self, name: String) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();

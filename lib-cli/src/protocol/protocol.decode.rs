@@ -1,11 +1,6 @@
-use std::convert::TryFrom;
 use std::io::Cursor;
-use std::collections::{HashMap};
 use bytes::{Buf};
-use std::str;
-use std::cmp::{ PartialEq };
 use super::{ sizes, storage };
-use sizes::{ ESize };
 use storage::{ Storage };
 
 pub trait StructDecode {
@@ -403,7 +398,7 @@ impl Decode<Vec<String>> for Vec<String> {
     }
 }
 
-impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode,  {
+impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
     fn decode(&mut self, storage: &mut Storage, name: String) -> Result<Vec<T>, String> {
         if let Some(buf) = storage.get(name.clone()) {
             let mut res: Vec<T> = vec!();
