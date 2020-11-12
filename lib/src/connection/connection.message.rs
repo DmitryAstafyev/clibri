@@ -4,6 +4,7 @@ use std::collections::{HashMap};
 use bytes::{Buf};
 use std::str;
 use std::cmp::{ PartialEq };
+use Sizes::{ ESize };
 
 /*
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -342,6 +343,7 @@ mod DecodeTools {
         }
     }
 
+
     pub fn get_u8_vec(storage: &mut Storage, name: String) -> Result<Vec<u8>, String> {
         if let Some(buf) = storage.get(name.clone()) {
             let mut res: Vec<u8> = vec!();
@@ -624,6 +626,7 @@ mod EncodeTools {
     pub fn get_u64(name: String, value: u64) -> Result<Vec<u8>, String> {
         get_value_buffer(name, ESize::U8(Sizes::U64_LEN as u8), value.to_le_bytes().to_vec())
     }
+
     pub fn get_i8(name: String, value: i8) -> Result<Vec<u8>, String> {
         get_value_buffer(name, ESize::U8(Sizes::I8_LEN as u8), value.to_le_bytes().to_vec())
     }
@@ -662,6 +665,17 @@ mod EncodeTools {
             Ok(buf) => get_value_buffer(name, ESize::U64(buf.len() as u64), buf.to_vec()),
             Err(e) => Err(e)
         }
+    }
+
+    pub fn get_enum_u16(name: String, option: String, value: u16) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        if option.len() > 255 || option.is_empty() {
+            return Err(String::from("Maximum length of option name is 255 chars and it should not be empty"));
+        }
+        buffer.append(&mut (option.len() as u8).to_le_bytes().to_vec());
+        buffer.append(&mut option.as_bytes().to_vec());
+        buffer.append(&mut value.to_le_bytes().to_vec());
+        get_value_buffer(name, ESize::U8(Sizes::U16_LEN as u8), buffer)
     }
 
     pub fn get_u8_vec(name: String, value: Vec<u8>) -> Result<Vec<u8>, String> {
