@@ -1,16 +1,19 @@
 use std::convert::TryFrom;
 use std::io::Cursor;
 use std::collections::{HashMap};
-use bytes::{Buf};
-use std::str;
+use bytes::{ Buf };
 use super::{ sizes };
 
 pub struct Storage {
-    map: HashMap<String, Vec<u8>>,
+    map: HashMap<u16, Vec<u8>>,
 }
 
 #[allow(dead_code)]
 impl Storage {
+
+    pub fn from(map: HashMap<u16, Vec<u8>>) -> Self {
+        Storage { map }
+    }
 
     pub fn new(buf: Vec<u8>) -> Result<Self, String> {
         /* 
@@ -18,12 +21,12 @@ impl Storage {
         | 2 bytes       | n bytes | 1 byte             | 1 - 8 bytes   | n bytes   | ... |
         */
         let mut position: usize = 0;
-        let mut map: HashMap<String, Vec<u8>> = HashMap::new();
+        let mut map: HashMap<u16, Vec<u8>> = HashMap::new();
         loop {
             match Storage::next(&buf, position) {
-                Ok((name, body, pos)) => {
+                Ok((id, body, pos)) => {
                     position = pos;
-                    map.insert(name, body);
+                    map.insert(id, body);
                     if pos == buf.len() {
                         break;
                     }
@@ -38,26 +41,15 @@ impl Storage {
         })
     }
 
-    fn name(buf: &[u8], pos: usize) -> Result<(String, usize), String> {
+    fn id(buf: &[u8], pos: usize) -> Result<(u16, usize), String> {
         let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
         if let Ok(pos) = u64::try_from(pos) {
             cursor.set_position(pos);
         } else {
             return Err("Fail to set cursor position".to_string());
         }
-        let prop_name_len_u16 = cursor.get_u16_le();
-        let prop_name_len_usize: usize;
-        if let Ok(val) = usize::try_from(prop_name_len_u16) {
-            prop_name_len_usize = val;
-        } else {
-            return Err("Fail convert length of name from u16 to usize".to_string());
-        }
-        let mut prop_name_buf = vec![0; prop_name_len_usize];
-        prop_name_buf.copy_from_slice(&buf[(pos + sizes::U16_LEN)..(pos + sizes::U16_LEN + prop_name_len_usize)]);
-        match str::from_utf8(&prop_name_buf) {
-            Ok(name) => Ok((name.to_string(), pos + sizes::U16_LEN + prop_name_len_usize)),
-            Err(e) => Err(format!("{}", e)),
-        }
+        let id = cursor.get_u16_le();
+        Ok((id, pos + sizes::U16_LEN))
     }
 
     fn body(buf: &[u8], pos: usize) -> Result<(Vec<u8>, usize), String> {
@@ -105,11 +97,11 @@ impl Storage {
         Ok((prop_body_buf, pos + prop_rank_len + prop_size_len + prop_body_len_usize))
     }
 
-    fn next(buf: &[u8], pos: usize) -> Result<(String, Vec<u8>, usize), String> {
-        match Storage::name(buf, pos) {
-            Ok((name, pos)) => {
+    fn next(buf: &[u8], pos: usize) -> Result<(u16, Vec<u8>, usize), String> {
+        match Storage::id(buf, pos) {
+            Ok((id, pos)) => {
                 match Storage::body(buf, pos) {
-                    Ok((body, pos)) => Ok((name, body, pos)),
+                    Ok((body, pos)) => Ok((id, body, pos)),
                     Err(e) => Err(e)
                 }
             },
@@ -117,8 +109,8 @@ impl Storage {
         }
     }
 
-    pub fn get(&mut self, name: String) -> Option<&Vec<u8>> {
-        self.map.get(&name)
+    pub fn get(&mut self, id: u16) -> Option<&Vec<u8>> {
+        self.map.get(&id)
     }
 
 }

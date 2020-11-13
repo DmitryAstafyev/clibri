@@ -13,9 +13,58 @@ pub mod storage;
 #[cfg(test)]
 mod tests { 
     use super::*;
-    use encode::{ StructEncode, Encode };
-    use decode::{ StructDecode, Decode };
+    use encode::{ StructEncode, EnumEncode, Encode };
+    use decode::{ StructDecode, EnumDecode, Decode };
     use storage::{ Storage };
+    use std::io::Cursor;
+    use bytes::{ Buf };
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum TargetEnum {
+        OptionA(String),
+        OptionB(u32),
+    }
+
+    impl EnumEncode for TargetEnum {
+
+        fn encode(&mut self) -> Result<Vec<u8>, String> {
+            match match self {
+                Self::OptionA(v) => v.encode(1),
+                Self::OptionB(v) => v.encode(2),
+            } {
+                Ok(buf) => Ok(buf),
+                Err(e) => Err(e),
+            }
+        }
+
+    }
+
+    impl EnumDecode<TargetEnum> for TargetEnum {
+
+        fn decode(buf: Vec<u8>) -> Result<TargetEnum, String> {
+            if buf.len() <= sizes::U16_LEN {
+                return Err(String::from("Fail to extract value for TargetEnum because buffer too small"));
+            }
+            let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
+            let id = cursor.get_u16_le();
+            let mut storage = match Storage::new(buf) {
+                Ok(s) => s,
+                Err(e) => { return Err(e); }
+            };
+            match id {
+                1 => match String::decode(&mut storage, id) {
+                    Ok(v) => Ok(TargetEnum::OptionA(v)),
+                    Err(e) => Err(e),
+                },
+                2 => match u32::decode(&mut storage, id) {
+                    Ok(v) => Ok(TargetEnum::OptionB(v)),
+                    Err(e) => Err(e),
+                },
+                _ => Err(String::from("Fail to find relevant value for TargetEnum"))
+            }
+        }
+
+    }
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct Nested {
@@ -33,11 +82,11 @@ mod tests {
         }
 
         fn decode(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u16 = match u16::decode(&mut storage, String::from("field_u16")) {
+            self.field_u16 = match u16::decode(&mut storage, 1) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_utf8_string = match String::decode(&mut storage, String::from("field_utf8_string")) {
+            self.field_utf8_string = match String::decode(&mut storage, 2) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -49,11 +98,11 @@ mod tests {
 
         fn encode(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u16.encode(String::from("field_u16")) {
+            match self.field_u16.encode(1) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.field_utf8_string.encode(String::from("field_utf8_string")) {
+            match self.field_utf8_string.encode(2) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
@@ -119,99 +168,100 @@ mod tests {
             }
         }
         fn decode(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.prop_u8 = match u8::decode(&mut storage, String::from("prop_u8")) {
+            self.prop_u8 = match u8::decode(&mut storage, 1) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u16 = match u16::decode(&mut storage, String::from("prop_u16")) {
+            self.prop_u16 = match u16::decode(&mut storage, 2) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u32 = match u32::decode(&mut storage, String::from("prop_u32")) {
+            self.prop_u32 = match u32::decode(&mut storage, 3) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u64 = match u64::decode(&mut storage, String::from("prop_u64")) {
+            self.prop_u64 = match u64::decode(&mut storage, 4) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i8 = match i8::decode(&mut storage, String::from("prop_i8")) {
+            self.prop_i8 = match i8::decode(&mut storage, 5) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i16 = match i16::decode(&mut storage, String::from("prop_i16")) {
+            self.prop_i16 = match i16::decode(&mut storage, 6) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i32 = match i32::decode(&mut storage, String::from("prop_i32")) {
+            self.prop_i32 = match i32::decode(&mut storage, 7) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i64 = match i64::decode(&mut storage, String::from("prop_i64")) {
+            self.prop_i64 = match i64::decode(&mut storage, 8) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u8_vec = match Vec::<u8>::decode(&mut storage, String::from("prop_u8_vec")) {
+            self.prop_u8_vec = match Vec::<u8>::decode(&mut storage, 9) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u16_vec = match Vec::<u16>::decode(&mut storage, String::from("prop_u16_vec")) {
+            self.prop_u16_vec = match Vec::<u16>::decode(&mut storage, 10) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u32_vec = match Vec::<u32>::decode(&mut storage, String::from("prop_u32_vec")) {
+            self.prop_u32_vec = match Vec::<u32>::decode(&mut storage, 11) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u64_vec = match Vec::<u64>::decode(&mut storage, String::from("prop_u64_vec")) {
+            self.prop_u64_vec = match Vec::<u64>::decode(&mut storage, 12) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i8_vec = match Vec::<i8>::decode(&mut storage, String::from("prop_i8_vec")) {
+            self.prop_f32_vec = match Vec::<f32>::decode(&mut storage, 13) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i16_vec = match Vec::<i16>::decode(&mut storage, String::from("prop_i16_vec")) {
+            self.prop_f64_vec = match Vec::<f64>::decode(&mut storage, 14) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i32_vec = match Vec::<i32>::decode(&mut storage, String::from("prop_i32_vec")) {
+            self.prop_i8_vec = match Vec::<i8>::decode(&mut storage, 15) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i64_vec = match Vec::<i64>::decode(&mut storage, String::from("prop_i64_vec")) {
+            self.prop_i16_vec = match Vec::<i16>::decode(&mut storage, 16) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f32_vec = match Vec::<f32>::decode(&mut storage, String::from("prop_f32_vec")) {
+            self.prop_i32_vec = match Vec::<i32>::decode(&mut storage, 17) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f64_vec = match Vec::<f64>::decode(&mut storage, String::from("prop_f64_vec")) {
+            self.prop_i64_vec = match Vec::<i64>::decode(&mut storage, 18) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_string = match String::decode(&mut storage, String::from("prop_string")) {
+
+            self.prop_string = match String::decode(&mut storage, 19) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f32 = match f32::decode(&mut storage, String::from("prop_f32")) {
+            self.prop_f32 = match f32::decode(&mut storage, 20) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f64 = match f64::decode(&mut storage, String::from("prop_f64")) {
+            self.prop_f64 = match f64::decode(&mut storage, 21) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_utf8_string_vec = match Vec::<String>::decode(&mut storage, String::from("prop_utf8_string_vec")) {
+            self.prop_utf8_string_vec = match Vec::<String>::decode(&mut storage, 22) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_nested = match <Nested as Decode<Nested>>::decode(&mut storage, String::from("prop_nested")) {
+            self.prop_nested = match <Nested as Decode<Nested>>::decode(&mut storage, 23) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_nested_vec = match Vec::<Nested>::decode(&mut storage, String::from("prop_nested_vec")) {
+            self.prop_nested_vec = match Vec::<Nested>::decode(&mut storage, 24) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -223,99 +273,99 @@ mod tests {
 
         fn encode(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.prop_u8.encode(String::from("prop_u8")) {
+            match self.prop_u8.encode(1) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u16.encode(String::from("prop_u16")) {
+            match self.prop_u16.encode(2) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u32.encode(String::from("prop_u32")) {
+            match self.prop_u32.encode(3) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u64.encode(String::from("prop_u64")) {
+            match self.prop_u64.encode(4) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i8.encode(String::from("prop_i8")) {
+            match self.prop_i8.encode(5) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i16.encode(String::from("prop_i16")) {
+            match self.prop_i16.encode(6) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i32.encode(String::from("prop_i32")) {
+            match self.prop_i32.encode(7) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i64.encode(String::from("prop_i64")) {
+            match self.prop_i64.encode(8) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u8_vec.encode(String::from("prop_u8_vec")) {
+            match self.prop_u8_vec.encode(9) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u16_vec.encode(String::from("prop_u16_vec")) {
+            match self.prop_u16_vec.encode(10) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u32_vec.encode(String::from("prop_u32_vec")) {
+            match self.prop_u32_vec.encode(11) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u64_vec.encode(String::from("prop_u64_vec")) {
+            match self.prop_u64_vec.encode(12) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f32_vec.encode(String::from("prop_f32_vec")) {
+            match self.prop_f32_vec.encode(13) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f64_vec.encode(String::from("prop_f64_vec")) {
+            match self.prop_f64_vec.encode(14) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i8_vec.encode(String::from("prop_i8_vec")) {
+            match self.prop_i8_vec.encode(15) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i16_vec.encode(String::from("prop_i16_vec")) {
+            match self.prop_i16_vec.encode(16) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i32_vec.encode(String::from("prop_i32_vec")) {
+            match self.prop_i32_vec.encode(17) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i64_vec.encode(String::from("prop_i64_vec")) {
+            match self.prop_i64_vec.encode(18) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_string.encode(String::from("prop_string")) {
+            match self.prop_string.encode(19) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f32.encode(String::from("prop_f32")) {
+            match self.prop_f32.encode(20) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f64.encode(String::from("prop_f64")) {
+            match self.prop_f64.encode(21) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_utf8_string_vec.encode(String::from("prop_utf8_string_vec")) {
+            match self.prop_utf8_string_vec.encode(22) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match Encode::encode(&mut self.prop_nested, String::from("prop_nested")) {
+            match Encode::encode(&mut self.prop_nested, 23) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_nested_vec.encode(String::from("prop_nested_vec")) {
+            match self.prop_nested_vec.encode(24) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
@@ -410,6 +460,44 @@ mod tests {
         assert_eq!(a.prop_nested, b.prop_nested);
         assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
 
+        let mut target_enum: TargetEnum = TargetEnum::OptionA(String::from("Hello from enum!"));
+        let buf = match target_enum.encode() {
+            Ok(buf) => buf,
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        };
+        match TargetEnum::decode(buf) {
+            Ok(v) => {
+                assert_eq!(v, target_enum);
+            },
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        };
+        let mut target_enum: TargetEnum = TargetEnum::OptionB(999);
+        let buf = match target_enum.encode() {
+            Ok(buf) => buf,
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        };
+        match TargetEnum::decode(buf) {
+            Ok(v) => {
+                assert_eq!(v, target_enum);
+            },
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        };
         // assert_eq!(true, false);
     }
 
