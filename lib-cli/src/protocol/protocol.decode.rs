@@ -6,7 +6,7 @@ use storage::{ Storage };
 pub trait StructDecode {
 
     fn defaults() -> Self;
-    fn decode(&mut self, storage: Storage) -> Result<(), String>;
+    fn extract(&mut self, storage: Storage) -> Result<(), String>;
 
 }
 
@@ -196,7 +196,7 @@ impl<T> Decode<T> for T where T: StructDecode,  {
                 }
             };
             let mut strct: T = T::defaults();
-            match strct.decode(sctruct_storage) {
+            match strct.extract(sctruct_storage) {
                 Ok(_) => Ok(strct),
                 Err(e) => Err(e),
             }
@@ -476,7 +476,7 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                     }
                 };
                 let mut strct: T = T::defaults();
-                match strct.decode(sctruct_storage) {
+                match strct.extract(sctruct_storage) {
                     Ok(_) => {},
                     Err(e) => { return Err(e); },
                 }

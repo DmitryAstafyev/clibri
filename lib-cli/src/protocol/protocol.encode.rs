@@ -3,7 +3,7 @@ use sizes::{ ESize };
 
 pub trait StructEncode {
 
-    fn encode(&mut self) -> Result<Vec<u8>, String>;
+    fn abduct(&mut self) -> Result<Vec<u8>, String>;
 
 }
 
@@ -119,7 +119,7 @@ impl Encode for String {
 
 impl<T> Encode for T where T: StructEncode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
-        match self.encode() {
+        match self.abduct() {
             Ok(buf) => self.get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
             Err(e) => Err(e)
         }
@@ -252,7 +252,7 @@ impl<T> Encode for Vec<T> where T: StructEncode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter_mut() {
-            let val_as_bytes = match val.encode() {
+            let val_as_bytes = match val.abduct() {
                 Ok(buf) => buf,
                 Err(e) => { return Err(e); }
             };
