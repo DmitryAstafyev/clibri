@@ -12,8 +12,15 @@ pub trait StructDecode {
 
 pub trait EnumDecode<T> {
 
-    fn decode(buf: Vec<u8>) -> Result<T, String>;
+    fn extract(buf: Vec<u8>) -> Result<T, String>;
 
+    fn decode(storage: &mut Storage, id: u16) -> Result<T, String> {
+        if let Some(buf) = storage.get(id) {
+            Self::extract(buf.clone())
+        } else {
+            Err(format!("Buffer for property {} isn't found", id))
+        }
+    }
 }
 
 pub trait Decode<T> {

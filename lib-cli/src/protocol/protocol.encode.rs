@@ -9,7 +9,38 @@ pub trait StructEncode {
 
 pub trait EnumEncode {
 
-    fn encode(&mut self) -> Result<Vec<u8>, String>;
+    fn get_value_buffer(&self, id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        buffer.append(&mut id.to_le_bytes().to_vec());
+        match size {
+            ESize::U8(size) => {
+                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U16(size) => {
+                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U32(size) => {
+                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U64(size) => {
+                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+        };
+        buffer.append(&mut value);
+        Ok(buffer)
+    }
+    
+    fn abduct(&mut self) -> Result<Vec<u8>, String>;
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+        match self.abduct() {
+            Ok(buf) => self.get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
+            Err(e) => Err(e)
+        }
+    }
 
 }
 

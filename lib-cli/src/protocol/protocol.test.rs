@@ -36,11 +36,12 @@ mod tests {
         Optionf32Vec(Vec<f32>),
         Optionf64Vec(Vec<f64>),
         OptionStructVec(Vec<Nested>),
+        OptionNoValue,
     }
 
     impl EnumEncode for TargetEnum {
 
-        fn encode(&mut self) -> Result<Vec<u8>, String> {
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
             match match self {
                 Self::OptionString(v) => v.encode(1),
                 Self::Optionu8(v) => v.encode(2),
@@ -66,6 +67,7 @@ mod tests {
                 Self::Optionf32Vec(v) => v.encode(22),
                 Self::Optionf64Vec(v) => v.encode(23),
                 Self::OptionStructVec(v) => Encode::encode(&mut v.clone(), 24),
+                Self::OptionNoValue => (0 as u8).encode(25),
             } {
                 Ok(buf) => Ok(buf),
                 Err(e) => Err(e),
@@ -76,7 +78,7 @@ mod tests {
 
     impl EnumDecode<TargetEnum> for TargetEnum {
 
-        fn decode(buf: Vec<u8>) -> Result<TargetEnum, String> {
+        fn extract(buf: Vec<u8>) -> Result<TargetEnum, String> {
             if buf.len() <= sizes::U16_LEN {
                 return Err(String::from("Fail to extract value for TargetEnum because buffer too small"));
             }
@@ -183,6 +185,10 @@ mod tests {
                     Ok(v) => Ok(TargetEnum::OptionStructVec(v)),
                     Err(e) => Err(e),
                 },
+                25 => match u8::decode(&mut storage, id) {
+                    Ok(_) => Ok(TargetEnum::OptionNoValue),
+                    Err(e) => Err(e),
+                },
                 _ => Err(String::from("Fail to find relevant value for TargetEnum"))
             }
         }
@@ -259,6 +265,7 @@ mod tests {
         pub prop_utf8_string_vec: Vec<String>,
         prop_nested: Nested,
         prop_nested_vec: Vec<Nested>,
+        prop_enum: TargetEnum,
     }
 
     impl StructDecode for Target {
@@ -288,6 +295,7 @@ mod tests {
                 prop_utf8_string_vec: vec![],
                 prop_nested: Nested::defaults(),
                 prop_nested_vec: vec![],
+                prop_enum: TargetEnum::OptionNoValue,
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -385,6 +393,10 @@ mod tests {
                 Err(e) => { return Err(e) },
             };
             self.prop_nested_vec = match Vec::<Nested>::decode(&mut storage, 24) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.prop_enum = match TargetEnum::decode(&mut storage, 25) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -492,6 +504,10 @@ mod tests {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
+            match self.prop_enum.encode(25) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
             Ok(buffer)
         }
 
@@ -540,6 +556,7 @@ mod tests {
                     field_utf8_string: String::from("Hello, from Nested (555)!")
                 },
             ],
+            prop_enum: TargetEnum::OptionString(String::from("Hello, from Enum (666)!")),
         };
         let buf = match StructEncode::abduct(&mut a) {
             Ok(buf) => buf,
@@ -582,6 +599,7 @@ mod tests {
         assert_eq!(a.prop_utf8_string_vec, b.prop_utf8_string_vec);
         assert_eq!(a.prop_nested, b.prop_nested);
         assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
+        assert_eq!(a.prop_enum, b.prop_enum);
 
         let enums: Vec<TargetEnum> = vec![
             TargetEnum::OptionString(String::from("Hello from enum!")),
@@ -620,11 +638,12 @@ mod tests {
                     field_utf8_string: String::from("Hello, from Nested in enum!")
                 }
             ]),
+            TargetEnum::OptionNoValue,
         ];
         let mut enums_bufs: Vec<Vec<u8>> = vec![];
         for item in enums.iter() {
             let mut item = item.clone();
-            enums_bufs.push(match &mut item.encode() {
+            enums_bufs.push(match &mut item.abduct() {
                 Ok(buf) => buf.clone(),
                 Err(e) => {
                     println!("{}", e);
@@ -634,7 +653,7 @@ mod tests {
             });
         }
         for (pos, buf) in enums_bufs.iter().enumerate() {
-            match TargetEnum::decode(buf.clone()) {
+            match TargetEnum::extract(buf.clone()) {
                 Ok(v) => {
                     println!("{:?}", v);
                     assert_eq!(v, enums[pos]);
