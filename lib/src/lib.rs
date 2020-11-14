@@ -31,8 +31,5 @@ pub mod msg_income_extractor;
 #[path = "./connection/connection.message.outgoing.builder.rs"]
 pub mod msg_outgoing_builder;
 
-#[path = "./connection/connection.message.rs"]
-pub mod msg;
-
 #[path = "./test/main.rs"]
 mod test;
