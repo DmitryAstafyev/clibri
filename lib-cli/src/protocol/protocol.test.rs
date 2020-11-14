@@ -562,6 +562,7 @@ mod tests {
             Ok(buf) => buf,
             Err(e) => {
                 println!("{}", e);
+                assert_eq!(true, false);
                 return;
             }
         };
@@ -571,10 +572,18 @@ mod tests {
             Ok(s) => s,
             Err(e) => {
                 println!("{}", e);
+                assert_eq!(true, false);
                 return;
             }
         };
-        b.extract(s);
+        match b.extract(s) {
+            Ok(_) => {},
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        }
         println!("{:?}", b);
         assert_eq!(a.prop_u8, b.prop_u8);
         assert_eq!(a.prop_u16, b.prop_u16);
