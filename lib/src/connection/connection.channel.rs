@@ -12,5 +12,4 @@ pub enum Messages<T: Send + Sync + Clone + 'static> {
     Disconnect { uuid: Uuid, frame: Option<CloseFrame<'static>> },
     Message { uuid: Uuid, msg: T },
     Text { uuid: Uuid, text: String }
-
 }

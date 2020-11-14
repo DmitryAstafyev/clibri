@@ -4,9 +4,6 @@ pub mod ctrlargs;
 #[path = "./helpers/helpers.rs"]
 pub mod helpers;
 
-#[path = "./protocol/protocol.rs"]
-pub mod protocol;
-
 fn main() {
     let ctrl: ctrlargs::CtrlArgs = ctrlargs::CtrlArgs::new();
     match ctrl.errors() {

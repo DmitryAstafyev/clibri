@@ -22,14 +22,29 @@ pub mod buffer;
 #[path = "./session/session.rs"]
 pub mod session;
 
-#[path = "./protocol/protocol.rs"]
-pub mod protocol;
-
 #[path = "./connection/connection.message.income.extractor.rs"]
 pub mod msg_income_extractor;
 
 #[path = "./connection/connection.message.outgoing.builder.rs"]
 pub mod msg_outgoing_builder;
+
+#[path = "./protocol/protocol.rs"]
+pub mod protocol;
+
+#[path = "./protocol/protocol.sizes.rs"]
+pub mod sizes;
+
+#[path = "./protocol/protocol.encode.rs"]
+pub mod encode;
+
+#[path = "./protocol/protocol.decode.rs"]
+pub mod decode;
+
+#[path = "./protocol/protocol.storage.rs"]
+pub mod storage;
+
+#[path = "./protocol/protocol.test.rs"]
+pub mod protocol_test;
 
 #[path = "./test/main.rs"]
 mod test;
