@@ -203,6 +203,10 @@ mod tests {
 
     impl StructDecode for Nested {
 
+        fn get_id() -> u32 {
+            1
+        }
+
         fn defaults() -> Nested {
             Nested {
                 field_u16: 0,
@@ -224,6 +228,10 @@ mod tests {
     }
 
     impl StructEncode for Nested {
+
+        fn get_id(&self) -> u32 {
+            1
+        }
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
@@ -269,6 +277,9 @@ mod tests {
     }
 
     impl StructDecode for Target {
+        fn get_id() -> u32 {
+            2
+        }
         fn defaults() -> Target {
             Target {
                 prop_u8: 0,
@@ -405,6 +416,10 @@ mod tests {
     }
 
     impl StructEncode for Target {
+
+        fn get_id(&self) -> u32 {
+            2
+        }
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();

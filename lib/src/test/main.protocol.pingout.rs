@@ -1,40 +1,24 @@
-use serde::{Deserialize, Serialize};
-use super::{msg_outgoing_builder};
-use msg_outgoing_builder::Message;
+use super::{ encode };
+use encode::*;
 
-pub const PAYLOAD_LIMIT: u64 = 1000;
-
-pub const ID: u32 = 1;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PingOutStruct {
+#[derive(Debug, Clone)]
+pub struct PingOut {
     pub uuid: String,
 }
 
-pub struct PingOut {
-    _msg: PingOutStruct,
-}
+impl StructEncode for PingOut {
 
-impl Message for PingOut {
-    
-    type Msg = PingOutStruct;
-
-    fn new(msg: Self::Msg) -> Self {
-        PingOut {
-            _msg: msg,
-        }
+    fn get_id(&self) -> u32 {
+        2
     }
 
-    fn get_msg_id(&self) -> u32 {
-        ID
-    }
-
-    fn get_payload_limit(&self) -> u64 {
-        PAYLOAD_LIMIT
-    }
-
-    fn get_msg(&self) -> Self::Msg {
-        self._msg.clone()
+    fn abduct(&mut self) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        match self.uuid.encode(1) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        Ok(buffer)
     }
 
 }

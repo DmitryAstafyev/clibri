@@ -43,6 +43,9 @@ pub mod decode;
 #[path = "./protocol/protocol.storage.rs"]
 pub mod storage;
 
+#[path = "./protocol/protocol.package.rs"]
+pub mod package;
+
 #[path = "./protocol/protocol.test.rs"]
 pub mod protocol_test;
 

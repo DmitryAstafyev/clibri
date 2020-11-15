@@ -28,6 +28,7 @@ fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>,
 
 pub trait StructEncode {
 
+    fn get_id(&self) -> u32;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
 
 }

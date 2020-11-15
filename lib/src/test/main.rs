@@ -1,31 +1,36 @@
 #[allow(unused_imports)]
-use super:: { protocol, buffer, msg_outgoing_builder, msg_income_extractor };
-#[allow(unused_imports)]
-use pingout::{PingOut, PingOutStruct};
+use super:: { protocol, buffer, msg_outgoing_builder, msg_income_extractor, decode, storage, encode, package };
 
 #[path = "./main.protocol.rs"]
 pub mod testprotocol;
 
-#[path = "./main.protocol.pingout.rs"]
-pub mod pingout;
-
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
-    use super::{PingOut, PingOutStruct, msg_outgoing_builder, buffer, testprotocol };
-    use testprotocol::{Messages, TestProtocol};
-    use msg_outgoing_builder::Message;
+    use super::{buffer, testprotocol, encode, decode, package };
+    use testprotocol::{Messages, TestProtocol, ping };
     use buffer::{Processor};
+    use encode::*;
 
     #[test]
     fn out_message_encode() {
-        let mut ping_out_msg: PingOut = PingOut::new(PingOutStruct {
+        let mut ping_msg: ping::Ping = ping::Ping {
             uuid: Uuid::new_v4().to_string()
-        });
-        match ping_out_msg.buffer() {
+        };
+        match ping_msg.abduct() {
             Ok(buf) => {
-                assert_eq!(buf.len(), 63);
+                assert_eq!(buf.len(), 47);
             },
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+            }
+        }
+        match package::pack(ping_msg) {
+            Ok(buf) => {
+                assert_eq!(buf.len(), 67);
+            }
+            ,
             Err(e) => {
                 println!("{}", e);
                 assert_eq!(true, false);
@@ -40,13 +45,11 @@ mod tests {
         let mut buffer: Processor<Messages> = Processor::new(uuid);
         let mut buf = vec![];
         for _ in 0..10 {
-            let mut ping_out_msg: PingOut = PingOut::new(PingOutStruct {
+            let ping_msg: ping::Ping = ping::Ping {
                 uuid: uuid.to_string(),
-            });
-            match ping_out_msg.buffer() {
-                Ok(mut msg_buf) => {
-                    buf.append(&mut msg_buf);
-                },
+            };
+            match package::pack(ping_msg) {
+                Ok(mut package_buf) => buf.append(&mut package_buf),
                 Err(e) => {
                     println!("{:?}", e);
                     assert_eq!(true, false);

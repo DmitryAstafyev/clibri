@@ -5,6 +5,7 @@ use storage::{ Storage };
 
 pub trait StructDecode {
 
+    fn get_id() -> u32;
     fn defaults() -> Self;
     fn extract(&mut self, storage: Storage) -> Result<(), String>;
 
