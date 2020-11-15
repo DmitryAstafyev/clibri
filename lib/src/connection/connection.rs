@@ -1,4 +1,4 @@
-use super::{ buffer, connection_channel, protocol, msg_outgoing_builder };
+use super::{ buffer, connection_channel, protocol, encode, package };
 use std::time::{ Duration, Instant };
 use log::{ error, warn, debug, trace };
 use std::net::{ TcpStream };
@@ -10,7 +10,7 @@ use std::sync::mpsc::{ Sender };
 use std::sync::{ Arc, RwLock };
 use std::thread;
 use std::io::{self};
-use msg_outgoing_builder::Message as OutgoingMessage;
+use encode::{ StructEncode };
 
 pub struct Connection {
     pub uuid: Uuid,
@@ -165,8 +165,8 @@ impl Connection {
     }
 
     #[allow(dead_code)]
-    pub fn msg(&mut self, mut msg: impl OutgoingMessage) -> Result<(), String> {
-        match msg.buffer() {
+    pub fn msg(&mut self, msg: impl StructEncode) -> Result<(), String> {
+        match package::pack(msg) {
             Ok(buf) => self.buffer(buf),
             Err(e) => Err(e),
         }

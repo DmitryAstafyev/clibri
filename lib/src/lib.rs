@@ -22,12 +22,6 @@ pub mod buffer;
 #[path = "./session/session.rs"]
 pub mod session;
 
-#[path = "./connection/connection.message.income.extractor.rs"]
-pub mod msg_income_extractor;
-
-#[path = "./connection/connection.message.outgoing.builder.rs"]
-pub mod msg_outgoing_builder;
-
 #[path = "./protocol/protocol.rs"]
 pub mod protocol;
 

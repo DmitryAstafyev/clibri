@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use super:: { protocol, buffer, msg_outgoing_builder, msg_income_extractor, decode, storage, encode, package };
+use super:: { protocol, buffer, decode, storage, encode, package };
 
 #[path = "./main.protocol.rs"]
 pub mod testprotocol;
@@ -7,7 +7,7 @@ pub mod testprotocol;
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
-    use super::{buffer, testprotocol, encode, decode, package };
+    use super::{buffer, testprotocol, encode, package };
     use testprotocol::{Messages, TestProtocol, ping };
     use buffer::{Processor};
     use encode::*;

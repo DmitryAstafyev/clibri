@@ -3,7 +3,7 @@ use bytes::{ Buf };
 use std::io::Cursor;
 use std::convert::TryFrom;
 use std::time::{ SystemTime, UNIX_EPOCH };
-use encode::{ StructEncode, EnumEncode };
+use encode::{ StructEncode };
 
 const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
                                 sizes::U64_LEN + // {u64} body size

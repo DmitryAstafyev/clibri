@@ -1,8 +1,8 @@
-use super:: { connection, msg_outgoing_builder };
+use super:: { connection, encode };
 use connection:: { Connection };
 use std::sync::{ Arc, RwLock };
 use std::collections::{ HashMap };
-use msg_outgoing_builder::Message as OutgoingMessage;
+use encode::{ StructEncode }; 
 
 #[derive(Clone)]
 pub struct SessionContext {
@@ -33,13 +33,13 @@ impl SessionContext {
     }
 
     #[allow(dead_code)]
-    pub fn send_msg(&mut self, msg: impl OutgoingMessage) -> Result<(), String> {
+    pub fn send_msg(&mut self, msg: impl StructEncode) -> Result<(), String> {
         let uuid = self.uuid.clone();
         self.send_msg_to(uuid, msg)
     }
 
     #[allow(dead_code)]
-    pub fn send_msg_to(&mut self, uuid: String, msg: impl OutgoingMessage) -> Result<(), String> {
+    pub fn send_msg_to(&mut self, uuid: String, msg: impl StructEncode) -> Result<(), String> {
         match self.connections.write() {
             Ok(mut connections) => {
                 if let Some(connection) = connections.get_mut(&uuid) {
