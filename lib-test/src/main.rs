@@ -1,9 +1,8 @@
 use log::{ info };
 use std::net::TcpListener;
-use fiber:: { server, session, session_context, controller, CloseFrame, Request, Response, ErrorResponse, msg_outgoing_builder };
+use fiber:: { server, session, session_context, controller, CloseFrame, Request, Response, ErrorResponse };
 use session_context::{ SessionContext };
 use uuid::Uuid;
-use msg_outgoing_builder::Message;
 
 #[path = "./main.protocol.rs"]
 mod protocol;
@@ -46,9 +45,9 @@ impl session::Session<protocol::Messages> for ClientSession {
         let guid = cx.get_uuid();
         println!("{}:: {:?}", guid, _msg);
         let uuid: Uuid = Uuid::new_v4();
-        let ping_out: pingout::PingOut = pingout::PingOut::new(pingout::PingOutStruct {
+        let ping_out: pingout::Ping = pingout::Ping {
             uuid: uuid.to_string(),
-        });
+        };
         match cx.send_msg_to(guid, ping_out) {
             Ok(_) => {
                 println!("PingOut message was sent");

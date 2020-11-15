@@ -1,18 +1,42 @@
-use serde::{Deserialize, Serialize};
-use fiber::{msg_income_extractor};
-use msg_income_extractor::Extractor;
+use fiber::{ decode, encode, storage };
+use storage::{ Storage };
+use decode::*;
+use encode::*;
 
-pub const PAYLOAD_LIMIT: u32 = 1000;
-
-pub const ID: u32 = 1;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PingStruct {
+#[derive(Debug, Clone)]
+pub struct Ping {
     pub uuid: String,
 }
 
-pub struct Ping {}
+impl StructDecode for Ping {
 
-impl Extractor<'_> for Ping {
-    type Msg = PingStruct;
+    fn get_id() -> u32 { 1 }
+
+    fn defaults() -> Self {
+        Ping { uuid: String::from("") }
+    }
+
+    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        self.uuid = match String::decode(&mut storage, 1) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        Ok(())
+    }
+
+}
+
+impl StructEncode for Ping {
+
+    fn get_id(&self) -> u32 { 1 }
+
+    fn abduct(&mut self) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        match self.uuid.encode(1) {
+            Ok(mut buf) => { buffer.append(&mut buf); },
+            Err(e) => { return  Err(e); }
+        };
+        Ok(buffer)
+    }
+
 }
