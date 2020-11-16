@@ -1,2 +1,3 @@
-export { Encode } from './protocol.encode';
-export { Sizes } from './protocol.sizes';
+import * as Primitives from './protocol.primitives';
+
+export { Primitives };
