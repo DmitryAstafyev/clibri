@@ -6,57 +6,78 @@
 //./node_modules/.bin/jasmine-ts src/something.spec.ts
 import * as Protocol from '../src/index';
 
-interface PingInMsgBody {
-    uuid: string;
+interface IPing {
+    u8: number;
+    u16: number;
+    u32: number;
+    u64: bigint;
+    i8: number;
+    i16: number;
+    i32: number;
+    i64: bigint;
+    f32: number;
+    f64: number;
 }
 
-class PingIn extends Protocol.In.Message<PingInMsgBody> {
+class Ping extends Protocol.Encode implements IPing {
 
-    public static readonly id: number = 1;
+    public u8: number;
+    public u16: number;
+    public u32: number;
+    public u64: bigint;
+    public i8: number;
+    public i16: number;
+    public i32: number;
+    public i64: bigint;
+    public f32: number;
+    public f64: number;
 
-    public readonly id: number = PingIn.id;
-
-    public validate(): Error | undefined {
-        if (typeof this.getMsg().struct.uuid !== 'string') {
-            return new Error(`Expecting "uuid" be a string`);
-        }
-        if (this.getMsg().struct.uuid.trim() === '') {
-            return new Error(`Expecting "uuid" would not be empty`);
-        }
-        return undefined;
+    constructor(params: IPing) {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            this[key] = params[key];
+        });
     }
-}
-
-class PingOut extends Protocol.Out.Message<PingInMsgBody> {
-
-    public static readonly id: number = 1;
-
-    public readonly id: number = PingOut.id;
-
-}
-
-type Messages = typeof PingIn;
-
-class ProtocolImpl extends Protocol.Protocol<Messages> {
-
-    public getMsgRefs(): { [key: number]: Messages } {
-        return {
-            [PingIn.id]: PingIn,
-        }
+    public getId(): number {
+        return 1;
     }
 
+    public encode(): ArrayBufferLike {
+        const buffers: ArrayBufferLike[] = [];
+        const getters: Array<() => ArrayBufferLike | Error> = [
+            () => this.getBuffer(1, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.u8)),
+            () => this.getBuffer(2, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.u16)),
+            () => this.getBuffer(3, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.u32)),
+            () => this.getBuffer(4, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.u64)),
+            () => this.getBuffer(5, Protocol.ESize.u8, Protocol.Primitives.i8.getSize(), Protocol.Primitives.i8.encode(this.i8)),
+            () => this.getBuffer(6, Protocol.ESize.u8, Protocol.Primitives.i16.getSize(), Protocol.Primitives.i16.encode(this.i16)),
+            () => this.getBuffer(7, Protocol.ESize.u8, Protocol.Primitives.i32.getSize(), Protocol.Primitives.i32.encode(this.i32)),
+            () => this.getBuffer(8, Protocol.ESize.u8, Protocol.Primitives.i64.getSize(), Protocol.Primitives.i64.encode(this.i64)),
+            () => this.getBuffer(9, Protocol.ESize.u8, Protocol.Primitives.f32.getSize(), Protocol.Primitives.f32.encode(this.f32)),
+            () => this.getBuffer(10, Protocol.ESize.u8, Protocol.Primitives.f64.getSize(), Protocol.Primitives.f64.encode(this.f64)),
+        ];
+        try {
+            getters.forEach((getter: () => ArrayBufferLike | Error) => {
+                const buf: ArrayBufferLike | Error = getter();
+                if (buf instanceof Error) {
+                    throw buf;
+                }
+                buffers.push(buf);
+            });
+        } catch (e) {
+            return e;
+        }
+        return Protocol.Tools.append(buffers);
+
+    }
+
 }
 
-function append(a: ArrayBufferLike, b: ArrayBufferLike): ArrayBufferLike {
-    const tmp = new Uint8Array(a.byteLength + b.byteLength);
-    tmp.set( new Uint8Array(a), 0);
-    tmp.set( new Uint8Array(b), a.byteLength );
-    return tmp.buffer;
-}
 
 describe('Protocol tests', () => {
 
     it('Buffer', (done: Function)=> {
+        /*
         const protocol: ProtocolImpl = new ProtocolImpl();
         const reader: Protocol.In.BufferReader<Messages> = new Protocol.In.BufferReader<Messages>(protocol);
         let count = 0;
@@ -94,6 +115,7 @@ describe('Protocol tests', () => {
                 break;
             }
         } while (true);
+        */
     });
 
 

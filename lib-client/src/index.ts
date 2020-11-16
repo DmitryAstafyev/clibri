@@ -1,9 +1,13 @@
 import * as Out from './messages/out/index';
 import * as In from './messages/in/index';
 import * as Tools from './tools/index';
-import * as Prot from './protocol/index';
-import { Protocol } from './protocol';
-import { Connection } from './connection';
-import { ConnectionError, MessageReadingError } from './connection.errors';
+import * as Primitives from './protocol/protocol.primitives';
 
-export { Out, In, Tools, Protocol, Connection, ConnectionError, MessageReadingError };
+// import { Protocol } from './protocol';
+export { Connection } from './connection';
+export { ConnectionError, MessageReadingError } from './connection.errors';
+
+export { ESize } from './protocol/protocol.sizes';
+export { Encode } from './protocol/protocol.encode';
+
+export { Out, In, Tools, Primitives };
