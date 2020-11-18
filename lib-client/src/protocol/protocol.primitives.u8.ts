@@ -10,7 +10,7 @@ export class u8 {
     }
 
     public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(this.getSize());
+        const buffer: Buffer = Buffer.alloc(u8.getSize());
         try {
             buffer.writeUInt8(value);
             return buffer.buffer;
@@ -19,4 +19,15 @@ export class u8 {
         }
     }
 
+    public static decode(bytes: ArrayBufferLike): number | Error {
+        if (bytes.byteLength !== u8.getSize()) {
+            return new Error(`Invalid buffer size. Expected ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
+        }
+        try {
+            const buffer: Buffer = Buffer.from(bytes);
+            return buffer.readUInt8(0);
+        } catch (e) {
+            return e;
+        }
+    }
 }

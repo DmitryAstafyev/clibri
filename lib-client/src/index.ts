@@ -8,6 +8,6 @@ export { Connection } from './connection';
 export { ConnectionError, MessageReadingError } from './connection.errors';
 
 export { ESize } from './protocol/protocol.sizes';
-export { Encode } from './protocol/protocol.encode';
+export { Convertor } from './protocol/protocol.convertor';
 
 export { Out, In, Tools, Primitives };

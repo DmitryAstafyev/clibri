@@ -17,8 +17,8 @@ impl Storage {
 
     pub fn new(buf: Vec<u8>) -> Result<Self, String> {
         /* 
-        | PROP_NAME_LEN | NAME    | PROP_BODY_LEN_GRAD | PROP_BODY_LEN | PROP_BODY | ... |
-        | 2 bytes       | n bytes | 1 byte             | 1 - 8 bytes   | n bytes   | ... |
+        | PROP_ID  | PROP_BODY_LEN_GRAD | PROP_BODY_LEN | PROP_BODY | ... |
+        | 2 bytes  | 1 byte             | 1 - 8 bytes   | n bytes   | ... |
         */
         let mut position: usize = 0;
         let mut map: HashMap<u16, Vec<u8>> = HashMap::new();

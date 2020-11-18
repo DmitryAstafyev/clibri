@@ -34,8 +34,25 @@ import * as Primitives from './protocol.primitives';
 import * as Tools from '../tools/index';
 
 import { ESize, CBits } from './protocol.sizes';
+import { Storage } from './protocol.convertor.storage';
 
-export abstract class Encode {
+export abstract class Convertor {
+
+    public collect(getters: Array<() => ArrayBufferLike | Error>): ArrayBufferLike {
+        const buffers: ArrayBufferLike[] = [];
+        try {
+            getters.forEach((getter: () => ArrayBufferLike | Error) => {
+                const buf: ArrayBufferLike | Error = getter();
+                if (buf instanceof Error) {
+                    throw buf;
+                }
+                buffers.push(buf);
+            });
+        } catch (e) {
+            return e;
+        }
+        return Tools.append(buffers);
+    }
 
     public getBuffer(id: number, esize: ESize, size: number | bigint, value: ArrayBufferLike | Error): ArrayBufferLike | Error {
         if (value instanceof Error) {
@@ -55,7 +72,7 @@ export abstract class Encode {
         switch(esize) {
             case ESize.u8:
                 sizeType = Primitives.u8.encode(Primitives.u8.getSize() * CBits);
-                sizeValue = Primitives.u16.encode(size as number);
+                sizeValue = Primitives.u8.encode(size as number);
                 break;
             case ESize.u16:
                 sizeType = Primitives.u8.encode(Primitives.u16.getSize() * CBits);
@@ -67,7 +84,7 @@ export abstract class Encode {
                 break;
             case ESize.u64:
                 sizeType = Primitives.u8.encode(Primitives.u64.getSize() * CBits);
-                sizeValue = Primitives.u64.encode(size as bigint);
+                sizeValue = Primitives.u64.encode(BigInt(size));
                 break;
         }
         if (sizeType instanceof Error) {
@@ -82,7 +99,25 @@ export abstract class Encode {
         return Tools.append([idBuf, sizeType, sizeValue, value]);
     }
 
+    public getStorage(buffer: ArrayBufferLike): Storage | Error {
+        const storage: Storage = new Storage();
+        const error: Error | undefined = storage.read(buffer);
+        if (error instanceof Error) {
+            return error;
+        }
+        return storage;
+    }
+
+    public getValue<T>(storage: Storage, id: number, decoder: (buf: ArrayBufferLike) => T | Error): T | Error {
+        const buffer = storage.get(id);
+        if (buffer === undefined) {
+            return new Error(`Fail to find field with ID "${id}"`);
+        }
+        return decoder(buffer);
+    }
+
     public abstract getId(): number;
     public abstract encode(): ArrayBufferLike;
+    public abstract decode(buffer: ArrayBufferLike): Error | undefined;
 
 }
