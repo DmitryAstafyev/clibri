@@ -228,6 +228,18 @@ describe('Protocol tests', () => {
             console.log(err);
             expect(true).toBe(false);
         }
+        expect(a.u8).toBe(b.u8);
+        expect(a.u16).toBe(b.u16);
+        expect(a.u32).toBe(b.u32);
+        expect(a.u64).toBe(b.u64);
+        expect(a.i8).toBe(b.i8);
+        expect(a.i16).toBe(b.i16);
+        expect(a.i32).toBe(b.i32);
+        expect(a.i64).toBe(b.i64);
+        expect(a.f32).toBe(b.f32);
+        expect(a.f64).toBe(b.f64);
+        expect(a.nested.u16).toBe(b.nested.u16);
+        expect(a.nested.u32).toBe(b.nested.u32);
         console.log(buffer);
         console.log(b);
         done();
