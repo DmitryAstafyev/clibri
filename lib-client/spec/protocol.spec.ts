@@ -67,6 +67,15 @@ interface IMessage {
     f64: number;
     nested: Nested;
     arrU8: number[];
+    arrU16: number[];
+    arrU32: number[];
+    arrU64: Array<bigint>;
+    arrI8: number[];
+    arrI16: number[];
+    arrI32: number[];
+    arrI64: Array<bigint>;
+    arrF32: number[];
+    arrF64: number[];
 }
 
 class Message extends Protocol.Convertor implements IMessage {
@@ -83,6 +92,15 @@ class Message extends Protocol.Convertor implements IMessage {
     public f64: number;
     public nested: Nested;
     public arrU8: number[];
+    public arrU16: number[];
+    public arrU32: number[];
+    public arrU64: Array<bigint>;
+    public arrI8: number[];
+    public arrI16: number[];
+    public arrI32: number[];
+    public arrI64: Array<bigint>;
+    public arrF32: number[];
+    public arrF64: number[];
 
     constructor(params: IMessage) {
         super();
@@ -110,13 +128,16 @@ class Message extends Protocol.Convertor implements IMessage {
                 const buffer = this.nested.encode();
                 return this.getBuffer(11, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer)
             },
-            () => {
-                const buffer = Protocol.Primitives.ArrayU8.encode(this.arrU8);
-                if (buffer instanceof Error) {
-                    return buffer;
-                }
-                return this.getBuffer(12, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer);
-            },
+            () => this.getBufferFromBuf<number[]>(12, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.arrU8),
+            () => this.getBufferFromBuf<number[]>(13, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.arrU16),
+            () => this.getBufferFromBuf<number[]>(14, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.arrU32),
+            () => this.getBufferFromBuf<Array<bigint>>(15, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.arrU64),
+            () => this.getBufferFromBuf<number[]>(16, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.arrI8),
+            () => this.getBufferFromBuf<number[]>(17, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.arrI16),
+            () => this.getBufferFromBuf<number[]>(18, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.arrI32),
+            () => this.getBufferFromBuf<Array<bigint>>(19, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.arrI64),
+            () => this.getBufferFromBuf<number[]>(20, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.arrF32),
+            () => this.getBufferFromBuf<number[]>(21, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.arrF64),
         ]);
     }
 
@@ -202,6 +223,60 @@ class Message extends Protocol.Convertor implements IMessage {
         } else {
             this.arrU8 = arrU8;
         }
+        const arrU16: number[] | Error = this.getValue<number[]>(storage, 13, Protocol.Primitives.ArrayU16.decode);
+        if (arrU16 instanceof Error) {
+            return arrU16;
+        } else {
+            this.arrU16 = arrU16;
+        }
+        const arrU32: number[] | Error = this.getValue<number[]>(storage, 14, Protocol.Primitives.ArrayU32.decode);
+        if (arrU32 instanceof Error) {
+            return arrU32;
+        } else {
+            this.arrU32 = arrU32;
+        }
+        const arrU64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 15, Protocol.Primitives.ArrayU64.decode);
+        if (arrU64 instanceof Error) {
+            return arrU64;
+        } else {
+            this.arrU64 = arrU64;
+        }
+        const arrI8: number[] | Error = this.getValue<number[]>(storage, 16, Protocol.Primitives.ArrayI8.decode);
+        if (arrI8 instanceof Error) {
+            return arrI8;
+        } else {
+            this.arrI8 = arrI8;
+        }
+        const arrI16: number[] | Error = this.getValue<number[]>(storage, 17, Protocol.Primitives.ArrayI16.decode);
+        if (arrI16 instanceof Error) {
+            return arrI16;
+        } else {
+            this.arrI16 = arrI16;
+        }
+        const arrI32: number[] | Error = this.getValue<number[]>(storage, 18, Protocol.Primitives.ArrayI32.decode);
+        if (arrI32 instanceof Error) {
+            return arrI32;
+        } else {
+            this.arrI32 = arrI32;
+        }
+        const arrI64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 19, Protocol.Primitives.ArrayI64.decode);
+        if (arrI64 instanceof Error) {
+            return arrI64;
+        } else {
+            this.arrI64 = arrI64;
+        }
+        const arrF32: number[] | Error = this.getValue<number[]>(storage, 20, Protocol.Primitives.ArrayF32.decode);
+        if (arrF32 instanceof Error) {
+            return arrF32;
+        } else {
+            this.arrF32 = arrF32;
+        }
+        const arrF64: number[] | Error = this.getValue<number[]>(storage, 21, Protocol.Primitives.ArrayF64.decode);
+        if (arrF64 instanceof Error) {
+            return arrF64;
+        } else {
+            this.arrF64 = arrF64;
+        }
     }
 
 }
@@ -223,6 +298,15 @@ describe('Protocol tests', () => {
             f64: 10,
             nested: new Nested({ u16: 11, u32: 12 }),
             arrU8: [1,2,3,4,5],
+            arrU16: [1,2,3,4,5],
+            arrU32: [1,2,3,4,5],
+            arrU64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrI8: [1,2,3,4,5],
+            arrI16: [1,2,3,4,5],
+            arrI32: [1,2,3,4,5],
+            arrI64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrF32: [0.1,0.2,0.3,0.4,0.5],
+            arrF64: [0.1,0.2,0.3,0.4,0.5],
         });
         const buffer = a.encode();
         const b: Message = new Message({
@@ -238,6 +322,15 @@ describe('Protocol tests', () => {
             f64: 0,
             nested: new Nested({ u16: 0, u32: 0 }),
             arrU8: [],
+            arrU16: [],
+            arrU32: [],
+            arrU64: [],
+            arrI8: [],
+            arrI16: [],
+            arrI32: [],
+            arrI64: [],
+            arrF32: [],
+            arrF64: [],
         });
         const err = b.decode(buffer);
         if (err instanceof Error) {
@@ -256,6 +349,16 @@ describe('Protocol tests', () => {
         expect(a.f64).toBe(b.f64);
         expect(a.nested.u16).toBe(b.nested.u16);
         expect(a.nested.u32).toBe(b.nested.u32);
+        expect(a.arrU8.join(',')).toBe(b.arrU8.join(','));
+        expect(a.arrU16.join(',')).toBe(b.arrU16.join(','));
+        expect(a.arrU32.join(',')).toBe(b.arrU32.join(','));
+        expect(a.arrU64.join(',')).toBe(b.arrU64.join(','));
+        expect(a.arrI8.join(',')).toBe(b.arrI8.join(','));
+        expect(a.arrI16.join(',')).toBe(b.arrI16.join(','));
+        expect(a.arrI32.join(',')).toBe(b.arrI32.join(','));
+        expect(a.arrI64.join(',')).toBe(b.arrI64.join(','));
+        expect(a.arrF32.join(',')).toBe(b.arrF32.map(i => i.toFixed(1)).join(','));
+        expect(a.arrF64.join(',')).toBe(b.arrF64.map(i => i.toFixed(1)).join(','));
         console.log(buffer);
         console.log(b);
         done();

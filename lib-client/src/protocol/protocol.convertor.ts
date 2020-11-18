@@ -99,6 +99,14 @@ export abstract class Convertor {
         return Tools.append([idBuf, sizeType, sizeValue, value]);
     }
 
+    public getBufferFromBuf<T>(id: number, esize: ESize, encoder: (...args: any[]) => ArrayBufferLike | Error, value: T): ArrayBufferLike | Error {
+        const buffer = encoder(value);
+        if (buffer instanceof Error) {
+            return buffer;
+        }
+        return this.getBuffer(id, esize, esize === ESize.u64 ? BigInt(buffer.byteLength) : buffer.byteLength, buffer);
+    }
+
     public getStorage(buffer: ArrayBufferLike): Storage | Error {
         const storage: Storage = new Storage();
         const error: Error | undefined = storage.read(buffer);
