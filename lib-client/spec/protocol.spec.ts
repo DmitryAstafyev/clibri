@@ -66,6 +66,7 @@ interface IMessage {
     f32: number;
     f64: number;
     nested: Nested;
+    arrU8: number[];
 }
 
 class Message extends Protocol.Convertor implements IMessage {
@@ -81,6 +82,7 @@ class Message extends Protocol.Convertor implements IMessage {
     public f32: number;
     public f64: number;
     public nested: Nested;
+    public arrU8: number[];
 
     constructor(params: IMessage) {
         super();
@@ -107,6 +109,13 @@ class Message extends Protocol.Convertor implements IMessage {
             () => {
                 const buffer = this.nested.encode();
                 return this.getBuffer(11, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer)
+            },
+            () => {
+                const buffer = Protocol.Primitives.ArrayU8.encode(this.arrU8);
+                if (buffer instanceof Error) {
+                    return buffer;
+                }
+                return this.getBuffer(12, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer);
             },
         ]);
     }
@@ -187,6 +196,12 @@ class Message extends Protocol.Convertor implements IMessage {
         } else {
             this.nested = nested;
         }
+        const arrU8: number[] | Error = this.getValue<number[]>(storage, 12, Protocol.Primitives.ArrayU8.decode);
+        if (arrU8 instanceof Error) {
+            return arrU8;
+        } else {
+            this.arrU8 = arrU8;
+        }
     }
 
 }
@@ -207,9 +222,9 @@ describe('Protocol tests', () => {
             f32: 9,
             f64: 10,
             nested: new Nested({ u16: 11, u32: 12 }),
+            arrU8: [1,2,3,4,5],
         });
         const buffer = a.encode();
-        expect(buffer.byteLength).toBe(107);
         const b: Message = new Message({
             u8: 0,
             u16: 0,
@@ -222,6 +237,7 @@ describe('Protocol tests', () => {
             f32: 0,
             f64: 0,
             nested: new Nested({ u16: 0, u32: 0 }),
+            arrU8: [],
         });
         const err = b.decode(buffer);
         if (err instanceof Error) {

@@ -8,3 +8,4 @@ export { i32 } from './protocol.primitives.i32';
 export { i64 } from './protocol.primitives.i64';
 export { f32 } from './protocol.primitives.f32';
 export { f64 } from './protocol.primitives.f64';
+export { ArrayU8 } from './protocol.primitives.array.u8';
