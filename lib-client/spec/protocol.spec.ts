@@ -76,6 +76,8 @@ interface IMessage {
     arrI64: Array<bigint>;
     arrF32: number[];
     arrF64: number[];
+    str: string;
+    arrStr: string[];
 }
 
 class Message extends Protocol.Convertor implements IMessage {
@@ -101,6 +103,8 @@ class Message extends Protocol.Convertor implements IMessage {
     public arrI64: Array<bigint>;
     public arrF32: number[];
     public arrF64: number[];
+    public str: string;
+    public arrStr: string[];
 
     constructor(params: IMessage) {
         super();
@@ -138,6 +142,8 @@ class Message extends Protocol.Convertor implements IMessage {
             () => this.getBufferFromBuf<Array<bigint>>(19, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.arrI64),
             () => this.getBufferFromBuf<number[]>(20, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.arrF32),
             () => this.getBufferFromBuf<number[]>(21, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.arrF64),
+            () => this.getBufferFromBuf<string>(22, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.str),
+            () => this.getBufferFromBuf<string[]>(23, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.arrStr),
         ]);
     }
 
@@ -277,6 +283,18 @@ class Message extends Protocol.Convertor implements IMessage {
         } else {
             this.arrF64 = arrF64;
         }
+        const str: string | Error = this.getValue<string>(storage, 22, Protocol.Primitives.StrUTF8.decode);
+        if (str instanceof Error) {
+            return str;
+        } else {
+            this.str = str;
+        }
+        const arrStr: string[] | Error = this.getValue<string[]>(storage, 23, Protocol.Primitives.ArrayStrUTF8.decode);
+        if (arrStr instanceof Error) {
+            return arrStr;
+        } else {
+            this.arrStr = arrStr;
+        }
     }
 
 }
@@ -307,6 +325,8 @@ describe('Protocol tests', () => {
             arrI64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
             arrF32: [0.1,0.2,0.3,0.4,0.5],
             arrF64: [0.1,0.2,0.3,0.4,0.5],
+            str: "Hello, from string!",
+            arrStr: ["string 1", "string 2", "string 3"],
         });
         const buffer = a.encode();
         const b: Message = new Message({
@@ -331,6 +351,8 @@ describe('Protocol tests', () => {
             arrI64: [],
             arrF32: [],
             arrF64: [],
+            str: '',
+            arrStr: [],
         });
         const err = b.decode(buffer);
         if (err instanceof Error) {
@@ -359,6 +381,9 @@ describe('Protocol tests', () => {
         expect(a.arrI64.join(',')).toBe(b.arrI64.join(','));
         expect(a.arrF32.join(',')).toBe(b.arrF32.map(i => i.toFixed(1)).join(','));
         expect(a.arrF64.join(',')).toBe(b.arrF64.map(i => i.toFixed(1)).join(','));
+        expect(a.str).toBe(b.str);
+        expect(a.arrStr.join(',')).toBe(b.arrStr.join(','));
+
         console.log(buffer);
         console.log(b);
         done();
