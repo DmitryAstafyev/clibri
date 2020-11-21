@@ -1,8 +1,7 @@
 // tslint:disable: class-name
 // tslint:disable: max-classes-per-file
 import { Primitive } from './protocol.primitives.interface';
-
-const CBits = 8;
+import { CBits } from './protocol.sizes';
 
 export class u32 extends Primitive<number> {
 
