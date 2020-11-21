@@ -2,8 +2,13 @@
 // tslint:disable: max-classes-per-file
 
 import { u16 } from './protocol.primitives.u16';
+import { Primitive } from './protocol.primitives.interface';
 
-export class ArrayU16 {
+export class ArrayU16 extends Primitive<number[]> {
+
+    public static getSignature(): string {
+        return 'u16';
+    }
 
     public static encode(value: number[]): ArrayBufferLike | Error {
         const len: number = value.length * u16.getSize();
@@ -37,4 +42,18 @@ export class ArrayU16 {
             return e;
         }
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return ArrayU16.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): number[] | Error {
+        const value = ArrayU16.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }

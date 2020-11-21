@@ -1,9 +1,14 @@
 // tslint:disable: class-name
 // tslint:disable: max-classes-per-file
+import { Primitive } from './protocol.primitives.interface';
 
 const CBits = 8;
 
-export class i32 {
+export class i32 extends Primitive<number> {
+
+    public static getSignature(): string {
+        return 'i32';
+    }
 
     public static getSize(): number {
         return 32 / CBits;
@@ -30,4 +35,18 @@ export class i32 {
             return e;
         }
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return i32.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): number | Error {
+        const value = i32.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }

@@ -22,6 +22,11 @@ class Nested extends Protocol.Convertor implements INested {
             this[key] = params[key];
         });
     }
+
+    public getSignature(): string {
+        return 'nested';
+    }
+
     public getId(): number {
         return 2;
     }
@@ -112,6 +117,11 @@ class Message extends Protocol.Convertor implements IMessage {
             this[key] = params[key];
         });
     }
+
+    public getSignature(): string {
+        return 'Message';
+    }
+
     public getId(): number {
         return 1;
     }

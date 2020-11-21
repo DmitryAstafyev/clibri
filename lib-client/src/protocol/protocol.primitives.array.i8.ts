@@ -2,8 +2,13 @@
 // tslint:disable: max-classes-per-file
 
 import { i8 } from './protocol.primitives.i8';
+import { Primitive } from './protocol.primitives.interface';
 
-export class ArrayI8 {
+export class ArrayI8 extends Primitive<number[]> {
+
+    public static getSignature(): string {
+        return 'aI8';
+    }
 
     public static encode(value: number[]): ArrayBufferLike | Error {
         const len: number = value.length * i8.getSize();
@@ -37,4 +42,18 @@ export class ArrayI8 {
             return e;
         }
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return ArrayI8.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): number[] | Error {
+        const value = ArrayI8.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }

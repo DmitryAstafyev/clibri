@@ -1,12 +1,16 @@
 // tslint:disable: class-name
 // tslint:disable: max-classes-per-file
+import * as Tools from '../tools/index';
 
 import { StrUTF8 } from './protocol.primitives.string.utf8';
 import { u32 } from './protocol.primitives.u32';
-import * as Tools from '../tools/index';
-import { off } from 'process';
+import { Primitive } from './protocol.primitives.interface';
 
-export class ArrayStrUTF8 {
+export class ArrayStrUTF8 extends Primitive<string[]> {
+
+    public static getSignature(): string {
+        return 'arrStrUTF8';
+    }
 
     public static encode(value: string[]): ArrayBufferLike | Error {
         let parts: ArrayBufferLike[] = [];
@@ -59,4 +63,18 @@ export class ArrayStrUTF8 {
         } while (offset < buffer.byteLength);
         return strings;
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return ArrayStrUTF8.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): string[] | Error {
+        const value = ArrayStrUTF8.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }

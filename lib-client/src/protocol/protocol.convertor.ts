@@ -1,35 +1,3 @@
-
-/*
-| ID | Size rate | Size  | Value |
-| 2  | 1         | 1 - 8 | -     |
-*/
-/*
-fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
-    let mut buffer: Vec<u8> = vec!();
-    buffer.append(&mut id.to_le_bytes().to_vec());
-    match size {
-        ESize::U8(size) => {
-            buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U16(size) => {
-            buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U32(size) => {
-            buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U64(size) => {
-            buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-    };
-    buffer.append(&mut value);
-    Ok(buffer)
-}
-*/
-
 import * as Primitives from './protocol.primitives';
 import * as Tools from '../tools/index';
 
@@ -124,6 +92,7 @@ export abstract class Convertor {
         return decoder(buffer);
     }
 
+    public abstract getSignature(): string;
     public abstract getId(): number;
     public abstract encode(): ArrayBufferLike;
     public abstract decode(buffer: ArrayBufferLike): Error | undefined;

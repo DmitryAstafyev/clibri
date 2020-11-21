@@ -2,9 +2,13 @@
 // tslint:disable: max-classes-per-file
 
 import { f64 } from './protocol.primitives.f64';
+import { Primitive } from './protocol.primitives.interface';
 
-export class ArrayF64 {
+export class ArrayF64 extends Primitive<number[]> {
 
+    public static getSignature(): string {
+        return 'aF64';
+    }
     public static encode(value: number[]): ArrayBufferLike | Error {
         const len: number = value.length * f64.getSize();
         const buffer: Buffer = Buffer.alloc(len);
@@ -37,4 +41,18 @@ export class ArrayF64 {
             return e;
         }
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return ArrayF64.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): number[] | Error {
+        const value = ArrayF64.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }

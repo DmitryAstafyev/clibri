@@ -20,3 +20,4 @@ export { ArrayI64 } from './protocol.primitives.array.i64';
 export { ArrayF32 } from './protocol.primitives.array.f32';
 export { ArrayF64 } from './protocol.primitives.array.f64';
 export { ArrayStrUTF8 } from './protocol.primitives.array.string.utf8';
+export { Option } from './protocol.primitives.enum';

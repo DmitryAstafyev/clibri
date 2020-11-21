@@ -2,8 +2,13 @@
 // tslint:disable: max-classes-per-file
 
 import { f32 } from './protocol.primitives.f32';
+import { Primitive } from './protocol.primitives.interface';
 
-export class ArrayF32 {
+export class ArrayF32 extends Primitive<number[]> {
+
+    public getSignature(): string {
+        return 'aF32';
+    }
 
     public static encode(value: number[]): ArrayBufferLike | Error {
         const len: number = value.length * f32.getSize();
@@ -37,4 +42,18 @@ export class ArrayF32 {
             return e;
         }
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return ArrayF32.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): number[] | Error {
+        const value = ArrayF32.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }

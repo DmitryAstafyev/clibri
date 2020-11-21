@@ -1,9 +1,14 @@
 // tslint:disable: class-name
 // tslint:disable: max-classes-per-file
+import { Primitive } from './protocol.primitives.interface';
 
 const CBits = 8;
 
-export class f64 {
+export class f64 extends Primitive<number> {
+
+    public static getSignature(): string {
+        return 'f64';
+    }
 
     public static getSize(): number {
         return 64 / CBits;
@@ -29,6 +34,19 @@ export class f64 {
         } catch (e) {
             return e;
         }
+    }
+
+    public encode(): ArrayBufferLike | Error {
+        return f64.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): number | Error {
+        const value = f64.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
     }
 
 }

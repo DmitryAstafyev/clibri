@@ -2,8 +2,13 @@
 // tslint:disable: max-classes-per-file
 
 import { u64 } from './protocol.primitives.u64';
+import { Primitive } from './protocol.primitives.interface';
 
-export class ArrayU64 {
+export class ArrayU64 extends Primitive<Array<bigint>> {
+
+    public static getSignature(): string {
+        return 'u64';
+    }
 
     public static encode(value: Array<bigint>): ArrayBufferLike | Error {
         const len: number = value.length * u64.getSize();
@@ -37,4 +42,18 @@ export class ArrayU64 {
             return e;
         }
     }
+
+    public encode(): ArrayBufferLike | Error {
+        return ArrayU64.encode(this.get());
+    }
+
+    public decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+        const value = ArrayU64.decode(bytes);
+        if (value instanceof Error) {
+            return value;
+        }
+        this.set(value);
+        return value;
+    }
+
 }
