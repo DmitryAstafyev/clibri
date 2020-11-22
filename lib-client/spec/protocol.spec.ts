@@ -314,61 +314,105 @@ class Message extends Protocol.Convertor implements IMessage {
 describe('Protocol tests', () => {
 
     it('Options / Enum', (done: Function)=> {
-        const a = new Protocol.Primitives.Enum([
+        function factory() {
+            return new Protocol.Primitives.Enum([
+                Protocol.Primitives.u8.getSignature(),
+                Protocol.Primitives.u16.getSignature(),
+                Protocol.Primitives.u32.getSignature(),
+                Protocol.Primitives.u64.getSignature(),
+                Protocol.Primitives.i8.getSignature(),
+                Protocol.Primitives.i16.getSignature(),
+                Protocol.Primitives.i32.getSignature(),
+                Protocol.Primitives.i64.getSignature(),
+                Protocol.Primitives.f32.getSignature(),
+                Protocol.Primitives.f64.getSignature(),
+                Protocol.Primitives.StrUTF8.getSignature(),
+                Protocol.Primitives.StrUTF8.getSignature(),
+                Protocol.Primitives.ArrayU8.getSignature(),
+                Protocol.Primitives.ArrayU16.getSignature(),
+                Protocol.Primitives.ArrayU32.getSignature(),
+                Protocol.Primitives.ArrayU64.getSignature(),
+                Protocol.Primitives.ArrayI8.getSignature(),
+                Protocol.Primitives.ArrayI16.getSignature(),
+                Protocol.Primitives.ArrayI32.getSignature(),
+                Protocol.Primitives.ArrayI64.getSignature(),
+                Protocol.Primitives.ArrayF32.getSignature(),
+                Protocol.Primitives.ArrayF64.getSignature(),
+                Protocol.Primitives.ArrayStrUTF8.getSignature(),
+            ], (id: number): ISigned<any> | undefined => {
+                switch (id) {
+                    case 1: return new Protocol.Primitives.u8(0);
+                    case 2: return new Protocol.Primitives.u16(0);
+                    case 3: return new Protocol.Primitives.u32(0);
+                    case 4: return new Protocol.Primitives.u64(BigInt(0));
+                    case 5: return new Protocol.Primitives.i8(0);
+                    case 6: return new Protocol.Primitives.i16(0);
+                    case 7: return new Protocol.Primitives.i32(0);
+                    case 8: return new Protocol.Primitives.i64(BigInt(0));
+                    case 9: return new Protocol.Primitives.f32(0);
+                    case 10: return new Protocol.Primitives.f64(0);
+                    case 11: return new Protocol.Primitives.StrUTF8('');
+                    case 12: return new Protocol.Primitives.ArrayU8([]);
+                    case 13: return new Protocol.Primitives.ArrayU16([]);
+                    case 14: return new Protocol.Primitives.ArrayU32([]);
+                    case 15: return new Protocol.Primitives.ArrayU64([]);
+                    case 16: return new Protocol.Primitives.ArrayI8([]);
+                    case 17: return new Protocol.Primitives.ArrayI16([]);
+                    case 18: return new Protocol.Primitives.ArrayI32([]);
+                    case 19: return new Protocol.Primitives.ArrayI64([]);
+                    case 20: return new Protocol.Primitives.ArrayF32([]);
+                    case 21: return new Protocol.Primitives.ArrayF64([]);
+                    case 22: return new Protocol.Primitives.ArrayStrUTF8([]);
+                }
+            });
+        }
+        const a = factory();
+        const b = factory();
+        const options = [
+            new Protocol.Primitives.Option<number>(1, new Protocol.Primitives.u8(99)),
+            new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(999)),
+            new Protocol.Primitives.Option<number>(3, new Protocol.Primitives.u32(9999)),
+            new Protocol.Primitives.Option<bigint>(4, new Protocol.Primitives.u64(BigInt(99999))),
+            new Protocol.Primitives.Option<number>(5, new Protocol.Primitives.i8(99)),
+            new Protocol.Primitives.Option<number>(6, new Protocol.Primitives.i16(999)),
+            new Protocol.Primitives.Option<number>(7, new Protocol.Primitives.i32(9999)),
+            new Protocol.Primitives.Option<bigint>(8, new Protocol.Primitives.i64(BigInt(99999))),
+            new Protocol.Primitives.Option<number>(9, new Protocol.Primitives.f32(999)),
+            new Protocol.Primitives.Option<number>(10, new Protocol.Primitives.f64(9999)),
+            new Protocol.Primitives.Option<string>(11, new Protocol.Primitives.StrUTF8('Planet')),
+            new Protocol.Primitives.Option<number[]>(12, new Protocol.Primitives.ArrayU8([99, 100])),
+            new Protocol.Primitives.Option<number[]>(13, new Protocol.Primitives.ArrayU16([99, 100])),
+            new Protocol.Primitives.Option<number[]>(14, new Protocol.Primitives.ArrayU32([99, 100])),
+            new Protocol.Primitives.Option<bigint[]>(15, new Protocol.Primitives.ArrayU64([BigInt(99999), BigInt(99999)])),
+            new Protocol.Primitives.Option<number[]>(16, new Protocol.Primitives.ArrayI8([99, 100])),
+            new Protocol.Primitives.Option<number[]>(17, new Protocol.Primitives.ArrayI16([99, 100])),
+            new Protocol.Primitives.Option<number[]>(18, new Protocol.Primitives.ArrayI32([99, 100])),
+            new Protocol.Primitives.Option<bigint[]>(19, new Protocol.Primitives.ArrayI64([BigInt(99999), BigInt(99999)])),
+            new Protocol.Primitives.Option<number[]>(20, new Protocol.Primitives.ArrayF32([99, 100])),
+            new Protocol.Primitives.Option<number[]>(21, new Protocol.Primitives.ArrayF64([99, 100])),
+            new Protocol.Primitives.Option<string[]>(22, new Protocol.Primitives.ArrayStrUTF8(['Planet A', 'Planet B'])),
+        ];
+        options.forEach((opt) => {
+            expect(a.set(opt)).toBe(undefined);
+            const buf = a.encode();
+            if (buf instanceof Error) {
+                return fail(buf);
+            }
+            const err: Error | undefined = b.decode(buf);
+            if (err instanceof Error) {
+                return fail(err);
+            }
+            expect(b.get<any>()).toEqual(opt.get());
+        });
+        const c = new Protocol.Primitives.Enum([
             Protocol.Primitives.u8.getSignature(),
-            Protocol.Primitives.u16.getSignature(),
-            Protocol.Primitives.u32.getSignature(),
-            Protocol.Primitives.StrUTF8.getSignature(),
         ], (id: number): ISigned<any> | undefined => {
             switch (id) {
                 case 1: return new Protocol.Primitives.u8(0);
-                case 2: return new Protocol.Primitives.u16(0);
-                case 3: return new Protocol.Primitives.u32(0);
-                case 4: return new Protocol.Primitives.StrUTF8('');
             }
         });
-        const b = new Protocol.Primitives.Enum([
-            Protocol.Primitives.u8.getSignature(),
-            Protocol.Primitives.u16.getSignature(),
-            Protocol.Primitives.u32.getSignature(),
-            Protocol.Primitives.StrUTF8.getSignature(),
-        ], (id: number): ISigned<any> | undefined => {
-            switch (id) {
-                case 1: return new Protocol.Primitives.u8(0);
-                case 2: return new Protocol.Primitives.u16(0);
-                case 3: return new Protocol.Primitives.u32(0);
-                case 4: return new Protocol.Primitives.StrUTF8('');
-            }
-        });
-        const optU8 = new Protocol.Primitives.Option<number>(1, new Protocol.Primitives.u8(99));
         const optU16 = new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(999));
-        const optU32 = new Protocol.Primitives.Option<number>(3, new Protocol.Primitives.u32(99999));
-        const optI32 = new Protocol.Primitives.Option<number>(4, new Protocol.Primitives.i32(99999));
-        expect(a.set(optU8)).toBe(undefined);
-        expect(a.set(optU16)).toBe(undefined);
-        expect(a.set(optI32)).toBeInstanceOf(Error);
-        expect(a.set(optU32)).toBe(undefined);
-        const buf_test_a = a.encode();
-        if (buf_test_a instanceof Error) {
-            return fail(buf_test_a);
-        }
-        const err_a: Error | undefined = b.decode(buf_test_a);
-        if (err_a instanceof Error) {
-            return fail(err_a);
-        }
-        expect(b.get<number>()).toBe(99999);
-        const optStr = new Protocol.Primitives.Option<string>(4, new Protocol.Primitives.StrUTF8('Planet'));
-        expect(a.set(optStr)).toBe(undefined);
-        const buf_test_b = a.encode();
-        if (buf_test_b instanceof Error) {
-            return fail(buf_test_a);
-        }
-        const err_b: Error | undefined = b.decode(buf_test_b);
-        if (err_b instanceof Error) {
-            return fail(err_b);
-        }
-        expect(b.get<string>()).toBe('Planet');
-        console.log(b);
+        expect(c.set(optU16)).toBeInstanceOf(Error);
         done();
     });
 
