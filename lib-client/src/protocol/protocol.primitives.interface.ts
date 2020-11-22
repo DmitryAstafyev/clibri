@@ -53,3 +53,11 @@ export interface ISigned<T> {
 
 }
 
+export interface ISignedDecode<T> {
+
+    getSignature(): string;
+    decode(bytes: ArrayBufferLike): T | Error;
+
+}
+
+

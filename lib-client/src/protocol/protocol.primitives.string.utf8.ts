@@ -20,6 +20,10 @@ export class StrUTF8 extends Primitive<string> {
         return decoder.decode(bytes);
     }
 
+    public getSignature(): string {
+        return StrUTF8.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return StrUTF8.encode(this.get());
     }

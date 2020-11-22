@@ -5,6 +5,7 @@
 
 //./node_modules/.bin/jasmine-ts src/something.spec.ts
 import * as Protocol from '../src/index';
+import { ISigned } from '../src/protocol/protocol.primitives.interface';
 
 interface INested {
     u16: number;
@@ -313,19 +314,61 @@ class Message extends Protocol.Convertor implements IMessage {
 describe('Protocol tests', () => {
 
     it('Options / Enum', (done: Function)=> {
-        const etest = new Protocol.Primitives.Enum([
+        const a = new Protocol.Primitives.Enum([
             Protocol.Primitives.u8.getSignature(),
             Protocol.Primitives.u16.getSignature(),
             Protocol.Primitives.u32.getSignature(),
-        ]);
+            Protocol.Primitives.StrUTF8.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 1: return new Protocol.Primitives.u8(0);
+                case 2: return new Protocol.Primitives.u16(0);
+                case 3: return new Protocol.Primitives.u32(0);
+                case 4: return new Protocol.Primitives.StrUTF8('');
+            }
+        });
+        const b = new Protocol.Primitives.Enum([
+            Protocol.Primitives.u8.getSignature(),
+            Protocol.Primitives.u16.getSignature(),
+            Protocol.Primitives.u32.getSignature(),
+            Protocol.Primitives.StrUTF8.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 1: return new Protocol.Primitives.u8(0);
+                case 2: return new Protocol.Primitives.u16(0);
+                case 3: return new Protocol.Primitives.u32(0);
+                case 4: return new Protocol.Primitives.StrUTF8('');
+            }
+        });
         const optU8 = new Protocol.Primitives.Option<number>(1, new Protocol.Primitives.u8(99));
         const optU16 = new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(999));
         const optU32 = new Protocol.Primitives.Option<number>(3, new Protocol.Primitives.u32(99999));
         const optI32 = new Protocol.Primitives.Option<number>(4, new Protocol.Primitives.i32(99999));
-        expect(etest.set(optU8)).toBe(undefined);
-        expect(etest.set(optU16)).toBe(undefined);
-        expect(etest.set(optU32)).toBe(undefined);
-        expect(etest.set(optI32)).toBeInstanceOf(Error);
+        expect(a.set(optU8)).toBe(undefined);
+        expect(a.set(optU16)).toBe(undefined);
+        expect(a.set(optI32)).toBeInstanceOf(Error);
+        expect(a.set(optU32)).toBe(undefined);
+        const buf_test_a = a.encode();
+        if (buf_test_a instanceof Error) {
+            return fail(buf_test_a);
+        }
+        const err_a: Error | undefined = b.decode(buf_test_a);
+        if (err_a instanceof Error) {
+            return fail(err_a);
+        }
+        expect(b.get<number>()).toBe(99999);
+        const optStr = new Protocol.Primitives.Option<string>(4, new Protocol.Primitives.StrUTF8('Planet'));
+        expect(a.set(optStr)).toBe(undefined);
+        const buf_test_b = a.encode();
+        if (buf_test_b instanceof Error) {
+            return fail(buf_test_a);
+        }
+        const err_b: Error | undefined = b.decode(buf_test_b);
+        if (err_b instanceof Error) {
+            return fail(err_b);
+        }
+        expect(b.get<string>()).toBe('Planet');
+        console.log(b);
         done();
     });
 
