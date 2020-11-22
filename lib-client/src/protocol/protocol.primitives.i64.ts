@@ -35,6 +35,10 @@ export class i64 extends Primitive<bigint> {
         }
     }
 
+    public getSignature(): string {
+        return i64.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return i64.encode(this.get());
     }

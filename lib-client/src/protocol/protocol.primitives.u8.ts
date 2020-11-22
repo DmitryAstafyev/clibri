@@ -35,6 +35,10 @@ export class u8 extends Primitive<number> {
         }
     }
 
+    public getSignature(): string {
+        return u8.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return u8.encode(this.get());
     }

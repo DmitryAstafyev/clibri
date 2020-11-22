@@ -7,7 +7,7 @@ import { Primitive } from './protocol.primitives.interface';
 export class ArrayI8 extends Primitive<number[]> {
 
     public static getSignature(): string {
-        return 'aI8';
+        return 'ArrayI8';
     }
 
     public static encode(value: number[]): ArrayBufferLike | Error {
@@ -41,6 +41,10 @@ export class ArrayI8 extends Primitive<number[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public getSignature(): string {
+        return ArrayI8.getSignature();
     }
 
     public encode(): ArrayBufferLike | Error {

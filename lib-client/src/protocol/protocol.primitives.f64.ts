@@ -35,6 +35,10 @@ export class f64 extends Primitive<number> {
         }
     }
 
+    public getSignature(): string {
+        return f64.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return f64.encode(this.get());
     }

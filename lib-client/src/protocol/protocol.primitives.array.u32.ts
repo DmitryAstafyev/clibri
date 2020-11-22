@@ -7,7 +7,7 @@ import { Primitive } from './protocol.primitives.interface';
 export class ArrayU32 extends Primitive<number[]> {
 
     public static getSignature(): string {
-        return 'u32';
+        return 'ArrayU32';
     }
 
     public static encode(value: number[]): ArrayBufferLike | Error {
@@ -41,6 +41,10 @@ export class ArrayU32 extends Primitive<number[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public getSignature(): string {
+        return ArrayU32.getSignature();
     }
 
     public encode(): ArrayBufferLike | Error {

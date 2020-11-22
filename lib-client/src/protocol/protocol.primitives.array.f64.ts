@@ -7,7 +7,7 @@ import { Primitive } from './protocol.primitives.interface';
 export class ArrayF64 extends Primitive<number[]> {
 
     public static getSignature(): string {
-        return 'aF64';
+        return 'ArrayF64';
     }
     public static encode(value: number[]): ArrayBufferLike | Error {
         const len: number = value.length * f64.getSize();
@@ -40,6 +40,10 @@ export class ArrayF64 extends Primitive<number[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public getSignature(): string {
+        return ArrayF64.getSignature();
     }
 
     public encode(): ArrayBufferLike | Error {

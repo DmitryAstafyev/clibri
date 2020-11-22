@@ -312,6 +312,23 @@ class Message extends Protocol.Convertor implements IMessage {
 
 describe('Protocol tests', () => {
 
+    it('Options / Enum', (done: Function)=> {
+        const etest = new Protocol.Primitives.Enum([
+            Protocol.Primitives.u8.getSignature(),
+            Protocol.Primitives.u16.getSignature(),
+            Protocol.Primitives.u32.getSignature(),
+        ]);
+        const optU8 = new Protocol.Primitives.Option<number>(1, new Protocol.Primitives.u8(99));
+        const optU16 = new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(999));
+        const optU32 = new Protocol.Primitives.Option<number>(3, new Protocol.Primitives.u32(99999));
+        const optI32 = new Protocol.Primitives.Option<number>(4, new Protocol.Primitives.i32(99999));
+        expect(etest.set(optU8)).toBe(undefined);
+        expect(etest.set(optU16)).toBe(undefined);
+        expect(etest.set(optU32)).toBe(undefined);
+        expect(etest.set(optI32)).toBeInstanceOf(Error);
+        done();
+    });
+
     it('Encode / Decode', (done: Function)=> {
         const a: Message = new Message({
             u8: 1,

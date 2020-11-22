@@ -35,6 +35,10 @@ export class u64 extends Primitive<bigint> {
         }
     }
 
+    public getSignature(): string {
+        return u64.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return u64.encode(this.get());
     }

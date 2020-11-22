@@ -57,13 +57,8 @@ export class Enum {
     private _allowed: string[] = [];
     private _value: Option<any>;
 
-    constructor(allowed: Array<ISigned<any>>) {
-        this._allowed = allowed.map((signed: ISigned<any>) => {
-            if (signed === undefined || signed === null || typeof signed.getSignature !== 'function') {
-                throw new Error(`Fail to get signatue for ${JSON.stringify(signed)}`);
-            }
-            return signed.getSignature();
-        });
+    constructor(allowed: string[]) {
+        this._allowed = allowed;
     }
 
     set(opt: Option<any>): Error | undefined {

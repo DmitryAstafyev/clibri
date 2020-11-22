@@ -35,6 +35,10 @@ export class u16 extends Primitive<number> {
         }
     }
 
+    public getSignature(): string {
+        return u16.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return u16.encode(this.get());
     }

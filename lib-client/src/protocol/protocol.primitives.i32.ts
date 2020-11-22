@@ -35,6 +35,10 @@ export class i32 extends Primitive<number> {
         }
     }
 
+    public getSignature(): string {
+        return i32.getSignature();
+    }
+
     public encode(): ArrayBufferLike | Error {
         return i32.encode(this.get());
     }

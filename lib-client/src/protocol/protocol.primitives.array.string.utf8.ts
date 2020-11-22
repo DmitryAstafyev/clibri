@@ -9,7 +9,7 @@ import { Primitive } from './protocol.primitives.interface';
 export class ArrayStrUTF8 extends Primitive<string[]> {
 
     public static getSignature(): string {
-        return 'arrStrUTF8';
+        return 'ArrayStrUTF8';
     }
 
     public static encode(value: string[]): ArrayBufferLike | Error {
@@ -62,6 +62,10 @@ export class ArrayStrUTF8 extends Primitive<string[]> {
             offset += body.byteLength;
         } while (offset < buffer.byteLength);
         return strings;
+    }
+
+    public getSignature(): string {
+        return ArrayStrUTF8.getSignature();
     }
 
     public encode(): ArrayBufferLike | Error {
