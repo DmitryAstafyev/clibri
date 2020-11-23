@@ -496,3 +496,20 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
         }
     }
 }
+
+impl<T> Decode<Option<T>> for Option<T> where T: Decode<T> {
+    fn decode(storage: &mut Storage, id: u16) -> Result<Option<T>, String> {
+        if let Some(buf) = storage.get(id) {
+            if buf.is_empty() {
+                Ok(None)
+            } else {
+                match T::decode(storage, id) {
+                    Ok(v) => Ok(Some(v)),
+                    Err(e) => Err(e),
+                }
+            }
+        } else {
+            Err(format!("Buffer for property {} isn't found", id))
+        }
+    }
+}

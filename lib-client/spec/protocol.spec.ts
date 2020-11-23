@@ -8,12 +8,14 @@ import * as Protocol from '../src/index';
 import { ISigned } from '../src/protocol/protocol.primitives.interface';
 
 interface INested {
+    u8: number | undefined;
     u16: number;
     u32: number;
 }
 
 class Nested extends Protocol.Convertor implements INested {
 
+    public u8: number | undefined;
     public u16: number;
     public u32: number;
 
@@ -34,8 +36,9 @@ class Nested extends Protocol.Convertor implements INested {
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => this.getBuffer(1, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.u16)),
-            () => this.getBuffer(2, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.u32)),
+            () => this.getBuffer(1, Protocol.ESize.u8, this.u8 === undefined ? 0 : Protocol.Primitives.u8.getSize(), this.u8 === undefined ? new Uint8Array() : Protocol.Primitives.u8.encode(this.u8)),
+            () => this.getBuffer(2, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.u16)),
+            () => this.getBuffer(3, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.u32)),
         ]);
     }
 
@@ -44,13 +47,27 @@ class Nested extends Protocol.Convertor implements INested {
         if (storage instanceof Error) {
             return storage;
         }
-        const u16: number | Error = this.getValue<number>(storage, 1, Protocol.Primitives.u16.decode);
+        const u8buf: ArrayBufferLike | undefined = storage.get(1);
+        if (u8buf === undefined) {
+            return new Error(`Fail to get property u8`);
+        }
+        if (u8buf.byteLength === 0) {
+            this.u8 = undefined;
+        } else {
+            const u8: number | Error = this.getValue<number>(storage, 1, Protocol.Primitives.u8.decode);
+            if (u8 instanceof Error) {
+                return u8;
+            } else {
+                this.u8 = u8;
+            }
+        }
+        const u16: number | Error = this.getValue<number>(storage, 2, Protocol.Primitives.u16.decode);
         if (u16 instanceof Error) {
             return u16;
         } else {
             this.u16 = u16;
         }
-        const u32: number | Error = this.getValue<number>(storage, 2, Protocol.Primitives.u32.decode);
+        const u32: number | Error = this.getValue<number>(storage, 3, Protocol.Primitives.u32.decode);
         if (u32 instanceof Error) {
             return u32;
         } else {
@@ -223,7 +240,7 @@ class Message extends Protocol.Convertor implements IMessage {
         } else {
             this.f64 = f64;
         }
-        const nested: Nested = new Nested({ u16: 0, u32: 0 });
+        const nested: Nested = new Nested({ u8: undefined, u16: 0, u32: 0 });
         const nestedBuf: ArrayBufferLike = storage.get(11);
         if (nestedBuf instanceof Error) {
             return nestedBuf;
@@ -428,7 +445,7 @@ describe('Protocol tests', () => {
             i64: BigInt(8),
             f32: 9,
             f64: 10,
-            nested: new Nested({ u16: 11, u32: 12 }),
+            nested: new Nested({ u8: 10, u16: 11, u32: 12 }),
             arrU8: [1,2,3,4,5],
             arrU16: [1,2,3,4,5],
             arrU32: [1,2,3,4,5],
@@ -454,7 +471,7 @@ describe('Protocol tests', () => {
             i64: BigInt(0),
             f32: 0,
             f64: 0,
-            nested: new Nested({ u16: 0, u32: 0 }),
+            nested: new Nested({ u8: undefined, u16: 0, u32: 0 }),
             arrU8: [],
             arrU16: [],
             arrU32: [],
@@ -470,7 +487,6 @@ describe('Protocol tests', () => {
         });
         const err = b.decode(buffer);
         if (err instanceof Error) {
-            console.log(err);
             expect(true).toBe(false);
         }
         expect(a.u8).toBe(b.u8);
@@ -498,8 +514,27 @@ describe('Protocol tests', () => {
         expect(a.str).toBe(b.str);
         expect(a.arrStr.join(',')).toBe(b.arrStr.join(','));
 
-        console.log(buffer);
-        console.log(b);
+        const c = new Nested({ u8: 10, u16: 11, u32: 12 });
+        const c_buff = c.encode();
+        const d = new Nested({ u8: 0, u16: 0, u32: 0 });
+        const c_error: Error | undefined = d.decode(c_buff);
+        if (c_error instanceof Error) {
+            fail(c_error);
+        }
+        expect(c.u8).toBe(d.u8);
+        expect(c.u16).toBe(d.u16);
+        expect(c.u32).toBe(d.u32);
+
+        const e = new Nested({ u8: undefined, u16: 11, u32: 12 });
+        const e_buff = e.encode();
+        const e_error: Error | undefined = d.decode(e_buff);
+        if (e_error instanceof Error) {
+            fail(e_error);
+        }
+        expect(d.u8).toBe(e.u8);
+        expect(d.u8).toBe(undefined);
+        expect(d.u16).toBe(e.u16);
+        expect(d.u32).toBe(e.u32);
         done();
         /*
         const protocol: ProtocolImpl = new ProtocolImpl();

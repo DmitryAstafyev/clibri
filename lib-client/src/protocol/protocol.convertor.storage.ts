@@ -95,7 +95,6 @@ export class Storage {
                     break;
             };
             const body = buffer.slice(position, position + Number(length));
-            console.log(length + ' / ' + Number(length));
             position += Number(length);
             return { id, body, position };
         } catch (e) {

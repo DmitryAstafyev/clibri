@@ -199,6 +199,7 @@ mod tests {
     pub struct Nested {
         field_u16: u16,
         field_utf8_string: String,
+        field_optional: Option<u8>,
     }
 
     impl StructDecode for Nested {
@@ -211,6 +212,7 @@ mod tests {
             Nested {
                 field_u16: 0,
                 field_utf8_string: String::from(""),
+                field_optional: None,
             }
         }
 
@@ -220,6 +222,10 @@ mod tests {
                 Err(e) => { return Err(e) },
             };
             self.field_utf8_string = match String::decode(&mut storage, 2) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_optional = match Option::<u8>::decode(&mut storage, 3) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -240,6 +246,10 @@ mod tests {
                 Err(e) => { return  Err(e); }
             };
             match self.field_utf8_string.encode(2) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
+            match self.field_optional.encode(3) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
@@ -555,20 +565,24 @@ mod tests {
             prop_utf8_string_vec: vec![String::from("UTF8 String 1"), String::from("UTF8 String 2")],
             prop_nested: Nested {
                 field_u16: 999,
-                field_utf8_string: String::from("Hello, from Nested!")
+                field_utf8_string: String::from("Hello, from Nested!"),
+                field_optional: Some(2),
             },
             prop_nested_vec: vec![
                 Nested {
                     field_u16: 333,
-                    field_utf8_string: String::from("Hello, from Nested (333)!")
+                    field_utf8_string: String::from("Hello, from Nested (333)!"),
+                    field_optional: None,
                 },
                 Nested {
                     field_u16: 444,
-                    field_utf8_string: String::from("Hello, from Nested (444)!")
+                    field_utf8_string: String::from("Hello, from Nested (444)!"),
+                    field_optional: Some(99),
                 },
                 Nested {
                     field_u16: 555,
-                    field_utf8_string: String::from("Hello, from Nested (555)!")
+                    field_utf8_string: String::from("Hello, from Nested (555)!"),
+                    field_optional: Some(100),
                 },
             ],
             prop_enum: TargetEnum::OptionString(String::from("Hello, from Enum (666)!")),
@@ -622,9 +636,9 @@ mod tests {
         assert_eq!(a.prop_f64, b.prop_f64);
         assert_eq!(a.prop_utf8_string_vec, b.prop_utf8_string_vec);
         assert_eq!(a.prop_nested, b.prop_nested);
+        assert_eq!(a.prop_nested.field_optional, b.prop_nested.field_optional);
         assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
         assert_eq!(a.prop_enum, b.prop_enum);
-
         let enums: Vec<TargetEnum> = vec![
             TargetEnum::OptionString(String::from("Hello from enum!")),
             TargetEnum::Optionu8(1),
@@ -640,7 +654,8 @@ mod tests {
             TargetEnum::OptionBool(true),
             TargetEnum::OptionStruct(Nested {
                 field_u16: 999,
-                field_utf8_string: String::from("Hello, from Nested in enum!")
+                field_utf8_string: String::from("Hello, from Nested in enum!"),
+                field_optional: None,
             }),
             TargetEnum::Optionu8Vec(vec![1, 2, 3, 4]),
             TargetEnum::Optionu16Vec(vec![1, 2, 3, 4]),
@@ -655,11 +670,13 @@ mod tests {
             TargetEnum::OptionStructVec(vec![
                 Nested {
                     field_u16: 111,
-                    field_utf8_string: String::from("Hello, from Nested in enum!")
+                    field_utf8_string: String::from("Hello, from Nested in enum!"),
+                    field_optional: Some(1),
                 },
                 Nested {
                     field_u16: 222,
-                    field_utf8_string: String::from("Hello, from Nested in enum!")
+                    field_utf8_string: String::from("Hello, from Nested in enum!"),
+                    field_optional: Some(2),
                 }
             ]),
             TargetEnum::OptionNoValue,
@@ -689,7 +706,7 @@ mod tests {
                 }
             };
         }
-        // assert_eq!(true, false);
+        //assert_eq!(true, false);
     }
 
 }

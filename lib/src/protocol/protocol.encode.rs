@@ -269,3 +269,12 @@ impl<T> Encode for Vec<T> where T: StructEncode {
         get_value_buffer(id, ESize::U64(buffer.len() as u64), buffer.to_vec())
     }
 }
+
+impl<T> Encode for Option<T> where T: Encode {
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+        match self {
+            Some(v) => v.encode(id),
+            None => get_value_buffer(id, ESize::U8(0), vec!()),
+        }
+    }
+}
