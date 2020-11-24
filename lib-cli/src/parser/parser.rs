@@ -65,18 +65,22 @@ enum EExpectation {
     Semicolon,
 }
 
+pub enum EDest {
+    Rust(PathBuf),
+    TypeScript(PathBuf),
+}
+
 pub struct Parser {
     _src: PathBuf,
-    _rs: PathBuf,
-    _ts: PathBuf,
+    _dest: Vec<EDest>,
     _prev: Option<ENext>,
 }
 
 #[allow(dead_code)]
 impl Parser {
 
-    fn new(src: PathBuf, rs: PathBuf, ts: PathBuf) -> Parser {
-        Parser { _src: src, _rs: rs, _ts: ts, _prev: None }
+    fn new(src: PathBuf, dest: Vec<EDest>) -> Parser {
+        Parser { _src: src, _dest: dest, _prev: None }
     }
 
     fn parse(&mut self) -> Result<(), Vec<String>> {
@@ -364,16 +368,17 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use super::{Parser};
+    use super::{Parser, EDest};
 
     #[test]
     fn parsing() {
         if let Ok(exe) = std::env::current_exe() {
             if let Some(path) = exe.as_path().parent() {
                 let src = path.join("../../../test/protocol.prot");
-                let ts = path.join("../../../test/protocol.prot.ts");
-                let rs = path.join("../../../test/protocol.prot.rs");
-                let mut parser: Parser = Parser::new(src, rs, ts);
+                let mut parser: Parser = Parser::new(src, vec![
+                    EDest::Rust(path.join("../../../test/protocol.prot.rs")),
+                    EDest::TypeScript(path.join("../../../test/protocol.prot.ts"))
+                ]);
                 match parser.parse() {
                     Ok(_buf) => {
                         assert_eq!(true, true);
