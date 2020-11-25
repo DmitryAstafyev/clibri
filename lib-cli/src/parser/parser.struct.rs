@@ -6,8 +6,6 @@ pub struct Struct {
     pub parent: usize,
     pub name: String,
     pub fields: Vec<Field>,
-    pub structs: Vec<usize>,
-    pub enums: Vec<usize>,
 }
 
 impl Struct {
@@ -18,8 +16,6 @@ impl Struct {
             parent,
             name,
             fields: vec![],
-            structs: vec![],
-            enums: vec![],
         }
     }
 
@@ -29,14 +25,6 @@ impl Struct {
         }
         field.parent = self.id;
         self.fields.push(field);
-    }
-
-    pub fn bind_struct(&mut self, id: usize) {
-        self.structs.push(id);
-    }
-
-    pub fn bind_enum(&mut self, id: usize) {
-        self.enums.push(id);
     }
 
 }

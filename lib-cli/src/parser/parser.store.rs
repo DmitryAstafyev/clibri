@@ -37,6 +37,8 @@ impl Store {
         if self.c_enum.is_some() {
             panic!("Struct cannot be defined inside enum");
         }
+        self.sequence += 1;
+        self.bind_struct_with_group(self.sequence);
         self.c_struct = Some(Struct::new(self.sequence, self.get_group_id(), name));
     }
 
@@ -47,6 +49,8 @@ impl Store {
         if self.c_enum.is_some() {
             panic!("Enum cannot be defined inside enum");
         }
+        self.sequence += 1;
+        self.bind_enum_with_group(self.sequence);
         self.c_enum = Some(Enum::new(self.sequence, self.get_group_id(), name));
     }
 
@@ -57,13 +61,9 @@ impl Store {
         if self.c_enum.is_some() {
             panic!("Group cannot be defined inside enum");
         }
-        let mut parent: usize = 0;
+        let parent: usize = self.get_group_id();
         self.sequence += 1;
-        if let Some(mut c_group) = self.c_group.take() {
-            parent = c_group.id;
-            c_group.bind_struct(self.sequence);
-            self.groups.push(c_group);
-        }
+        self.bind_group_with_group(self.sequence);
         self.c_group = Some(Group::new(self.sequence, parent, name));
         self.path.push(self.sequence);
     }
@@ -222,13 +222,35 @@ impl Store {
     }
 
     fn get_group_id(&mut self) -> usize {
-        let mut group: usize = 0;
         if let Some(c_group) = self.c_group.take() {
-            group = c_group.id;
+            let id = c_group.id;
+            self.c_group = Some(c_group);
+            id
+        } else {
+            0
+        }
+    }
+
+    fn bind_struct_with_group(&mut self, id: usize) {
+        if let Some(mut c_group) = self.c_group.take() {
+            c_group.bind_struct(id);
             self.c_group = Some(c_group);
         }
-        self.sequence += 1;
-        group
+    }
+
+    fn bind_enum_with_group(&mut self, id: usize) {
+        if let Some(mut c_group) = self.c_group.take() {
+            c_group.bind_enum(id);
+            self.c_group = Some(c_group);
+        }
+    }
+
+    fn bind_group_with_group(&mut self, id: usize) {
+        if let Some(mut c_group) = self.c_group.take() {
+            c_group.bind_group(id);
+            self.c_group = Some(c_group.clone());
+            self.groups.push(c_group);
+        }
     }
 
 }
