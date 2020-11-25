@@ -3,8 +3,8 @@ use super::{ Field, Enum, Struct, PrimitiveTypes, EReferenceToType };
 #[derive(Debug)]
 pub struct Store {
     sequence: usize,
-    structs: Vec<Struct>,
-    enums: Vec<Enum>,
+    pub structs: Vec<Struct>,
+    pub enums: Vec<Enum>,
     c_struct: Option<Struct>,
     c_enum: Option<Enum>,
     c_field: Option<Field>,
@@ -168,7 +168,6 @@ impl Store {
         if self.c_struct.is_none() && self.c_enum.is_none() {
             panic!("No created struct or enum");
         }
-        println!("open");
     }
 
     pub fn close(&mut self) {
@@ -189,6 +188,17 @@ impl Store {
                 panic!("Cannot find struct from path");
             }
         }
+    }
+
+    pub fn order(&mut self) -> Result<(), String> {
+        let mut parents: Vec<usize> = vec!();
+        for strct in &self.structs {
+            if strct.parent != 0 && parents.iter().find(|id| id == &&strct.parent).is_none() {
+                parents.push(strct.parent);
+            }
+        }
+        println!("{:?}", parents);
+        Ok(())
     }
 
 }

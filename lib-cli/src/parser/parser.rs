@@ -79,11 +79,11 @@ pub struct Parser {
 #[allow(dead_code)]
 impl Parser {
 
-    fn new(src: PathBuf, dest: Vec<EDest>) -> Parser {
+    pub fn new(src: PathBuf, dest: Vec<EDest>) -> Parser {
         Parser { _src: src, _dest: dest, _prev: None }
     }
 
-    fn parse(&mut self) -> Result<(), Vec<String>> {
+    pub fn parse(&mut self) -> Result<Store, Vec<String>> {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
@@ -103,7 +103,6 @@ impl Parser {
                             let next_char: char = if let Some(c) = next_char { c } else { '.' };
                             if Entities::get_entity(&word).is_some() && 
                                (is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
-                                println!("Found entity: {:?}", Entities::get_entity(&word));
                                 match Entities::get_entity(&word) {
                                     Some(Entities::EEntities::EStruct) => {
                                         if is_in(&expectation, &EExpectation::StructDef) {
@@ -176,7 +175,6 @@ impl Parser {
                                 errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
                                 break;
                             }
-                            println!("Word: {}", word);
                             offset
                         },
                         ENext::OpenStruct(offset) => {
@@ -235,7 +233,6 @@ impl Parser {
                             offset
                         },
                         ENext::Space(offset) => {
-                            println!("space");
                             offset
                         },
                         ENext::Repeated(offset) => {
@@ -257,7 +254,6 @@ impl Parser {
                             offset
                         },
                         ENext::End() => {
-                            println!("end");
                             break;
                         },
                     };
@@ -274,8 +270,10 @@ impl Parser {
             }
         }
         if errs.is_empty() {
-            println!("{:?}", store);
-            Ok(())
+            match store.order() {
+                Ok(_) => Ok(store),
+                Err(e) => Err(vec![e]),
+            }
         } else {
             Err(errs)
         }
@@ -353,41 +351,13 @@ impl Parser {
         }
     }
 
-    fn get_content(&self, target: PathBuf) -> Result<String, String> {
+    pub fn get_content(&self, target: PathBuf) -> Result<String, String> {
         if !target.exists() {
             Err(format!("File {} doesn't exists", target.as_path().display().to_string()))
         } else {
             match fs::read_to_string(target.as_path()) {
                 Ok(content) => Ok(content),
                 Err(e) => Err(e.to_string())
-            }
-        }
-    }
-
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{Parser, EDest};
-
-    #[test]
-    fn parsing() {
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(path) = exe.as_path().parent() {
-                let src = path.join("../../../test/protocol.prot");
-                let mut parser: Parser = Parser::new(src, vec![
-                    EDest::Rust(path.join("../../../test/protocol.prot.rs")),
-                    EDest::TypeScript(path.join("../../../test/protocol.prot.ts"))
-                ]);
-                match parser.parse() {
-                    Ok(_buf) => {
-                        assert_eq!(true, true);
-                    },
-                    Err(e) => {
-                        println!("{}", e[0]);
-                        assert_eq!(true, false);
-                    }
-                }        
             }
         }
     }
