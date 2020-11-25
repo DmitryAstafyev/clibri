@@ -32,3 +32,48 @@ struct User {
 struct Login {
     User[] users;
 }
+group GroupA {
+    struct UserA {
+        str[] username;
+        str email?;
+        UserType type;
+    }
+    struct LoginA {
+        User[] users;
+    }
+    enum UserTypeTest {
+        u8 pointA=1;
+        u8 pointB=2;
+        u8 pointC=3;
+    }
+}
+group GroupB {
+    struct UserA {
+        str[] username;
+        str email?;
+        UserType type;
+    }
+    struct LoginA {
+        User[] users;
+    }
+    enum UserTypeTest {
+        u8 pointA=1;
+        u8 pointB=2;
+        u8 pointC=3;
+    }
+    group GroupC {
+        struct UserA {
+            str[] username;
+            str email?;
+            UserType type;
+        }
+        struct LoginA {
+            User[] users;
+        }
+        enum UserTypeTest {
+            u8 pointA=1;
+            u8 pointB=2;
+            u8 pointC=3;
+        }
+    }
+}

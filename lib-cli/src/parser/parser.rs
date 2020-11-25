@@ -6,6 +6,7 @@ use fields::{ Field, EReferenceToType };
 use enums::{ Enum };
 use structs::{ Struct };
 use store::{ Store };
+use groups::{ Group };
 
 #[path = "./parser.types.rs"]
 pub mod types;
@@ -21,6 +22,9 @@ pub mod enums;
 
 #[path = "./parser.struct.rs"]
 pub mod structs;
+
+#[path = "./parser.group.rs"]
+pub mod groups;
 
 #[path = "./parser.store.rs"]
 pub mod store;
@@ -49,6 +53,8 @@ enum ENextErr {
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 enum EExpectation {
+    GroupDef,
+    GroupName,
     StructDef,
     EnumDef,
     EnumValue,
@@ -102,8 +108,15 @@ impl Parser {
                         ENext::Word((word, offset, next_char)) => {
                             let next_char: char = if let Some(c) = next_char { c } else { '.' };
                             if Entities::get_entity(&word).is_some() && 
-                               (is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
+                               (is_in(&expectation, &EExpectation::GroupDef) ||is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
                                 match Entities::get_entity(&word) {
+                                    Some(Entities::EEntities::EGroup) => {
+                                        if is_in(&expectation, &EExpectation::GroupDef) {
+                                            expectation = vec![EExpectation::GroupName];
+                                        } else {
+                                            panic!("Has been gotten Group Def, but expections is {:?}", expectation);
+                                        }
+                                    },
                                     Some(Entities::EEntities::EStruct) => {
                                         if is_in(&expectation, &EExpectation::StructDef) {
                                             expectation = vec![EExpectation::StructName];
@@ -126,12 +139,17 @@ impl Parser {
                                     expectation = vec![EExpectation::StructName];
                                 } else if is_in(&expectation, &EExpectation::EnumDef) {
                                     expectation = vec![EExpectation::EnumName];
-                                }
+                                } else if is_in(&expectation, &EExpectation::GroupDef) {
+                                    expectation = vec![EExpectation::GroupName];
+                                } 
                             } else if is_in(&expectation, &EExpectation::StructName) {
                                 store.open_struct(word.to_string());
                                 expectation = vec![EExpectation::EntityOpen];
                             } else if is_in(&expectation, &EExpectation::EnumName) {
                                 store.open_enum(word.to_string());
+                                expectation = vec![EExpectation::EntityOpen];
+                            } else if is_in(&expectation, &EExpectation::GroupName) {
+                                store.open_group(word.to_string());
                                 expectation = vec![EExpectation::EntityOpen];
                             } else if is_in(&expectation, &EExpectation::FieldName) {
                                 if store.is_enum_opened() {
@@ -184,6 +202,7 @@ impl Parser {
                             }
                             expectation = vec![
                                 EExpectation::FieldType,
+                                EExpectation::GroupDef,
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef,
                                 EExpectation::EnumValue,
@@ -198,6 +217,7 @@ impl Parser {
                             }
                             expectation = vec![
                                 EExpectation::FieldType, // Only if it's nested struct
+                                EExpectation::GroupDef,
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef,
                                 EExpectation::EntityClose

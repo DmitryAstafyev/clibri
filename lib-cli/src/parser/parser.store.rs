@@ -1,11 +1,13 @@
-use super::{ Field, Enum, Struct, PrimitiveTypes, EReferenceToType };
+use super::{ Field, Enum, Struct, Group, PrimitiveTypes, EReferenceToType };
 
 #[derive(Debug)]
 pub struct Store {
     sequence: usize,
     pub structs: Vec<Struct>,
     pub enums: Vec<Enum>,
+    pub groups: Vec<Group>,
     c_struct: Option<Struct>,
+    c_group: Option<Group>,
     c_enum: Option<Enum>,
     c_field: Option<Field>,
     path: Vec<usize>,
@@ -19,36 +21,51 @@ impl Store {
             sequence: 0,
             structs: vec![],
             enums: vec![],
+            groups: vec![],
             c_struct: None,
             c_enum: None,
             c_field: None,
+            c_group: None,
             path: vec![],
         }
     }
 
     pub fn open_struct(&mut self, name: String) {
-        let mut parent: usize = 0;
-        self.sequence += 1;
-        if let Some(mut c_struct) = self.c_struct.take() {
-            parent = c_struct.id;
-            c_struct.bind_struct(self.sequence);
-            self.structs.push(c_struct);
+        if self.c_struct.is_some() {
+            panic!("Struct cannot be defined inside struct");
         }
-        self.c_struct = Some(Struct::new(self.sequence, parent, name));
-        self.path.push(self.sequence);
+        if self.c_enum.is_some() {
+            panic!("Struct cannot be defined inside enum");
+        }
+        self.c_struct = Some(Struct::new(self.sequence, self.get_group_id(), name));
     }
 
     pub fn open_enum(&mut self, name: String) {
-        let mut parent: usize = 0;
-        if let Some(c_struct) = self.c_struct.take() {
-            parent = c_struct.id;
-            self.c_struct = Some(c_struct);
+        if self.c_struct.is_some() {
+            panic!("Enum cannot be defined inside struct");
         }
         if self.c_enum.is_some() {
-            panic!("Nested enums arn't supported");
+            panic!("Enum cannot be defined inside enum");
         }
+        self.c_enum = Some(Enum::new(self.sequence, self.get_group_id(), name));
+    }
+
+    pub fn open_group(&mut self, name: String) {
+        if self.c_struct.is_some() {
+            panic!("Group cannot be defined inside struct");
+        }
+        if self.c_enum.is_some() {
+            panic!("Group cannot be defined inside enum");
+        }
+        let mut parent: usize = 0;
         self.sequence += 1;
-        self.c_enum = Some(Enum::new(self.sequence, parent, name));
+        if let Some(mut c_group) = self.c_group.take() {
+            parent = c_group.id;
+            c_group.bind_struct(self.sequence);
+            self.groups.push(c_group);
+        }
+        self.c_group = Some(Group::new(self.sequence, parent, name));
+        self.path.push(self.sequence);
     }
 
     pub fn set_field_type(&mut self, type_str: &str) {
@@ -165,27 +182,30 @@ impl Store {
     }
 
     pub fn open(&mut self) {
-        if self.c_struct.is_none() && self.c_enum.is_none() {
+        if self.c_group.is_none() && self.c_struct.is_none() && self.c_enum.is_none() {
             panic!("No created struct or enum");
         }
     }
 
     pub fn close(&mut self) {
-        if self.c_struct.is_none() && self.c_enum.is_none() {
-            panic!("No opened struct or enum");
+        if self.c_group.is_none() && self.c_struct.is_none() && self.c_enum.is_none() {
+            panic!("No opened group or struct or enum");
         }
         if let Some(c_enum) = self.c_enum.take() {
             self.enums.push(c_enum);
             self.c_enum = None;
         } else if let Some(c_struct) = self.c_struct.take() {
             self.structs.push(c_struct);
+            self.c_struct = None;
+        } else if let Some(c_group) = self.c_group.take() {
+            self.groups.push(c_group);
             self.path.remove(self.path.len() - 1);
             if self.path.is_empty() {
-                self.c_struct = None;
-            } else if let Some(pos) = self.structs.iter().position(|s| s.id == self.path[self.path.len() - 1]) {
-                self.c_struct = Some(self.structs.remove(pos));
+                self.c_group = None;
+            } else if let Some(pos) = self.groups.iter().position(|s| s.id == self.path[self.path.len() - 1]) {
+                self.c_group = Some(self.groups.remove(pos));
             } else {
-                panic!("Cannot find struct from path");
+                panic!("Cannot find group from path");
             }
         }
     }
@@ -199,6 +219,16 @@ impl Store {
         }
         println!("{:?}", parents);
         Ok(())
+    }
+
+    fn get_group_id(&mut self) -> usize {
+        let mut group: usize = 0;
+        if let Some(c_group) = self.c_group.take() {
+            group = c_group.id;
+            self.c_group = Some(c_group);
+        }
+        self.sequence += 1;
+        group
     }
 
 }
