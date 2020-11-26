@@ -1,6 +1,6 @@
 use super::{ Field, Enum, Struct, Group, PrimitiveTypes, EReferenceToType };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Store {
     sequence: usize,
     pub structs: Vec<Struct>,
@@ -28,6 +28,24 @@ impl Store {
             c_group: None,
             path: vec![],
         }
+    }
+
+    pub fn get_struct(&mut self, id: usize) -> Option<Struct> {
+        if let Some(strct) = self.structs.iter().find(|s| s.id == id) {
+            Some(strct.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_child_groups(&mut self, parent_id: usize) -> Vec<Group> {
+        let mut groups = vec!();
+        for group in self.groups.iter() {
+            if group.parent == parent_id {
+                groups.push(group.clone());
+            }
+        }
+        groups
     }
 
     pub fn open_struct(&mut self, name: String) {

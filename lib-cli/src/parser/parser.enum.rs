@@ -1,7 +1,7 @@
 
 use super::{ PrimitiveTypes };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumItem {
     pub name: String,
     pub types: Option<PrimitiveTypes::ETypes>,
@@ -9,7 +9,7 @@ pub struct EnumItem {
     pub str_value: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Enum {
     pub id: usize,
     pub parent: usize,

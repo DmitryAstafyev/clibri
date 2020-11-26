@@ -1,7 +1,7 @@
 #[allow(non_snake_case)]
 pub mod PrimitiveTypes {
     
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub enum ETypes {
         Ebool,
         Echar,

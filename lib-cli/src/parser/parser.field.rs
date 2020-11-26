@@ -1,12 +1,12 @@
 use super::{ PrimitiveTypes };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EReferenceToType {
     Struct,
     Enum,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Field {
     pub id: usize,
     pub parent: usize,

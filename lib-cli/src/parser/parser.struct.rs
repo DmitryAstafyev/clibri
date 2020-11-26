@@ -1,6 +1,6 @@
 use super::{ Field };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Struct {
     pub id: usize,
     pub parent: usize,

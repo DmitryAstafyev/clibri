@@ -37,7 +37,7 @@ mod tests {
                 ]);
                 match parser.parse() {
                     Ok(store) => {
-                        println!("{:?}", store);
+                        // println!("{:?}", store.groups);
                         println!("{}", rust::get_str(store));
                         assert_eq!(true, false);
                     },
