@@ -55,7 +55,7 @@ mod tests {
                 Self::Optionf32(v) => v.encode(10),
                 Self::Optionf64(v) => v.encode(11),
                 Self::OptionBool(v) => v.encode(12),
-                Self::OptionStruct(v) => Encode::encode(&mut v.clone(), 13),
+                Self::OptionStruct(v) => v.encode(13),
                 Self::Optionu8Vec(v) => v.encode(14),
                 Self::Optionu16Vec(v) => v.encode(15),
                 Self::Optionu32Vec(v) => v.encode(16),
@@ -66,7 +66,7 @@ mod tests {
                 Self::Optioni64Vec(v) => v.encode(21),
                 Self::Optionf32Vec(v) => v.encode(22),
                 Self::Optionf64Vec(v) => v.encode(23),
-                Self::OptionStructVec(v) => Encode::encode(&mut v.clone(), 24),
+                Self::OptionStructVec(v) => v.encode(24),
                 Self::Defaults => (0 as u8).encode(25),
             } {
                 Ok(buf) => Ok(buf),
