@@ -38,6 +38,14 @@ impl Store {
         }
     }
 
+    pub fn get_enum(&mut self, id: usize) -> Option<Enum> {
+        if let Some(enums) = self.enums.iter().find(|s| s.id == id) {
+            Some(enums.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn get_child_groups(&mut self, parent_id: usize) -> Vec<Group> {
         let mut groups = vec!();
         for group in self.groups.iter() {

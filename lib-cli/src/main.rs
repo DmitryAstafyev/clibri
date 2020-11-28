@@ -7,8 +7,8 @@ pub mod helpers;
 #[path = "./parser/parser.rs"]
 pub mod parser;
 
-#[path = "./writer/writer.rs"]
-pub mod writer;
+#[path = "./render/render.rs"]
+pub mod render;
 
 fn main() {
     let ctrl: ctrlargs::CtrlArgs = ctrlargs::CtrlArgs::new();
@@ -24,7 +24,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::parser::{ Parser, EDest };
-    use super::writer::{ rust };
+    use super::render::rust::{ RustRender };
+    use super::render::{ Render };
 
     #[test]
     fn parsing() {
@@ -38,7 +39,8 @@ mod tests {
                 match parser.parse() {
                     Ok(store) => {
                         // println!("{:?}", store.groups);
-                        println!("{}", rust::get_str(store));
+                        let rust_render: RustRender = RustRender {};
+                        println!("{}", rust_render.render(store));
                         assert_eq!(true, false);
                     },
                     Err(e) => {

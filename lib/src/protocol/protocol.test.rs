@@ -36,7 +36,7 @@ mod tests {
         Optionf32Vec(Vec<f32>),
         Optionf64Vec(Vec<f64>),
         OptionStructVec(Vec<Nested>),
-        OptionNoValue,
+        Defaults,
     }
 
     impl EnumEncode for TargetEnum {
@@ -67,7 +67,7 @@ mod tests {
                 Self::Optionf32Vec(v) => v.encode(22),
                 Self::Optionf64Vec(v) => v.encode(23),
                 Self::OptionStructVec(v) => Encode::encode(&mut v.clone(), 24),
-                Self::OptionNoValue => (0 as u8).encode(25),
+                Self::Defaults => (0 as u8).encode(25),
             } {
                 Ok(buf) => Ok(buf),
                 Err(e) => Err(e),
@@ -186,7 +186,7 @@ mod tests {
                     Err(e) => Err(e),
                 },
                 25 => match u8::decode(&mut storage, id) {
-                    Ok(_) => Ok(TargetEnum::OptionNoValue),
+                    Ok(_) => Ok(TargetEnum::Defaults),
                     Err(e) => Err(e),
                 },
                 _ => Err(String::from("Fail to find relevant value for TargetEnum"))
@@ -316,7 +316,7 @@ mod tests {
                 prop_utf8_string_vec: vec![],
                 prop_nested: Nested::defaults(),
                 prop_nested_vec: vec![],
-                prop_enum: TargetEnum::OptionNoValue,
+                prop_enum: TargetEnum::Defaults,
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -679,7 +679,7 @@ mod tests {
                     field_optional: Some(2),
                 }
             ]),
-            TargetEnum::OptionNoValue,
+            TargetEnum::Defaults,
         ];
         let mut enums_bufs: Vec<Vec<u8>> = vec![];
         for item in enums.iter() {

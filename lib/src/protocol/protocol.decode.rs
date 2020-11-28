@@ -1,5 +1,5 @@
 use std::io::Cursor;
-use bytes::{Buf};
+use bytes::{ Buf };
 use super::{ sizes, storage };
 use storage::{ Storage };
 

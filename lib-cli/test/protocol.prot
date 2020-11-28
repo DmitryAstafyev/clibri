@@ -28,6 +28,7 @@ struct User {
     str[] username;
     str email?;
     UserType type;
+    StructName info;
 }
 struct Login {
     User[] users;
