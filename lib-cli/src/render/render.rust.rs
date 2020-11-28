@@ -66,7 +66,7 @@ impl RustRender {
                 "{}{},",
                 body,
                 self.struct_default(struct_id, store, level + 1)
-            ); // <== struct is here
+            );
         }
         body
     }
@@ -151,8 +151,6 @@ impl Render for RustRender {
         );
         body = format!("{}{}use std::io::Cursor;\n", body, self.spaces(level + 1));
         body = format!("{}{}use bytes::{{ Buf }};\n", body, self.spaces(level + 1));
-        // body = format!("{}\n{}// id={}", body, self.spaces(level + 1), group.id);
-        // body = format!("{}\n{}// parent={}", body, self.spaces(level + 1), group.parent);
         for struct_id in &group.structs {
             if let Some(strct) = store.get_struct(*struct_id) {
                 body = format!(
@@ -176,8 +174,6 @@ impl Render for RustRender {
     fn structs(&self, strct: &Struct, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}#[derive(Debug, Clone, PartialEq)]\n", self.spaces(level));
         body = format!("{}{}pub struct {} {{", body, self.spaces(level), strct.name);
-        // body = format!("{}\n{}// id={}", body, self.spaces(level + 1), strct.id);
-        // body = format!("{}\n{}// parent={}", body, self.spaces(level + 1), strct.parent);
         for field in &strct.fields {
             body = format!(
                 "{}\n{}{}",
@@ -280,9 +276,6 @@ impl Render for RustRender {
         body = format!("{}{}Ok(buffer)\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
-
-        body = format!("{}{}========>\n", body, self.spaces(level + 1));
-
         body
     }
 }

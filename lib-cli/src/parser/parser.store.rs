@@ -101,8 +101,8 @@ impl Store {
         if self.c_struct.is_none() {
             panic!("Fail to create new field, because no open struct.");
         }
+        self.sequence += 1;
         if PrimitiveTypes::get_entity(type_str).is_some() {
-            self.sequence += 1;
             self.c_field = Some(Field::new(self.sequence, 0, type_str.to_string()));
         } else {
             let mut c_field = Field::new(self.sequence, 0, type_str.to_string());
