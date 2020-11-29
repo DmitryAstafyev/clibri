@@ -237,7 +237,6 @@ impl Store {
                 parents.push(strct.parent);
             }
         }
-        println!("{:?}", parents);
         Ok(())
     }
 

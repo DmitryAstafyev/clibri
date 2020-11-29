@@ -68,22 +68,16 @@ enum EExpectation {
     Semicolon,
 }
 
-pub enum EDest {
-    Rust(PathBuf),
-    TypeScript(PathBuf),
-}
-
 pub struct Parser {
     _src: PathBuf,
-    _dest: Vec<EDest>,
     _prev: Option<ENext>,
 }
 
 #[allow(dead_code)]
 impl Parser {
 
-    pub fn new(src: PathBuf, dest: Vec<EDest>) -> Parser {
-        Parser { _src: src, _dest: dest, _prev: None }
+    pub fn new(src: PathBuf) -> Parser {
+        Parser { _src: src, _prev: None }
     }
 
     pub fn parse(&mut self) -> Result<Store, Vec<String>> {

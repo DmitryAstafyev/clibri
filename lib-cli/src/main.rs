@@ -23,7 +23,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::parser::{ Parser, EDest };
+    use super::parser::{ Parser };
     use super::render::rust::{ RustRender };
     use super::render::{ Render };
 
@@ -32,10 +32,7 @@ mod tests {
         if let Ok(exe) = std::env::current_exe() {
             if let Some(path) = exe.as_path().parent() {
                 let src = path.join("../../../test/protocol.prot");
-                let mut parser: Parser = Parser::new(src, vec![
-                    EDest::Rust(path.join("../../../test/protocol.prot.rs")),
-                    EDest::TypeScript(path.join("../../../test/protocol.prot.ts"))
-                ]);
+                let mut parser: Parser = Parser::new(src);
                 match parser.parse() {
                     Ok(store) => {
                         // println!("{:?}", store.groups);

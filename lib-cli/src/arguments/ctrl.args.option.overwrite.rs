@@ -6,7 +6,7 @@ use super:: { helpers };
 mod keys {
     pub const OVERWRITE: &str = "--overwrite";
     pub const OW: &str = "--ow";
-    pub const O: &str = "--o";
+    pub const O: &str = "-o";
 }
 
 pub struct ArgsOptionOverwrite {

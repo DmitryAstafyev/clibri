@@ -5,6 +5,8 @@ use super:: { helpers };
 
 #[path = "./parser/parser.rs"]
 pub mod parser;
+#[path = "./render/render.rs"]
+pub mod render;
 #[path = "./arguments/ctrl.args.option.files.rs"]
 pub mod arg_option_files;
 #[path = "./arguments/ctrl.args.option.overwrite.rs"]
