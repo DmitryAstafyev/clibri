@@ -67,7 +67,7 @@ mod tests {
                 Self::Optionf32Vec(v) => v.encode(22),
                 Self::Optionf64Vec(v) => v.encode(23),
                 Self::OptionStructVec(v) => v.encode(24),
-                Self::Defaults => (0 as u8).encode(25),
+                _ => Err(String::from("Not supportable option")),
             } {
                 Ok(buf) => Ok(buf),
                 Err(e) => Err(e),
@@ -183,10 +183,6 @@ mod tests {
                 },
                 24 => match Vec::<Nested>::decode(&mut storage, id) {
                     Ok(v) => Ok(TargetEnum::OptionStructVec(v)),
-                    Err(e) => Err(e),
-                },
-                25 => match u8::decode(&mut storage, id) {
-                    Ok(_) => Ok(TargetEnum::Defaults),
                     Err(e) => Err(e),
                 },
                 _ => Err(String::from("Fail to find relevant value for TargetEnum"))
@@ -679,7 +675,6 @@ mod tests {
                     field_optional: Some(2),
                 }
             ]),
-            TargetEnum::Defaults,
         ];
         let mut enums_bufs: Vec<Vec<u8>> = vec![];
         for item in enums.iter() {

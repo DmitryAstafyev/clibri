@@ -6,6 +6,7 @@ pub struct EnumItem {
     pub name: String,
     pub types: Option<PrimitiveTypes::ETypes>,
     pub ref_type_id: Option<usize>,
+    pub repeated: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +48,7 @@ impl Enum {
             types: Some(types),
             ref_type_id: None,
             name: String::new(),
+            repeated: false,
         });
     }
 
@@ -58,7 +60,17 @@ impl Enum {
             types: None,
             ref_type_id: Some(ref_type_id),
             name: String::new(),
+            repeated: false,
         });
+    }
+
+    pub fn set_as_repeated(&mut self) {
+        if let Some(mut current) = self.current.take() {
+            current.repeated = true;
+            self.current = Some(current);
+        } else {
+            panic!("Cannot set repeated flag of enum item, because enum item wasn't opened");
+        }
     }
 
     pub fn set_simple(&mut self, value: &str) {

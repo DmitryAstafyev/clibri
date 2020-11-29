@@ -20,9 +20,9 @@ enum SyntaxSugarEnum {
     VariantC;
 }
 enum UserType {
-    u8 pointA;
-    u8 pointB;
-    u8 pointC;
+    u8[] pointA;
+    str pointB;
+    u16 pointC;
 }
 struct User {
     str[] username;

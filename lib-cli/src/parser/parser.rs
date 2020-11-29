@@ -168,7 +168,7 @@ impl Parser {
                                         expectation = vec![EExpectation::Semicolon];
                                     } else {
                                         store.set_enum_type(&word);
-                                        expectation = vec![EExpectation::FieldName];
+                                        expectation = vec![EExpectation::FieldName, EExpectation::FieldRepeatedMark];
                                     }
                                 } else {
                                     store.set_field_type(&word);

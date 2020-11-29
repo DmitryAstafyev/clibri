@@ -118,7 +118,10 @@ impl Store {
     }
 
     pub fn set_field_type_as_repeated(&mut self) {
-        if let Some(mut c_field) = self.c_field.take() {
+        if let Some(mut c_enum) = self.c_enum.take() {
+            c_enum.set_as_repeated();
+            self.c_enum = Some(c_enum);
+        } else if let Some(mut c_field) = self.c_field.take() {
             c_field.set_as_repeated();
             self.c_field = Some(c_field);
         } else {

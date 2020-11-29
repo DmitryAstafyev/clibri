@@ -169,18 +169,20 @@ impl RustRender {
     fn enums(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}#[derive(Debug, Clone, PartialEq)]\n", self.spaces(level));
         body = format!("{}{}pub enum {} {{\n", body, self.spaces(level), enums.name);
-        for variant in &enums.variants {
+        for item in &enums.variants {
+            let item_type = self.enum_item_type(item.clone(), store);
             body = format!(
                 "{}{}{},\n",
                 body,
                 self.spaces(level + 1),
                 format!(
                     "{}({})",
-                    variant.name,
-                    self.enum_item_type(variant.clone(), store)
+                    item.name,
+                    if item.repeated { format!("Vec<{}>", item_type) } else { item_type }
                 ),
             );
         }
+        body = format!("{}{}Defaults,\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
         body = format!(
             "{}{}impl EnumDecode<{}> for {} {{\n",
@@ -226,12 +228,13 @@ impl RustRender {
         body = format!("{}{}}};\n", body, self.spaces(level + 2));
         body = format!("{}{}match id {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
+            let item_type = self.enum_item_type(item.clone(), store);
             body = format!(
                 "{}{}{} => match {}::decode(&mut storage, id)\n",
                 body,
                 self.spaces(level + 3),
                 index,
-                self.enum_item_type(item.clone(), store)
+                if item.repeated { format!("Vec::<{}>", item_type) } else { item_type }
             );
             body = format!(
                 "{}{}Ok(v) => Ok({}::{}(v)),\n",
@@ -263,11 +266,7 @@ impl RustRender {
             body,
             self.spaces(level + 1)
         );
-        body = format!(
-            "{}{}match match self {{\n",
-            body,
-            self.spaces(level + 2)
-        );
+        body = format!("{}{}match self {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
             body = format!(
                 "{}{}Self::{}(v) => v.encode({}),\n",
@@ -277,6 +276,7 @@ impl RustRender {
                 index
             );
         }
+        body = format!("{}{}_ => Err(String::from(\"Not supportable option\")),\n", body, self.spaces(level + 3));
         body = format!("{}{}}} {{\n", body, self.spaces(level + 2));
         body = format!("{}{}Ok(buf) => Ok(buf),\n", body, self.spaces(level + 3));
         body = format!("{}{}Err(e) => Err(e),,\n", body, self.spaces(level + 3));
