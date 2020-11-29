@@ -20,9 +20,9 @@ enum SyntaxSugarEnum {
     VariantC;
 }
 enum UserType {
-    u8 pointA=1;
-    u8 pointB=2;
-    u8 pointC=3;
+    u8 pointA;
+    u8 pointB;
+    u8 pointC;
 }
 struct User {
     str[] username;
@@ -43,9 +43,9 @@ group GroupA {
         User[] users;
     }
     enum UserTypeTest {
-        u8 pointA=1;
-        u8 pointB=2;
-        u8 pointC=3;
+        u8 pointA;
+        u8 pointB;
+        u8 pointC;
     }
 }
 group GroupB {
@@ -58,9 +58,9 @@ group GroupB {
         User[] users;
     }
     enum UserTypeTest {
-        u8 pointA=1;
-        u8 pointB=2;
-        u8 pointC=3;
+        u8 pointA;
+        u8 pointB;
+        u8 pointC;
     }
     group GroupC {
         struct UserA {
@@ -72,9 +72,9 @@ group GroupB {
             User[] users;
         }
         enum UserTypeTest {
-            u8 pointA=1;
-            u8 pointB=2;
-            u8 pointC=3;
+            u8 pointA;
+            u8 pointB;
+            u8 pointC;
         }
     }
 }

@@ -35,7 +35,6 @@ enum ENext {
     Word((String, usize, Option<char>)),
     OpenStruct(usize),
     CloseStruct(usize),
-    OpenValue(usize),
     Semicolon(usize),
     Space(usize),
     Repeated(usize),
@@ -64,8 +63,6 @@ enum EExpectation {
     FieldOptionalMark,
     StructName,
     EnumName,
-    EnumItemValue,
-    OpenValue,
     EntityOpen,
     EntityClose,
     Semicolon,
@@ -155,7 +152,6 @@ impl Parser {
                                 if store.is_enum_opened() {
                                     store.set_enum_name(&word);
                                     expectation = vec![
-                                        EExpectation::OpenValue,
                                         EExpectation::Semicolon,
                                     ];
                                 } else {
@@ -180,14 +176,6 @@ impl Parser {
                                         EExpectation::FieldName,
                                         EExpectation::FieldRepeatedMark,
                                     ];
-                                }
-                            } else if is_in(&expectation, &EExpectation::EnumItemValue) {
-                                if store.is_enum_opened() {
-                                    store.set_enum_value(Some(word.to_string()));
-                                    expectation = vec![EExpectation::Semicolon];
-                                } else {
-                                    errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
-                                    break;
                                 }
                             } else {
                                 errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
@@ -223,16 +211,6 @@ impl Parser {
                                 EExpectation::EntityClose
                             ];
                             store.close();
-                            offset
-                        },
-                        ENext::OpenValue(offset) => {
-                            if !is_in(&expectation, &EExpectation::OpenValue) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: CloseStruct", expectation));
-                                break;
-                            }
-                            expectation = vec![
-                                EExpectation::EnumItemValue, // Only if it's nested struct
-                            ];
                             offset
                         },
                         ENext::Semicolon(offset) => {
@@ -302,19 +280,15 @@ impl Parser {
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
         let mut str: String = String::new();
         let mut pass: usize = 0;
-        let break_chars: Vec<char> = vec![';', '{', '}', '=', '?'];
+        let break_chars: Vec<char> = vec![';', '{', '}', '?'];
         let special_chars: Vec<char> = vec!['[', ']'];
         let allowed_chars: Vec<char> = vec!['_'];
-        let mut num_first_allowed: bool = false;
-        if let Some(prev) = self._prev.take() {
-            if let ENext::OpenValue(_) = prev { num_first_allowed = true }
-        }
         for char in content.chars() {
             pass += 1;
             if !char.is_ascii() {
                 return Err(ENextErr::NotAscii(format!("found not ascii char: {}", char)))
             }
-            if char.is_ascii_digit() && str.is_empty() && !num_first_allowed {
+            if char.is_ascii_digit() && str.is_empty() {
                 return Err(ENextErr::NumericFirst());
             }
             if char.is_ascii_whitespace() && str.is_empty() {
@@ -329,7 +303,6 @@ impl Parser {
                     ';' => return Ok(ENext::Semicolon(pass)),
                     '{' => return Ok(ENext::OpenStruct(pass)),
                     '}' => return Ok(ENext::CloseStruct(pass)),
-                    '=' => return Ok(ENext::OpenValue(pass)),
                     '?' => return Ok(ENext::Optional(pass)),
                     _ => {}
                 };

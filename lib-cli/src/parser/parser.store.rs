@@ -194,15 +194,6 @@ impl Store {
         }
     }
 
-    pub fn set_enum_value(&mut self, value: Option<String>) {
-        if let Some(mut c_enum) = self.c_enum.take() {
-            c_enum.set_inital_value(value);
-            self.c_enum = Some(c_enum);
-        } else {
-            panic!("Fail to set enum item inital value, because no open enum.");
-        }
-    }
-
     pub fn is_enum_opened(&mut self) -> bool {
         self.c_enum.is_some()
     }
