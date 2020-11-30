@@ -141,8 +141,8 @@ impl EnumEncode for UserType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructName {
-    pub age: u8;
-    pub name: str;
+    pub age: u8,
+    pub name: String,
 }
 impl StructDecode for StructName {
     fn get_id() -> u32 {
@@ -186,8 +186,8 @@ impl StructEncode for StructName {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OptionA {
-    pub option_a_field_a: str;
-    pub option_a_field_b: str;
+    pub option_a_field_a: String,
+    pub option_a_field_b: String,
 }
 impl StructDecode for OptionA {
     fn get_id() -> u32 {
@@ -231,8 +231,8 @@ impl StructEncode for OptionA {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OptionB {
-    pub option_b_field_a: str;
-    pub option_b_field_b: str;
+    pub option_b_field_a: String,
+    pub option_b_field_b: String,
 }
 impl StructDecode for OptionB {
     fn get_id() -> u32 {
@@ -276,10 +276,10 @@ impl StructEncode for OptionB {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct User {
-    pub username: Vec<str>;
-    pub email: Option<str>;
-    pub type: UserType;
-    pub info: StructName;
+    pub username: Vec<String>,
+    pub email: Option<String>,
+    pub type: UserType,
+    pub info: StructName,
 }
 impl StructDecode for User {
     fn get_id() -> u32 {
@@ -345,7 +345,7 @@ impl StructEncode for User {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Login {
-    pub users: Vec<User>;
+    pub users: Vec<User>,
 }
 impl StructDecode for Login {
     fn get_id() -> u32 {
@@ -437,9 +437,9 @@ pub mod GroupA {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct UserA {
-        pub username: Vec<str>;
-        pub email: Option<str>;
-        pub type: UserType;
+        pub username: Vec<String>,
+        pub email: Option<String>,
+        pub type: UserType,
     }
     impl StructDecode for UserA {
         fn get_id() -> u32 {
@@ -492,7 +492,7 @@ pub mod GroupA {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct LoginA {
-        pub users: Vec<User>;
+        pub users: Vec<User>,
     }
     impl StructDecode for LoginA {
         fn get_id() -> u32 {
@@ -586,9 +586,9 @@ pub mod GroupB {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct UserA {
-        pub username: Vec<str>;
-        pub email: Option<str>;
-        pub type: UserType;
+        pub username: Vec<String>,
+        pub email: Option<String>,
+        pub type: UserType,
     }
     impl StructDecode for UserA {
         fn get_id() -> u32 {
@@ -641,7 +641,7 @@ pub mod GroupB {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct LoginA {
-        pub users: Vec<User>;
+        pub users: Vec<User>,
     }
     impl StructDecode for LoginA {
         fn get_id() -> u32 {
@@ -733,9 +733,9 @@ pub mod GroupB {
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct UserA {
-            pub username: Vec<str>;
-            pub email: Option<str>;
-            pub type: UserType;
+            pub username: Vec<String>,
+            pub email: Option<String>,
+            pub type: UserType,
         }
         impl StructDecode for UserA {
             fn get_id() -> u32 {
@@ -788,7 +788,7 @@ pub mod GroupB {
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct LoginA {
-            pub users: Vec<User>;
+            pub users: Vec<User>,
         }
         impl StructDecode for LoginA {
             fn get_id() -> u32 {

@@ -4,29 +4,29 @@ use super::{ CtrlArg, EArgumentsNames, EArgumentsValues };
 use super:: { helpers };
 
 mod keys {
-    pub const OVERWRITE: &str = "--overwrite";
-    pub const OW: &str = "--ow";
-    pub const O: &str = "-o";
+    pub const EMBEDDED: &str = "--embedded";
+    pub const EM: &str = "--em";
+    pub const E: &str = "-e";
 }
 
-pub struct ArgsOptionOverwrite {
+pub struct ArgsOptionEmbedded {
     _overwrite: bool,
 }
 
-impl CtrlArg for ArgsOptionOverwrite {
+impl CtrlArg for ArgsOptionEmbedded {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
-        ArgsOptionOverwrite {
-            _overwrite: args.iter().any(|arg| arg == keys::OVERWRITE || arg == keys::OW || arg == keys::O)
+        ArgsOptionEmbedded {
+            _overwrite: args.iter().any(|arg| arg == keys::EMBEDDED || arg == keys::EM || arg == keys::E)
         }
     }
 
     fn name(&self) -> EArgumentsNames {
-        EArgumentsNames::OptionOverwrite
+        EArgumentsNames::OptionEmbedded
     }
 
     fn value(&self) -> EArgumentsValues {
-        EArgumentsValues::OptionOverwrite(self._overwrite)
+        EArgumentsValues::OptionEmbedded(self._overwrite)
     }
 
     fn get_err(&self) -> Option<String> {
@@ -43,8 +43,8 @@ impl CtrlArg for ArgsOptionOverwrite {
 
     fn get_help(&self) -> String {
         format!("{}{}",
-            helpers::output::keys(&format!("{} ({}, {})", keys::OVERWRITE, keys::OW, keys::O)),
-            helpers::output::desk("if key exist, destination files would be overwritten. Default: false"),
+            helpers::output::keys(&format!("{} ({}, {})", keys::EMBEDDED, keys::EM, keys::E)),
+            helpers::output::desk("if key exist, some addition code will be included. It will make possible to use protocol independently on fiber. Default: true"),
         )
     }
 
@@ -52,7 +52,7 @@ impl CtrlArg for ArgsOptionOverwrite {
 
 pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
     move |mut args: Vec<String>| {
-        if let Some(index) = args.iter().position(|arg| arg == keys::OVERWRITE || arg == keys::OW || arg == keys::O) {
+        if let Some(index) = args.iter().position(|arg| arg == keys::EMBEDDED || arg == keys::EM || arg == keys::E) {
             args.remove(index);
         }
         args

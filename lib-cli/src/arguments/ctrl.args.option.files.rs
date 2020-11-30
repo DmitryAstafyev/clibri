@@ -28,6 +28,33 @@ pub struct ArgsOptionFiles {
     _err: Option<String>,
 }
 
+impl ArgsOptionFiles {
+
+    fn get_overwrite_flag(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> bool {
+        if let Some(arg) = ctrls.get(&EArgumentsNames::OptionOverwrite) {
+            if let EArgumentsValues::OptionOverwrite(overwrite) = arg.value() {
+                overwrite
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn get_embedded_flag(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> bool {
+        if let Some(arg) = ctrls.get(&EArgumentsNames::OptionEmbedded) {
+            if let EArgumentsValues::OptionEmbedded(embedded) = arg.value() {
+                embedded
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+}
 impl CtrlArg for ArgsOptionFiles {
     fn new(
         pwd: &Path,
@@ -134,19 +161,12 @@ impl CtrlArg for ArgsOptionFiles {
 
     fn action(
         &self,
-        mut ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>,
+        ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>,
     ) -> Result<(), String> {
         if let Some(src) = self._src.clone() {
             let t_parsing = Instant::now();
-            let overwrite: bool = if let Some(arg) = ctrls.get(&EArgumentsNames::OptionOverwrite) {
-                if let EArgumentsValues::OptionOverwrite(overwrite) = arg.value() {
-                    overwrite
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
+            let overwrite: bool = self.get_overwrite_flag(ctrls);
+            let embedded: bool = self.get_embedded_flag(ctrls);
             let mut parser: Parser = Parser::new(src.clone());
             match parser.parse() {
                 Ok(store) => {
@@ -212,6 +232,7 @@ impl CtrlArg for ArgsOptionFiles {
             )
         )
     }
+
 }
 
 pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {

@@ -6,29 +6,11 @@ use super::parser::structs::Struct;
 use super::parser::types::PrimitiveTypes;
 use super::Render;
 
-pub struct RustRender {}
+pub struct TypescriptRender {}
 
-impl RustRender {
+impl TypescriptRender {
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
-        let mut body = format!("{}pub mod {} {{\n", self.spaces(level), group.name);
-        body = format!("{}{}use super::*;\n", body, self.spaces(level + 1));
-        body = format!(
-            "{}{}use encode::{{ StructEncode, EnumEncode, Encode }};\n",
-            body,
-            self.spaces(level + 1)
-        );
-        body = format!(
-            "{}{}use decode::{{ StructDecode, EnumDecode, Decode }};\n",
-            body,
-            self.spaces(level + 1)
-        );
-        body = format!(
-            "{}{}use storage::{{ Storage }};\n",
-            body,
-            self.spaces(level + 1)
-        );
-        body = format!("{}{}use std::io::Cursor;\n", body, self.spaces(level + 1));
-        body = format!("{}{}use bytes::{{ Buf }};\n", body, self.spaces(level + 1));
+        let mut body = format!("{}export namespace {} {{\n", self.spaces(level), group.name);
         for enum_id in &group.enums {
             if let Some(enums) = store.get_enum(*enum_id) {
                 body = format!(
@@ -427,9 +409,10 @@ impl RustRender {
     fn spaces(&self, level: u8) -> String {
         "    ".repeat(level as usize)
     }
+
 }
 
-impl Render for RustRender {
+impl Render for TypescriptRender {
     fn render(&self, store: Store) -> String {
         let mut body = String::new();
         for enums in &store.enums {

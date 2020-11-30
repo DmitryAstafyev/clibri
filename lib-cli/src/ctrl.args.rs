@@ -11,6 +11,8 @@ pub mod render;
 pub mod arg_option_files;
 #[path = "./arguments/ctrl.args.option.overwrite.rs"]
 pub mod arg_option_overwrite;
+#[path = "./arguments/ctrl.args.option.embedded.rs"]
+pub mod arg_option_embedded;
 #[path = "./arguments/ctrl.args.option.help.rs"]
 pub mod arg_option_help;
 
@@ -18,12 +20,14 @@ pub mod arg_option_help;
 pub enum EArgumentsNames {
     OptionFiles,
     OptionOverwrite,
+    OptionEmbedded,
     OptionHelp,
 }
 
 pub enum EArgumentsValues {
     Files((PathBuf, PathBuf, PathBuf)),
     OptionOverwrite(bool),
+    OptionEmbedded(bool),
     Empty(()),
 }
 pub trait CtrlArg {
@@ -65,6 +69,10 @@ impl CtrlArgs {
         ctrls.insert(
             EArgumentsNames::OptionOverwrite, 
             Box::new(arg_option_overwrite::ArgsOptionOverwrite::new(&pwd, args.clone(), &ctrls))
+        );
+        ctrls.insert(
+            EArgumentsNames::OptionEmbedded, 
+            Box::new(arg_option_embedded::ArgsOptionEmbedded::new(&pwd, args.clone(), &ctrls))
         );
         ctrls.insert(
             EArgumentsNames::OptionFiles, 
@@ -122,6 +130,7 @@ impl CtrlArgs {
             }
             match ctrl.as_ref().value() {
                 EArgumentsValues::OptionOverwrite(ow) => println!("{:?} = {}", EArgumentsNames::OptionOverwrite, ow),
+                EArgumentsValues::OptionEmbedded(em) => println!("{:?} = {}", EArgumentsNames::OptionEmbedded, em),
                 EArgumentsValues::Files((src, dest_rs, dest_ts)) => {
                     println!("{:?}: src = {}", EArgumentsNames::OptionFiles, src.as_path().display().to_string());
                     println!("{:?}: dest_rs = {}", EArgumentsNames::OptionFiles, dest_rs.as_path().display().to_string());
