@@ -1,6 +1,8 @@
 use super::helpers;
-use super::parser::Parser;
+use super::parser::{ Parser };
+use super::parser::store::{ Store };
 use super::render::rust::RustRender;
+use super::render::typescript::TypescriptRender;
 use super::render::Render;
 use super::{CtrlArg, EArgumentsNames, EArgumentsValues};
 use std::collections::HashMap;
@@ -54,8 +56,33 @@ impl ArgsOptionFiles {
         }
     }
 
+    fn write(&self, dest: PathBuf, overwrite: bool, store: Store, render: impl Render) -> Result<(), String> {
+        let t_render = Instant::now();
+        let content: String = render.render(store);
+        match OpenOptions::new()
+            .write(overwrite)
+            .create(true)
+            .open(dest.clone())
+        {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(content.as_bytes()) {
+                    return Err(e.to_string());
+                }
+                println!(
+                    "[OK][{}ms] saved {:?}",
+                    t_render.elapsed().as_millis(),
+                    dest
+                );
+                Ok(())
+            }
+            Err(e) => Err(e.to_string())
+        }
+    } 
+
 }
+
 impl CtrlArg for ArgsOptionFiles {
+
     fn new(
         pwd: &Path,
         args: Vec<String>,
@@ -91,16 +118,6 @@ impl CtrlArg for ArgsOptionFiles {
         }
         if src.is_none() {
             err = Some("Source filename has to be defined. Use key --source (--src or -s) to set source file".to_string());
-        }
-        if src.is_some() && dest_rs.is_none() {
-            if let Some(src_path_buf) = src.clone().take() {
-                dest_rs = Some(Path::new(&src_path_buf).with_extension("rs"));
-            }
-        }
-        if src.is_some() && dest_ts.is_none() {
-            if let Some(src_path_buf) = src.clone().take() {
-                dest_ts = Some(Path::new(&src_path_buf).with_extension("ts"));
-            }
         }
         if let (Some(src_path_buf), Some(dest_rs_path_buf), Some(dest_ts_path_buf)) = (
             src.clone().take(),
@@ -175,6 +192,7 @@ impl CtrlArg for ArgsOptionFiles {
                         t_parsing.elapsed().as_millis(),
                         src
                     );
+                    // TODO: on overwrite file should be removed first
                     if let Some(dest) = self._dest_rs.clone() {
                         if dest.exists() && !overwrite {
                             return Err(format!("File {:?} exists. Use key \"overwrite\" to overwrite file. -h to get more info", dest));
@@ -184,27 +202,21 @@ impl CtrlArg for ArgsOptionFiles {
                                 dest
                             );
                         }
-                        let t_rust_render = Instant::now();
-                        let render: RustRender = RustRender {};
-                        let content: String = render.render(store);
-                        match OpenOptions::new()
-                            .write(overwrite)
-                            .create(true)
-                            .open(dest.clone())
-                        {
-                            Ok(mut file) => {
-                                if let Err(e) = file.write_all(content.as_bytes()) {
-                                    return Err(e.to_string());
-                                }
-                                println!(
-                                    "[OK][{}ms] saved {:?}",
-                                    t_rust_render.elapsed().as_millis(),
-                                    dest
-                                );
-                            }
-                            Err(e) => {
-                                return Err(e.to_string());
-                            }
+                        if let Err(e) = self.write(dest, overwrite, store.clone(), RustRender {}) {
+                            return Err(e);
+                        }
+                    }
+                    if let Some(dest) = self._dest_ts.clone() {
+                        if dest.exists() && !overwrite {
+                            return Err(format!("File {:?} exists. Use key \"overwrite\" to overwrite file. -h to get more info", dest));
+                        } else if dest.exists() {
+                            println!(
+                                "[INFO] {:?} will be overwritten",
+                                dest
+                            );
+                        }
+                        if let Err(e) = self.write(dest, overwrite, store, TypescriptRender {}) {
+                            return Err(e);
                         }
                     }
                     Ok(())

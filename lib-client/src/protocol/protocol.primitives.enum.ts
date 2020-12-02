@@ -55,17 +55,21 @@ export class Enum {
         return this._value.get();
     }
 
-    public encode(): Error | ArrayBufferLike {
+    public getValueIndex(): number {
+        return this._value.getId();
+    }
+
+    public encode(): ArrayBufferLike {
         if (this._value === undefined) {
-            return new Error(`Cannot encode value because value isn't defined.`);
+            return new Uint8Array();
         }
         const body: ArrayBufferLike | Error = this._value.getSigned().encode();
         if (body instanceof Error) {
-            return body;
+            throw body;
         }
         const id = u16.encode(this._value.getId());
         if (id instanceof Error) {
-            return id;
+            throw id;
         }
         return Tools.append([id, body]);
     }
@@ -84,5 +88,7 @@ export class Enum {
             return new Error(`Fail to decode due error: ${e}`);
         }
     }
+
+
 
 }
