@@ -138,6 +138,7 @@ interface IMessage {
     i64: bigint;
     f32: number;
     f64: number;
+    bool: boolean;
     nested: Nested;
     arrU8: number[];
     arrU16: number[];
@@ -151,6 +152,7 @@ interface IMessage {
     arrF64: number[];
     str: string;
     arrStr: string[];
+    arrBool: boolean[];
 }
 
 class Message extends Protocol.Convertor implements IMessage {
@@ -165,6 +167,7 @@ class Message extends Protocol.Convertor implements IMessage {
     public i64: bigint;
     public f32: number;
     public f64: number;
+    public bool: boolean;
     public nested: Nested;
     public arrU8: number[];
     public arrU16: number[];
@@ -178,6 +181,7 @@ class Message extends Protocol.Convertor implements IMessage {
     public arrF64: number[];
     public str: string;
     public arrStr: string[];
+    public arrBool: boolean[];
 
     constructor(params: IMessage) {
         super();
@@ -219,6 +223,8 @@ class Message extends Protocol.Convertor implements IMessage {
             () => this.getBufferFromBuf<number[]>(21, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.arrF64),
             () => this.getBufferFromBuf<string>(22, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.str),
             () => this.getBufferFromBuf<string[]>(23, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.arrStr),
+            () => this.getBuffer(24, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.bool)),
+            () => this.getBufferFromBuf<boolean[]>(25, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.arrBool),
         ]);
     }
 
@@ -370,6 +376,18 @@ class Message extends Protocol.Convertor implements IMessage {
         } else {
             this.arrStr = arrStr;
         }
+        const bool: boolean | Error = this.getValue<boolean>(storage, 24, Protocol.Primitives.bool.decode);
+        if (bool instanceof Error) {
+            return bool;
+        } else {
+            this.bool = bool;
+        }
+        const arrBool: boolean[] | Error = this.getValue<boolean[]>(storage, 25, Protocol.Primitives.ArrayBool.decode);
+        if (arrBool instanceof Error) {
+            return arrBool;
+        } else {
+            this.arrBool = arrBool;
+        }
     }
 
 }
@@ -390,6 +408,7 @@ describe('Protocol tests', () => {
                 Protocol.Primitives.i64.getSignature(),
                 Protocol.Primitives.f32.getSignature(),
                 Protocol.Primitives.f64.getSignature(),
+                Protocol.Primitives.bool.getSignature(),
                 Protocol.Primitives.StrUTF8.getSignature(),
                 Protocol.Primitives.ArrayU8.getSignature(),
                 Protocol.Primitives.ArrayU16.getSignature(),
@@ -402,6 +421,7 @@ describe('Protocol tests', () => {
                 Protocol.Primitives.ArrayF32.getSignature(),
                 Protocol.Primitives.ArrayF64.getSignature(),
                 Protocol.Primitives.ArrayStrUTF8.getSignature(),
+                Protocol.Primitives.ArrayBool.getSignature(),
             ], (id: number): ISigned<any> | undefined => {
                 switch (id) {
                     case 1: return new Protocol.Primitives.u8(0);
@@ -426,6 +446,8 @@ describe('Protocol tests', () => {
                     case 20: return new Protocol.Primitives.ArrayF32([]);
                     case 21: return new Protocol.Primitives.ArrayF64([]);
                     case 22: return new Protocol.Primitives.ArrayStrUTF8([]);
+                    case 23: return new Protocol.Primitives.ArrayBool([]);
+                    case 24: return new Protocol.Primitives.bool(false);
                 }
             });
         }
@@ -454,6 +476,8 @@ describe('Protocol tests', () => {
             new Protocol.Primitives.Option<number[]>(20, new Protocol.Primitives.ArrayF32([99, 100])),
             new Protocol.Primitives.Option<number[]>(21, new Protocol.Primitives.ArrayF64([99, 100])),
             new Protocol.Primitives.Option<string[]>(22, new Protocol.Primitives.ArrayStrUTF8(['Planet A', 'Planet B'])),
+            new Protocol.Primitives.Option<boolean[]>(23, new Protocol.Primitives.ArrayBool([true, false])),
+            new Protocol.Primitives.Option<boolean>(24, new Protocol.Primitives.bool(true)),
         ];
         options.forEach((opt) => {
             expect(a.set(opt)).toBe(undefined);
@@ -491,6 +515,7 @@ describe('Protocol tests', () => {
             i64: BigInt(8),
             f32: 9,
             f64: 10,
+            bool: true,
             nested: new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
             arrU8: [1,2,3,4,5],
             arrU16: [1,2,3,4,5],
@@ -504,6 +529,7 @@ describe('Protocol tests', () => {
             arrF64: [0.1,0.2,0.3,0.4,0.5],
             str: "Hello, from string!",
             arrStr: ["string 1", "string 2", "string 3"],
+            arrBool: [true, false, true]
         });
         const buffer = a.encode();
         const b: Message = new Message({
@@ -517,6 +543,7 @@ describe('Protocol tests', () => {
             i64: BigInt(0),
             f32: 0,
             f64: 0,
+            bool: false,
             nested: new Nested({ u8: undefined, u16: 0, u32: 0, opt: { } }),
             arrU8: [],
             arrU16: [],
@@ -530,6 +557,7 @@ describe('Protocol tests', () => {
             arrF64: [],
             str: '',
             arrStr: [],
+            arrBool: []
         });
         const err = b.decode(buffer);
         if (err instanceof Error) {
@@ -545,6 +573,7 @@ describe('Protocol tests', () => {
         expect(a.i64).toBe(b.i64);
         expect(a.f32).toBe(b.f32);
         expect(a.f64).toBe(b.f64);
+        expect(a.bool).toBe(b.bool);
         expect(a.nested.u16).toBe(b.nested.u16);
         expect(a.nested.u32).toBe(b.nested.u32);
         expect(a.nested.opt.u8).toBe(b.nested.opt.u8);
@@ -561,6 +590,7 @@ describe('Protocol tests', () => {
         expect(a.arrF64.join(',')).toBe(b.arrF64.map(i => i.toFixed(1)).join(','));
         expect(a.str).toBe(b.str);
         expect(a.arrStr.join(',')).toBe(b.arrStr.join(','));
+        expect(a.arrBool.join(',')).toBe(b.arrBool.join(','));
 
         const c = new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } });
         const c_buff = c.encode();
