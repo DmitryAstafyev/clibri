@@ -4,6 +4,12 @@ interface IStructName {
 }
 class StructName extends Protocol.Convertor implements IStructName {
 
+    public static defaults(): StructName {
+        return new StructName({ 
+            age: 0,
+            name: '',
+        });
+    }
     public age: number;
     public name: string;
     constructor(params: IStructName)  {
@@ -50,6 +56,12 @@ interface IOptionA {
 }
 class OptionA extends Protocol.Convertor implements IOptionA {
 
+    public static defaults(): OptionA {
+        return new OptionA({ 
+            option_a_field_a: '',
+            option_a_field_b: '',
+        });
+    }
     public option_a_field_a: string;
     public option_a_field_b: string;
     constructor(params: IOptionA)  {
@@ -96,6 +108,12 @@ interface IOptionB {
 }
 class OptionB extends Protocol.Convertor implements IOptionB {
 
+    public static defaults(): OptionB {
+        return new OptionB({ 
+            option_b_field_a: '',
+            option_b_field_b: '',
+        });
+    }
     public option_b_field_a: string;
     public option_b_field_b: string;
     constructor(params: IOptionB)  {
@@ -144,15 +162,59 @@ interface IUser {
 }
 class User extends Protocol.Convertor implements IUser {
 
+    public static defaults(): User {
+        return new User({ 
+            username: [],
+            email: undefined,
+            type: {},
+            info: new StructName({ 
+                age: 0,
+                name: '',
+            }),
+        });
+    }
     public username: Array<string>;
     public email: string | undefined;
     public type: UserType;
     public info: StructName;
+    private _type: Protocol.Primitives.Enum;
     constructor(params: IUser)  {
         super();
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
+        this._type = new Protocol.Primitives.Enum([
+            Protocol.Primitives.ArrayU8.getSignature(),
+            Protocol.Primitives.StrUTF8.getSignature(),
+            Protocol.Primitives.u16.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 0: return new Protocol.Primitives.ArrayU8(0);
+                case 1: return new Protocol.Primitives.StrUTF8('');
+                case 2: return new Protocol.Primitives.u16(0);
+            }
+        });
+        if (Object.keys(this.type).length > 1) {
+            throw new Error(`Option cannot have more then 1 value. Property "type" or class "User"`);
+        }
+        if (this.type.pointA !== undefined) {
+            const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<Array<number>>(0, new Protocol.Primitives.ArrayU8(this.type.pointA)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.type.pointB !== undefined) {
+            const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.type.pointB)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.type.pointC !== undefined) {
+            const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(this.type.pointC)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
     }
     public getSignature(): string {
         return 'User';
@@ -193,7 +255,7 @@ class User extends Protocol.Convertor implements IUser {
                 this.email = email;
             }
         }
-        const type: UserType = UserType::Defaults;
+        const type: UserType = {};
         const typeBuf: ArrayBufferLike = storage.get(16);
         if (typeBuf instanceof Error) {
             return typeBuf;
@@ -204,7 +266,10 @@ class User extends Protocol.Convertor implements IUser {
         } else {
             this.type = type;
         }
-        const info: StructName = new StructName({ age: 0, name: '', });
+        const info: StructName = new StructName({ 
+            age: 0,
+            name: '',
+        });
         const infoBuf: ArrayBufferLike = storage.get(17);
         if (infoBuf instanceof Error) {
             return infoBuf;
@@ -223,6 +288,11 @@ interface ILogin {
 }
 class Login extends Protocol.Convertor implements ILogin {
 
+    public static defaults(): Login {
+        return new Login({ 
+            users: [],
+        });
+    }
     public users: Array<User>;
     constructor(params: ILogin)  {
         super();
@@ -246,7 +316,15 @@ class Login extends Protocol.Convertor implements ILogin {
         if (storage instanceof Error) {
             return storage;
         }
-        const users: User = new User({ username: [], email: undefined, type: UserType::Defaults, info: new StructName({ age: 0, name: '', }), });
+        const users: User = new User({ 
+            username: [],
+            email: undefined,
+            type: {},
+            info: new StructName({ 
+                age: 0,
+                name: '',
+            }),
+        });
         const usersBuf: ArrayBufferLike = storage.get(19);
         if (usersBuf instanceof Error) {
             return usersBuf;
@@ -269,14 +347,54 @@ export namespace GroupA {
     }
     class UserA extends Protocol.Convertor implements IUserA {
 
+        public static defaults(): UserA {
+            return new UserA({ 
+                username: [],
+                email: undefined,
+                type: {},
+            });
+        }
         public username: Array<string>;
         public email: string | undefined;
         public type: UserType;
+        private _type: Protocol.Primitives.Enum;
         constructor(params: IUserA)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
             });
+            this._type = new Protocol.Primitives.Enum([
+                Protocol.Primitives.ArrayU8.getSignature(),
+                Protocol.Primitives.StrUTF8.getSignature(),
+                Protocol.Primitives.u16.getSignature(),
+            ], (id: number): ISigned<any> | undefined => {
+                switch (id) {
+                    case 0: return new Protocol.Primitives.ArrayU8(0);
+                    case 1: return new Protocol.Primitives.StrUTF8('');
+                    case 2: return new Protocol.Primitives.u16(0);
+                }
+            });
+            if (Object.keys(this.type).length > 1) {
+                throw new Error(`Option cannot have more then 1 value. Property "type" or class "UserA"`);
+            }
+            if (this.type.pointA !== undefined) {
+                const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<Array<number>>(0, new Protocol.Primitives.ArrayU8(this.type.pointA)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
+            if (this.type.pointB !== undefined) {
+                const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.type.pointB)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
+            if (this.type.pointC !== undefined) {
+                const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(this.type.pointC)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
         }
         public getSignature(): string {
             return 'UserA';
@@ -316,7 +434,7 @@ export namespace GroupA {
                     this.email = email;
                 }
             }
-            const type: UserType = UserType::Defaults;
+            const type: UserType = {};
             const typeBuf: ArrayBufferLike = storage.get(24);
             if (typeBuf instanceof Error) {
                 return typeBuf;
@@ -335,6 +453,11 @@ export namespace GroupA {
     }
     class LoginA extends Protocol.Convertor implements ILoginA {
 
+        public static defaults(): LoginA {
+            return new LoginA({ 
+                users: [],
+            });
+        }
         public users: Array<User>;
         constructor(params: ILoginA)  {
             super();
@@ -358,7 +481,15 @@ export namespace GroupA {
             if (storage instanceof Error) {
                 return storage;
             }
-            const users: User = new User({ username: [], email: undefined, type: UserType::Defaults, info: new StructName({ age: 0, name: '', }), });
+            const users: User = new User({ 
+                username: [],
+                email: undefined,
+                type: {},
+                info: new StructName({ 
+                    age: 0,
+                    name: '',
+                }),
+            });
             const usersBuf: ArrayBufferLike = storage.get(26);
             if (usersBuf instanceof Error) {
                 return usersBuf;
@@ -383,14 +514,54 @@ export namespace GroupB {
     }
     class UserA extends Protocol.Convertor implements IUserA {
 
+        public static defaults(): UserA {
+            return new UserA({ 
+                username: [],
+                email: undefined,
+                type: {},
+            });
+        }
         public username: Array<string>;
         public email: string | undefined;
         public type: UserType;
+        private _type: Protocol.Primitives.Enum;
         constructor(params: IUserA)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
             });
+            this._type = new Protocol.Primitives.Enum([
+                Protocol.Primitives.ArrayU8.getSignature(),
+                Protocol.Primitives.StrUTF8.getSignature(),
+                Protocol.Primitives.u16.getSignature(),
+            ], (id: number): ISigned<any> | undefined => {
+                switch (id) {
+                    case 0: return new Protocol.Primitives.ArrayU8(0);
+                    case 1: return new Protocol.Primitives.StrUTF8('');
+                    case 2: return new Protocol.Primitives.u16(0);
+                }
+            });
+            if (Object.keys(this.type).length > 1) {
+                throw new Error(`Option cannot have more then 1 value. Property "type" or class "UserA"`);
+            }
+            if (this.type.pointA !== undefined) {
+                const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<Array<number>>(0, new Protocol.Primitives.ArrayU8(this.type.pointA)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
+            if (this.type.pointB !== undefined) {
+                const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.type.pointB)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
+            if (this.type.pointC !== undefined) {
+                const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(this.type.pointC)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
         }
         public getSignature(): string {
             return 'UserA';
@@ -430,7 +601,7 @@ export namespace GroupB {
                     this.email = email;
                 }
             }
-            const type: UserType = UserType::Defaults;
+            const type: UserType = {};
             const typeBuf: ArrayBufferLike = storage.get(32);
             if (typeBuf instanceof Error) {
                 return typeBuf;
@@ -449,6 +620,11 @@ export namespace GroupB {
     }
     class LoginA extends Protocol.Convertor implements ILoginA {
 
+        public static defaults(): LoginA {
+            return new LoginA({ 
+                users: [],
+            });
+        }
         public users: Array<User>;
         constructor(params: ILoginA)  {
             super();
@@ -472,7 +648,15 @@ export namespace GroupB {
             if (storage instanceof Error) {
                 return storage;
             }
-            const users: User = new User({ username: [], email: undefined, type: UserType::Defaults, info: new StructName({ age: 0, name: '', }), });
+            const users: User = new User({ 
+                username: [],
+                email: undefined,
+                type: {},
+                info: new StructName({ 
+                    age: 0,
+                    name: '',
+                }),
+            });
             const usersBuf: ArrayBufferLike = storage.get(34);
             if (usersBuf instanceof Error) {
                 return usersBuf;
@@ -495,14 +679,54 @@ export namespace GroupB {
         }
         class UserA extends Protocol.Convertor implements IUserA {
 
+            public static defaults(): UserA {
+                return new UserA({ 
+                    username: [],
+                    email: undefined,
+                    type: {},
+                });
+            }
             public username: Array<string>;
             public email: string | undefined;
             public type: UserType;
+            private _type: Protocol.Primitives.Enum;
             constructor(params: IUserA)  {
                 super();
                 Object.keys(params).forEach((key: string) => {
                     this[key] = params[key];
                 });
+                this._type = new Protocol.Primitives.Enum([
+                    Protocol.Primitives.ArrayU8.getSignature(),
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.u16.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.ArrayU8(0);
+                        case 1: return new Protocol.Primitives.StrUTF8('');
+                        case 2: return new Protocol.Primitives.u16(0);
+                    }
+                });
+                if (Object.keys(this.type).length > 1) {
+                    throw new Error(`Option cannot have more then 1 value. Property "type" or class "UserA"`);
+                }
+                if (this.type.pointA !== undefined) {
+                    const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<Array<number>>(0, new Protocol.Primitives.ArrayU8(this.type.pointA)));
+                    if (err instanceof Error) {
+                        throw err;
+                    }
+                }
+                if (this.type.pointB !== undefined) {
+                    const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.type.pointB)));
+                    if (err instanceof Error) {
+                        throw err;
+                    }
+                }
+                if (this.type.pointC !== undefined) {
+                    const err: Error | undefined = this._type.set(new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(this.type.pointC)));
+                    if (err instanceof Error) {
+                        throw err;
+                    }
+                }
             }
             public getSignature(): string {
                 return 'UserA';
@@ -542,7 +766,7 @@ export namespace GroupB {
                         this.email = email;
                     }
                 }
-                const type: UserType = UserType::Defaults;
+                const type: UserType = {};
                 const typeBuf: ArrayBufferLike = storage.get(40);
                 if (typeBuf instanceof Error) {
                     return typeBuf;
@@ -561,6 +785,11 @@ export namespace GroupB {
         }
         class LoginA extends Protocol.Convertor implements ILoginA {
 
+            public static defaults(): LoginA {
+                return new LoginA({ 
+                    users: [],
+                });
+            }
             public users: Array<User>;
             constructor(params: ILoginA)  {
                 super();
@@ -584,7 +813,15 @@ export namespace GroupB {
                 if (storage instanceof Error) {
                     return storage;
                 }
-                const users: User = new User({ username: [], email: undefined, type: UserType::Defaults, info: new StructName({ age: 0, name: '', }), });
+                const users: User = new User({ 
+                    username: [],
+                    email: undefined,
+                    type: {},
+                    info: new StructName({ 
+                        age: 0,
+                        name: '',
+                    }),
+                });
                 const usersBuf: ArrayBufferLike = storage.get(42);
                 if (usersBuf instanceof Error) {
                     return usersBuf;
@@ -602,7 +839,10 @@ export namespace GroupB {
 
 }
 
-s = users;
+    if (usersErr instanceof Error) {
+                    return usersErr;
+                } else {
+                    this.users = users;
                 }
             }
         }

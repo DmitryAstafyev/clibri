@@ -46,7 +46,7 @@ class Nested extends Protocol.Convertor implements INested {
                 case 2: return new Protocol.Primitives.u16(0);
             }
         });
-        if (Object.keys(this.opt).length > 1){
+        if (Object.keys(this.opt).length > 1) {
             throw new Error(`Option cannot have more then 1 value. Property "opt" or class "Nested"`);
         }
         if (this.opt.u8 !== undefined) {
