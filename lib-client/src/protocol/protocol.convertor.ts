@@ -3,6 +3,7 @@ import * as Tools from '../tools/index';
 
 import { ESize, CBits } from './protocol.sizes';
 import { Storage } from './protocol.convertor.storage';
+import { u32 } from './protocol.primitives.u32';
 
 export abstract class Convertor {
 
@@ -92,9 +93,58 @@ export abstract class Convertor {
         return decoder(buffer);
     }
 
+    public encodeSelfArray(items: Array<Required<Convertor>>): ArrayBufferLike | Error {
+        let error: Error | undefined;
+        const buffers: ArrayBufferLike[] = [];
+        items.forEach((item: Required<Convertor>) => {
+            if (error !== undefined) {
+                return;
+            }
+            const buffer = item.encode();
+            if (buffer instanceof Error) {
+                error = buffer;
+                return;
+            }
+            const len = u32.encode(buffer.byteLength);
+            if (len instanceof Error) {
+                error = len;
+                return;
+            }
+            buffers.push(len);
+            buffers.push(buffer);
+        });
+        if (error !== undefined) {
+            return error;
+        }
+        return Tools.append(buffers);
+    }
+
+    public decodeSelfArray(bytes: ArrayBufferLike): Array<Required<Convertor>> | Error {
+        const buffer = Buffer.from(bytes);
+        const selfs: Array<Required<Convertor>> = [];
+        let offset: number = 0;
+        do {
+            const len = buffer.readUInt32LE(offset);
+            if (isNaN(len) || !isFinite(len)) {
+                return new Error(`Invalid length of ${this.getSignature()}/${this.getId()} in an array`);
+            }
+            offset += u32.getSize();
+            const body = buffer.slice(offset, offset + len);
+            const self = this.defaults();
+            const err = self.decode(body);
+            if (err instanceof Error) {
+                return err;
+            }
+            selfs.push(self);
+            offset += body.byteLength;
+        } while (offset < buffer.byteLength);
+        return selfs;
+    }
+
     public abstract getSignature(): string;
     public abstract getId(): number;
     public abstract encode(): ArrayBufferLike;
     public abstract decode(buffer: ArrayBufferLike): Error | undefined;
+    public abstract defaults(): Convertor;
 
 }

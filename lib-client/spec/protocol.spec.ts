@@ -19,6 +19,10 @@ interface INested {
 
 class Nested extends Protocol.Convertor implements INested {
 
+    public static defaults(): Nested {
+        return new Nested({ u8: 0, u16: 0, u32: 0, opt: {}});
+    }
+
     public u8: number | undefined;
     public u16: number;
     public u32: number;
@@ -125,6 +129,10 @@ class Nested extends Protocol.Convertor implements INested {
         }
     }
 
+    public defaults(): Nested {
+        return Nested.defaults();
+    }
+
 }
 
 interface IMessage {
@@ -140,6 +148,7 @@ interface IMessage {
     f64: number;
     bool: boolean;
     nested: Nested;
+    arrNested: Nested[];
     arrU8: number[];
     arrU16: number[];
     arrU32: number[];
@@ -157,6 +166,37 @@ interface IMessage {
 
 class Message extends Protocol.Convertor implements IMessage {
 
+    public static defaults(): Message {
+        return new Message({
+            u8: 0,
+            u16: 0,
+            u32: 0,
+            u64: BigInt(0),
+            i8: 0,
+            i16: 0,
+            i32: 0,
+            i64: BigInt(0),
+            f32: 0,
+            f64: 0,
+            bool: false,
+            nested: new Nested({ u8: undefined, u16: 0, u32: 0, opt: { } }),
+            arrNested: [],
+            arrU8: [],
+            arrU16: [],
+            arrU32: [],
+            arrU64: [],
+            arrI8: [],
+            arrI16: [],
+            arrI32: [],
+            arrI64: [],
+            arrF32: [],
+            arrF64: [],
+            str: '',
+            arrStr: [],
+            arrBool: []
+        });
+    }
+
     public u8: number;
     public u16: number;
     public u32: number;
@@ -169,6 +209,7 @@ class Message extends Protocol.Convertor implements IMessage {
     public f64: number;
     public bool: boolean;
     public nested: Nested;
+    public arrNested: Nested[];
     public arrU8: number[];
     public arrU16: number[];
     public arrU32: number[];
@@ -225,6 +266,10 @@ class Message extends Protocol.Convertor implements IMessage {
             () => this.getBufferFromBuf<string[]>(23, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.arrStr),
             () => this.getBuffer(24, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.bool)),
             () => this.getBufferFromBuf<boolean[]>(25, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.arrBool),
+            () => {
+                const self: Nested = Nested.defaults();
+                return this.getBufferFromBuf<Nested[]>(26, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.arrNested)
+            },
         ]);
     }
 
@@ -388,6 +433,17 @@ class Message extends Protocol.Convertor implements IMessage {
         } else {
             this.arrBool = arrBool;
         }
+        const arrNestedInst: Nested = Nested.defaults();
+        const arrNested: Array<any> | Error = this.getValue<Nested[]>(storage, 26, arrNestedInst.decodeSelfArray.bind(arrNestedInst));
+        if (arrNested instanceof Error) {
+            return arrNested;
+        } else {
+            this.arrNested = arrNested as Nested[];
+        }
+    }
+
+    public defaults(): Message {
+        return Message.defaults();
     }
 
 }
@@ -517,6 +573,11 @@ describe('Protocol tests', () => {
             f64: 10,
             bool: true,
             nested: new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+            arrNested: [
+                new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+                new Nested({ u8: 11, u16: 12, u32: 14, opt: { u8: 11 } }),
+                new Nested({ u8: 12, u16: 13, u32: 15, opt: { u16: 12 } })
+            ],
             arrU8: [1,2,3,4,5],
             arrU16: [1,2,3,4,5],
             arrU32: [1,2,3,4,5],
@@ -545,6 +606,7 @@ describe('Protocol tests', () => {
             f64: 0,
             bool: false,
             nested: new Nested({ u8: undefined, u16: 0, u32: 0, opt: { } }),
+            arrNested: [],
             arrU8: [],
             arrU16: [],
             arrU32: [],
@@ -591,7 +653,11 @@ describe('Protocol tests', () => {
         expect(a.str).toBe(b.str);
         expect(a.arrStr.join(',')).toBe(b.arrStr.join(','));
         expect(a.arrBool.join(',')).toBe(b.arrBool.join(','));
-
+        a.arrNested.forEach((aNested: Nested, index: number) => {
+            expect(aNested.u8).toBe(b.arrNested[index].u8);
+            expect(aNested.u16).toBe(b.arrNested[index].u16);
+            expect(aNested.u32).toBe(b.arrNested[index].u32);
+        });
         const c = new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } });
         const c_buff = c.encode();
         const d = new Nested({ u8: 0, u16: 0, u32: 0, opt: { } });
