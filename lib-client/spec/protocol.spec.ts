@@ -111,13 +111,13 @@ class Nested extends Protocol.Convertor implements INested {
         } else {
             this.u32 = u32;
         }
-        const optbuf: ArrayBufferLike | undefined = storage.get(4);
-        if (optbuf === undefined) {
-            return new Error(`Fail to get property u8`);
-        }
         this.opt = {};
-        if (optbuf.byteLength > 0) {
-            const optErr: Error | undefined = this._opt.decode(optbuf);
+        const optBuf: ArrayBufferLike | undefined = storage.get(4);
+        if (optBuf === undefined) {
+            return new Error(`Fail to get property opt`);
+        }
+        if (optBuf.byteLength > 0) {
+            const optErr: Error | undefined = this._opt.decode(optBuf);
             if (optErr instanceof Error) {
                 return optErr;
             } else {

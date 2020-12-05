@@ -11,7 +11,6 @@ pub struct TypescriptRender {}
 impl TypescriptRender {
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}export namespace {} {{\n", self.spaces(level), group.name);
-        /*
         for enum_id in &group.enums {
             if let Some(enums) = store.get_enum(*enum_id) {
                 body = format!(
@@ -21,7 +20,6 @@ impl TypescriptRender {
                 );
             }
         }
-        */
         for struct_id in &group.structs {
             if let Some(strct) = store.get_struct(*struct_id) {
                 body = format!(
@@ -157,6 +155,10 @@ impl TypescriptRender {
                 self.get_field_decode_wrap(field, &mut store.clone(), level + 2),
             );
         }
+        body = format!("{}\n{}}}", body, self.spaces(level + 1));
+
+        body = format!("{}\n{}public defaults(): {} {{", body, self.spaces(level + 1), strct.name);
+        body = format!("{}\n{}return {}.defaults();", body, self.spaces(level + 2), strct.name);
         body = format!("{}\n{}}}\n", body, self.spaces(level + 1));
 
         body = format!("{}{}}}\n", body, self.spaces(level));
@@ -233,7 +235,7 @@ impl TypescriptRender {
                             }
                         } else {
                             panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {} ", enums.name, variant.name, ref_type_id);
-                        };;
+                        };
                         body = format!("{}\n{}if (this.{}.{} !== undefined) {{", body, self.spaces(level + 1), field.name, variant.name);
                         body = format!("{}\n{}const err: Error | undefined = this._{}.set(new Protocol.Primitives.Option<{}>({}, {}));", body, self.spaces(level + 2), field.name, types, pos, value);
                         body = format!("{}\n{}if (err instanceof Error) {{", body, self.spaces(level + 2));
@@ -249,133 +251,27 @@ impl TypescriptRender {
     }
 
     fn enums(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
-        let mut body = format!("{}#[derive(Debug, Clone, PartialEq)]\n", self.spaces(level));
-        body = format!("{}{}pub enum {} {{\n", body, self.spaces(level), enums.name);
-        for item in &enums.variants {
-            let item_type = self.enum_item_type(item.clone(), store);
+        let mut body = format!("{}interface {} {{\n", self.spaces(level), enums.name);
+        for variant in &enums.variants {
+            let variant_type = if let Some(prim_type_ref) = variant.types.clone() {
+                self.etype_ts(prim_type_ref.clone(), variant.repeated)
+            } else if let Some(ref_type_id) = variant.ref_type_id {
+                if let Some(strct) = store.get_struct(ref_type_id) {
+                    strct.name
+                } else {
+                    panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}", enums.name, variant.name, ref_type_id);
+                }
+            } else {
+                panic!("Unknown type of data in scope of enum {} / {} ", enums.name, variant.name);
+            };
             body = format!(
-                "{}{}{},\n",
+                "{}{}{}?: {};\n",
                 body,
                 self.spaces(level + 1),
-                format!(
-                    "{}({})",
-                    item.name,
-                    if item.repeated {
-                        format!("Vec<{}>", item_type)
-                    } else {
-                        item_type
-                    }
-                ),
+                variant.name,
+                variant_type
             );
         }
-        body = format!("{}{}Defaults,\n", body, self.spaces(level + 1));
-        body = format!("{}{}}}\n", body, self.spaces(level));
-        body = format!(
-            "{}{}impl EnumDecode<{}> for {} {{\n",
-            body,
-            self.spaces(level),
-            enums.name,
-            enums.name
-        );
-        body = format!(
-            "{}{}fn extract(buf: Vec<u8>) -> Result<{}, String> {{\n",
-            body,
-            self.spaces(level + 1),
-            enums.name
-        );
-        body = format!(
-            "{}{}if buf.len() <= sizes::U16_LEN {{\n",
-            body,
-            self.spaces(level + 2)
-        );
-        body = format!("{}{}return Err(String::from(\"Fail to extract value for {} because buffer too small\"));\n", body, self.spaces(level + 3), enums.name);
-        body = format!("{}{}}}\n", body, self.spaces(level + 2));
-        body = format!(
-            "{}{}let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);\n",
-            body,
-            self.spaces(level + 2)
-        );
-        body = format!(
-            "{}{}let id = cursor.get_u16_le();\n",
-            body,
-            self.spaces(level + 2)
-        );
-        body = format!(
-            "{}{}let mut storage = match Storage::new(buf) {{\n",
-            body,
-            self.spaces(level + 2)
-        );
-        body = format!("{}{}Ok(s) => s,\n", body, self.spaces(level + 3));
-        body = format!(
-            "{}{}Err(e) => {{ return Err(e); }}\n",
-            body,
-            self.spaces(level + 3)
-        );
-        body = format!("{}{}}};\n", body, self.spaces(level + 2));
-        body = format!("{}{}match id {{\n", body, self.spaces(level + 2));
-        for (index, item) in enums.variants.iter().enumerate() {
-            let item_type = self.enum_item_type(item.clone(), store);
-            body = format!(
-                "{}{}{} => match {}::decode(&mut storage, id)\n",
-                body,
-                self.spaces(level + 3),
-                index,
-                if item.repeated {
-                    format!("Vec::<{}>", item_type)
-                } else {
-                    item_type
-                }
-            );
-            body = format!(
-                "{}{}Ok(v) => Ok({}::{}(v)),\n",
-                body,
-                self.spaces(level + 4),
-                enums.name,
-                item.name
-            );
-            body = format!("{}{}Err(e) => Err(e)\n", body, self.spaces(level + 4));
-            body = format!("{}{}}},\n", body, self.spaces(level + 3));
-        }
-        body = format!(
-            "{}{}_ => Err(String::from(\"Fail to find relevant value for {}\")),\n",
-            body,
-            self.spaces(level + 3),
-            enums.name
-        );
-        body = format!("{}{}}}\n", body, self.spaces(level + 2));
-        body = format!("{}{}}}\n", body, self.spaces(level + 1));
-        body = format!("{}{}}}\n", body, self.spaces(level));
-        body = format!(
-            "{}{}impl EnumEncode for {} {{\n",
-            body,
-            self.spaces(level),
-            enums.name
-        );
-        body = format!(
-            "{}{}fn abduct(&mut self) -> Result<Vec<u8>, String> {{\n",
-            body,
-            self.spaces(level + 1)
-        );
-        body = format!("{}{}match self {{\n", body, self.spaces(level + 2));
-        for (index, item) in enums.variants.iter().enumerate() {
-            body = format!(
-                "{}{}Self::{}(v) => v.encode({}),\n",
-                body,
-                self.spaces(level + 3),
-                item.name,
-                index
-            );
-        }
-        body = format!(
-            "{}{}_ => Err(String::from(\"Not supportable option\")),\n",
-            body,
-            self.spaces(level + 3)
-        );
-        body = format!("{}{}}} {{\n", body, self.spaces(level + 2));
-        body = format!("{}{}Ok(buf) => Ok(buf),\n", body, self.spaces(level + 3));
-        body = format!("{}{}Err(e) => Err(e),,\n", body, self.spaces(level + 3));
-        body = format!("{}{}}}\n", body, self.spaces(level + 2));
-        body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
         body
     }
@@ -481,8 +377,8 @@ impl TypescriptRender {
                 );
             }
             format!("{}\n{}}})", body, self.spaces(level))
-        } else if let Some(enums) = store.get_enum(entity_id) {
-            format!("{{}}")
+        } else if store.get_enum(entity_id).is_some() {
+            "{}".to_string()
         } else {
             panic!(format!("Fail to find a struct/enum id: {}", entity_id));
         }
@@ -525,18 +421,51 @@ impl TypescriptRender {
 
     fn get_field_decode(&self, field: &Field, store: &mut Store, level: u8) -> String {
         let mut body: String;
-        if let Some(struct_id) = field.ref_type_id {
-            body = format!("{}const {}: {} = {};", self.spaces(level), field.name, field.kind, self.entity_default(struct_id, &mut store.clone(), level));
-            body = format!("{}\n{}const {}Buf: ArrayBufferLike = storage.get({});", body, self.spaces(level), field.name, field.id);
-            body = format!("{}\n{}if ({}Buf instanceof Error) {{", body, self.spaces(level), field.name);
-            body = format!("{}\n{}return {}Buf;", body, self.spaces(level + 1), field.name);
-            body = format!("{}\n{}}}", body, self.spaces(level));
-            body = format!("{}\n{}const {}Err: Error | undefined = {}.decode({}Buf);", body, self.spaces(level), field.name, field.name, field.name);
-            body = format!("{}\n{}if ({}Err instanceof Error) {{", body, self.spaces(level), field.name);
-            body = format!("{}\n{}return {}Err;", body, self.spaces(level + 1), field.name);
-            body = format!("{}\n{}}} else {{", body, self.spaces(level));
-            body = format!("{}\n{}this.{} = {};", body, self.spaces(level + 1), field.name, field.name);
-            body = format!("{}\n{}}}", body, self.spaces(level));
+        if let Some(entity_id) = field.ref_type_id {
+            if let Some(_) = store.get_struct(entity_id) {
+                body = format!("{}const {}: {} = {};", self.spaces(level), field.name, field.kind, self.entity_default(entity_id, &mut store.clone(), level));
+                body = format!("{}\n{}const {}Buf: ArrayBufferLike = storage.get({});", body, self.spaces(level), field.name, field.id);
+                body = format!("{}\n{}if ({}Buf instanceof Error) {{", body, self.spaces(level), field.name);
+                body = format!("{}\n{}return {}Buf;", body, self.spaces(level + 1), field.name);
+                body = format!("{}\n{}}}", body, self.spaces(level));
+                body = format!("{}\n{}const {}Err: Error | undefined = {}.decode({}Buf);", body, self.spaces(level), field.name, field.name, field.name);
+                body = format!("{}\n{}if ({}Err instanceof Error) {{", body, self.spaces(level), field.name);
+                body = format!("{}\n{}return {}Err;", body, self.spaces(level + 1), field.name);
+                body = format!("{}\n{}}} else {{", body, self.spaces(level));
+                body = format!("{}\n{}this.{} = {};", body, self.spaces(level + 1), field.name, field.name);
+                body = format!("{}\n{}}}", body, self.spaces(level));
+            } else if let Some(enums) = store.get_enum(entity_id) {
+                body = format!("{}this.{} = {{}};", self.spaces(level), field.name);
+                body = format!("{}\n{}const {}Buf: ArrayBufferLike = storage.get({});", body, self.spaces(level), field.name, field.id);
+                body = format!("{}\n{}if ({}Buf === undefined) {{", body, self.spaces(level), field.name);
+                body = format!("{}\n{}return new Error(`Fail to get property \"{}\"`);", body, self.spaces(level + 1), field.name);
+                body = format!("{}\n{}}}", body, self.spaces(level));
+                body = format!("{}\n{}if ({}Buf.byteLength > 0) {{", body, self.spaces(level), field.name);
+                body = format!("{}\n{}const {}Err: Error | undefined = this._{}.decode({}Buf);", body, self.spaces(level + 1), field.name, field.name, field.name);
+                body = format!("{}\n{}if ({}Err instanceof Error) {{", body, self.spaces(level + 1), field.name);
+                body = format!("{}\n{}return {}Err;", body, self.spaces(level + 2), field.name);
+                body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
+                body = format!("{}\n{}switch (this._{}.getValueIndex()) {{", body, self.spaces(level + 2), field.name);
+                for (pos, variant) in enums.variants.iter().enumerate() {
+                    let types = if let Some(prim_type_ref) = variant.types.clone() {
+                        self.etype_ts(prim_type_ref, variant.repeated)
+                    } else if let Some(ref_type_id) = variant.ref_type_id {
+                        if let Some(strct) = store.get_struct(ref_type_id) {
+                            strct.name
+                        } else {
+                            panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
+                        }
+                    } else {
+                        panic!("Unknown type of data in scope of enum {} / {}", enums.name, variant.name);
+                    };
+                    body = format!("{}\n{}case {}: this.{}.{} = this._{}.get<{}>(); break;", body, self.spaces(level + 3), pos, field.name, variant.name, field.name, types);
+                }
+                body = format!("{}\n{}}}", body, self.spaces(level + 2));
+                body = format!("{}\n{}}}", body, self.spaces(level + 1));
+                body = format!("{}\n{}}}", body, self.spaces(level));
+            } else {
+                panic!("Fail to find a type by ref {} for field {}", entity_id, field.name);
+            }
         } else {
             let mut type_str = self.get_type_ref(field, &mut store.clone());
             let primitive = self.get_primitive_ref(field);
@@ -555,13 +484,19 @@ impl TypescriptRender {
 
     fn get_field_encode(&self, field: &Field, store: &mut Store) -> String {
         let mut body: String;
-        if let Some(struct_id) = field.ref_type_id {
+        if let Some(entity_id) = field.ref_type_id {
             let optional = if field.optional {
                 format!("if (this.{} === undefined) {{ return this.getBuffer({}, Protocol.ESize.u8, 0, new Uint8Array()); }}", field.name, field.id)
             } else {
                 format!("")
             };
-            body = format!("() => {{{} const buffer = this.{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
+            if store.get_struct(entity_id).is_some() {
+                body = format!("() => {{{} const buffer = this.{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
+            } else if store.get_enum(entity_id).is_some() {
+                body = format!("() => {{{} const buffer = this._{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
+            } else {
+                panic!("Fail to find a type by ref {} for field {}", entity_id, field.name);
+            }
         } else {
             let type_str = self.get_type_ref(field, &mut store.clone());
             let size_ref = self.get_size_ref(field);
@@ -719,13 +654,12 @@ impl TypescriptRender {
 impl Render for TypescriptRender {
     fn render(&self, store: Store) -> String {
         let mut body = String::new();
-        /*
         for enums in &store.enums {
             if enums.parent == 0 {
                 body =
                     format!("{}{}\n", body, self.enums(enums, &mut store.clone(), 0)).to_string();
             }
-        }*/
+        }
         for strct in &store.structs {
             if strct.parent == 0 {
                 body =

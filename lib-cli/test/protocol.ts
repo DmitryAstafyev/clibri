@@ -1,3 +1,20 @@
+interface EnumWithSctructs {
+    a?: OptionA;
+    b?: OptionB;
+}
+
+interface SyntaxSugarEnum {
+    VariantA?: string;
+    VariantB?: string;
+    VariantC?: string;
+}
+
+interface UserType {
+    pointA?: Array<number>;
+    pointB?: string;
+    pointC?: number;
+}
+
 interface IStructName {
     age: number;
     name: string;
@@ -47,6 +64,9 @@ class StructName extends Protocol.Convertor implements IStructName {
         } else {
             this.name = name;
         }
+    }
+    public defaults(): StructName {
+        return StructName.defaults();
     }
 }
 
@@ -100,6 +120,9 @@ class OptionA extends Protocol.Convertor implements IOptionA {
             this.option_a_field_b = option_a_field_b;
         }
     }
+    public defaults(): OptionA {
+        return OptionA.defaults();
+    }
 }
 
 interface IOptionB {
@@ -151,6 +174,9 @@ class OptionB extends Protocol.Convertor implements IOptionB {
         } else {
             this.option_b_field_b = option_b_field_b;
         }
+    }
+    public defaults(): OptionB {
+        return OptionB.defaults();
     }
 }
 
@@ -226,7 +252,7 @@ class User extends Protocol.Convertor implements IUser {
         return this.collect([
             () => this.getBufferFromBuf<Array<string>>(14, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
             () => this.email === undefined ? this.getBuffer(15, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(15, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.email),
-            () => { const buffer = this.type.encode(); return this.getBuffer(16, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this._type.encode(); return this.getBuffer(16, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             () => { const buffer = this.info.encode(); return this.getBuffer(17, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
@@ -255,16 +281,22 @@ class User extends Protocol.Convertor implements IUser {
                 this.email = email;
             }
         }
-        const type: UserType = {};
+        this.type = {};
         const typeBuf: ArrayBufferLike = storage.get(16);
-        if (typeBuf instanceof Error) {
-            return typeBuf;
+        if (typeBuf === undefined) {
+            return new Error(`Fail to get property "type"`);
         }
-        const typeErr: Error | undefined = type.decode(typeBuf);
-        if (typeErr instanceof Error) {
-            return typeErr;
-        } else {
-            this.type = type;
+        if (typeBuf.byteLength > 0) {
+            const typeErr: Error | undefined = this._type.decode(typeBuf);
+            if (typeErr instanceof Error) {
+                return typeErr;
+            } else {
+                switch (this._type.getValueIndex()) {
+                    case 0: this.type.pointA = this._type.get<Array<number>>(); break;
+                    case 1: this.type.pointB = this._type.get<string>(); break;
+                    case 2: this.type.pointC = this._type.get<number>(); break;
+                }
+            }
         }
         const info: StructName = new StructName({ 
             age: 0,
@@ -280,6 +312,9 @@ class User extends Protocol.Convertor implements IUser {
         } else {
             this.info = info;
         }
+    }
+    public defaults(): User {
+        return User.defaults();
     }
 }
 
@@ -336,9 +371,18 @@ class Login extends Protocol.Convertor implements ILogin {
             this.users = users;
         }
     }
+    public defaults(): Login {
+        return Login.defaults();
+    }
 }
 
 export namespace GroupA {
+
+    interface UserTypeTest {
+        pointA?: number;
+        pointB?: number;
+        pointC?: number;
+    }
 
     interface IUserA {
         username: Array<string>;
@@ -406,7 +450,7 @@ export namespace GroupA {
             return this.collect([
                 () => this.getBufferFromBuf<Array<string>>(22, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
                 () => this.email === undefined ? this.getBuffer(23, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(23, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.email),
-                () => { const buffer = this.type.encode(); return this.getBuffer(24, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this._type.encode(); return this.getBuffer(24, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
         public decode(buffer: ArrayBufferLike): Error | undefined {
@@ -434,17 +478,26 @@ export namespace GroupA {
                     this.email = email;
                 }
             }
-            const type: UserType = {};
+            this.type = {};
             const typeBuf: ArrayBufferLike = storage.get(24);
-            if (typeBuf instanceof Error) {
-                return typeBuf;
+            if (typeBuf === undefined) {
+                return new Error(`Fail to get property "type"`);
             }
-            const typeErr: Error | undefined = type.decode(typeBuf);
-            if (typeErr instanceof Error) {
-                return typeErr;
-            } else {
-                this.type = type;
+            if (typeBuf.byteLength > 0) {
+                const typeErr: Error | undefined = this._type.decode(typeBuf);
+                if (typeErr instanceof Error) {
+                    return typeErr;
+                } else {
+                    switch (this._type.getValueIndex()) {
+                        case 0: this.type.pointA = this._type.get<Array<number>>(); break;
+                        case 1: this.type.pointB = this._type.get<string>(); break;
+                        case 2: this.type.pointC = this._type.get<number>(); break;
+                    }
+                }
             }
+        }
+        public defaults(): UserA {
+            return UserA.defaults();
         }
     }
 
@@ -501,11 +554,20 @@ export namespace GroupA {
                 this.users = users;
             }
         }
+        public defaults(): LoginA {
+            return LoginA.defaults();
+        }
     }
 
 }
 
 export namespace GroupB {
+
+    interface UserTypeTest {
+        pointA?: number;
+        pointB?: number;
+        pointC?: number;
+    }
 
     interface IUserA {
         username: Array<string>;
@@ -573,7 +635,7 @@ export namespace GroupB {
             return this.collect([
                 () => this.getBufferFromBuf<Array<string>>(30, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
                 () => this.email === undefined ? this.getBuffer(31, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(31, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.email),
-                () => { const buffer = this.type.encode(); return this.getBuffer(32, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this._type.encode(); return this.getBuffer(32, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
         public decode(buffer: ArrayBufferLike): Error | undefined {
@@ -601,17 +663,26 @@ export namespace GroupB {
                     this.email = email;
                 }
             }
-            const type: UserType = {};
+            this.type = {};
             const typeBuf: ArrayBufferLike = storage.get(32);
-            if (typeBuf instanceof Error) {
-                return typeBuf;
+            if (typeBuf === undefined) {
+                return new Error(`Fail to get property "type"`);
             }
-            const typeErr: Error | undefined = type.decode(typeBuf);
-            if (typeErr instanceof Error) {
-                return typeErr;
-            } else {
-                this.type = type;
+            if (typeBuf.byteLength > 0) {
+                const typeErr: Error | undefined = this._type.decode(typeBuf);
+                if (typeErr instanceof Error) {
+                    return typeErr;
+                } else {
+                    switch (this._type.getValueIndex()) {
+                        case 0: this.type.pointA = this._type.get<Array<number>>(); break;
+                        case 1: this.type.pointB = this._type.get<string>(); break;
+                        case 2: this.type.pointC = this._type.get<number>(); break;
+                    }
+                }
             }
+        }
+        public defaults(): UserA {
+            return UserA.defaults();
         }
     }
 
@@ -668,9 +739,18 @@ export namespace GroupB {
                 this.users = users;
             }
         }
+        public defaults(): LoginA {
+            return LoginA.defaults();
+        }
     }
 
     export namespace GroupC {
+
+        interface UserTypeTest {
+            pointA?: number;
+            pointB?: number;
+            pointC?: number;
+        }
 
         interface IUserA {
             username: Array<string>;
@@ -738,7 +818,7 @@ export namespace GroupB {
                 return this.collect([
                     () => this.getBufferFromBuf<Array<string>>(38, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
                     () => this.email === undefined ? this.getBuffer(39, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(39, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.email),
-                    () => { const buffer = this.type.encode(); return this.getBuffer(40, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                    () => { const buffer = this._type.encode(); return this.getBuffer(40, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
                 ]);
             }
             public decode(buffer: ArrayBufferLike): Error | undefined {
@@ -766,17 +846,26 @@ export namespace GroupB {
                         this.email = email;
                     }
                 }
-                const type: UserType = {};
+                this.type = {};
                 const typeBuf: ArrayBufferLike = storage.get(40);
-                if (typeBuf instanceof Error) {
-                    return typeBuf;
+                if (typeBuf === undefined) {
+                    return new Error(`Fail to get property "type"`);
                 }
-                const typeErr: Error | undefined = type.decode(typeBuf);
-                if (typeErr instanceof Error) {
-                    return typeErr;
-                } else {
-                    this.type = type;
+                if (typeBuf.byteLength > 0) {
+                    const typeErr: Error | undefined = this._type.decode(typeBuf);
+                    if (typeErr instanceof Error) {
+                        return typeErr;
+                    } else {
+                        switch (this._type.getValueIndex()) {
+                            case 0: this.type.pointA = this._type.get<Array<number>>(); break;
+                            case 1: this.type.pointB = this._type.get<string>(); break;
+                            case 2: this.type.pointC = this._type.get<number>(); break;
+                        }
+                    }
                 }
+            }
+            public defaults(): UserA {
+                return UserA.defaults();
             }
         }
 
@@ -833,17 +922,8 @@ export namespace GroupB {
                     this.users = users;
                 }
             }
-        }
-
-    }
-
-}
-
-    if (usersErr instanceof Error) {
-                    return usersErr;
-                } else {
-                    this.users = users;
-                }
+            public defaults(): LoginA {
+                return LoginA.defaults();
             }
         }
 
