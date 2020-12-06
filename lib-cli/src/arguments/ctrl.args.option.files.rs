@@ -6,7 +6,7 @@ use super::render::typescript::TypescriptRender;
 use super::render::Render;
 use super::{CtrlArg, EArgumentsNames, EArgumentsValues};
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::fs::{OpenOptions, remove_file};
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
@@ -192,7 +192,6 @@ impl CtrlArg for ArgsOptionFiles {
                         t_parsing.elapsed().as_millis(),
                         src
                     );
-                    // TODO: on overwrite file should be removed first
                     if let Some(dest) = self._dest_rs.clone() {
                         if dest.exists() && !overwrite {
                             return Err(format!("File {:?} exists. Use key \"overwrite\" to overwrite file. -h to get more info", dest));
@@ -201,8 +200,16 @@ impl CtrlArg for ArgsOptionFiles {
                                 "[INFO] {:?} will be overwritten",
                                 dest
                             );
+                            if let Err(err) = remove_file(dest.clone()) {
+                                return Err(format!("Fail to remove file {:?} due error: {}", dest, err));
+                            } else {
+                                println!(
+                                    "[INFO] {:?} clean",
+                                    dest
+                                );
+                            }
                         }
-                        if let Err(e) = self.write(dest, overwrite, store.clone(), RustRender {}) {
+                        if let Err(e) = self.write(dest, overwrite, store.clone(), RustRender::new(embedded)) {
                             return Err(e);
                         }
                     }
@@ -214,8 +221,16 @@ impl CtrlArg for ArgsOptionFiles {
                                 "[INFO] {:?} will be overwritten",
                                 dest
                             );
+                            if let Err(err) = remove_file(dest.clone()) {
+                                return Err(format!("Fail to remove file {:?} due error: {}", dest, err));
+                            } else {
+                                println!(
+                                    "[INFO] {:?} clean",
+                                    dest
+                                );
+                            }
                         }
-                        if let Err(e) = self.write(dest, overwrite, store, TypescriptRender {}) {
+                        if let Err(e) = self.write(dest, overwrite, store, TypescriptRender::new(embedded)) {
                             return Err(e);
                         }
                     }

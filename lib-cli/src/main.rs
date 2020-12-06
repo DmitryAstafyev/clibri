@@ -36,7 +36,7 @@ mod tests {
                 match parser.parse() {
                     Ok(store) => {
                         // println!("{:?}", store.groups);
-                        let rust_render: RustRender = RustRender {};
+                        let rust_render: RustRender = RustRender::new(true);
                         println!("{}", rust_render.render(store));
                         assert_eq!(true, false);
                     },

@@ -1,4 +1,4 @@
-use super::parser::enums::{Enum, EnumItem};
+use super::parser::enums::{Enum};
 use super::parser::fields::Field;
 use super::parser::groups::Group;
 use super::parser::store::Store;
@@ -8,7 +8,9 @@ use super::Render;
 use std::{include_str};
 use regex::Regex;
 
-pub struct TypescriptRender {}
+pub struct TypescriptRender {
+    embedded: bool,
+}
 
 impl TypescriptRender {
 
@@ -84,7 +86,7 @@ impl TypescriptRender {
 
         for field in &strct.fields {
             if let Some(ref_type_id) = field.ref_type_id {
-                if let Some(enums) = store.get_enum(ref_type_id) {
+                if store.get_enum(ref_type_id).is_some() {
                     body = format!(
                         "{}\n{}{}",
                         body,
@@ -222,7 +224,7 @@ impl TypescriptRender {
                     for (pos, variant) in enums.variants.iter().enumerate() {
                         let value = if let Some(prim_type_ref) = variant.types.clone() {
                             format!("new Protocol.Primitives.{}(this.{}.{})", self.etype(prim_type_ref.clone(), variant.repeated), field.name, variant.name)
-                        } else if let Some(ref_type_id) = variant.ref_type_id {
+                        } else if variant.ref_type_id.is_some() {
                             format!("this.{}.{}", field.name, variant.name)
                         } else {
                             panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {} ", enums.name, variant.name, ref_type_id);
@@ -625,41 +627,45 @@ impl TypescriptRender {
     }
 
     fn includes(&self) -> String {
-        format!("{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
-            self.get_injectable(include_str!("../../../protocol/typescript/src/tools/index.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/tools/tools.arraybuffer.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.sizes.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.interface.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u8.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u16.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u32.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u64.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i8.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i16.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i32.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i64.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.f32.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.f64.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.bool.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.string.utf8.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u8.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u16.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u32.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u64.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i8.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i16.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i32.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i64.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.f32.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.f64.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.bool.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.string.utf8.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.enum.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.convertor.storage.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.convertor.ts")),
-            self.get_injectable(include_str!("../../../protocol/typescript/src/index.ts")),
-        )
+        if self.embedded {
+            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+                self.get_injectable(include_str!("../../../protocol/typescript/src/tools/index.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/tools/tools.arraybuffer.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.sizes.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.interface.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u8.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u16.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u32.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u64.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i8.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i16.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i32.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i64.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.f32.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.f64.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.bool.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.string.utf8.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u8.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u16.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u32.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u64.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i8.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i16.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i32.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i64.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.f32.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.f64.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.bool.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.string.utf8.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.enum.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.convertor.storage.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.convertor.ts")),
+                self.get_injectable(include_str!("../../../protocol/typescript/src/index.ts")),
+            )
+        } else {
+            include_str!("../../../protocol/typescript/src/protocol.injection.ts").to_string()
+        }
     }
 
     fn get_injectable(&self, content: &str) -> String {
@@ -673,6 +679,11 @@ impl TypescriptRender {
 }
 
 impl Render for TypescriptRender {
+
+    fn new(embedded: bool) -> Self {
+        TypescriptRender { embedded }
+    }
+
     fn render(&self, store: Store) -> String {
         let mut body = format!("{}\n", self.includes());
         for enums in &store.enums {

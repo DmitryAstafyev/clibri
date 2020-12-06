@@ -6,7 +6,9 @@ use super::parser::structs::Struct;
 use super::parser::types::PrimitiveTypes;
 use super::Render;
 
-pub struct RustRender {}
+pub struct RustRender {
+    embedded: bool,
+}
 
 impl RustRender {
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
@@ -430,6 +432,11 @@ impl RustRender {
 }
 
 impl Render for RustRender {
+
+    fn new(embedded: bool) -> Self {
+        RustRender { embedded }
+    }
+
     fn render(&self, store: Store) -> String {
         let mut body = String::new();
         for enums in &store.enums {

@@ -10,14 +10,14 @@ mod keys {
 }
 
 pub struct ArgsOptionEmbedded {
-    _overwrite: bool,
+    _embedded: bool,
 }
 
 impl CtrlArg for ArgsOptionEmbedded {
 
     fn new(_pwd: &Path, args: Vec<String>, mut _ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> Self {
         ArgsOptionEmbedded {
-            _overwrite: args.iter().any(|arg| arg == keys::EMBEDDED || arg == keys::EM || arg == keys::E)
+            _embedded: args.iter().any(|arg| arg == keys::EMBEDDED || arg == keys::EM || arg == keys::E)
         }
     }
 
@@ -26,7 +26,7 @@ impl CtrlArg for ArgsOptionEmbedded {
     }
 
     fn value(&self) -> EArgumentsValues {
-        EArgumentsValues::OptionEmbedded(self._overwrite)
+        EArgumentsValues::OptionEmbedded(self._embedded)
     }
 
     fn get_err(&self) -> Option<String> {

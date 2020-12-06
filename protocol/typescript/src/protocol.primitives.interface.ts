@@ -60,5 +60,3 @@ export interface ISignedDecode<T> {
     decode(bytes: ArrayBufferLike): T | Error;
 
 }
-
-

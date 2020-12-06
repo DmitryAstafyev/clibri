@@ -149,6 +149,7 @@ impl CtrlArgs {
     pub fn get_unknown_args(mut args: Vec<String>) -> Vec<String> {
         let cleaners: Vec<TCleaner>= vec![
             Box::new(arg_option_help::get_cleaner()),
+            Box::new(arg_option_embedded::get_cleaner()),
             Box::new(arg_option_overwrite::get_cleaner()),
             Box::new(arg_option_files::get_cleaner()),
         ];

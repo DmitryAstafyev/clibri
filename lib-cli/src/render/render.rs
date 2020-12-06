@@ -14,6 +14,7 @@ pub enum ERender {
 
 pub trait Render {
 
+    fn new(embedded: bool) -> Self;
     fn render(&self, store: Store) -> String;
 
 }
