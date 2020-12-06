@@ -5,10 +5,13 @@ use super::parser::store::Store;
 use super::parser::structs::Struct;
 use super::parser::types::PrimitiveTypes;
 use super::Render;
+use std::{include_str};
+use regex::Regex;
 
 pub struct TypescriptRender {}
 
 impl TypescriptRender {
+
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}export namespace {} {{\n", self.spaces(level), group.name);
         for enum_id in &group.enums {
@@ -87,7 +90,7 @@ impl TypescriptRender {
                         body,
                         self.spaces(level + 1),
                         format!(
-                            "private _{}: Protocol.Primitives.Enum;",
+                            "private _{}: Primitives.Enum;",
                             field.name,
                         ),
                     );
@@ -186,7 +189,7 @@ impl TypescriptRender {
         for field in &strct.fields {
             if let Some(ref_type_id) = field.ref_type_id {
                 if let Some(enums) = store.get_enum(ref_type_id) {
-                    body = format!("{}\n{}this._{} = new Protocol.Primitives.Enum([", body, self.spaces(level + 1), field.name);
+                    body = format!("{}\n{}this._{} = new Primitives.Enum([", body, self.spaces(level + 1), field.name);
                     for variant in &enums.variants {
                         if let Some(prim_type_ref) = variant.types.clone() {
                             body = format!("{}\n{}Protocol.Primitives.{}.getSignature(),", body, self.spaces(level + 2), self.etype(prim_type_ref, variant.repeated));
@@ -298,18 +301,18 @@ impl TypescriptRender {
 
     fn etype_def(&self, etype: PrimitiveTypes::ETypes, repeated: bool) -> String {
         match etype {
-            PrimitiveTypes::ETypes::Ei8 => "0",
-            PrimitiveTypes::ETypes::Ei16 => "0",
-            PrimitiveTypes::ETypes::Ei32 => "0",
-            PrimitiveTypes::ETypes::Ei64 => "BigInt(0)",
-            PrimitiveTypes::ETypes::Eu8 => "0",
-            PrimitiveTypes::ETypes::Eu16 => "0",
-            PrimitiveTypes::ETypes::Eu32 => "0",
-            PrimitiveTypes::ETypes::Eu64 => "BigInt(0)",
-            PrimitiveTypes::ETypes::Ef32 => "0",
-            PrimitiveTypes::ETypes::Ef64 => "0",
-            PrimitiveTypes::ETypes::Ebool => "true",
-            PrimitiveTypes::ETypes::Estr => "''",
+            PrimitiveTypes::ETypes::Ei8 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Ei16 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Ei32 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Ei64 => if repeated { "[BigInt(0)]" } else { "BigInt(0)" },
+            PrimitiveTypes::ETypes::Eu8 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Eu16 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Eu32 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Eu64 => if repeated { "[BigInt(0)]" } else { "BigInt(0)" },
+            PrimitiveTypes::ETypes::Ef32 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Ef64 => if repeated { "[0]" } else { "0" },
+            PrimitiveTypes::ETypes::Ebool => if repeated { "[true]" } else { "true" },
+            PrimitiveTypes::ETypes::Estr => if repeated { "['']" } else { "''" },
             _ => {
                 panic!("Unknown type ref {:?}", etype);
             }
@@ -335,34 +338,6 @@ impl TypescriptRender {
                 panic!("Unknown type ref {:?}", etype);
             }
         }.to_string()
-    }
-
-    fn enum_item_type(&self, item: EnumItem, store: &mut Store) -> String {
-        if let Some(type_ref) = item.types {
-            return match type_ref {
-                PrimitiveTypes::ETypes::Ei8 => "i8",
-                PrimitiveTypes::ETypes::Ei16 => "i16",
-                PrimitiveTypes::ETypes::Ei32 => "i32",
-                PrimitiveTypes::ETypes::Ei64 => "i64",
-                PrimitiveTypes::ETypes::Eu8 => "u8",
-                PrimitiveTypes::ETypes::Eu16 => "u16",
-                PrimitiveTypes::ETypes::Eu32 => "u32",
-                PrimitiveTypes::ETypes::Eu64 => "u64",
-                PrimitiveTypes::ETypes::Ef32 => "f32",
-                PrimitiveTypes::ETypes::Ef64 => "f64",
-                PrimitiveTypes::ETypes::Ebool => "bool",
-                PrimitiveTypes::ETypes::Estr => "String",
-                _ => {
-                    panic!("Unknown type ref {:?} for {}", type_ref, item.name);
-                }
-            }
-            .to_string();
-        } else if let Some(ref_type_id) = item.ref_type_id {
-            if let Some(strct) = store.get_struct(ref_type_id) {
-                return strct.name;
-            }
-        }
-        panic!("Fail to find a type ref for {}", item.name);
     }
 
     fn entity_default(&self, entity_id: usize, store: &mut Store, level: u8) -> String {
@@ -422,18 +397,28 @@ impl TypescriptRender {
     fn get_field_decode(&self, field: &Field, store: &mut Store, level: u8) -> String {
         let mut body: String;
         if let Some(entity_id) = field.ref_type_id {
-            if let Some(_) = store.get_struct(entity_id) {
-                body = format!("{}const {}: {} = {};", self.spaces(level), field.name, field.kind, self.entity_default(entity_id, &mut store.clone(), level));
-                body = format!("{}\n{}const {}Buf: ArrayBufferLike = storage.get({});", body, self.spaces(level), field.name, field.id);
-                body = format!("{}\n{}if ({}Buf instanceof Error) {{", body, self.spaces(level), field.name);
-                body = format!("{}\n{}return {}Buf;", body, self.spaces(level + 1), field.name);
-                body = format!("{}\n{}}}", body, self.spaces(level));
-                body = format!("{}\n{}const {}Err: Error | undefined = {}.decode({}Buf);", body, self.spaces(level), field.name, field.name, field.name);
-                body = format!("{}\n{}if ({}Err instanceof Error) {{", body, self.spaces(level), field.name);
-                body = format!("{}\n{}return {}Err;", body, self.spaces(level + 1), field.name);
-                body = format!("{}\n{}}} else {{", body, self.spaces(level));
-                body = format!("{}\n{}this.{} = {};", body, self.spaces(level + 1), field.name, field.name);
-                body = format!("{}\n{}}}", body, self.spaces(level));
+            if let Some(strct) = store.get_struct(entity_id) {
+                if field.repeated {
+                    body = format!("{}const arr{}Inst: {} = {}.defaults();", self.spaces(level), strct.name, strct.name, strct.name);
+                    body = format!("{}\n{}const arr{}: Array<any> | Error = this.getValue<{}[]>(storage, {}, arr{}Inst.decodeSelfArray.bind(arr{}Inst));", body, self.spaces(level), strct.name, strct.name, field.id, strct.name, strct.name);
+                    body = format!("{}\n{}if (arr{} instanceof Error) {{", body, self.spaces(level), strct.name);
+                    body = format!("{}\n{}return arr{};", body, self.spaces(level + 1), strct.name);
+                    body = format!("{}\n{}}} else {{", body, self.spaces(level));
+                    body = format!("{}\n{}this.{} = arr{} as {}[];", body, self.spaces(level + 1), field.name, strct.name, strct.name);
+                    body = format!("{}\n{}}}", body, self.spaces(level));
+                } else {
+                    body = format!("{}const {}: {} = {};", self.spaces(level), field.name, field.kind, self.entity_default(entity_id, &mut store.clone(), level));
+                    body = format!("{}\n{}const {}Buf: ArrayBufferLike = storage.get({});", body, self.spaces(level), field.name, field.id);
+                    body = format!("{}\n{}if ({}Buf instanceof Error) {{", body, self.spaces(level), field.name);
+                    body = format!("{}\n{}return {}Buf;", body, self.spaces(level + 1), field.name);
+                    body = format!("{}\n{}}}", body, self.spaces(level));
+                    body = format!("{}\n{}const {}Err: Error | undefined = {}.decode({}Buf);", body, self.spaces(level), field.name, field.name, field.name);
+                    body = format!("{}\n{}if ({}Err instanceof Error) {{", body, self.spaces(level), field.name);
+                    body = format!("{}\n{}return {}Err;", body, self.spaces(level + 1), field.name);
+                    body = format!("{}\n{}}} else {{", body, self.spaces(level));
+                    body = format!("{}\n{}this.{} = {};", body, self.spaces(level + 1), field.name, field.name);
+                    body = format!("{}\n{}}}", body, self.spaces(level));
+                }
             } else if let Some(enums) = store.get_enum(entity_id) {
                 body = format!("{}this.{} = {{}};", self.spaces(level), field.name);
                 body = format!("{}\n{}const {}Buf: ArrayBufferLike = storage.get({});", body, self.spaces(level), field.name, field.id);
@@ -490,8 +475,12 @@ impl TypescriptRender {
             } else {
                 format!("")
             };
-            if store.get_struct(entity_id).is_some() {
-                body = format!("() => {{{} const buffer = this.{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
+            if let Some(strct) = store.get_struct(entity_id) {
+                if field.repeated {
+                    body = format!("() => {{{} const self: {} = {}.defaults(); return this.getBufferFromBuf<{}[]>({}, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.{}); }}", optional, strct.name, strct.name, strct.name, field.id, field.name);
+                } else {
+                    body = format!("() => {{{} const buffer = this.{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
+                }
             } else if store.get_enum(entity_id).is_some() {
                 body = format!("() => {{{} const buffer = this._{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
             } else {
@@ -535,17 +524,6 @@ impl TypescriptRender {
             "str" => Some("''"),
             _ => None,
         }
-    }
-
-    fn get_decode_type_ref(&self, field: &Field, store: &mut Store) -> String {
-        let mut type_str = self.get_type_ref(field, &mut store.clone());
-        if field.optional {
-            type_str = format!("Option::<{}>", type_str);
-        }
-        if field.repeated {
-            type_str = format!("Vec::<{}>", type_str);
-        }
-        type_str
     }
 
     fn get_declare_type_ref(&self, field: &Field, store: &mut Store) -> String {
@@ -646,6 +624,49 @@ impl TypescriptRender {
         }
     }
 
+    fn includes(&self) -> String {
+        format!("{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
+            self.get_injectable(include_str!("../../../protocol/typescript/src/tools/index.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/tools/tools.arraybuffer.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.sizes.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.interface.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u8.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u16.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u32.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.u64.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i8.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i16.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i32.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.i64.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.f32.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.f64.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.bool.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.string.utf8.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u8.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u16.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u32.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.u64.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i8.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i16.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i32.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.i64.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.f32.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.f64.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.bool.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.array.string.utf8.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.enum.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.primitives.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.convertor.storage.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/protocol.convertor.ts")),
+            self.get_injectable(include_str!("../../../protocol/typescript/src/index.ts")),
+        )
+    }
+
+    fn get_injectable(&self, content: &str) -> String {
+        let re = Regex::new(r"^([\n\r]|.)*(//\s?injectable)").unwrap();
+        re.replace_all(content, "").to_string()
+    }
+
     fn spaces(&self, level: u8) -> String {
         "    ".repeat(level as usize)
     }
@@ -653,7 +674,7 @@ impl TypescriptRender {
 
 impl Render for TypescriptRender {
     fn render(&self, store: Store) -> String {
-        let mut body = String::new();
+        let mut body = format!("{}\n", self.includes());
         for enums in &store.enums {
             if enums.parent == 0 {
                 body =

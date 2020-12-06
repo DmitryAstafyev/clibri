@@ -1,11 +1,6 @@
-/lib/target
-/lib-test/target
-/lib-cli/target
-/lib-client/node_modules
-/lib-client/dist
-/lib-test-client/bundle/node_modules
-/lib-test-client/bundle/dist
-/lib-test/log
-/lib/log
-/lib-cli/log
+**/target
+**/node_modules
+**/dist
+**/log
 **/*.log
+.DS_STORE
