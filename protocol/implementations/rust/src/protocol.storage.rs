@@ -4,6 +4,7 @@ use std::collections::{HashMap};
 use bytes::{ Buf };
 use super::{ sizes };
 
+// injectable
 pub struct Storage {
     map: HashMap<u16, Vec<u8>>,
 }

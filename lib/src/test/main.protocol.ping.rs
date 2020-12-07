@@ -1,7 +1,6 @@
-use super::{ decode, encode, storage };
-use storage::{ Storage };
-use decode::*;
-use encode::*;
+use fiber_protocol_rs::storage::{ Storage };
+use fiber_protocol_rs::decode::*;
+use fiber_protocol_rs::encode::*;
 
 #[derive(Debug, Clone)]
 pub struct Ping {

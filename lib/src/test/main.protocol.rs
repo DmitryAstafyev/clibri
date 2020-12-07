@@ -1,6 +1,6 @@
-use super::{ protocol, decode, encode, storage };
-use decode::{ StructDecode };
-use storage::{ Storage };
+use super::{ protocol };
+use fiber_protocol_rs::decode::{ StructDecode };
+use fiber_protocol_rs::storage::{ Storage };
 
 #[path = "./main.protocol.ping.rs"]
 pub mod ping;

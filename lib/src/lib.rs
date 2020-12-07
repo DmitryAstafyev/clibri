@@ -25,23 +25,8 @@ pub mod session;
 #[path = "./protocol/protocol.rs"]
 pub mod protocol;
 
-#[path = "./protocol/protocol.sizes.rs"]
-pub mod sizes;
-
-#[path = "./protocol/protocol.encode.rs"]
-pub mod encode;
-
-#[path = "./protocol/protocol.decode.rs"]
-pub mod decode;
-
-#[path = "./protocol/protocol.storage.rs"]
-pub mod storage;
-
 #[path = "./protocol/protocol.package.rs"]
 pub mod package;
-
-#[path = "./protocol/protocol.test.rs"]
-pub mod protocol_test;
 
 #[path = "./test/main.rs"]
 mod test;

@@ -1,8 +1,9 @@
-use std::io::Cursor;
-use bytes::{ Buf };
 use super::{ sizes, storage };
 use storage::{ Storage };
+use std::io::Cursor;
+use bytes::{ Buf };
 
+// injectable
 pub trait StructDecode {
 
     fn get_id() -> u32;

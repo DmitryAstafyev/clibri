@@ -1,5 +1,6 @@
 use std::mem;
 
+// injectable
 pub const U8_LEN: usize = mem::size_of::<u8>();
 pub const U16_LEN: usize = mem::size_of::<u16>();
 pub const U32_LEN: usize = mem::size_of::<u32>();

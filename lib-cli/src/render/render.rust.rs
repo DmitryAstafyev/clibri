@@ -5,15 +5,19 @@ use super::parser::store::Store;
 use super::parser::structs::Struct;
 use super::parser::types::PrimitiveTypes;
 use super::Render;
+use std::{include_str};
+use regex::Regex;
 
 pub struct RustRender {
     embedded: bool,
 }
 
 impl RustRender {
+
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}pub mod {} {{\n", self.spaces(level), group.name);
         body = format!("{}{}use super::*;\n", body, self.spaces(level + 1));
+        /*
         body = format!(
             "{}{}use encode::{{ StructEncode, EnumEncode, Encode }};\n",
             body,
@@ -29,6 +33,7 @@ impl RustRender {
             body,
             self.spaces(level + 1)
         );
+        */
         body = format!("{}{}use std::io::Cursor;\n", body, self.spaces(level + 1));
         body = format!("{}{}use bytes::{{ Buf }};\n", body, self.spaces(level + 1));
         for enum_id in &group.enums {
@@ -105,7 +110,7 @@ impl RustRender {
         );
         for field in &strct.fields {
             body = format!(
-                "{}{}self.{} = match {}::decode(&mut storage, {})\n",
+                "{}{}self.{} = match {}::decode(&mut storage, {}) {{\n",
                 body,
                 self.spaces(level + 2),
                 field.name,
@@ -129,7 +134,7 @@ impl RustRender {
             self.spaces(level),
             strct.name
         );
-        body = format!("{}{}fn get_id() -> u32 {{\n", body, self.spaces(level + 1));
+        body = format!("{}{}fn get_id(&self) -> u32 {{\n", body, self.spaces(level + 1));
         body = format!("{}{}{}\n", body, self.spaces(level + 2), strct.id);
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!(
@@ -138,7 +143,7 @@ impl RustRender {
             self.spaces(level + 1)
         );
         body = format!(
-            "{}{}let mut buffer: Vec<u8> = vec!();)\n",
+            "{}{}let mut buffer: Vec<u8> = vec!();\n",
             body,
             self.spaces(level + 2)
         );
@@ -232,7 +237,7 @@ impl RustRender {
         for (index, item) in enums.variants.iter().enumerate() {
             let item_type = self.enum_item_type(item.clone(), store);
             body = format!(
-                "{}{}{} => match {}::decode(&mut storage, id)\n",
+                "{}{}{} => match {}::decode(&mut storage, id) {{\n",
                 body,
                 self.spaces(level + 3),
                 index,
@@ -268,7 +273,7 @@ impl RustRender {
             body,
             self.spaces(level + 1)
         );
-        body = format!("{}{}match self {{\n", body, self.spaces(level + 2));
+        body = format!("{}{}match match self {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
             body = format!(
                 "{}{}Self::{}(v) => v.encode({}),\n",
@@ -281,7 +286,7 @@ impl RustRender {
         body = format!("{}{}_ => Err(String::from(\"Not supportable option\")),\n", body, self.spaces(level + 3));
         body = format!("{}{}}} {{\n", body, self.spaces(level + 2));
         body = format!("{}{}Ok(buf) => Ok(buf),\n", body, self.spaces(level + 3));
-        body = format!("{}{}Err(e) => Err(e),,\n", body, self.spaces(level + 3));
+        body = format!("{}{}Err(e) => Err(e),\n", body, self.spaces(level + 3));
         body = format!("{}{}}}\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
@@ -338,7 +343,7 @@ impl RustRender {
     fn field_default(&self, field: &Field, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}: ", field.name);
         if field.repeated {
-            body = format!("{}[],", body);
+            body = format!("{}vec![],", body);
         } else if field.optional {
             body = format!("{}None,", body);
         } else if let Some(default_value) = self.type_default_value(&field.kind) {
@@ -426,6 +431,25 @@ impl RustRender {
         }
     }
 
+    fn includes(&self) -> String {
+        if self.embedded {
+            format!("{}{}{}{}{}\n",
+                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.uses.rs")),
+                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.sizes.mod.rs")),
+                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.decode.rs")),
+                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.encode.rs")),
+                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.storage.rs")),
+            )
+        } else {
+            String::new()
+        }
+    }
+
+    fn get_injectable(&self, content: &str) -> String {
+        let re = Regex::new(r"^([\n\r]|.)*(//\s?injectable)").unwrap();
+        re.replace_all(content, "").to_string()
+    }
+
     fn spaces(&self, level: u8) -> String {
         "    ".repeat(level as usize)
     }
@@ -438,7 +462,7 @@ impl Render for RustRender {
     }
 
     fn render(&self, store: Store) -> String {
-        let mut body = String::new();
+        let mut body = format!("{}\n", self.includes());
         for enums in &store.enums {
             if enums.parent == 0 {
                 body =

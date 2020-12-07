@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use super:: { protocol, buffer, decode, storage, encode, package };
+use super:: { protocol, buffer, package };
 
 #[path = "./main.protocol.rs"]
 pub mod testprotocol;
@@ -7,10 +7,10 @@ pub mod testprotocol;
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
-    use super::{buffer, testprotocol, encode, package };
+    use super::{buffer, testprotocol, package };
     use testprotocol::{Messages, TestProtocol, ping };
     use buffer::{Processor};
-    use encode::*;
+    use fiber_protocol_rs::encode::*;
 
     #[test]
     fn out_message_encode() {

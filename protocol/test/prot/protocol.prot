@@ -1,0 +1,80 @@
+struct StructName {
+    u8 age;
+    str name;
+}
+struct OptionA {
+    str option_a_field_a;
+    str option_a_field_b;
+}
+struct OptionB {
+    str option_b_field_a;
+    str option_b_field_b;
+}
+enum EnumWithSctructs {
+    OptionA a;
+    OptionB b;
+}
+enum SyntaxSugarEnum {
+    VariantA;
+    VariantB;
+    VariantC;
+}
+enum UserType {
+    u8[] PointA;
+    str PointB;
+    u16 PointC;
+}
+struct User {
+    str[] username;
+    str email?;
+    UserType usertype;
+    StructName info;
+}
+struct Login {
+    User[] users;
+}
+group GroupA {
+    struct UserA {
+        str[] username;
+        str email?;
+        UserType usertype;
+    }
+    struct LoginA {
+        User[] users;
+    }
+    enum UserTypeTest {
+        u8 PointA;
+        u8 PointB;
+        u8 PointC;
+    }
+}
+group GroupB {
+    struct UserA {
+        str[] username;
+        str email?;
+        UserType usertype;
+    }
+    struct LoginA {
+        User[] users;
+    }
+    enum UserTypeTest {
+        u8 PointA;
+        u8 PointB;
+        u8 PointC;
+    }
+    group GroupC {
+        struct UserA {
+            str[] username;
+            str email?;
+            UserType usertype;
+        }
+        struct LoginA {
+            User[] users;
+        }
+        enum UserTypeTest {
+            u8 PointA;
+            u8 PointB;
+            u8 PointC;
+        }
+    }
+}

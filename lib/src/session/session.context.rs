@@ -1,8 +1,8 @@
-use super:: { connection, encode };
+use super:: { connection };
 use connection:: { Connection };
 use std::sync::{ Arc, RwLock };
 use std::collections::{ HashMap };
-use encode::{ StructEncode }; 
+use fiber_protocol_rs::encode::{ StructEncode }; 
 
 #[derive(Clone)]
 pub struct SessionContext {

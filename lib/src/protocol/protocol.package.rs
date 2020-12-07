@@ -1,9 +1,9 @@
-use super::{ sizes, encode };
 use bytes::{ Buf };
 use std::io::Cursor;
 use std::convert::TryFrom;
 use std::time::{ SystemTime, UNIX_EPOCH };
-use encode::{ StructEncode };
+use fiber_protocol_rs::encode::{ StructEncode };
+use fiber_protocol_rs::{ sizes };
 
 const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
                                 sizes::U64_LEN + // {u64} body size

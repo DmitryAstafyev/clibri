@@ -134,9 +134,18 @@ name = "fiber"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "fiber_protocol_rs",
  "log",
  "log4rs",
  "tungstenite",
+ "uuid",
+]
+
+[[package]]
+name = "fiber_protocol_rs"
+version = "0.1.0"
+dependencies = [
+ "bytes",
  "uuid",
 ]
 

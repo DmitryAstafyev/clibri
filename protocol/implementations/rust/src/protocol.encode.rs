@@ -1,6 +1,7 @@
 use super::{ sizes };
 use sizes::{ ESize };
 
+// injectable
 fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
     let mut buffer: Vec<u8> = vec!();
     buffer.append(&mut id.to_le_bytes().to_vec());

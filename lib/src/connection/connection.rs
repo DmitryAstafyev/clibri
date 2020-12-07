@@ -1,4 +1,4 @@
-use super::{ buffer, connection_channel, protocol, encode, package };
+use super::{ buffer, connection_channel, protocol, package };
 use std::time::{ Duration, Instant };
 use log::{ error, warn, debug, trace };
 use std::net::{ TcpStream };
@@ -10,7 +10,7 @@ use std::sync::mpsc::{ Sender };
 use std::sync::{ Arc, RwLock };
 use std::thread;
 use std::io::{self};
-use encode::{ StructEncode };
+use fiber_protocol_rs::encode::{ StructEncode };
 
 pub struct Connection {
     pub uuid: Uuid,
