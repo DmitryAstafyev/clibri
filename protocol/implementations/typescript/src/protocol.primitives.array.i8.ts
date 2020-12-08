@@ -44,6 +44,23 @@ export class ArrayI8 extends Primitive<number[]> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = i8.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return ArrayI8.getSignature();
     }

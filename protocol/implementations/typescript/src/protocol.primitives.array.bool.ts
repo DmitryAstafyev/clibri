@@ -3,6 +3,7 @@
 
 import { u8 } from './protocol.primitives.u8';
 import { Primitive } from './protocol.primitives.interface';
+import { bool } from './protocol.primitives.bool';
 
 // injectable
 export class ArrayBool extends Primitive<boolean[]> {
@@ -42,6 +43,23 @@ export class ArrayBool extends Primitive<boolean[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = bool.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {

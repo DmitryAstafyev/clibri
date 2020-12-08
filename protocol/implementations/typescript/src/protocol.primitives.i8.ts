@@ -6,6 +6,9 @@ import { CBits } from './protocol.sizes';
 // injectable
 export class i8 extends Primitive<number> {
 
+    public static MIN: number = -128;
+    public static MAX: number = 127;
+
     public static getSignature(): string {
         return 'i8';
     }
@@ -34,6 +37,19 @@ export class i8 extends Primitive<number> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < i8.MIN || value > i8.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
     }
 
     public getSignature(): string {

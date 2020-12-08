@@ -36,6 +36,16 @@ export class f32 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return f32.getSignature();
     }

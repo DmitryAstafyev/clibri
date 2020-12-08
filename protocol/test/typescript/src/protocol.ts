@@ -1,4 +1,11 @@
 
+// tslint:disable: max-classes-per-file
+// tslint:disable: class-name
+// tslint:disable: no-namespace
+// tslint:disable: no-shadowed-variable
+// tslint:disable: array-type
+// tslint:disable: variable-name
+
 const Tools: {
     append: typeof append;
 } = {
@@ -1817,7 +1824,7 @@ interface IStructName {
 class StructName extends Protocol.Convertor implements IStructName {
 
     public static defaults(): StructName {
-        return new StructName({ 
+        return new StructName({
             age: 0,
             name: '',
         });
@@ -1872,7 +1879,7 @@ interface IOptionA {
 class OptionA extends Protocol.Convertor implements IOptionA {
 
     public static defaults(): OptionA {
-        return new OptionA({ 
+        return new OptionA({
             option_a_field_a: '',
             option_a_field_b: '',
         });
@@ -1927,7 +1934,7 @@ interface IOptionB {
 class OptionB extends Protocol.Convertor implements IOptionB {
 
     public static defaults(): OptionB {
-        return new OptionB({ 
+        return new OptionB({
             option_b_field_a: '',
             option_b_field_b: '',
         });
@@ -1984,11 +1991,11 @@ interface IUser {
 class User extends Protocol.Convertor implements IUser {
 
     public static defaults(): User {
-        return new User({ 
+        return new User({
             username: [],
             email: undefined,
             usertype: {},
-            info: new StructName({ 
+            info: new StructName({
                 age: 0,
                 name: '',
             }),
@@ -2093,7 +2100,7 @@ class User extends Protocol.Convertor implements IUser {
                 }
             }
         }
-        const info: StructName = new StructName({ 
+        const info: StructName = new StructName({
             age: 0,
             name: '',
         });
@@ -2119,7 +2126,7 @@ interface ILogin {
 class Login extends Protocol.Convertor implements ILogin {
 
     public static defaults(): Login {
-        return new Login({ 
+        return new Login({
             users: [],
         });
     }
@@ -2175,7 +2182,7 @@ export namespace GroupA {
     class UserA extends Protocol.Convertor implements IUserA {
 
         public static defaults(): UserA {
-            return new UserA({ 
+            return new UserA({
                 username: [],
                 email: undefined,
                 usertype: {},
@@ -2290,7 +2297,7 @@ export namespace GroupA {
     class LoginA extends Protocol.Convertor implements ILoginA {
 
         public static defaults(): LoginA {
-            return new LoginA({ 
+            return new LoginA({
                 users: [],
             });
         }
@@ -2348,7 +2355,7 @@ export namespace GroupB {
     class UserA extends Protocol.Convertor implements IUserA {
 
         public static defaults(): UserA {
-            return new UserA({ 
+            return new UserA({
                 username: [],
                 email: undefined,
                 usertype: {},
@@ -2463,7 +2470,7 @@ export namespace GroupB {
     class LoginA extends Protocol.Convertor implements ILoginA {
 
         public static defaults(): LoginA {
-            return new LoginA({ 
+            return new LoginA({
                 users: [],
             });
         }
@@ -2519,7 +2526,7 @@ export namespace GroupB {
         class UserA extends Protocol.Convertor implements IUserA {
 
             public static defaults(): UserA {
-                return new UserA({ 
+                return new UserA({
                     username: [],
                     email: undefined,
                     usertype: {},
@@ -2634,7 +2641,7 @@ export namespace GroupB {
         class LoginA extends Protocol.Convertor implements ILoginA {
 
             public static defaults(): LoginA {
-                return new LoginA({ 
+                return new LoginA({
                     users: [],
                 });
             }

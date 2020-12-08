@@ -23,6 +23,30 @@ class Nested extends Protocol.Convertor implements INested {
         return new Nested({ u8: 0, u16: 0, u32: 0, opt: {}});
     }
 
+    public static from(obj: any): Nested | Error {
+        if (typeof obj !== 'object' || obj === null) {
+            return new Error(`Expecting to get an object as argument`);
+        }
+        const map = [
+            { prop: 'u8', types: [Protocol.Primitives.u8], repeated: false, optional: true },
+            { prop: 'u16', types: [Protocol.Primitives.u16], repeated: false, optional: false },
+            { prop: 'u32', types: [Protocol.Primitives.u32], repeated: false, optional: false },
+            { prop: 'opt', repeated: false, optional: false, options: [
+                { prop: 'u8', types: [Protocol.Primitives.u8], repeated: false },
+                { prop: 'u16', types: [Protocol.Primitives.u16], repeated: false },
+            ] },
+        ];
+        const error: Error | undefined = Protocol.validate(obj, [
+            { prop: 'u8', types: Protocol.Primitives.u8, optional: true },
+        ]);
+        return new Nested({
+            u8: obj.u8,
+            u16: obj.u16,
+            u32: obj.u32,
+            opt: obj.opt,
+        });
+    }
+
     public u8: number | undefined;
     public u16: number;
     public u32: number;

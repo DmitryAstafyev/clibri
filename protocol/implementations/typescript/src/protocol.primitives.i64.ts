@@ -6,6 +6,9 @@ import { CBits } from './protocol.sizes';
 // injectable
 export class i64 extends Primitive<bigint> {
 
+    public static MIN: number = -Number.MAX_SAFE_INTEGER;
+    public static MAX: number = Number.MAX_SAFE_INTEGER;
+
     public static getSignature(): string {
         return 'i64';
     }
@@ -34,6 +37,19 @@ export class i64 extends Primitive<bigint> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < i64.MIN || value > i64.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
     }
 
     public getSignature(): string {

@@ -36,6 +36,13 @@ export class bool extends Primitive<boolean> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'boolean') {
+            return new Error(`Invalid type of variable`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return bool.getSignature();
     }

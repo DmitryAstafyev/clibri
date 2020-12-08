@@ -344,7 +344,7 @@ impl TypescriptRender {
 
     fn entity_default(&self, entity_id: usize, store: &mut Store, level: u8) -> String {
         if let Some(strct) = store.get_struct(entity_id) {
-            let mut body = format!("new {}({{ ", strct.name);
+            let mut body = format!("new {}({{", strct.name);
             for field in &strct.fields {
                 body = format!(
                     "{}\n{}{},",
@@ -628,7 +628,8 @@ impl TypescriptRender {
 
     fn includes(&self) -> String {
         if self.embedded {
-            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.injection.embedded.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/index.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/tools.arraybuffer.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.sizes.ts")),

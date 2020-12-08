@@ -21,6 +21,13 @@ export class StrUTF8 extends Primitive<string> {
         return decoder.decode(bytes);
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'string') {
+            return new Error(`Invalid type of variable`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return StrUTF8.getSignature();
     }
