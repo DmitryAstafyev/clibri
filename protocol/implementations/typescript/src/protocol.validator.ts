@@ -1,14 +1,4 @@
-/*
-const map = [
-    { prop: 'u8', types: Protocol.Primitives.u8, repeated: false, optional: true },
-    { prop: 'u16', types: Protocol.Primitives.u16, repeated: false, optional: false },
-    { prop: 'u32', types: Protocol.Primitives.u32, repeated: false, optional: false },
-    { prop: 'opt', repeated: false, optional: false, options: [
-        { prop: 'u8', types: Protocol.Primitives.u8, repeated: false },
-        { prop: 'u16', types: Protocol.Primitives.u16, repeated: false },
-    ] },
-];
-*/
+// injectable
 export interface IValidator {
     validate(value: any): Error | undefined;
 }
@@ -40,12 +30,14 @@ export function validate(obj: any, scheme: IPropScheme[]): Error | undefined {
                 return `Property "${property.prop}" should be an object, because it's enum`;
             }
             const target: any = obj[property.prop];
+            const options: string[] = [];
             try {
                 property.options.forEach((prop: IPropScheme) => {
                     if (prop.types === undefined) {
                         throw new Error(`Invalid option description for option "${prop.prop}" of option "${property.prop}"`);
                     }
                     if (target[prop.prop] !== undefined) {
+                        options.push(prop.prop);
                         const err: Error | undefined = prop.types.validate(target[prop.prop]);
                         if (err instanceof Error) {
                             throw new Error(`Fail to validate option "${prop.prop}" of option "${property.prop}" due: ${err.message}`);
@@ -55,10 +47,13 @@ export function validate(obj: any, scheme: IPropScheme[]): Error | undefined {
             } catch (e) {
                 return e.message;
             }
+            if (options.length > 1) {
+                return `Enum should have only one definition or nothing. Found values for: ${options.join(', ')}`;
+            }
             return undefined;
         } else {
             return `Invalid map definition for property ${property.prop}`
         }
-    });
+    }).filter(e => e !== undefined);
     return errors.length > 0 ? new Error(errors.join('\n')) : undefined;
 }

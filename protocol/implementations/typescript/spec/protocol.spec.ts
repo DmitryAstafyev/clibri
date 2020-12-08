@@ -19,27 +19,46 @@ interface INested {
 
 class Nested extends Protocol.Convertor implements INested {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'u8', types: Protocol.Primitives.u8, optional: true },
+        { prop: 'u16', types: Protocol.Primitives.u16, optional: false },
+        { prop: 'u32', types: Protocol.Primitives.u32, optional: false },
+        { prop: 'opt', optional: false, options: [
+            { prop: 'u8', types: Protocol.Primitives.u8, optional: false },
+            { prop: 'u16', types: Protocol.Primitives.u16, optional: false },
+        ] },
+    ];
+
     public static defaults(): Nested {
         return new Nested({ u8: 0, u16: 0, u32: 0, opt: {}});
     }
 
-    public static from(obj: any): Nested | Error {
-        if (typeof obj !== 'object' || obj === null) {
-            return new Error(`Expecting to get an object as argument`);
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<Nested>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof Nested)) { 
+                            throw new Error(`Expecting instance of Nested on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof Nested ? undefined : new Error(`Expecting instance of Nested`)
+            }};
         }
-        const map = [
-            { prop: 'u8', types: [Protocol.Primitives.u8], repeated: false, optional: true },
-            { prop: 'u16', types: [Protocol.Primitives.u16], repeated: false, optional: false },
-            { prop: 'u32', types: [Protocol.Primitives.u32], repeated: false, optional: false },
-            { prop: 'opt', repeated: false, optional: false, options: [
-                { prop: 'u8', types: [Protocol.Primitives.u8], repeated: false },
-                { prop: 'u16', types: [Protocol.Primitives.u16], repeated: false },
-            ] },
-        ];
-        const error: Error | undefined = Protocol.validate(obj, [
-            { prop: 'u8', types: Protocol.Primitives.u8, optional: true },
-        ]);
-        return new Nested({
+    }
+
+    public static from(obj: any): Nested | Error {
+        const error: Error | undefined = Protocol.validate(obj, Nested.scheme);
+        return error instanceof Error ? error : new Nested({
             u8: obj.u8,
             u16: obj.u16,
             u32: obj.u32,
@@ -190,6 +209,35 @@ interface IMessage {
 
 class Message extends Protocol.Convertor implements IMessage {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'u8', types: Protocol.Primitives.u8, optional: false },
+        { prop: 'u16', types: Protocol.Primitives.u16, optional: false },
+        { prop: 'u32', types: Protocol.Primitives.u32, optional: false },
+        { prop: 'u64', types: Protocol.Primitives.u64, optional: false },
+        { prop: 'i8', types: Protocol.Primitives.i8, optional: false },
+        { prop: 'i16', types: Protocol.Primitives.i16, optional: false },
+        { prop: 'i32', types: Protocol.Primitives.i32, optional: false },
+        { prop: 'i64', types: Protocol.Primitives.i64, optional: false },
+        { prop: 'f32', types: Protocol.Primitives.f32, optional: false },
+        { prop: 'f64', types: Protocol.Primitives.f64, optional: false },
+        { prop: 'bool', types: Protocol.Primitives.bool, optional: false },
+        { prop: 'nested', types: Nested.getValidator(false), optional: false },
+        { prop: 'arrNested', types: Nested.getValidator(true), optional: false },
+        { prop: 'arrU8', types: Protocol.Primitives.ArrayU8, optional: false },
+        { prop: 'arrU16', types: Protocol.Primitives.ArrayU16, optional: false },
+        { prop: 'arrU32', types: Protocol.Primitives.ArrayU32, optional: false },
+        { prop: 'arrU64', types: Protocol.Primitives.ArrayU64, optional: false },
+        { prop: 'arrI8', types: Protocol.Primitives.ArrayI8, optional: false },
+        { prop: 'arrI16', types: Protocol.Primitives.ArrayI16, optional: false },
+        { prop: 'arrI32', types: Protocol.Primitives.ArrayI32, optional: false },
+        { prop: 'arrI64', types: Protocol.Primitives.ArrayI64, optional: false },
+        { prop: 'arrF32', types: Protocol.Primitives.ArrayF32, optional: false },
+        { prop: 'arrF64', types: Protocol.Primitives.ArrayF64, optional: false },
+        { prop: 'str', types: Protocol.Primitives.StrUTF8, optional: false },
+        { prop: 'arrStr', types: Protocol.Primitives.ArrayStrUTF8, optional: false },
+        { prop: 'arrBool', types: Protocol.Primitives.ArrayBool, optional: false },
+    ];
+
     public static defaults(): Message {
         return new Message({
             u8: 0,
@@ -218,6 +266,61 @@ class Message extends Protocol.Convertor implements IMessage {
             str: '',
             arrStr: [],
             arrBool: []
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<Message>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof Message)) { 
+                            throw new Error(`Expecting instance of Message on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof Message ? undefined : new Error(`Expecting instance of Message`)
+            }};
+        }
+    }
+
+    public static from(obj: any): Message | Error {
+        const error: Error | undefined = Protocol.validate(obj, Message.scheme);
+        return error instanceof Error ? error : new Message({
+            u8: obj.u8,
+            u16: obj.u16,
+            u32: obj.u32,
+            u64: obj.u64,
+            i8: obj.i8,
+            i16: obj.i16,
+            i32: obj.i32,
+            i64: obj.i64,
+            f32: obj.f32,
+            f64: obj.f64,
+            bool: obj.bool,
+            nested: obj.nested,
+            arrNested: obj.arrNested,
+            arrU8: obj.arrU8,
+            arrU16: obj.arrU16,
+            arrU32: obj.arrU32,
+            arrU64: obj.arrU64,
+            arrI8: obj.arrI8,
+            arrI16: obj.arrI16,
+            arrI32: obj.arrI32,
+            arrI64: obj.arrI64,
+            arrF32: obj.arrF32,
+            arrF64: obj.arrF64,
+            str: obj.str,
+            arrStr: obj.arrStr,
+            arrBool: obj.arrBool,
         });
     }
 
@@ -705,6 +808,118 @@ describe('Protocol tests', () => {
         expect(d.opt.u8).toBe(e.opt.u8);
         expect(d.opt.u16).toBe(e.opt.u16);
 
+        const nestedObjA = { u8: 12, u16: 2000, u32: 100000, opt: { u8: 10 } };
+        const nestedObjB = { u8: 300, u16: 2000, u32: 100000, opt: { u8: 10 } };
+        const nestedObjC = { u8: 12, u16: 2000, u32: 100000, opt: { u8: 10, u16: 10 } };
+        const nestedObjD = { u8: 12, u16: 2000, u32: 100000, opt: { } };
+        const nestedObjE = { u8: 12, u16: 2000, u32: 100000 };
+        const nestedObjF = { u8: undefined, u16: 2000, u32: 100000, opt: { u8: 10 } };
+        expect(Nested.from(nestedObjA)).toBeInstanceOf(Nested);
+        expect(Nested.from(nestedObjB)).toBeInstanceOf(Error);
+        expect(Nested.from(nestedObjC)).toBeInstanceOf(Error);
+        expect(Nested.from(nestedObjD)).toBeInstanceOf(Nested);
+        expect(Nested.from(nestedObjE)).toBeInstanceOf(Error);
+        expect(Nested.from(nestedObjF)).toBeInstanceOf(Nested);
+
+        const msgObjA = {
+            u8: 1,
+            u16: 2,
+            u32: 3,
+            u64: BigInt(4),
+            i8: 5,
+            i16: 6,
+            i32: 7,
+            i64: BigInt(8),
+            f32: 9,
+            f64: 10,
+            bool: true,
+            nested: new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+            arrNested: [
+                new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+                new Nested({ u8: 11, u16: 12, u32: 14, opt: { u8: 11 } }),
+                new Nested({ u8: 12, u16: 13, u32: 15, opt: { u16: 12 } })
+            ],
+            arrU8: [1,2,3,4,5],
+            arrU16: [1,2,3,4,5],
+            arrU32: [1,2,3,4,5],
+            arrU64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrI8: [1,2,3,4,5],
+            arrI16: [1,2,3,4,5],
+            arrI32: [1,2,3,4,5],
+            arrI64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrF32: [0.1,0.2,0.3,0.4,0.5],
+            arrF64: [0.1,0.2,0.3,0.4,0.5],
+            str: "Hello, from string!",
+            arrStr: ["string 1", "string 2", "string 3"],
+            arrBool: [true, false, true]
+        };
+        const msgObjB = {
+            u8: 1,
+            u16: 2,
+            u32: 3,
+            u64: BigInt(4),
+            i8: 5,
+            i16: 6,
+            i32: 7,
+            i64: BigInt(8),
+            f32: 9,
+            f64: 10,
+            bool: true,
+            nested: {},
+            arrNested: [
+                new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+                new Nested({ u8: 11, u16: 12, u32: 14, opt: { u8: 11 } }),
+                new Nested({ u8: 12, u16: 13, u32: 15, opt: { u16: 12 } })
+            ],
+            arrU8: [1,2,3,4,5],
+            arrU16: [1,2,3,4,5],
+            arrU32: [1,2,3,4,5],
+            arrU64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrI8: [1,2,3,4,5],
+            arrI16: [1,2,3,4,5],
+            arrI32: [1,2,3,4,5],
+            arrI64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrF32: [0.1,0.2,0.3,0.4,0.5],
+            arrF64: [0.1,0.2,0.3,0.4,0.5],
+            str: "Hello, from string!",
+            arrStr: ["string 1", "string 2", "string 3"],
+            arrBool: [true, false, true]
+        };
+        const msgObjC = {
+            u8: 1,
+            u16: 2,
+            u32: 3,
+            u64: BigInt(4),
+            i8: 5,
+            i16: 6,
+            i32: 7,
+            i64: BigInt(8),
+            f32: 9,
+            f64: 10,
+            bool: true,
+            nested: new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+            arrNested: [
+                new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+                42,
+                new Nested({ u8: 12, u16: 13, u32: 15, opt: { u16: 12 } })
+            ],
+            arrU8: [1,2,3,4,5],
+            arrU16: [1,2,3,4,5],
+            arrU32: [1,2,3,4,5],
+            arrU64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrI8: [1,2,3,4,5],
+            arrI16: [1,2,3,4,5],
+            arrI32: [1,2,3,4,5],
+            arrI64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrF32: [0.1,0.2,0.3,0.4,0.5],
+            arrF64: [0.1,0.2,0.3,0.4,0.5],
+            str: "Hello, from string!",
+            arrStr: ["string 1", "string 2", "string 3"],
+            arrBool: [true, false, true]
+        };
+        expect(Message.from(msgObjA)).toBeInstanceOf(Message);
+        expect(Message.from(msgObjB)).toBeInstanceOf(Error);
+        expect(Message.from(msgObjC)).toBeInstanceOf(Error);
         done();
 
     });

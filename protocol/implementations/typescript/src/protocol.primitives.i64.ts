@@ -40,11 +40,8 @@ export class i64 extends Primitive<bigint> {
     }
 
     public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
+        if (typeof value !== 'bigint') {
             return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
         }
         if (value < i64.MIN || value > i64.MAX) {
             return new Error(`Out of range.`);

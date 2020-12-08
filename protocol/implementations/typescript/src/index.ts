@@ -6,7 +6,7 @@ import { ESize } from './protocol.sizes';
 export { ESize } from './protocol.sizes';
 export { Primitives };
 export { Convertor } from './protocol.convertor';
-export { validate } from './protocol.validator';
+export { validate, IPropScheme } from './protocol.validator';
 
 // injectable
 const Protocol: {
