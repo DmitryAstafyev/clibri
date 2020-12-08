@@ -91,6 +91,9 @@ export interface ISignedDecode<T> {
 
 export class u8 extends Primitive<number> {
 
+    public static MIN: number = 0;
+    public static MAX: number = 255;
+
     public static getSignature(): string {
         return 'u8';
     }
@@ -121,6 +124,19 @@ export class u8 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < u8.MIN || value > u8.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return u8.getSignature();
     }
@@ -141,6 +157,9 @@ export class u8 extends Primitive<number> {
 }
 
 export class u16 extends Primitive<number> {
+
+    public static MIN: number = 0;
+    public static MAX: number = 65535;
 
     public static getSignature(): string {
         return 'u16';
@@ -172,6 +191,19 @@ export class u16 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < u16.MIN || value > u16.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return u16.getSignature();
     }
@@ -192,6 +224,9 @@ export class u16 extends Primitive<number> {
 }
 
 export class u32 extends Primitive<number> {
+
+    public static MIN: number = 0;
+    public static MAX: number = 4294967295;
 
     public static getSignature(): string {
         return 'u32';
@@ -223,6 +258,19 @@ export class u32 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < u32.MIN || value > u32.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return u32.getSignature();
     }
@@ -243,6 +291,9 @@ export class u32 extends Primitive<number> {
 }
 
 export class u64 extends Primitive<bigint> {
+
+    public static MIN: number = 0;
+    public static MAX: number = Number.MAX_SAFE_INTEGER;
 
     public static getSignature(): string {
         return 'u64';
@@ -274,6 +325,16 @@ export class u64 extends Primitive<bigint> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'bigint') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (value < u64.MIN || value > u64.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return u64.getSignature();
     }
@@ -293,6 +354,9 @@ export class u64 extends Primitive<bigint> {
 }
 
 export class i8 extends Primitive<number> {
+
+    public static MIN: number = -128;
+    public static MAX: number = 127;
 
     public static getSignature(): string {
         return 'i8';
@@ -324,6 +388,19 @@ export class i8 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < i8.MIN || value > i8.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return i8.getSignature();
     }
@@ -344,6 +421,9 @@ export class i8 extends Primitive<number> {
 }
 
 export class i16 extends Primitive<number> {
+
+    public static MIN: number = -32768;
+    public static MAX: number = 32767;
 
     public static getSignature(): string {
         return 'i16';
@@ -375,6 +455,19 @@ export class i16 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < i16.MIN || value > i16.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return i16.getSignature();
     }
@@ -395,6 +488,9 @@ export class i16 extends Primitive<number> {
 }
 
 export class i32 extends Primitive<number> {
+
+    public static MIN: number = -2147483648;
+    public static MAX: number = 2147483647;
 
     public static getSignature(): string {
         return 'i32';
@@ -426,6 +522,19 @@ export class i32 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        if (value < i32.MIN || value > i32.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return i32.getSignature();
     }
@@ -446,6 +555,9 @@ export class i32 extends Primitive<number> {
 }
 
 export class i64 extends Primitive<bigint> {
+
+    public static MIN: number = -Number.MAX_SAFE_INTEGER;
+    public static MAX: number = Number.MAX_SAFE_INTEGER;
 
     public static getSignature(): string {
         return 'i64';
@@ -475,6 +587,16 @@ export class i64 extends Primitive<bigint> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'bigint') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (value < i64.MIN || value > i64.MAX) {
+            return new Error(`Out of range.`);
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -528,6 +650,16 @@ export class f32 extends Primitive<number> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return f32.getSignature();
     }
@@ -577,6 +709,16 @@ export class f64 extends Primitive<number> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'number') {
+            return new Error(`Invalid type of variable`);
+        }
+        if (isNaN(value) || !isFinite(value)) {
+            return new Error(`Invalid value of variable: ${value}`);
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -630,6 +772,13 @@ export class bool extends Primitive<boolean> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'boolean') {
+            return new Error(`Invalid type of variable`);
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return bool.getSignature();
     }
@@ -663,6 +812,13 @@ export class StrUTF8 extends Primitive<string> {
     public static decode(bytes: ArrayBufferLike): string | Error {
         const decoder = new TextDecoder();
         return decoder.decode(bytes);
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (typeof value !== 'string') {
+            return new Error(`Invalid type of variable`);
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -723,6 +879,23 @@ export class ArrayU8 extends Primitive<number[]> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = u8.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return ArrayU8.getSignature();
     }
@@ -779,6 +952,23 @@ export class ArrayU16 extends Primitive<number[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = u16.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -839,6 +1029,22 @@ export class ArrayU32 extends Primitive<number[]> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = u32.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
+    }
     public getSignature(): string {
         return ArrayU32.getSignature();
     }
@@ -895,6 +1101,23 @@ export class ArrayU64 extends Primitive<Array<bigint>> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = u64.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -955,6 +1178,23 @@ export class ArrayI8 extends Primitive<number[]> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = i8.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return ArrayI8.getSignature();
     }
@@ -1011,6 +1251,23 @@ export class ArrayI16 extends Primitive<number[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = i16.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -1071,6 +1328,23 @@ export class ArrayI32 extends Primitive<number[]> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = i32.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return ArrayI32.getSignature();
     }
@@ -1127,6 +1401,23 @@ export class ArrayI64 extends Primitive<Array<bigint>> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = i64.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -1187,6 +1478,23 @@ export class ArrayF32 extends Primitive<number[]> {
         }
     }
 
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = f32.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
+    }
+
     public getSignature(): string {
         return ArrayF32.getSignature();
     }
@@ -1242,6 +1550,23 @@ export class ArrayF64 extends Primitive<number[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = f64.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -1300,6 +1625,23 @@ export class ArrayBool extends Primitive<boolean[]> {
         } catch (e) {
             return e;
         }
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = bool.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -1377,6 +1719,23 @@ export class ArrayStrUTF8 extends Primitive<string[]> {
             offset += body.byteLength;
         } while (offset < buffer.byteLength);
         return strings;
+    }
+
+    public static validate(value: any): Error | undefined {
+        if (!(value instanceof Array)) {
+            return new Error(`Invalid type of variable`);
+        }
+        try {
+            value.forEach((val: any, index: number) => {
+                const err: Error | undefined = StrUTF8.validate(val);
+                if (err instanceof Error) {
+                    throw new Error(`Error on index #${index}: ${err.message}`);
+                }
+            });
+        } catch (e) {
+            return e;
+        }
+        return undefined;
     }
 
     public getSignature(): string {
@@ -1484,6 +1843,65 @@ export class Enum {
 
 
 
+}
+
+export interface IValidator {
+    validate(value: any): Error | undefined;
+}
+
+export interface IPropScheme {
+    prop: string;
+    optional?: boolean;
+    types?: Required<IValidator>,
+    options?: IPropScheme[],
+}
+
+export function validate(obj: any, scheme: IPropScheme[]): Error | undefined {
+    if (typeof obj !== 'object' || obj === null) {
+        return new Error(`Expecting input to be object`);
+    }
+    const errors: string[] = scheme.map((property: IPropScheme) => {
+        if (property.optional && obj[property.prop] === undefined) {
+            return undefined;
+        }
+        if (property.types !== undefined) {
+            const err: Error | undefined = property.types.validate(obj[property.prop]);
+            if (err instanceof Error) {
+                return err.message;
+            } else {
+                return undefined;
+            }
+        } else if (property.options instanceof Array) {
+            if (typeof obj[property.prop] !== 'object' || obj[property.prop] === null) {
+                return `Property "${property.prop}" should be an object, because it's enum`;
+            }
+            const target: any = obj[property.prop];
+            const options: string[] = [];
+            try {
+                property.options.forEach((prop: IPropScheme) => {
+                    if (prop.types === undefined) {
+                        throw new Error(`Invalid option description for option "${prop.prop}" of option "${property.prop}"`);
+                    }
+                    if (target[prop.prop] !== undefined) {
+                        options.push(prop.prop);
+                        const err: Error | undefined = prop.types.validate(target[prop.prop]);
+                        if (err instanceof Error) {
+                            throw new Error(`Fail to validate option "${prop.prop}" of option "${property.prop}" due: ${err.message}`);
+                        }
+                    }
+                });
+            } catch (e) {
+                return e.message;
+            }
+            if (options.length > 1) {
+                return `Enum should have only one definition or nothing. Found values for: ${options.join(', ')}`;
+            }
+            return undefined;
+        } else {
+            return `Invalid map definition for property ${property.prop}`
+        }
+    }).filter(e => e !== undefined);
+    return errors.length > 0 ? new Error(errors.join('\n')) : undefined;
 }
 
 type u8Alias = u8; const u8Alias = u8;
@@ -1789,15 +2207,19 @@ export abstract class Convertor {
 
 }
 
-const Protocol: {
-    Convertor: typeof Convertor,
-    Primitives: typeof Primitives,
-    ESize: typeof ESize,
-} = {
-    Convertor: Convertor,
-    Primitives: Primitives,
-    ESize: ESize,
-};
+type ESizeAlias = ESize; const ESizeAlias = ESize;
+type ConvertorAlias = Convertor; const ConvertorAlias = Convertor;
+type IPropSchemeAlias = IPropScheme;
+const PrimitivesAlias = Primitives;
+const validateAlias = validate;
+
+namespace Protocol {
+    export const ESize = ESizeAlias; export type ESize = ESizeAlias;
+    export const Convertor = ConvertorAlias; export type Convertor = ConvertorAlias;
+    export type IPropScheme = IPropSchemeAlias;
+    export const Primitives = PrimitivesAlias;
+    export const validate = validateAlias;
+}
 
 
 interface EnumWithSctructs {
@@ -1823,32 +2245,66 @@ interface IStructName {
 }
 class StructName extends Protocol.Convertor implements IStructName {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'age', types: Protocol.Primitives.u8, optional: false, },
+        { prop: 'name', types: Protocol.Primitives.StrUTF8, optional: false, },
+    ];
+
     public static defaults(): StructName {
         return new StructName({
             age: 0,
             name: '',
         });
     }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<StructName>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof StructName)) {
+                            throw new Error(`Expecting instance of StructName on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof StructName ? undefined : new Error(`Expecting instance of StructName`);
+            }};
+        }
+    }
+
     public age: number;
     public name: string;
+
     constructor(params: IStructName)  {
         super();
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
     }
+
     public getSignature(): string {
         return 'StructName';
     }
+
     public getId(): number {
         return 1;
     }
+
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.getBuffer(2, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.age)),
             () => this.getBufferFromBuf<string>(3, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.name),
         ]);
     }
+
     public decode(buffer: ArrayBufferLike): Error | undefined {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
@@ -1867,6 +2323,7 @@ class StructName extends Protocol.Convertor implements IStructName {
             this.name = name;
         }
     }
+
     public defaults(): StructName {
         return StructName.defaults();
     }
@@ -1878,32 +2335,66 @@ interface IOptionA {
 }
 class OptionA extends Protocol.Convertor implements IOptionA {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'option_a_field_a', types: Protocol.Primitives.StrUTF8, optional: false, },
+        { prop: 'option_a_field_b', types: Protocol.Primitives.StrUTF8, optional: false, },
+    ];
+
     public static defaults(): OptionA {
         return new OptionA({
             option_a_field_a: '',
             option_a_field_b: '',
         });
     }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<OptionA>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof OptionA)) {
+                            throw new Error(`Expecting instance of OptionA on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof OptionA ? undefined : new Error(`Expecting instance of OptionA`);
+            }};
+        }
+    }
+
     public option_a_field_a: string;
     public option_a_field_b: string;
+
     constructor(params: IOptionA)  {
         super();
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
     }
+
     public getSignature(): string {
         return 'OptionA';
     }
+
     public getId(): number {
         return 4;
     }
+
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.getBufferFromBuf<string>(5, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.option_a_field_a),
             () => this.getBufferFromBuf<string>(6, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.option_a_field_b),
         ]);
     }
+
     public decode(buffer: ArrayBufferLike): Error | undefined {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
@@ -1922,6 +2413,7 @@ class OptionA extends Protocol.Convertor implements IOptionA {
             this.option_a_field_b = option_a_field_b;
         }
     }
+
     public defaults(): OptionA {
         return OptionA.defaults();
     }
@@ -1933,32 +2425,66 @@ interface IOptionB {
 }
 class OptionB extends Protocol.Convertor implements IOptionB {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'option_b_field_a', types: Protocol.Primitives.StrUTF8, optional: false, },
+        { prop: 'option_b_field_b', types: Protocol.Primitives.StrUTF8, optional: false, },
+    ];
+
     public static defaults(): OptionB {
         return new OptionB({
             option_b_field_a: '',
             option_b_field_b: '',
         });
     }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<OptionB>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof OptionB)) {
+                            throw new Error(`Expecting instance of OptionB on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof OptionB ? undefined : new Error(`Expecting instance of OptionB`);
+            }};
+        }
+    }
+
     public option_b_field_a: string;
     public option_b_field_b: string;
+
     constructor(params: IOptionB)  {
         super();
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
     }
+
     public getSignature(): string {
         return 'OptionB';
     }
+
     public getId(): number {
         return 7;
     }
+
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.getBufferFromBuf<string>(8, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.option_b_field_a),
             () => this.getBufferFromBuf<string>(9, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.option_b_field_b),
         ]);
     }
+
     public decode(buffer: ArrayBufferLike): Error | undefined {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
@@ -1977,6 +2503,7 @@ class OptionB extends Protocol.Convertor implements IOptionB {
             this.option_b_field_b = option_b_field_b;
         }
     }
+
     public defaults(): OptionB {
         return OptionB.defaults();
     }
@@ -1990,6 +2517,17 @@ interface IUser {
 }
 class User extends Protocol.Convertor implements IUser {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
+        { prop: 'email', types: Protocol.Primitives.StrUTF8, optional: true, },
+        { prop: 'usertype', optional: false, options: [
+            { prop: 'PointA', types: Protocol.Primitives.ArrayU8, optional: false, },
+            { prop: 'PointB', types: Protocol.Primitives.StrUTF8, optional: false, },
+            { prop: 'PointC', types: Protocol.Primitives.u16, optional: false, },
+        ] },
+        { prop: 'info', types: StructName.getValidator(false), optional: false },
+    ];
+
     public static defaults(): User {
         return new User({
             username: [],
@@ -2001,11 +2539,36 @@ class User extends Protocol.Convertor implements IUser {
             }),
         });
     }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<User>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof User)) {
+                            throw new Error(`Expecting instance of User on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof User ? undefined : new Error(`Expecting instance of User`);
+            }};
+        }
+    }
+
     public username: Array<string>;
     public email: string | undefined;
     public usertype: UserType;
     public info: StructName;
     private _usertype: Primitives.Enum;
+
     constructor(params: IUser)  {
         super();
         Object.keys(params).forEach((key: string) => {
@@ -2044,12 +2607,15 @@ class User extends Protocol.Convertor implements IUser {
             }
         }
     }
+
     public getSignature(): string {
         return 'User';
     }
+
     public getId(): number {
         return 13;
     }
+
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.getBufferFromBuf<Array<string>>(14, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
@@ -2058,6 +2624,7 @@ class User extends Protocol.Convertor implements IUser {
             () => { const buffer = this.info.encode(); return this.getBuffer(17, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
+
     public decode(buffer: ArrayBufferLike): Error | undefined {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
@@ -2115,6 +2682,7 @@ class User extends Protocol.Convertor implements IUser {
             this.info = info;
         }
     }
+
     public defaults(): User {
         return User.defaults();
     }
@@ -2125,29 +2693,62 @@ interface ILogin {
 }
 class Login extends Protocol.Convertor implements ILogin {
 
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'users', types: User.getValidator(true), optional: false },
+    ];
+
     public static defaults(): Login {
         return new Login({
             users: [],
         });
     }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<Login>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof Login)) {
+                            throw new Error(`Expecting instance of Login on index #${index}`);
+                        }
+                    });
+                } catch (e) {
+                    return e;
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof Login ? undefined : new Error(`Expecting instance of Login`);
+            }};
+        }
+    }
+
     public users: Array<User>;
+
     constructor(params: ILogin)  {
         super();
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
     }
+
     public getSignature(): string {
         return 'Login';
     }
+
     public getId(): number {
         return 18;
     }
+
     public encode(): ArrayBufferLike {
         return this.collect([
             () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(19, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
         ]);
     }
+
     public decode(buffer: ArrayBufferLike): Error | undefined {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
@@ -2161,6 +2762,7 @@ class Login extends Protocol.Convertor implements ILogin {
             this.users = arrUser as User[];
         }
     }
+
     public defaults(): Login {
         return Login.defaults();
     }
@@ -2181,6 +2783,16 @@ export namespace GroupA {
     }
     class UserA extends Protocol.Convertor implements IUserA {
 
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
+            { prop: 'email', types: Protocol.Primitives.StrUTF8, optional: true, },
+            { prop: 'usertype', optional: false, options: [
+                { prop: 'PointA', types: Protocol.Primitives.ArrayU8, optional: false, },
+                { prop: 'PointB', types: Protocol.Primitives.StrUTF8, optional: false, },
+                { prop: 'PointC', types: Protocol.Primitives.u16, optional: false, },
+            ] },
+        ];
+
         public static defaults(): UserA {
             return new UserA({
                 username: [],
@@ -2188,10 +2800,35 @@ export namespace GroupA {
                 usertype: {},
             });
         }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<UserA>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof UserA)) {
+                                throw new Error(`Expecting instance of UserA on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof UserA ? undefined : new Error(`Expecting instance of UserA`);
+                }};
+            }
+        }
+
         public username: Array<string>;
         public email: string | undefined;
         public usertype: UserType;
         private _usertype: Primitives.Enum;
+
         constructor(params: IUserA)  {
             super();
             Object.keys(params).forEach((key: string) => {
@@ -2230,12 +2867,15 @@ export namespace GroupA {
                 }
             }
         }
+
         public getSignature(): string {
             return 'UserA';
         }
+
         public getId(): number {
             return 21;
         }
+
         public encode(): ArrayBufferLike {
             return this.collect([
                 () => this.getBufferFromBuf<Array<string>>(22, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
@@ -2243,6 +2883,7 @@ export namespace GroupA {
                 () => { const buffer = this._usertype.encode(); return this.getBuffer(24, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
+
         public decode(buffer: ArrayBufferLike): Error | undefined {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
@@ -2286,6 +2927,7 @@ export namespace GroupA {
                 }
             }
         }
+
         public defaults(): UserA {
             return UserA.defaults();
         }
@@ -2296,29 +2938,62 @@ export namespace GroupA {
     }
     class LoginA extends Protocol.Convertor implements ILoginA {
 
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'users', types: User.getValidator(true), optional: false },
+        ];
+
         public static defaults(): LoginA {
             return new LoginA({
                 users: [],
             });
         }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<LoginA>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof LoginA)) {
+                                throw new Error(`Expecting instance of LoginA on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof LoginA ? undefined : new Error(`Expecting instance of LoginA`);
+                }};
+            }
+        }
+
         public users: Array<User>;
+
         constructor(params: ILoginA)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
             });
         }
+
         public getSignature(): string {
             return 'LoginA';
         }
+
         public getId(): number {
             return 25;
         }
+
         public encode(): ArrayBufferLike {
             return this.collect([
                 () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(26, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
             ]);
         }
+
         public decode(buffer: ArrayBufferLike): Error | undefined {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
@@ -2332,6 +3007,7 @@ export namespace GroupA {
                 this.users = arrUser as User[];
             }
         }
+
         public defaults(): LoginA {
             return LoginA.defaults();
         }
@@ -2354,6 +3030,16 @@ export namespace GroupB {
     }
     class UserA extends Protocol.Convertor implements IUserA {
 
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
+            { prop: 'email', types: Protocol.Primitives.StrUTF8, optional: true, },
+            { prop: 'usertype', optional: false, options: [
+                { prop: 'PointA', types: Protocol.Primitives.ArrayU8, optional: false, },
+                { prop: 'PointB', types: Protocol.Primitives.StrUTF8, optional: false, },
+                { prop: 'PointC', types: Protocol.Primitives.u16, optional: false, },
+            ] },
+        ];
+
         public static defaults(): UserA {
             return new UserA({
                 username: [],
@@ -2361,10 +3047,35 @@ export namespace GroupB {
                 usertype: {},
             });
         }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<UserA>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof UserA)) {
+                                throw new Error(`Expecting instance of UserA on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof UserA ? undefined : new Error(`Expecting instance of UserA`);
+                }};
+            }
+        }
+
         public username: Array<string>;
         public email: string | undefined;
         public usertype: UserType;
         private _usertype: Primitives.Enum;
+
         constructor(params: IUserA)  {
             super();
             Object.keys(params).forEach((key: string) => {
@@ -2403,12 +3114,15 @@ export namespace GroupB {
                 }
             }
         }
+
         public getSignature(): string {
             return 'UserA';
         }
+
         public getId(): number {
             return 29;
         }
+
         public encode(): ArrayBufferLike {
             return this.collect([
                 () => this.getBufferFromBuf<Array<string>>(30, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
@@ -2416,6 +3130,7 @@ export namespace GroupB {
                 () => { const buffer = this._usertype.encode(); return this.getBuffer(32, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
+
         public decode(buffer: ArrayBufferLike): Error | undefined {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
@@ -2459,6 +3174,7 @@ export namespace GroupB {
                 }
             }
         }
+
         public defaults(): UserA {
             return UserA.defaults();
         }
@@ -2469,29 +3185,62 @@ export namespace GroupB {
     }
     class LoginA extends Protocol.Convertor implements ILoginA {
 
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'users', types: User.getValidator(true), optional: false },
+        ];
+
         public static defaults(): LoginA {
             return new LoginA({
                 users: [],
             });
         }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<LoginA>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof LoginA)) {
+                                throw new Error(`Expecting instance of LoginA on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof LoginA ? undefined : new Error(`Expecting instance of LoginA`);
+                }};
+            }
+        }
+
         public users: Array<User>;
+
         constructor(params: ILoginA)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
             });
         }
+
         public getSignature(): string {
             return 'LoginA';
         }
+
         public getId(): number {
             return 33;
         }
+
         public encode(): ArrayBufferLike {
             return this.collect([
                 () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(34, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
             ]);
         }
+
         public decode(buffer: ArrayBufferLike): Error | undefined {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
@@ -2505,6 +3254,7 @@ export namespace GroupB {
                 this.users = arrUser as User[];
             }
         }
+
         public defaults(): LoginA {
             return LoginA.defaults();
         }
@@ -2525,6 +3275,16 @@ export namespace GroupB {
         }
         class UserA extends Protocol.Convertor implements IUserA {
 
+            public static scheme: Protocol.IPropScheme[] = [
+                { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
+                { prop: 'email', types: Protocol.Primitives.StrUTF8, optional: true, },
+                { prop: 'usertype', optional: false, options: [
+                    { prop: 'PointA', types: Protocol.Primitives.ArrayU8, optional: false, },
+                    { prop: 'PointB', types: Protocol.Primitives.StrUTF8, optional: false, },
+                    { prop: 'PointC', types: Protocol.Primitives.u16, optional: false, },
+                ] },
+            ];
+
             public static defaults(): UserA {
                 return new UserA({
                     username: [],
@@ -2532,10 +3292,35 @@ export namespace GroupB {
                     usertype: {},
                 });
             }
+
+            public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+                if (array) {
+                    return { validate(obj: any): Error | undefined {
+                        if (!(obj instanceof Array)) {
+                            return new Error(`Expecting Array<UserA>`);
+                        }
+                        try {
+                            obj.forEach((o, index: number) => {
+                                if (!(o instanceof UserA)) {
+                                    throw new Error(`Expecting instance of UserA on index #${index}`);
+                                }
+                            });
+                        } catch (e) {
+                            return e;
+                        }
+                    }};
+                } else {
+                    return { validate(obj: any): Error | undefined {
+                        return obj instanceof UserA ? undefined : new Error(`Expecting instance of UserA`);
+                    }};
+                }
+            }
+
             public username: Array<string>;
             public email: string | undefined;
             public usertype: UserType;
             private _usertype: Primitives.Enum;
+
             constructor(params: IUserA)  {
                 super();
                 Object.keys(params).forEach((key: string) => {
@@ -2574,12 +3359,15 @@ export namespace GroupB {
                     }
                 }
             }
+
             public getSignature(): string {
                 return 'UserA';
             }
+
             public getId(): number {
                 return 37;
             }
+
             public encode(): ArrayBufferLike {
                 return this.collect([
                     () => this.getBufferFromBuf<Array<string>>(38, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.username),
@@ -2587,6 +3375,7 @@ export namespace GroupB {
                     () => { const buffer = this._usertype.encode(); return this.getBuffer(40, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
                 ]);
             }
+
             public decode(buffer: ArrayBufferLike): Error | undefined {
                 const storage = this.getStorage(buffer);
                 if (storage instanceof Error) {
@@ -2630,6 +3419,7 @@ export namespace GroupB {
                     }
                 }
             }
+
             public defaults(): UserA {
                 return UserA.defaults();
             }
@@ -2640,29 +3430,62 @@ export namespace GroupB {
         }
         class LoginA extends Protocol.Convertor implements ILoginA {
 
+            public static scheme: Protocol.IPropScheme[] = [
+                { prop: 'users', types: User.getValidator(true), optional: false },
+            ];
+
             public static defaults(): LoginA {
                 return new LoginA({
                     users: [],
                 });
             }
+
+            public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+                if (array) {
+                    return { validate(obj: any): Error | undefined {
+                        if (!(obj instanceof Array)) {
+                            return new Error(`Expecting Array<LoginA>`);
+                        }
+                        try {
+                            obj.forEach((o, index: number) => {
+                                if (!(o instanceof LoginA)) {
+                                    throw new Error(`Expecting instance of LoginA on index #${index}`);
+                                }
+                            });
+                        } catch (e) {
+                            return e;
+                        }
+                    }};
+                } else {
+                    return { validate(obj: any): Error | undefined {
+                        return obj instanceof LoginA ? undefined : new Error(`Expecting instance of LoginA`);
+                    }};
+                }
+            }
+
             public users: Array<User>;
+
             constructor(params: ILoginA)  {
                 super();
                 Object.keys(params).forEach((key: string) => {
                     this[key] = params[key];
                 });
             }
+
             public getSignature(): string {
                 return 'LoginA';
             }
+
             public getId(): number {
                 return 41;
             }
+
             public encode(): ArrayBufferLike {
                 return this.collect([
                     () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(42, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
                 ]);
             }
+
             public decode(buffer: ArrayBufferLike): Error | undefined {
                 const storage = this.getStorage(buffer);
                 if (storage instanceof Error) {
@@ -2676,6 +3499,7 @@ export namespace GroupB {
                     this.users = arrUser as User[];
                 }
             }
+
             public defaults(): LoginA {
                 return LoginA.defaults();
             }

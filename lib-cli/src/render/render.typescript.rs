@@ -67,9 +67,14 @@ impl TypescriptRender {
             strct.name,
             strct.name
         );
+
+        body = format!("{}\n{}", body, self.struct_map(&strct, &mut store.clone(), level + 1));
+
         body = format!("{}\n{}public static defaults(): {} {{", body, self.spaces(level + 1), strct.name);
         body = format!("{}\n{}return {};", body, self.spaces(level + 2), self.entity_default(strct.id, &mut store.clone(), level + 2));
-        body = format!("{}\n{}}}", body, self.spaces(level + 1));
+        body = format!("{}\n{}}}\n", body, self.spaces(level + 1));
+
+        body = format!("{}\n{}", body, self.struct_validator(&strct, level + 1));
 
         for field in &strct.fields {
             body = format!(
@@ -99,13 +104,13 @@ impl TypescriptRender {
                 }
             }
         }
-    
+        body = format!("{}\n", body);
         body = format!(
             "{}\n{}",
             body,
             self.struct_constructor(&strct, &mut store.clone(), level + 1)
         );
-
+        body = format!("{}\n", body);
         body = format!(
             "{}{}public getSignature(): string {{\n",
             body,
@@ -118,7 +123,7 @@ impl TypescriptRender {
             strct.name
         );
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-
+        body = format!("{}\n", body);
         body = format!(
             "{}{}public getId(): number {{\n",
             body,
@@ -126,7 +131,7 @@ impl TypescriptRender {
         );
         body = format!("{}{}return {};\n", body, self.spaces(level + 2), strct.id);
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-
+        body = format!("{}\n", body);
         body = format!(
             "{}{}public encode(): ArrayBufferLike {{\n",
             body,
@@ -143,7 +148,7 @@ impl TypescriptRender {
         }
         body = format!("{}\n{}]);\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-
+        body = format!("{}\n", body);
         body = format!(
             "{}{}public decode(buffer: ArrayBufferLike): Error | undefined {{\n",
             body,
@@ -161,7 +166,7 @@ impl TypescriptRender {
             );
         }
         body = format!("{}\n{}}}", body, self.spaces(level + 1));
-
+        body = format!("{}\n", body);
         body = format!("{}\n{}public defaults(): {} {{", body, self.spaces(level + 1), strct.name);
         body = format!("{}\n{}return {}.defaults();", body, self.spaces(level + 2), strct.name);
         body = format!("{}\n{}}}\n", body, self.spaces(level + 1));
@@ -251,6 +256,45 @@ impl TypescriptRender {
                 }
             }
         }
+        body = format!("{}\n{}}}\n", body, self.spaces(level));
+        body
+    }
+
+    fn struct_map(&self, strct: &Struct, store: &mut Store, level: u8) -> String {
+        let mut body = format!("{}public static scheme: Protocol.IPropScheme[] = [", self.spaces(level));
+        for field in &strct.fields {
+            body = format!(
+                "{}{}",
+                body,
+                self.get_field_map_def(field, &mut store.clone(), level + 1),
+            );
+        }
+        body = format!("{}\n{}];\n", body, self.spaces(level));
+        body
+    }
+
+    fn struct_validator(&self, strct: &Struct, level: u8) -> String {
+        let mut body = format!("{}public static getValidator(array: boolean): {{ validate(value: any): Error | undefined }} {{", self.spaces(level));
+        body = format!("{}\n{}if (array) {{", body, self.spaces(level + 1));
+        body = format!("{}\n{}return {{ validate(obj: any): Error | undefined {{", body, self.spaces(level + 2));
+        body = format!("{}\n{}if (!(obj instanceof Array)) {{", body, self.spaces(level + 3));
+        body = format!("{}\n{}return new Error(`Expecting Array<{}>`);", body, self.spaces(level + 4), strct.name);
+        body = format!("{}\n{}}}", body, self.spaces(level + 3));
+        body = format!("{}\n{}try {{", body, self.spaces(level + 3));
+        body = format!("{}\n{}obj.forEach((o, index: number) => {{", body, self.spaces(level + 4));
+        body = format!("{}\n{}if (!(o instanceof {})) {{", body, self.spaces(level + 5), strct.name);
+        body = format!("{}\n{}throw new Error(`Expecting instance of {} on index #${{index}}`);", body, self.spaces(level + 6), strct.name);
+        body = format!("{}\n{}}}", body, self.spaces(level + 5));
+        body = format!("{}\n{}}});", body, self.spaces(level + 4));
+        body = format!("{}\n{}}} catch (e) {{", body, self.spaces(level + 3));
+        body = format!("{}\n{}return e;", body, self.spaces(level + 4));
+        body = format!("{}\n{}}}", body, self.spaces(level + 3));
+        body = format!("{}\n{}}}}};", body, self.spaces(level + 2));
+        body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
+        body = format!("{}\n{}return {{ validate(obj: any): Error | undefined {{", body, self.spaces(level + 2));
+        body = format!("{}\n{}return obj instanceof {} ? undefined : new Error(`Expecting instance of {}`);", body, self.spaces(level + 3), strct.name, strct.name);
+        body = format!("{}\n{}}}}};", body, self.spaces(level + 2));
+        body = format!("{}\n{}}}", body, self.spaces(level + 1));
         body = format!("{}\n{}}}\n", body, self.spaces(level));
         body
     }
@@ -375,6 +419,34 @@ impl TypescriptRender {
                 body,
                 self.entity_default(struct_id, store, level + 1)
             );
+        }
+        body
+    }
+
+    fn get_field_map_def(&self, field: &Field, store: &mut Store, level: u8) -> String {
+        let mut body: String = String::from("");
+        if let Some(entity_id) = field.ref_type_id {
+            if let Some(strct) = store.get_struct(entity_id) {
+                body = format!("{}\n{}{{ prop: '{}', types: {}.getValidator({}), optional: {} }},", body, self.spaces(level), field.name, strct.name, if field.repeated { "true" } else { "false" }, if field.optional { "true" } else { "false" });
+            } else if let Some(enums) = store.get_enum(entity_id) {
+                body = format!("{}\n{}{{ prop: '{}', optional: {}, options: [", body, self.spaces(level), field.name, if field.optional { "true" } else { "false" });
+                for variant in &enums.variants {
+                    if let Some(struct_id) = variant.ref_type_id {
+                        if let Some(strct) = store.get_struct(struct_id) {
+                            body = format!("{}\n{}{{ prop: '{}', types: {}.getValidator({}), optional: false }},", body, self.spaces(level + 1), variant.name, strct.name, if variant.repeated { "true" } else { "false" });
+                        } else {
+                            panic!("Nested enums aren't supported.");
+                        }
+                    } else if let Some(etype) = variant.types.clone() {
+                        body = format!("{}\n{}{{ prop: '{}', types: Protocol.Primitives.{}, optional: false, }},", body, self.spaces(level + 1), variant.name, self.etype(etype, variant.repeated));
+                    } else {
+                        panic!("Incorrect option definition for enum {}", enums.name);
+                    }
+                }
+                body = format!("{}\n{}] }},", body, self.spaces(level));
+            }
+        } else {
+            body = format!("{}\n{}{{ prop: '{}', types: Protocol.Primitives.{}, optional: {}, }},", body, self.spaces(level), field.name, self.get_primitive_ref(field), if field.optional { "true" } else { "false" });
         }
         body
     }
@@ -628,7 +700,7 @@ impl TypescriptRender {
 
     fn includes(&self) -> String {
         if self.embedded {
-            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.injection.embedded.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/index.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/tools.arraybuffer.ts")),
@@ -659,6 +731,7 @@ impl TypescriptRender {
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.primitives.array.bool.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.primitives.array.string.utf8.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.primitives.enum.ts")),
+                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.validator.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.primitives.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.storage.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.ts")),
