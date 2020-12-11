@@ -82,7 +82,7 @@ type OptionAlias = Option<any>; const OptionAlias = Option;
 type EnumAlias = Enum; const EnumAlias = Enum;
 type PrimitiveAlias = Primitive<any>; const PrimitiveAlias = Primitive;
 
-namespace Primitives {
+export namespace Primitives {
     export const u8 = u8Alias; export type u8 = u8Alias;
     export const u16 = u16Alias; export type u16 = u16Alias;
     export const u32 = u32Alias; export type u32 = u32Alias;

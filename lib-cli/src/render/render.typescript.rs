@@ -46,7 +46,7 @@ impl TypescriptRender {
     }
 
     fn structs(&self, strct: &Struct, store: &mut Store, level: u8) -> String {
-        let mut body = format!("{}interface I{} {{", self.spaces(level), strct.name);
+        let mut body = format!("{}export interface I{} {{", self.spaces(level), strct.name);
         for field in &strct.fields {
             body = format!(
                 "{}\n{}{}",
@@ -61,7 +61,7 @@ impl TypescriptRender {
         }
         body = format!("{}\n{}}}\n", body, self.spaces(level));
         body = format!(
-            "{}{}class {} extends Protocol.Convertor implements I{} {{\n",
+            "{}{}export class {} extends Protocol.Convertor implements I{} {{\n",
             body,
             self.spaces(level),
             strct.name,
@@ -300,7 +300,7 @@ impl TypescriptRender {
     }
 
     fn enums(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
-        let mut body = format!("{}interface {} {{\n", self.spaces(level), enums.name);
+        let mut body = format!("{}export interface {} {{\n", self.spaces(level), enums.name);
         for variant in &enums.variants {
             let variant_type = if let Some(prim_type_ref) = variant.types.clone() {
                 self.etype_ts(prim_type_ref.clone(), variant.repeated)
@@ -743,8 +743,10 @@ impl TypescriptRender {
     }
 
     fn get_injectable(&self, content: &str) -> String {
-        let re = Regex::new(r"^([\n\r]|.)*(//\s?injectable)").unwrap();
-        re.replace_all(content, "").to_string()
+        let re_injectable = Regex::new(r"^([\n\r]|.)*(//\s?injectable)").unwrap();
+        re_injectable.replace_all(content, "").to_string()
+        //let re_export = Regex::new(r"(?m)^export\s*").unwrap();
+        //re_export.replace_all(&re_injectable.replace_all(content, "").to_string(), "").to_string()
     }
 
     fn spaces(&self, level: u8) -> String {

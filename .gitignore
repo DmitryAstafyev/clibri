@@ -3,4 +3,6 @@
 **/dist
 **/log
 **/*.log
+**/binary
+**/.DS_STORE
 .DS_STORE

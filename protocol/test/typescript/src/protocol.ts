@@ -1932,7 +1932,7 @@ type OptionAlias = Option<any>; const OptionAlias = Option;
 type EnumAlias = Enum; const EnumAlias = Enum;
 type PrimitiveAlias = Primitive<any>; const PrimitiveAlias = Primitive;
 
-namespace Primitives {
+export namespace Primitives {
     export const u8 = u8Alias; export type u8 = u8Alias;
     export const u16 = u16Alias; export type u16 = u16Alias;
     export const u32 = u32Alias; export type u32 = u32Alias;
@@ -2222,28 +2222,28 @@ namespace Protocol {
 }
 
 
-interface EnumWithSctructs {
+export interface EnumWithSctructs {
     a?: OptionA;
     b?: OptionB;
 }
 
-interface SyntaxSugarEnum {
+export interface SyntaxSugarEnum {
     VariantA?: string;
     VariantB?: string;
     VariantC?: string;
 }
 
-interface UserType {
+export interface UserType {
     PointA?: Array<number>;
     PointB?: string;
     PointC?: number;
 }
 
-interface IStructName {
+export interface IStructName {
     age: number;
     name: string;
 }
-class StructName extends Protocol.Convertor implements IStructName {
+export class StructName extends Protocol.Convertor implements IStructName {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'age', types: Protocol.Primitives.u8, optional: false, },
@@ -2329,11 +2329,11 @@ class StructName extends Protocol.Convertor implements IStructName {
     }
 }
 
-interface IOptionA {
+export interface IOptionA {
     option_a_field_a: string;
     option_a_field_b: string;
 }
-class OptionA extends Protocol.Convertor implements IOptionA {
+export class OptionA extends Protocol.Convertor implements IOptionA {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'option_a_field_a', types: Protocol.Primitives.StrUTF8, optional: false, },
@@ -2419,11 +2419,11 @@ class OptionA extends Protocol.Convertor implements IOptionA {
     }
 }
 
-interface IOptionB {
+export interface IOptionB {
     option_b_field_a: string;
     option_b_field_b: string;
 }
-class OptionB extends Protocol.Convertor implements IOptionB {
+export class OptionB extends Protocol.Convertor implements IOptionB {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'option_b_field_a', types: Protocol.Primitives.StrUTF8, optional: false, },
@@ -2509,13 +2509,13 @@ class OptionB extends Protocol.Convertor implements IOptionB {
     }
 }
 
-interface IUser {
+export interface IUser {
     username: Array<string>;
     email: string | undefined;
     usertype: UserType;
     info: StructName;
 }
-class User extends Protocol.Convertor implements IUser {
+export class User extends Protocol.Convertor implements IUser {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
@@ -2688,10 +2688,10 @@ class User extends Protocol.Convertor implements IUser {
     }
 }
 
-interface ILogin {
+export interface ILogin {
     users: Array<User>;
 }
-class Login extends Protocol.Convertor implements ILogin {
+export class Login extends Protocol.Convertor implements ILogin {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'users', types: User.getValidator(true), optional: false },
@@ -2770,18 +2770,18 @@ class Login extends Protocol.Convertor implements ILogin {
 
 export namespace GroupA {
 
-    interface UserTypeTest {
+    export interface UserTypeTest {
         PointA?: number;
         PointB?: number;
         PointC?: number;
     }
 
-    interface IUserA {
+    export interface IUserA {
         username: Array<string>;
         email: string | undefined;
         usertype: UserType;
     }
-    class UserA extends Protocol.Convertor implements IUserA {
+    export class UserA extends Protocol.Convertor implements IUserA {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
@@ -2933,10 +2933,10 @@ export namespace GroupA {
         }
     }
 
-    interface ILoginA {
+    export interface ILoginA {
         users: Array<User>;
     }
-    class LoginA extends Protocol.Convertor implements ILoginA {
+    export class LoginA extends Protocol.Convertor implements ILoginA {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'users', types: User.getValidator(true), optional: false },
@@ -3017,18 +3017,18 @@ export namespace GroupA {
 
 export namespace GroupB {
 
-    interface UserTypeTest {
+    export interface UserTypeTest {
         PointA?: number;
         PointB?: number;
         PointC?: number;
     }
 
-    interface IUserA {
+    export interface IUserA {
         username: Array<string>;
         email: string | undefined;
         usertype: UserType;
     }
-    class UserA extends Protocol.Convertor implements IUserA {
+    export class UserA extends Protocol.Convertor implements IUserA {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
@@ -3180,10 +3180,10 @@ export namespace GroupB {
         }
     }
 
-    interface ILoginA {
+    export interface ILoginA {
         users: Array<User>;
     }
-    class LoginA extends Protocol.Convertor implements ILoginA {
+    export class LoginA extends Protocol.Convertor implements ILoginA {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'users', types: User.getValidator(true), optional: false },
@@ -3262,18 +3262,18 @@ export namespace GroupB {
 
     export namespace GroupC {
 
-        interface UserTypeTest {
+        export interface UserTypeTest {
             PointA?: number;
             PointB?: number;
             PointC?: number;
         }
 
-        interface IUserA {
+        export interface IUserA {
             username: Array<string>;
             email: string | undefined;
             usertype: UserType;
         }
-        class UserA extends Protocol.Convertor implements IUserA {
+        export class UserA extends Protocol.Convertor implements IUserA {
 
             public static scheme: Protocol.IPropScheme[] = [
                 { prop: 'username', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
@@ -3425,10 +3425,10 @@ export namespace GroupB {
             }
         }
 
-        interface ILoginA {
+        export interface ILoginA {
             users: Array<User>;
         }
-        class LoginA extends Protocol.Convertor implements ILoginA {
+        export class LoginA extends Protocol.Convertor implements ILoginA {
 
             public static scheme: Protocol.IPropScheme[] = [
                 { prop: 'users', types: User.getValidator(true), optional: false },
