@@ -658,7 +658,7 @@ mod tests {
             }),
             prop_optional_enum: Some(TargetEnum::OptionString(String::from("Hello, from Enum (666)!"))),
             prop_enum_vec: vec![TargetEnum::OptionString(String::from("Hello, from Enum (666)!"))],
-            prop_optional_enum_vec: Some(vec![TargetEnum::OptionString(String::from("Hello, from Enum (666)!"))])
+            prop_optional_enum_vec: Some(vec![TargetEnum::OptionString(String::from("Hello, from Enum (666)!")), TargetEnum::Optioni16(666)])
         };
         let buf = match StructEncode::abduct(&mut a) {
             Ok(buf) => buf,
@@ -714,6 +714,7 @@ mod tests {
         assert_eq!(a.prop_enum, b.prop_enum);
         assert_eq!(a.prop_optional_strct, b.prop_optional_strct);
         assert_eq!(a.prop_optional_enum, b.prop_optional_enum);
+        assert_eq!(a.prop_optional_enum_vec, b.prop_optional_enum_vec);
         let enums: Vec<TargetEnum> = vec![
             TargetEnum::OptionString(String::from("Hello from enum!")),
             TargetEnum::Optionu8(1),
