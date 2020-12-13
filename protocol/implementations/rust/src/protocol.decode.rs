@@ -12,13 +12,55 @@ pub trait StructDecode {
 
 }
 
-pub trait EnumDecode<T> {
+pub trait EnumDecode {
 
-    fn extract(buf: Vec<u8>) -> Result<T, String>;
+    fn extract(buf: Vec<u8>) -> Result<Self, String> where Self: std::marker::Sized;
 
+}
+
+pub trait DecodeEnum<T> {
+
+    fn decode(storage: &mut Storage, id: u16) -> Result<T, String>;
+
+}
+
+impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
     fn decode(storage: &mut Storage, id: u16) -> Result<T, String> {
         if let Some(buf) = storage.get(id) {
             Self::extract(buf.clone())
+        } else {
+            Err(format!("Buffer for property {} isn't found", id))
+        }
+    }
+}
+
+impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
+    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<T>, String> {
+        if let Some(buf) = storage.get(id) {
+            let mut res: Vec<T> = vec!();
+            let mut buffer = vec![0; buf.len()];
+            buffer.copy_from_slice(&buf[0..buf.len()]);
+            loop {
+                if buffer.is_empty() {
+                    break;
+                }
+                let mut cursor: Cursor<&[u8]> = Cursor::new(&buffer);
+                if buffer.len() < sizes::U64_LEN {
+                    return Err(format!("To extract length of string (u64) value from array buffer should have length at least {} bytes, but length is {}", sizes::U64_LEN, buf.len()));
+                }
+                let item_len: u64 = cursor.get_u64_le();
+                if buffer.len() < sizes::U64_LEN + item_len as usize {
+                    return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U64_LEN)));
+                }
+                let mut item_buf = vec![0; item_len as usize];
+                item_buf.copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer.drain((sizes::U64_LEN + item_len as usize)..).collect();
+                match T::extract(item_buf) {
+                    Ok(i) => res.push(i),
+                    Err(e) => { return Err(e); },
+                }
+            }
+            Ok(res)
         } else {
             Err(format!("Buffer for property {} isn't found", id))
         }

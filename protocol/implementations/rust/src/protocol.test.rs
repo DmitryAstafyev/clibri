@@ -4,8 +4,8 @@ use super::*;
 #[cfg(test)]
 mod tests { 
     use super::*;
-    use encode::{ StructEncode, EnumEncode, Encode };
-    use decode::{ StructDecode, EnumDecode, Decode };
+    use encode::{ StructEncode, EnumEncode, Encode, EncodeEnum, get_empty_buffer_val };
+    use decode::{ StructDecode, EnumDecode, Decode, DecodeEnum };
     use storage::{ Storage };
     use std::io::Cursor;
     use bytes::{ Buf };
@@ -76,7 +76,7 @@ mod tests {
 
     }
 
-    impl EnumDecode<TargetEnum> for TargetEnum {
+    impl EnumDecode for TargetEnum {
 
         fn extract(buf: Vec<u8>) -> Result<TargetEnum, String> {
             if buf.len() <= sizes::U16_LEN {
@@ -280,6 +280,10 @@ mod tests {
         pub prop_nested: Nested,
         pub prop_nested_vec: Vec<Nested>,
         pub prop_enum: TargetEnum,
+        pub prop_optional_strct: Option<Nested>,
+        pub prop_optional_enum: Option<TargetEnum>,
+        pub prop_enum_vec: Vec<TargetEnum>,
+        pub prop_optional_enum_vec: Option<Vec<TargetEnum>>,
     }
 
     impl StructDecode for Target {
@@ -313,6 +317,10 @@ mod tests {
                 prop_nested: Nested::defaults(),
                 prop_nested_vec: vec![],
                 prop_enum: TargetEnum::Defaults,
+                prop_optional_strct: None,
+                prop_optional_enum: None,
+                prop_enum_vec: vec![],
+                prop_optional_enum_vec: None,
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -388,7 +396,6 @@ mod tests {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-
             self.prop_string = match String::decode(&mut storage, 19) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -417,6 +424,38 @@ mod tests {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
+            self.prop_optional_strct = match Option::<Nested>::decode(&mut storage, 26) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            if let Some(buf) = storage.get(27) {
+                if buf.is_empty() {
+                    self.prop_optional_enum = None;
+                } else {
+                    self.prop_optional_enum = match TargetEnum::decode(&mut storage, 27) {
+                        Ok(val) => Some(val),
+                        Err(e) => { return Err(e) },
+                    };
+                }
+            } else {
+                return Err("Buffer for property prop_optional_enum isn\'t found".to_string())
+            }
+            self.prop_enum_vec = match Vec::<TargetEnum>::decode(&mut storage, 28) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            if let Some(buf) = storage.get(29) {
+                if buf.is_empty() {
+                    self.prop_optional_enum_vec = None;
+                } else {
+                    self.prop_optional_enum_vec = match Vec::<TargetEnum>::decode(&mut storage, 29) {
+                        Ok(val) => Some(val),
+                        Err(e) => { return Err(e) },
+                    };
+                }
+            } else {
+                return Err("Buffer for property prop_optional_enum_vec isn\'t found".to_string())
+            }
             Ok(())
         }
     }
@@ -529,6 +568,36 @@ mod tests {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
+            match self.prop_optional_strct.encode(26) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
+            if let Some(mut val) = self.prop_optional_enum.clone() {
+                match val.encode(27) {
+                    Ok(mut buf) => { buffer.append(&mut buf); },
+                    Err(e) => { return  Err(e); }
+                };
+            } else {
+                match get_empty_buffer_val(27) {
+                    Ok(mut buf) => { buffer.append(&mut buf); },
+                    Err(e) => { return  Err(e); }
+                };
+            }
+            match self.prop_enum_vec.encode(28) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); }
+            };
+            if let Some(mut val) = self.prop_optional_enum_vec.clone() {
+                match val.encode(29) {
+                    Ok(mut buf) => { buffer.append(&mut buf); },
+                    Err(e) => { return  Err(e); }
+                };
+            } else {
+                match get_empty_buffer_val(29) {
+                    Ok(mut buf) => { buffer.append(&mut buf); },
+                    Err(e) => { return  Err(e); }
+                };
+            }
             Ok(buffer)
         }
 
@@ -582,6 +651,14 @@ mod tests {
                 },
             ],
             prop_enum: TargetEnum::OptionString(String::from("Hello, from Enum (666)!")),
+            prop_optional_strct: Some(Nested {
+                field_u16: 555,
+                field_utf8_string: String::from("Hello, from Nested (555)!"),
+                field_optional: Some(100),
+            }),
+            prop_optional_enum: Some(TargetEnum::OptionString(String::from("Hello, from Enum (666)!"))),
+            prop_enum_vec: vec![TargetEnum::OptionString(String::from("Hello, from Enum (666)!"))],
+            prop_optional_enum_vec: Some(vec![TargetEnum::OptionString(String::from("Hello, from Enum (666)!"))])
         };
         let buf = match StructEncode::abduct(&mut a) {
             Ok(buf) => buf,
@@ -635,6 +712,8 @@ mod tests {
         assert_eq!(a.prop_nested.field_optional, b.prop_nested.field_optional);
         assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
         assert_eq!(a.prop_enum, b.prop_enum);
+        assert_eq!(a.prop_optional_strct, b.prop_optional_strct);
+        assert_eq!(a.prop_optional_enum, b.prop_optional_enum);
         let enums: Vec<TargetEnum> = vec![
             TargetEnum::OptionString(String::from("Hello from enum!")),
             TargetEnum::Optionu8(1),

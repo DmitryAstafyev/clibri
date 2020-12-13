@@ -27,6 +27,10 @@ fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>,
     Ok(buffer)
 }
 
+pub fn get_empty_buffer_val(id: u16) -> Result<Vec<u8>, String> {
+    get_value_buffer(id, ESize::U8(0), vec!())
+}
+
 pub trait StructEncode {
 
     fn get_id(&self) -> u32;
@@ -37,13 +41,37 @@ pub trait StructEncode {
 pub trait EnumEncode {
     
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
+
+}
+
+pub trait EncodeEnum {
+
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String>;
+
+}
+
+impl<T> EncodeEnum for T where T: EnumEncode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
             Err(e) => Err(e)
         }
     }
+}
 
+impl<T> EncodeEnum for Vec<T> where T: EnumEncode {
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        for val in self.iter_mut() {
+            let val_as_bytes = match val.abduct() {
+                Ok(buf) => buf,
+                Err(e) => { return Err(e); }
+            };
+            buffer.append(&mut (val_as_bytes.len() as u64).to_le_bytes().to_vec());
+            buffer.append(&mut val_as_bytes.to_vec());
+        }
+        get_value_buffer(id, ESize::U64(buffer.len() as u64), buffer.to_vec())
+    }
 }
 
 pub trait Encode {
@@ -291,7 +319,7 @@ impl<T> Encode for Option<T> where T: Encode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
         match self {
             Some(v) => v.encode(id),
-            None => get_value_buffer(id, ESize::U8(0), vec!()),
+            None => get_empty_buffer_val(id),
         }
     }
 }
