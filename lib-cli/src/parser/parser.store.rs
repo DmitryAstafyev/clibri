@@ -106,9 +106,10 @@ impl Store {
             self.c_field = Some(Field::new(self.sequence, 0, type_str.to_string()));
         } else {
             let mut c_field = Field::new(self.sequence, 0, type_str.to_string());
-            if let Some(enum_ref) = self.enums.iter().find(|i| i.name == type_str) {
+            let group_id = if let Some(group) = self.c_group.clone() { group.id } else { 0 };
+            if let Some(enum_ref) = self.enums.iter().find(|i| i.name == type_str && i.parent == group_id) {
                 c_field.set_type_ref(EReferenceToType::Enum, enum_ref.id);
-            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str) {
+            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str && i.parent == group_id) {
                 c_field.set_type_ref(EReferenceToType::Struct, struct_ref.id);
             } else {
                 panic!("Expecting type definition but has been gotten value {}", type_str)
@@ -166,9 +167,10 @@ impl Store {
 
     pub fn set_enum_type(&mut self, type_str: &str) {
         if let Some(mut c_enum) = self.c_enum.take() {
+            let group_id = if let Some(group) = self.c_group.clone() { group.id } else { 0 };
             if let Some(types) = PrimitiveTypes::get_entity(type_str) {
                 c_enum.set_type(types);
-            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str) {
+            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str && i.parent == group_id) {
                 c_enum.set_type_ref(struct_ref.id);
             } else {
                 panic!("Expecting type definition but has been gotten value {}", type_str)
@@ -241,10 +243,8 @@ impl Store {
     }
 
     fn get_group_id(&mut self) -> usize {
-        if let Some(c_group) = self.c_group.take() {
-            let id = c_group.id;
-            self.c_group = Some(c_group);
-            id
+        if let Some(c_group) = self.c_group.clone() {
+            c_group.id
         } else {
             0
         }

@@ -1,80 +1,159 @@
-struct StructName {
-    u8 age;
-    str name;
+enum EnumExampleA {
+    Option_a;
+    Option_b;
 }
-struct OptionA {
-    str option_a_field_a;
-    str option_a_field_b;
+
+enum EnumExampleB {
+    str Option_str;
+    u8 Option_u8;
+    u16 Option_u16;
+    u32 Option_u32;
+    u64 Option_u64;
+    i8 Option_i8;
+    i16 Option_i16;
+    i32 Option_i32;
+    i64 Option_i64;
+    f32 Option_f32;
+    f64 Option_f64;
 }
-struct OptionB {
-    str option_b_field_a;
-    str option_b_field_b;
+
+enum EnumExampleC {
+    str[] Option_str;
+    u8[] Option_u8;
+    u16[] Option_u16;
+    u32[] Option_u32;
+    u64[] Option_u64;
+    i8[] Option_i8;
+    i16[] Option_i16;
+    i32[] Option_i32;
+    i64[] Option_i64;
+    f32[] Option_f32;
+    f64[] Option_f64;
 }
-enum EnumWithSctructs {
-    OptionA a;
-    OptionB b;
+
+struct StructExampleA {
+    str field_str;
+    u8 field_u8;
+    u16 field_u16;
+    u32 field_u32;
+    u64 field_u64;
+    i8 field_i8;
+    i16 field_i16;
+    i32 field_i32;
+    i64 field_i64;
+    f32 field_f32;
+    f64 field_f64;
+    bool field_bool;
 }
-enum SyntaxSugarEnum {
-    VariantA;
-    VariantB;
-    VariantC;
+
+struct StructExampleB {
+    str[] field_str;
+    u8[] field_u8;
+    u16[] field_u16;
+    u32[] field_u32;
+    u64[] field_u64;
+    i8[] field_i8;
+    i16[] field_i16;
+    i32[] field_i32;
+    i64[] field_i64;
+    f32[] field_f32;
+    f64[] field_f64;
+    bool[] field_bool;
 }
-enum UserType {
-    u8[] PointA;
-    str PointB;
-    u16 PointC;
+
+struct StructExampleC {
+    str field_str?;
+    u8 field_u8?;
+    u16 field_u16?;
+    u32 field_u32?;
+    u64 field_u64?;
+    i8 field_i8?;
+    i16 field_i16?;
+    i32 field_i32?;
+    i64 field_i64?;
+    f32 field_f32?;
+    f64 field_f64?;
+    bool field_bool?;
 }
-struct User {
-    str[] username;
-    str email?;
-    UserType usertype;
-    StructName info;
+
+struct StructExampleD {
+    str[] field_str?;
+    u8[] field_u8?;
+    u16[] field_u16?;
+    u32[] field_u32?;
+    u64[] field_u64?;
+    i8[] field_i8?;
+    i16[] field_i16?;
+    i32[] field_i32?;
+    i64[] field_i64?;
+    f32[] field_f32?;
+    f64[] field_f64?;
+    bool[] field_bool?;
 }
-struct Login {
-    User[] users;
+
+struct StructExampleE {
+    EnumExampleA field_a;
+    EnumExampleB field_b;
+    EnumExampleC field_c;
 }
+
+struct StructExampleF {
+    EnumExampleA field_a?;
+    EnumExampleB field_b?;
+    EnumExampleC field_c?;
+}
+
+struct StructExampleG {
+    StructExampleA field_a;
+    StructExampleB field_b;
+}
+
+struct StructExampleJ {
+    StructExampleA field_a?;
+    StructExampleB field_b?;
+}
+
 group GroupA {
-    struct UserA {
-        str[] username;
-        str email?;
-        UserType usertype;
+    
+    enum EnumExampleA {
+        Option_a;
+        Option_b;
     }
-    struct LoginA {
-        User[] users;
+
+    struct StructExampleA {
+        u8 field_u8;
+        u16 field_u16;
+        EnumExampleA opt;
     }
-    enum UserTypeTest {
-        u8 PointA;
-        u8 PointB;
-        u8 PointC;
+
+    struct StructExampleB {
+        u8 field_u8;
+        u16 field_u16;
+        StructExampleA strct;
     }
+
 }
+
 group GroupB {
-    struct UserA {
-        str[] username;
-        str email?;
-        UserType usertype;
+
+    struct StructExampleA {
+        u8 field_u8;
+        u16 field_u16;
     }
-    struct LoginA {
-        User[] users;
-    }
-    enum UserTypeTest {
-        u8 PointA;
-        u8 PointB;
-        u8 PointC;
-    }
+
     group GroupC {
-        struct UserA {
-            str[] username;
-            str email?;
-            UserType usertype;
+
+        struct StructExampleA {
+            u8 field_u8;
+            u16 field_u16;
         }
-        struct LoginA {
-            User[] users;
+
+        struct StructExampleB {
+            u8 field_u8;
+            u16 field_u16;
+            StructExampleA strct;
         }
-        enum UserTypeTest {
-            u8 PointA;
-            u8 PointB;
-            u8 PointC;
-        }
+
     }
+
 }

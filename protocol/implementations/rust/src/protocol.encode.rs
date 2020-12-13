@@ -256,6 +256,22 @@ impl Encode for Vec<String> {
     }
 }
 
+impl Encode for Vec<bool> {
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+        let len = self.len() * sizes::U8_LEN;
+        let mut buffer: Vec<u8> = vec!();
+        for val in self.iter() {
+            let byte: u8 = if val.clone() {
+                1
+            } else {
+                0
+            };
+            buffer.append(&mut byte.to_le_bytes().to_vec());
+        }
+        get_value_buffer(id, ESize::U64(len as u64), buffer.to_vec())
+    }
+}
+
 impl<T> Encode for Vec<T> where T: StructEncode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();

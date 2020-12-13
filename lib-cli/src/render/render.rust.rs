@@ -369,8 +369,8 @@ impl RustRender {
             "u16" => Some("0"),
             "u32" => Some("0"),
             "u64" => Some("0"),
-            "f32" => Some("0"),
-            "f64" => Some("0"),
+            "f32" => Some("0.0"),
+            "f64" => Some("0.0"),
             "str" => Some("String::from(\"\")"),
             _ => None,
         }
@@ -378,22 +378,22 @@ impl RustRender {
 
     fn get_decode_type_ref(&self, field: &Field, store: &mut Store) -> String {
         let mut type_str = self.get_type_ref(field, &mut store.clone());
-        if field.optional {
-            type_str = format!("Option::<{}>", type_str);
-        }
         if field.repeated {
             type_str = format!("Vec::<{}>", type_str);
+        }
+        if field.optional {
+            type_str = format!("Option::<{}>", type_str);
         }
         type_str
     }
 
     fn get_declare_type_ref(&self, field: &Field, store: &mut Store) -> String {
         let mut type_str = self.get_type_ref(field, &mut store.clone());
-        if field.optional {
-            type_str = format!("Option<{}>", type_str);
-        }
         if field.repeated {
             type_str = format!("Vec<{}>", type_str);
+        }
+        if field.optional {
+            type_str = format!("Option<{}>", type_str);
         }
         type_str
     }

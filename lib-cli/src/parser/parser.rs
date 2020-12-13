@@ -1,12 +1,12 @@
-use std::path::{ PathBuf };
+use entities::Entities;
+use enums::Enum;
+use fields::{EReferenceToType, Field};
+use groups::Group;
 use std::fs;
-use types::{ PrimitiveTypes };
-use entities::{ Entities };
-use fields::{ Field, EReferenceToType };
-use enums::{ Enum };
-use structs::{ Struct };
-use store::{ Store };
-use groups::{ Group };
+use std::path::PathBuf;
+use store::Store;
+use structs::Struct;
+use types::PrimitiveTypes;
 
 #[path = "./parser.types.rs"]
 pub mod types;
@@ -75,9 +75,11 @@ pub struct Parser {
 
 #[allow(dead_code)]
 impl Parser {
-
     pub fn new(src: PathBuf) -> Parser {
-        Parser { _src: src, _prev: None }
+        Parser {
+            _src: src,
+            _prev: None,
+        }
     }
 
     pub fn parse(&mut self) -> Result<Store, Vec<String>> {
@@ -89,7 +91,11 @@ impl Parser {
             Err(e) => return Err(vec![e]),
         };
         let mut errs: Vec<String> = vec![];
-        let mut expectation: Vec<EExpectation> = vec![EExpectation::StructDef];
+        let mut expectation: Vec<EExpectation> = vec![
+            EExpectation::StructDef,
+            EExpectation::GroupDef,
+            EExpectation::EnumDef,
+        ];
         let mut store: Store = Store::new();
         loop {
             match self.next(content.clone()) {
@@ -98,32 +104,44 @@ impl Parser {
                     let offset: usize = match enext {
                         ENext::Word((word, offset, next_char)) => {
                             let next_char: char = if let Some(c) = next_char { c } else { '.' };
-                            if Entities::get_entity(&word).is_some() && 
-                               (is_in(&expectation, &EExpectation::GroupDef) ||is_in(&expectation, &EExpectation::StructDef) || is_in(&expectation, &EExpectation::EnumDef)) {                                    
+                            if Entities::get_entity(&word).is_some()
+                                && (is_in(&expectation, &EExpectation::GroupDef)
+                                    || is_in(&expectation, &EExpectation::StructDef)
+                                    || is_in(&expectation, &EExpectation::EnumDef))
+                            {
                                 match Entities::get_entity(&word) {
                                     Some(Entities::EEntities::EGroup) => {
                                         if is_in(&expectation, &EExpectation::GroupDef) {
                                             expectation = vec![EExpectation::GroupName];
                                         } else {
-                                            panic!("Has been gotten Group Def, but expections is {:?}", expectation);
+                                            panic!(
+                                                "Has been gotten Group Def, but expections is {:?}",
+                                                expectation
+                                            );
                                         }
-                                    },
+                                    }
                                     Some(Entities::EEntities::EStruct) => {
                                         if is_in(&expectation, &EExpectation::StructDef) {
                                             expectation = vec![EExpectation::StructName];
                                         } else {
                                             panic!("Has been gotten Struct Def, but expections is {:?}", expectation);
                                         }
-                                    },
+                                    }
                                     Some(Entities::EEntities::EEnum) => {
                                         if is_in(&expectation, &EExpectation::EnumDef) {
                                             expectation = vec![EExpectation::EnumName];
                                         } else {
-                                            panic!("Has been gotten Enum Def, but expections is {:?}", expectation);
+                                            panic!(
+                                                "Has been gotten Enum Def, but expections is {:?}",
+                                                expectation
+                                            );
                                         }
-                                    },
+                                    }
                                     None => {
-                                        panic!("Has been gotten unkonwn definition {:?}", Entities::get_entity(&word));
+                                        panic!(
+                                            "Has been gotten unkonwn definition {:?}",
+                                            Entities::get_entity(&word)
+                                        );
                                     }
                                 };
                                 if is_in(&expectation, &EExpectation::StructDef) {
@@ -132,7 +150,7 @@ impl Parser {
                                     expectation = vec![EExpectation::EnumName];
                                 } else if is_in(&expectation, &EExpectation::GroupDef) {
                                     expectation = vec![EExpectation::GroupName];
-                                } 
+                                }
                             } else if is_in(&expectation, &EExpectation::StructName) {
                                 store.open_struct(word.to_string());
                                 expectation = vec![EExpectation::EntityOpen];
@@ -145,9 +163,7 @@ impl Parser {
                             } else if is_in(&expectation, &EExpectation::FieldName) {
                                 if store.is_enum_opened() {
                                     store.set_enum_name(&word);
-                                    expectation = vec![
-                                        EExpectation::Semicolon,
-                                    ];
+                                    expectation = vec![EExpectation::Semicolon];
                                 } else {
                                     store.set_field_name(&word);
                                     expectation = vec![
@@ -162,7 +178,10 @@ impl Parser {
                                         expectation = vec![EExpectation::Semicolon];
                                     } else {
                                         store.set_enum_type(&word);
-                                        expectation = vec![EExpectation::FieldName, EExpectation::FieldRepeatedMark];
+                                        expectation = vec![
+                                            EExpectation::FieldName,
+                                            EExpectation::FieldRepeatedMark,
+                                        ];
                                     }
                                 } else {
                                     store.set_field_type(&word);
@@ -172,14 +191,20 @@ impl Parser {
                                     ];
                                 }
                             } else {
-                                errs.push(format!("Unexpecting next step: {:?}. Value {}", expectation, word));
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value {}",
+                                    expectation, word
+                                ));
                                 break;
                             }
                             offset
-                        },
+                        }
                         ENext::OpenStruct(offset) => {
                             if !is_in(&expectation, &EExpectation::EntityOpen) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: OpenStruct", expectation));
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value: OpenStruct",
+                                    expectation
+                                ));
                                 break;
                             }
                             expectation = vec![
@@ -191,10 +216,13 @@ impl Parser {
                             ];
                             store.open();
                             offset
-                        },
+                        }
                         ENext::CloseStruct(offset) => {
                             if !is_in(&expectation, &EExpectation::EntityClose) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: CloseStruct", expectation));
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value: CloseStruct",
+                                    expectation
+                                ));
                                 break;
                             }
                             expectation = vec![
@@ -202,14 +230,17 @@ impl Parser {
                                 EExpectation::GroupDef,
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef,
-                                EExpectation::EntityClose
+                                EExpectation::EntityClose,
                             ];
                             store.close();
                             offset
-                        },
+                        }
                         ENext::Semicolon(offset) => {
                             if !is_in(&expectation, &EExpectation::Semicolon) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: Semicolon", expectation));
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value: Semicolon",
+                                    expectation
+                                ));
                                 break;
                             }
                             if !store.is_enum_opened() {
@@ -220,45 +251,52 @@ impl Parser {
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef,
                                 EExpectation::EnumValue,
-                                EExpectation::EntityClose
+                                EExpectation::EntityClose,
                             ];
                             offset
-                        },
-                        ENext::Space(offset) => {
-                            offset
-                        },
+                        }
+                        ENext::Space(offset) => offset,
                         ENext::Repeated(offset) => {
                             if !is_in(&expectation, &EExpectation::FieldRepeatedMark) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: FieldRepeatedMark", expectation));
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value: FieldRepeatedMark",
+                                    expectation
+                                ));
                                 break;
                             }
                             expectation = vec![EExpectation::FieldName];
                             store.set_field_type_as_repeated();
                             offset
-                        },
+                        }
                         ENext::Optional(offset) => {
                             if !is_in(&expectation, &EExpectation::FieldOptionalMark) {
-                                errs.push(format!("Unexpecting next step: {:?}. Value: FieldOptionalMark", expectation));
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value: FieldOptionalMark",
+                                    expectation
+                                ));
                                 break;
                             }
                             expectation = vec![EExpectation::Semicolon];
                             store.set_field_type_as_optional();
                             offset
-                        },
+                        }
                         ENext::End() => {
                             break;
-                        },
+                        }
                     };
                     content = String::from(&content[offset..]);
-                },
+                }
                 Err(e) => {
                     match e {
                         ENextErr::NotAscii(msg) => errs.push(format!("ASCII error: {}", msg)),
-                        ENextErr::NotSupported(msg) => errs.push(format!("Not supported char(s) error: {}", msg)),
-                        ENextErr::NumericFirst() => errs.push("Numeric symbols cannot be used as first in names.".to_string()),
+                        ENextErr::NotSupported(msg) => {
+                            errs.push(format!("Not supported char(s) error: {}", msg))
+                        }
+                        ENextErr::NumericFirst() => errs
+                            .push("Numeric symbols cannot be used as first in names.".to_string()),
                     };
                     return Err(errs);
-                },
+                }
             }
         }
         if errs.is_empty() {
@@ -280,7 +318,10 @@ impl Parser {
         for char in content.chars() {
             pass += 1;
             if !char.is_ascii() {
-                return Err(ENextErr::NotAscii(format!("found not ascii char: {}", char)))
+                return Err(ENextErr::NotAscii(format!(
+                    "found not ascii char: {}",
+                    char
+                )));
             }
             if char.is_ascii_digit() && str.is_empty() {
                 return Err(ENextErr::NumericFirst());
@@ -288,7 +329,7 @@ impl Parser {
             if char.is_ascii_whitespace() && str.is_empty() {
                 continue;
             }
-            let mut breakable: Option<char> = None; 
+            let mut breakable: Option<char> = None;
             if break_chars.iter().any(|&c| c == char) {
                 breakable = Some(char);
             }
@@ -310,15 +351,18 @@ impl Parser {
                         } else {
                             continue;
                         }
-                    },
+                    }
                     ']' => {
                         if let Some(c) = str.chars().next() {
                             if c != '[' {
-                                return Err(ENextErr::NotSupported(format!("found not supportable char: {}", char)))
+                                return Err(ENextErr::NotSupported(format!(
+                                    "found not supportable char: {}",
+                                    char
+                                )));
                             }
                         }
                         return Ok(ENext::Repeated(pass));
-                    },
+                    }
                     _ => {}
                 };
             }
@@ -327,7 +371,10 @@ impl Parser {
             }
             let allowed: bool = allowed_chars.iter().any(|&c| c == char);
             if !char.is_ascii_alphanumeric() && !allowed {
-                return Err(ENextErr::NotSupported(format!("found not supportable char: {}", char)))
+                return Err(ENextErr::NotSupported(format!(
+                    "found not supportable char: {}",
+                    char
+                )));
             }
             str.push(char);
         }
@@ -340,13 +387,15 @@ impl Parser {
 
     pub fn get_content(&self, target: PathBuf) -> Result<String, String> {
         if !target.exists() {
-            Err(format!("File {} doesn't exists", target.as_path().display().to_string()))
+            Err(format!(
+                "File {} doesn't exists",
+                target.as_path().display().to_string()
+            ))
         } else {
             match fs::read_to_string(target.as_path()) {
                 Ok(content) => Ok(content),
-                Err(e) => Err(e.to_string())
+                Err(e) => Err(e.to_string()),
             }
         }
     }
-
 }

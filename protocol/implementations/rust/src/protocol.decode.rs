@@ -427,6 +427,24 @@ impl Decode<Vec<f64>> for Vec<f64> {
     }
 }
 
+impl Decode<Vec<bool>> for Vec<bool> {
+    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<bool>, String> {
+        if let Some(buf) = storage.get(id) {
+            let mut res: Vec<bool> = vec!();
+            let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
+            loop {
+                if cursor.position() == buf.len() as u64 {
+                    break;
+                }
+                res.push(cursor.get_u8() != 0);
+            }
+            Ok(res)
+        } else {
+            Err(format!("Buffer for property {} isn't found", id))
+        }
+    }
+}
+
 impl Decode<Vec<String>> for Vec<String> {
     fn decode(storage: &mut Storage, id: u16) -> Result<Vec<String>, String> {
         if let Some(buf) = storage.get(id) {

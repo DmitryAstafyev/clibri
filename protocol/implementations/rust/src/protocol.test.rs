@@ -277,9 +277,9 @@ mod tests {
         pub prop_f32: f32,
         pub prop_f64: f64,
         pub prop_utf8_string_vec: Vec<String>,
-        prop_nested: Nested,
-        prop_nested_vec: Vec<Nested>,
-        prop_enum: TargetEnum,
+        pub prop_nested: Nested,
+        pub prop_nested_vec: Vec<Nested>,
+        pub prop_enum: TargetEnum,
     }
 
     impl StructDecode for Target {
