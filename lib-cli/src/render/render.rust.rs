@@ -109,6 +109,25 @@ impl RustRender {
             self.spaces(level + 1)
         );
         for field in &strct.fields {
+            if field.optional {
+                if let Some(id) = field.ref_type_id {
+                    if let Some(enums) = store.get_enum(id) {
+                        body = format!("{}{}if let Some(buf) = storage.get({}) {{\n", body, self.spaces(level + 2), field.id);
+                        body = format!("{}{}if buf.is_empty() {{\n", body, self.spaces(level + 3));
+                        body = format!("{}{}self.{} = None;\n", body, self.spaces(level + 4), field.name);
+                        body = format!("{}{}}} else {{\n", body, self.spaces(level + 3));
+                        body = format!("{}{}self.{} = match {}::decode(&mut storage, {}) {{\n", body, self.spaces(level + 4), field.name, enums.name, field.id);
+                        body = format!("{}{}Ok(val) => Some(val),\n", body, self.spaces(level + 5));
+                        body = format!("{}{}Err(e) => {{ return Err(e) }},\n", body, self.spaces(level + 5));
+                        body = format!("{}{}}};\n", body, self.spaces(level + 4));
+                        body = format!("{}{}}}\n", body, self.spaces(level + 3));
+                        body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
+                        body = format!("{}{}return Err(\"Buffer for property {} isn't found\".to_string());\n", body, self.spaces(level + 3), field.name);
+                        body = format!("{}{}}}\n", body, self.spaces(level + 2));
+                        continue;
+                    }
+                }
+            }
             body = format!(
                 "{}{}self.{} = match {}::decode(&mut storage, {}) {{\n",
                 body,
@@ -148,6 +167,24 @@ impl RustRender {
             self.spaces(level + 2)
         );
         for field in &strct.fields {
+            if field.optional {
+                if let Some(id) = field.ref_type_id {
+                    if store.get_enum(id).is_some() {
+                        body = format!("{}{}if let Some(mut val) = self.{}.clone() {{\n", body, self.spaces(level + 2), field.name);
+                        body = format!("{}{}match val.encode({}) {{\n", body, self.spaces(level + 3), field.id);
+                        body = format!("{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n", body, self.spaces(level + 4));
+                        body = format!("{}{}Err(e) => {{ return  Err(e); }},\n", body, self.spaces(level + 4));
+                        body = format!("{}{}}};\n", body, self.spaces(level + 3));
+                        body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
+                        body = format!("{}{}match get_empty_buffer_val({}) {{\n", body, self.spaces(level + 3), field.id);
+                        body = format!("{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n", body, self.spaces(level + 4));
+                        body = format!("{}{}Err(e) => {{ return  Err(e); }},\n", body, self.spaces(level + 4));
+                        body = format!("{}{}}};\n", body, self.spaces(level + 3));
+                        body = format!("{}{}}}\n", body, self.spaces(level + 2));
+                        continue;
+                    }
+                }
+            }
             body = format!(
                 "{}{}match self.{}.encode({}) {{\n",
                 body,
@@ -192,10 +229,9 @@ impl RustRender {
         body = format!("{}{}Defaults,\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
         body = format!(
-            "{}{}impl EnumDecode<{}> for {} {{\n",
+            "{}{}impl EnumDecode for {} {{\n",
             body,
             self.spaces(level),
-            enums.name,
             enums.name
         );
         body = format!(

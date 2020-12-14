@@ -38,13 +38,55 @@ pub trait StructDecode {
 
 }
 
-pub trait EnumDecode<T> {
+pub trait EnumDecode {
 
-    fn extract(buf: Vec<u8>) -> Result<T, String>;
+    fn extract(buf: Vec<u8>) -> Result<Self, String> where Self: std::marker::Sized;
 
+}
+
+pub trait DecodeEnum<T> {
+
+    fn decode(storage: &mut Storage, id: u16) -> Result<T, String>;
+
+}
+
+impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
     fn decode(storage: &mut Storage, id: u16) -> Result<T, String> {
         if let Some(buf) = storage.get(id) {
             Self::extract(buf.clone())
+        } else {
+            Err(format!("Buffer for property {} isn't found", id))
+        }
+    }
+}
+
+impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
+    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<T>, String> {
+        if let Some(buf) = storage.get(id) {
+            let mut res: Vec<T> = vec!();
+            let mut buffer = vec![0; buf.len()];
+            buffer.copy_from_slice(&buf[0..buf.len()]);
+            loop {
+                if buffer.is_empty() {
+                    break;
+                }
+                let mut cursor: Cursor<&[u8]> = Cursor::new(&buffer);
+                if buffer.len() < sizes::U64_LEN {
+                    return Err(format!("To extract length of string (u64) value from array buffer should have length at least {} bytes, but length is {}", sizes::U64_LEN, buf.len()));
+                }
+                let item_len: u64 = cursor.get_u64_le();
+                if buffer.len() < sizes::U64_LEN + item_len as usize {
+                    return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U64_LEN)));
+                }
+                let mut item_buf = vec![0; item_len as usize];
+                item_buf.copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer.drain((sizes::U64_LEN + item_len as usize)..).collect();
+                match T::extract(item_buf) {
+                    Ok(i) => res.push(i),
+                    Err(e) => { return Err(e); },
+                }
+            }
+            Ok(res)
         } else {
             Err(format!("Buffer for property {} isn't found", id))
         }
@@ -584,6 +626,10 @@ fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>,
     Ok(buffer)
 }
 
+pub fn get_empty_buffer_val(id: u16) -> Result<Vec<u8>, String> {
+    get_value_buffer(id, ESize::U8(0), vec!())
+}
+
 pub trait StructEncode {
 
     fn get_id(&self) -> u32;
@@ -594,13 +640,37 @@ pub trait StructEncode {
 pub trait EnumEncode {
     
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
+
+}
+
+pub trait EncodeEnum {
+
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String>;
+
+}
+
+impl<T> EncodeEnum for T where T: EnumEncode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
             Err(e) => Err(e)
         }
     }
+}
 
+impl<T> EncodeEnum for Vec<T> where T: EnumEncode {
+    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        for val in self.iter_mut() {
+            let val_as_bytes = match val.abduct() {
+                Ok(buf) => buf,
+                Err(e) => { return Err(e); }
+            };
+            buffer.append(&mut (val_as_bytes.len() as u64).to_le_bytes().to_vec());
+            buffer.append(&mut val_as_bytes.to_vec());
+        }
+        get_value_buffer(id, ESize::U64(buffer.len() as u64), buffer.to_vec())
+    }
 }
 
 pub trait Encode {
@@ -848,7 +918,7 @@ impl<T> Encode for Option<T> where T: Encode {
     fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
         match self {
             Some(v) => v.encode(id),
-            None => get_value_buffer(id, ESize::U8(0), vec!()),
+            None => get_empty_buffer_val(id),
         }
     }
 }
@@ -971,7 +1041,7 @@ pub enum EnumExampleA {
     Option_b(String),
     Defaults,
 }
-impl EnumDecode<EnumExampleA> for EnumExampleA {
+impl EnumDecode for EnumExampleA {
     fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
@@ -1023,7 +1093,7 @@ pub enum EnumExampleB {
     Option_f64(f64),
     Defaults,
 }
-impl EnumDecode<EnumExampleB> for EnumExampleB {
+impl EnumDecode for EnumExampleB {
     fn extract(buf: Vec<u8>) -> Result<EnumExampleB, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleB because buffer too small"));
@@ -1120,7 +1190,7 @@ pub enum EnumExampleC {
     Option_f64(Vec<f64>),
     Defaults,
 }
-impl EnumDecode<EnumExampleC> for EnumExampleC {
+impl EnumDecode for EnumExampleC {
     fn extract(buf: Vec<u8>) -> Result<EnumExampleC, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleC because buffer too small"));
@@ -1855,18 +1925,42 @@ impl StructDecode for StructExampleF {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match Option::<EnumExampleA>::decode(&mut storage, 61) {
-            Ok(val) => val,
-            Err(e) => { return Err(e) },
-        };
-        self.field_b = match Option::<EnumExampleB>::decode(&mut storage, 62) {
-            Ok(val) => val,
-            Err(e) => { return Err(e) },
-        };
-        self.field_c = match Option::<EnumExampleC>::decode(&mut storage, 63) {
-            Ok(val) => val,
-            Err(e) => { return Err(e) },
-        };
+        if let Some(buf) = storage.get(61) {
+            if buf.is_empty() {
+                self.field_a = None;
+            } else {
+                self.field_a = match EnumExampleA::decode(&mut storage, 61) {
+                    Ok(val) => Some(val),
+                    Err(e) => { return Err(e) },
+                };
+            }
+        } else {
+            return Err("Buffer for property field_a isn't found".to_string());
+        }
+        if let Some(buf) = storage.get(62) {
+            if buf.is_empty() {
+                self.field_b = None;
+            } else {
+                self.field_b = match EnumExampleB::decode(&mut storage, 62) {
+                    Ok(val) => Some(val),
+                    Err(e) => { return Err(e) },
+                };
+            }
+        } else {
+            return Err("Buffer for property field_b isn't found".to_string());
+        }
+        if let Some(buf) = storage.get(63) {
+            if buf.is_empty() {
+                self.field_c = None;
+            } else {
+                self.field_c = match EnumExampleC::decode(&mut storage, 63) {
+                    Ok(val) => Some(val),
+                    Err(e) => { return Err(e) },
+                };
+            }
+        } else {
+            return Err("Buffer for property field_c isn't found".to_string());
+        }
         Ok(())
     }
 }
@@ -1876,18 +1970,39 @@ impl StructEncode for StructExampleF {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.encode(61) {
-            Ok(mut buf) => { buffer.append(&mut buf); }
-            Err(e) => { return Err(e) },
-        };
-        match self.field_b.encode(62) {
-            Ok(mut buf) => { buffer.append(&mut buf); }
-            Err(e) => { return Err(e) },
-        };
-        match self.field_c.encode(63) {
-            Ok(mut buf) => { buffer.append(&mut buf); }
-            Err(e) => { return Err(e) },
-        };
+        if let Some(mut val) = self.field_a.clone() {
+            match val.encode(61) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        } else {
+            match get_empty_buffer_val(61) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        }
+        if let Some(mut val) = self.field_b.clone() {
+            match val.encode(62) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        } else {
+            match get_empty_buffer_val(62) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        }
+        if let Some(mut val) = self.field_c.clone() {
+            match val.encode(63) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        } else {
+            match get_empty_buffer_val(63) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        }
         Ok(buffer)
     }
 }
@@ -2021,7 +2136,7 @@ pub mod GroupA {
         Option_b(String),
         Defaults,
     }
-    impl EnumDecode<EnumExampleA> for EnumExampleA {
+    impl EnumDecode for EnumExampleA {
         fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
             if buf.len() <= sizes::U16_LEN {
                 return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));

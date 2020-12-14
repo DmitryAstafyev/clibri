@@ -438,7 +438,7 @@ mod tests {
                     };
                 }
             } else {
-                return Err("Buffer for property prop_optional_enum isn\'t found".to_string())
+                return Err("Buffer for property prop_optional_enum isn\'t found".to_string());
             }
             self.prop_enum_vec = match Vec::<TargetEnum>::decode(&mut storage, 28) {
                 Ok(val) => val,
