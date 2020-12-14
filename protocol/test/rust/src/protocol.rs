@@ -1,6 +1,7 @@
 
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(unused_imports)]
 use std::convert::TryFrom;
 use std::io::Cursor;
 use std::collections::{HashMap};
@@ -1728,18 +1729,18 @@ impl StructDecode for StructExampleD {
     }
     fn defaults() -> StructExampleD {
         StructExampleD {
-            field_str: vec![],
-            field_u8: vec![],
-            field_u16: vec![],
-            field_u32: vec![],
-            field_u64: vec![],
-            field_i8: vec![],
-            field_i16: vec![],
-            field_i32: vec![],
-            field_i64: vec![],
-            field_f32: vec![],
-            field_f64: vec![],
-            field_bool: vec![],
+            field_str: None,
+            field_u8: None,
+            field_u16: None,
+            field_u32: None,
+            field_u64: None,
+            field_i8: None,
+            field_i16: None,
+            field_i32: None,
+            field_i64: None,
+            field_f32: None,
+            field_f64: None,
+            field_bool: None,
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {

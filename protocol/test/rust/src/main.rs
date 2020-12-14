@@ -1,6 +1,13 @@
-#[path = "./protocol.rs"]
-pub mod protocol;
+#[path = "./writer.rs"]
+pub mod writer;
+
+use writer::{ write };
 
 fn main() {
-    println!("Hello, world!");
+    match write() {
+        Ok(_) => {
+
+        },
+        Err(e) => panic!(e)
+    }
 }

@@ -17,23 +17,6 @@ impl RustRender {
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}pub mod {} {{\n", self.spaces(level), group.name);
         body = format!("{}{}use super::*;\n", body, self.spaces(level + 1));
-        /*
-        body = format!(
-            "{}{}use encode::{{ StructEncode, EnumEncode, Encode }};\n",
-            body,
-            self.spaces(level + 1)
-        );
-        body = format!(
-            "{}{}use decode::{{ StructDecode, EnumDecode, Decode }};\n",
-            body,
-            self.spaces(level + 1)
-        );
-        body = format!(
-            "{}{}use storage::{{ Storage }};\n",
-            body,
-            self.spaces(level + 1)
-        );
-        */
         body = format!("{}{}use std::io::Cursor;\n", body, self.spaces(level + 1));
         body = format!("{}{}use bytes::{{ Buf }};\n", body, self.spaces(level + 1));
         for enum_id in &group.enums {
@@ -378,7 +361,7 @@ impl RustRender {
 
     fn field_default(&self, field: &Field, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}: ", field.name);
-        if field.repeated {
+        if field.repeated && !field.optional {
             body = format!("{}vec![],", body);
         } else if field.optional {
             body = format!("{}None,", body);
