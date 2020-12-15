@@ -31,6 +31,11 @@ pub enum ESize {
     U64(u64),
 }
 
+pub enum Source<'a> {
+    Storage(&'a mut Storage),
+    Buffer(&'a Vec<u8>),
+}
+
 pub trait StructDecode {
 
     fn get_id() -> u32;
@@ -47,23 +52,41 @@ pub trait EnumDecode {
 
 pub trait DecodeEnum<T> {
 
-    fn decode(storage: &mut Storage, id: u16) -> Result<T, String>;
-
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String>;
+    fn get_buf_from_source(source: Source, id: Option<u16>) -> Result<&Vec<u8>, String> {
+        match source {
+            Source::Storage(storage) => {
+                if let Some(id) = id {
+                    if let Some(buf) = storage.get(id) {
+                        Ok(buf)
+                    } else {
+                        Err(format!("Buffer for property {} isn't found", id))
+                    }
+                } else {
+                    Err("Storage defined as source, but no id is defined".to_string())
+                }
+            },
+            Source::Buffer(buf) => Ok(buf),
+        }
+    }
+    fn decode(buf: &Vec<u8>) -> Result<T, String> {
+        Self::get_from_storage(Source::Buffer(buf), None)
+    }
 }
 
 impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
-    fn decode(storage: &mut Storage, id: u16) -> Result<T, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             Self::extract(buf.clone())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<T>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<T>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<T> = vec!();
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
@@ -89,184 +112,204 @@ impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 pub trait Decode<T> {
 
-    fn decode(storage: &mut Storage, id: u16) -> Result<T, String>;
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String>;
+    fn get_buf_from_source(source: Source, id: Option<u16>) -> Result<&Vec<u8>, String> {
+        match source {
+            Source::Storage(storage) => {
+                if let Some(id) = id {
+                    if let Some(buf) = storage.get(id) {
+                        println!("FOUND: {:?}", buf);
+                        Ok(buf)
+                    } else {
+                        Err(format!("Buffer for property {} isn't found", id))
+                    }
+                } else {
+                    Err("Storage defined as source, but no id is defined".to_string())
+                }
+            },
+            Source::Buffer(buf) => Ok(buf),
+        }
+    }
+    fn decode(buf: &Vec<u8>) -> Result<T, String> {
+        Self::get_from_storage(Source::Buffer(buf), None)
+    }
 
 }
 
 impl Decode<u8> for u8 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<u8, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<u8, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::U8_LEN {
-                return Err(format!("To extract u8 value buffer should have length at least {} bytes, but length is {}", sizes::U8_LEN, buf.len()));
+                return Err(format!("To extract u8 value buffer should have length at least {} bytes, but length is {}. Prop {:?}", sizes::U8_LEN, buf.len(), id));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_u8())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<u16> for u16 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<u16, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<u16, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::U16_LEN {
                 return Err(format!("To extract u16 value buffer should have length at least {} bytes, but length is {}", sizes::U16_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_u16_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<u32> for u32 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<u32, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<u32, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::U32_LEN {
                 return Err(format!("To extract u32 value buffer should have length at least {} bytes, but length is {}", sizes::U32_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_u32_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<u64> for u64 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<u64, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<u64, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::U64_LEN {
                 return Err(format!("To extract u64 value buffer should have length at least {} bytes, but length is {}", sizes::U64_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_u64_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<i8> for i8 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<i8, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<i8, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::I8_LEN {
                 return Err(format!("To extract i8 value buffer should have length at least {} bytes, but length is {}", sizes::I8_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_i8())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<i16> for i16 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<i16, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<i16, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::I16_LEN {
                 return Err(format!("To extract i16 value buffer should have length at least {} bytes, but length is {}", sizes::I16_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_i16_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<i32> for i32 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<i32, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<i32, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::I32_LEN {
                 return Err(format!("To extract i32 value buffer should have length at least {} bytes, but length is {}", sizes::I32_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_i32_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<i64> for i64 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<i64, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<i64, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::I64_LEN {
                 return Err(format!("To extract i64 value buffer should have length at least {} bytes, but length is {}", sizes::I64_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_i64_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<f32> for f32 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<f32, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<f32, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::F32_LEN {
                 return Err(format!("To extract f32 value buffer should have length at least {} bytes, but length is {}", sizes::F32_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_f32_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<f64> for f64 {
-    fn decode(storage: &mut Storage, id: u16) -> Result<f64, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<f64, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::F64_LEN {
                 return Err(format!("To extract f64 value buffer should have length at least {} bytes, but length is {}", sizes::F64_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_f64_le())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<bool> for bool {
-    fn decode(storage: &mut Storage, id: u16) -> Result<bool, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<bool, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.len() < sizes::U8_LEN {
                 return Err(format!("To extract u8 value buffer should have length at least {} bytes, but length is {}", sizes::U8_LEN, buf.len()));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             Ok(cursor.get_u8() != 0)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<String> for String {
-    fn decode(storage: &mut Storage, id: u16) -> Result<String, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<String, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             Ok(String::from_utf8_lossy(buf).to_string())
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl<T> Decode<T> for T where T: StructDecode,  {
-    fn decode(storage: &mut Storage, id: u16) -> Result<T, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let sctruct_storage = match Storage::new(buf.to_vec()) {
                 Ok(storage) => storage,
                 Err(e) => {
@@ -279,14 +322,14 @@ impl<T> Decode<T> for T where T: StructDecode,  {
                 Err(e) => Err(e),
             }
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<u8>> for Vec<u8> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<u8>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u8>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<u8> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
@@ -297,14 +340,14 @@ impl Decode<Vec<u8>> for Vec<u8> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<u16>> for Vec<u16> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<u16>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u16>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<u16> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -319,14 +362,14 @@ impl Decode<Vec<u16>> for Vec<u16> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<u32>> for Vec<u32> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<u32>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u32>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<u32> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -341,14 +384,14 @@ impl Decode<Vec<u32>> for Vec<u32> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<u64>> for Vec<u64> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<u64>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u64>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<u64> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -363,14 +406,14 @@ impl Decode<Vec<u64>> for Vec<u64> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<i8>> for Vec<i8> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<i8>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i8>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<i8> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
@@ -381,14 +424,14 @@ impl Decode<Vec<i8>> for Vec<i8> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<i16>> for Vec<i16> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<i16>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i16>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<i16> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -403,14 +446,14 @@ impl Decode<Vec<i16>> for Vec<i16> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<i32>> for Vec<i32> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<i32>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i32>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<i32> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -425,14 +468,14 @@ impl Decode<Vec<i32>> for Vec<i32> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<i64>> for Vec<i64> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<i64>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i64>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<i64> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -447,14 +490,14 @@ impl Decode<Vec<i64>> for Vec<i64> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<f32>> for Vec<f32> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<f32>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<f32>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<f32> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -469,14 +512,14 @@ impl Decode<Vec<f32>> for Vec<f32> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<f64>> for Vec<f64> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<f64>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<f64>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<f64> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
@@ -491,14 +534,14 @@ impl Decode<Vec<f64>> for Vec<f64> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<bool>> for Vec<bool> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<bool>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<bool>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<bool> = vec!();
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
@@ -509,14 +552,14 @@ impl Decode<Vec<bool>> for Vec<bool> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl Decode<Vec<String>> for Vec<String> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<String>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<String>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<String> = vec!();
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
@@ -539,14 +582,14 @@ impl Decode<Vec<String>> for Vec<String> {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Vec<T>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<T>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let mut res: Vec<T> = vec!();
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
@@ -580,31 +623,34 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
             }
             Ok(res)
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
     }
 }
 
 impl<T> Decode<Option<T>> for Option<T> where T: Decode<T> {
-    fn decode(storage: &mut Storage, id: u16) -> Result<Option<T>, String> {
-        if let Some(buf) = storage.get(id) {
+    fn get_from_storage(source: Source, id: Option<u16>) -> Result<Option<T>, String> {
+        if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.is_empty() {
                 Ok(None)
             } else {
-                match T::decode(storage, id) {
+                match T::get_from_storage(Source::Buffer(buf), id) {
                     Ok(v) => Ok(Some(v)),
                     Err(e) => Err(e),
                 }
             }
         } else {
-            Err(format!("Buffer for property {} isn't found", id))
+            Err("Fail get buffer".to_string())
         }
+        
     }
 }
 
-fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
+fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
     let mut buffer: Vec<u8> = vec!();
-    buffer.append(&mut id.to_le_bytes().to_vec());
+    if let Some(id) = id {
+        buffer.append(&mut id.to_le_bytes().to_vec());
+    }
     match size {
         ESize::U8(size) => {
             buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
@@ -627,7 +673,7 @@ fn get_value_buffer(id: u16, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>,
     Ok(buffer)
 }
 
-pub fn get_empty_buffer_val(id: u16) -> Result<Vec<u8>, String> {
+pub fn get_empty_buffer_val(id: Option<u16>) -> Result<Vec<u8>, String> {
     get_value_buffer(id, ESize::U8(0), vec!())
 }
 
@@ -646,12 +692,14 @@ pub trait EnumEncode {
 
 pub trait EncodeEnum {
 
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String>;
-
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String>;
+    fn encode(&mut self) -> Result<Vec<u8>, String> {
+        self.get_buf_to_store(None)
+    }
 }
 
 impl<T> EncodeEnum for T where T: EnumEncode {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
             Err(e) => Err(e)
@@ -660,7 +708,7 @@ impl<T> EncodeEnum for T where T: EnumEncode {
 }
 
 impl<T> EncodeEnum for Vec<T> where T: EnumEncode {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter_mut() {
             let val_as_bytes = match val.abduct() {
@@ -676,85 +724,87 @@ impl<T> EncodeEnum for Vec<T> where T: EnumEncode {
 
 pub trait Encode {
 
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String>;
-
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String>;
+    fn encode(&mut self) -> Result<Vec<u8>, String> {
+        self.get_buf_to_store(None)
+    }
 }
 
 impl Encode for u8 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::U8_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for u16 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::U16_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for u32 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::U32_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for u64 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::U64_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for i8 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::I8_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for i16 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::I16_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for i32 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::I32_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for i64 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::I64_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for f32 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::F32_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for f64 {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::F64_LEN as u8), self.to_le_bytes().to_vec())
     }
 }
 
 impl Encode for bool {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         get_value_buffer(id, ESize::U8(sizes::BOOL_LEN as u8), if self == &true { vec![1] } else { vec![0] })
     }
 }
 
 impl Encode for String {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let buf = self.as_bytes();
         get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec())
     }
 }
 
 impl<T> Encode for T where T: StructEncode {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
             Err(e) => Err(e)
@@ -763,7 +813,7 @@ impl<T> Encode for T where T: StructEncode {
 }
 
 impl Encode for Vec<u8> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U8_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -774,7 +824,7 @@ impl Encode for Vec<u8> {
 }
 
 impl Encode for Vec<u16> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U16_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -785,7 +835,7 @@ impl Encode for Vec<u16> {
 }
 
 impl Encode for Vec<u32> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U32_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -796,7 +846,7 @@ impl Encode for Vec<u32> {
 }
 
 impl Encode for Vec<u64> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U64_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -807,7 +857,7 @@ impl Encode for Vec<u64> {
 }
 
 impl Encode for Vec<i8> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I8_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -818,7 +868,7 @@ impl Encode for Vec<i8> {
 }
 
 impl Encode for Vec<i16> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I16_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -829,7 +879,7 @@ impl Encode for Vec<i16> {
 }
 
 impl Encode for Vec<i32> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I32_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -840,7 +890,7 @@ impl Encode for Vec<i32> {
 }
 
 impl Encode for Vec<i64> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I64_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -851,7 +901,7 @@ impl Encode for Vec<i64> {
 }
 
 impl Encode for Vec<f32> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::F32_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -862,7 +912,7 @@ impl Encode for Vec<f32> {
 }
 
 impl Encode for Vec<f64> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::F64_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -873,7 +923,7 @@ impl Encode for Vec<f64> {
 }
 
 impl Encode for Vec<String> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
             let val_as_bytes = val.as_bytes();
@@ -885,7 +935,7 @@ impl Encode for Vec<String> {
 }
 
 impl Encode for Vec<bool> {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U8_LEN;
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter() {
@@ -901,7 +951,7 @@ impl Encode for Vec<bool> {
 }
 
 impl<T> Encode for Vec<T> where T: StructEncode {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         for val in self.iter_mut() {
             let val_as_bytes = match val.abduct() {
@@ -916,14 +966,15 @@ impl<T> Encode for Vec<T> where T: StructEncode {
 }
 
 impl<T> Encode for Option<T> where T: Encode {
-    fn encode(&mut self, id: u16) -> Result<Vec<u8>, String> {
+    fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         match self {
-            Some(v) => v.encode(id),
+            Some(v) => v.get_buf_to_store(id),
             None => get_empty_buffer_val(id),
         }
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Storage {
     map: HashMap<u16, Vec<u8>>,
 }
@@ -1054,11 +1105,11 @@ impl EnumDecode for EnumExampleA {
             Err(e) => { return Err(e); }
         };
         match id {
-            0 => match String::decode(&mut storage, id) {
+            0 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleA::Option_a(v)),
                 Err(e) => Err(e)
             },
-            1 => match String::decode(&mut storage, id) {
+            1 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleA::Option_b(v)),
                 Err(e) => Err(e)
             },
@@ -1069,8 +1120,8 @@ impl EnumDecode for EnumExampleA {
 impl EnumEncode for EnumExampleA {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         match match self {
-            Self::Option_a(v) => v.encode(0),
-            Self::Option_b(v) => v.encode(1),
+            Self::Option_a(v) => v.get_buf_to_store(Some(0)),
+            Self::Option_b(v) => v.get_buf_to_store(Some(1)),
             _ => Err(String::from("Not supportable option")),
         } {
             Ok(buf) => Ok(buf),
@@ -1106,47 +1157,47 @@ impl EnumDecode for EnumExampleB {
             Err(e) => { return Err(e); }
         };
         match id {
-            0 => match String::decode(&mut storage, id) {
+            0 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_str(v)),
                 Err(e) => Err(e)
             },
-            1 => match u8::decode(&mut storage, id) {
+            1 => match u8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_u8(v)),
                 Err(e) => Err(e)
             },
-            2 => match u16::decode(&mut storage, id) {
+            2 => match u16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_u16(v)),
                 Err(e) => Err(e)
             },
-            3 => match u32::decode(&mut storage, id) {
+            3 => match u32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_u32(v)),
                 Err(e) => Err(e)
             },
-            4 => match u64::decode(&mut storage, id) {
+            4 => match u64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_u64(v)),
                 Err(e) => Err(e)
             },
-            5 => match i8::decode(&mut storage, id) {
+            5 => match i8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_i8(v)),
                 Err(e) => Err(e)
             },
-            6 => match i16::decode(&mut storage, id) {
+            6 => match i16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_i16(v)),
                 Err(e) => Err(e)
             },
-            7 => match i32::decode(&mut storage, id) {
+            7 => match i32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_i32(v)),
                 Err(e) => Err(e)
             },
-            8 => match i64::decode(&mut storage, id) {
+            8 => match i64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_i64(v)),
                 Err(e) => Err(e)
             },
-            9 => match f32::decode(&mut storage, id) {
+            9 => match f32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_f32(v)),
                 Err(e) => Err(e)
             },
-            10 => match f64::decode(&mut storage, id) {
+            10 => match f64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleB::Option_f64(v)),
                 Err(e) => Err(e)
             },
@@ -1157,17 +1208,17 @@ impl EnumDecode for EnumExampleB {
 impl EnumEncode for EnumExampleB {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         match match self {
-            Self::Option_str(v) => v.encode(0),
-            Self::Option_u8(v) => v.encode(1),
-            Self::Option_u16(v) => v.encode(2),
-            Self::Option_u32(v) => v.encode(3),
-            Self::Option_u64(v) => v.encode(4),
-            Self::Option_i8(v) => v.encode(5),
-            Self::Option_i16(v) => v.encode(6),
-            Self::Option_i32(v) => v.encode(7),
-            Self::Option_i64(v) => v.encode(8),
-            Self::Option_f32(v) => v.encode(9),
-            Self::Option_f64(v) => v.encode(10),
+            Self::Option_str(v) => v.get_buf_to_store(Some(0)),
+            Self::Option_u8(v) => v.get_buf_to_store(Some(1)),
+            Self::Option_u16(v) => v.get_buf_to_store(Some(2)),
+            Self::Option_u32(v) => v.get_buf_to_store(Some(3)),
+            Self::Option_u64(v) => v.get_buf_to_store(Some(4)),
+            Self::Option_i8(v) => v.get_buf_to_store(Some(5)),
+            Self::Option_i16(v) => v.get_buf_to_store(Some(6)),
+            Self::Option_i32(v) => v.get_buf_to_store(Some(7)),
+            Self::Option_i64(v) => v.get_buf_to_store(Some(8)),
+            Self::Option_f32(v) => v.get_buf_to_store(Some(9)),
+            Self::Option_f64(v) => v.get_buf_to_store(Some(10)),
             _ => Err(String::from("Not supportable option")),
         } {
             Ok(buf) => Ok(buf),
@@ -1203,47 +1254,47 @@ impl EnumDecode for EnumExampleC {
             Err(e) => { return Err(e); }
         };
         match id {
-            0 => match Vec::<String>::decode(&mut storage, id) {
+            0 => match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_str(v)),
                 Err(e) => Err(e)
             },
-            1 => match Vec::<u8>::decode(&mut storage, id) {
+            1 => match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_u8(v)),
                 Err(e) => Err(e)
             },
-            2 => match Vec::<u16>::decode(&mut storage, id) {
+            2 => match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_u16(v)),
                 Err(e) => Err(e)
             },
-            3 => match Vec::<u32>::decode(&mut storage, id) {
+            3 => match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_u32(v)),
                 Err(e) => Err(e)
             },
-            4 => match Vec::<u64>::decode(&mut storage, id) {
+            4 => match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_u64(v)),
                 Err(e) => Err(e)
             },
-            5 => match Vec::<i8>::decode(&mut storage, id) {
+            5 => match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_i8(v)),
                 Err(e) => Err(e)
             },
-            6 => match Vec::<i16>::decode(&mut storage, id) {
+            6 => match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_i16(v)),
                 Err(e) => Err(e)
             },
-            7 => match Vec::<i32>::decode(&mut storage, id) {
+            7 => match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_i32(v)),
                 Err(e) => Err(e)
             },
-            8 => match Vec::<i64>::decode(&mut storage, id) {
+            8 => match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_i64(v)),
                 Err(e) => Err(e)
             },
-            9 => match Vec::<f32>::decode(&mut storage, id) {
+            9 => match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_f32(v)),
                 Err(e) => Err(e)
             },
-            10 => match Vec::<f64>::decode(&mut storage, id) {
+            10 => match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                 Ok(v) => Ok(EnumExampleC::Option_f64(v)),
                 Err(e) => Err(e)
             },
@@ -1254,17 +1305,17 @@ impl EnumDecode for EnumExampleC {
 impl EnumEncode for EnumExampleC {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         match match self {
-            Self::Option_str(v) => v.encode(0),
-            Self::Option_u8(v) => v.encode(1),
-            Self::Option_u16(v) => v.encode(2),
-            Self::Option_u32(v) => v.encode(3),
-            Self::Option_u64(v) => v.encode(4),
-            Self::Option_i8(v) => v.encode(5),
-            Self::Option_i16(v) => v.encode(6),
-            Self::Option_i32(v) => v.encode(7),
-            Self::Option_i64(v) => v.encode(8),
-            Self::Option_f32(v) => v.encode(9),
-            Self::Option_f64(v) => v.encode(10),
+            Self::Option_str(v) => v.get_buf_to_store(Some(0)),
+            Self::Option_u8(v) => v.get_buf_to_store(Some(1)),
+            Self::Option_u16(v) => v.get_buf_to_store(Some(2)),
+            Self::Option_u32(v) => v.get_buf_to_store(Some(3)),
+            Self::Option_u64(v) => v.get_buf_to_store(Some(4)),
+            Self::Option_i8(v) => v.get_buf_to_store(Some(5)),
+            Self::Option_i16(v) => v.get_buf_to_store(Some(6)),
+            Self::Option_i32(v) => v.get_buf_to_store(Some(7)),
+            Self::Option_i64(v) => v.get_buf_to_store(Some(8)),
+            Self::Option_f32(v) => v.get_buf_to_store(Some(9)),
+            Self::Option_f64(v) => v.get_buf_to_store(Some(10)),
             _ => Err(String::from("Not supportable option")),
         } {
             Ok(buf) => Ok(buf),
@@ -1309,51 +1360,51 @@ impl StructDecode for StructExampleA {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match String::decode(&mut storage, 5) {
+        self.field_str = match String::get_from_storage(Source::Storage(&mut storage), Some(5)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match u8::decode(&mut storage, 6) {
+        self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(6)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match u16::decode(&mut storage, 7) {
+        self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(7)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match u32::decode(&mut storage, 8) {
+        self.field_u32 = match u32::get_from_storage(Source::Storage(&mut storage), Some(8)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match u64::decode(&mut storage, 9) {
+        self.field_u64 = match u64::get_from_storage(Source::Storage(&mut storage), Some(9)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match i8::decode(&mut storage, 10) {
+        self.field_i8 = match i8::get_from_storage(Source::Storage(&mut storage), Some(10)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match i16::decode(&mut storage, 11) {
+        self.field_i16 = match i16::get_from_storage(Source::Storage(&mut storage), Some(11)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match i32::decode(&mut storage, 12) {
+        self.field_i32 = match i32::get_from_storage(Source::Storage(&mut storage), Some(12)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match i64::decode(&mut storage, 13) {
+        self.field_i64 = match i64::get_from_storage(Source::Storage(&mut storage), Some(13)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match f32::decode(&mut storage, 14) {
+        self.field_f32 = match f32::get_from_storage(Source::Storage(&mut storage), Some(14)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match f64::decode(&mut storage, 15) {
+        self.field_f64 = match f64::get_from_storage(Source::Storage(&mut storage), Some(15)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match bool::decode(&mut storage, 16) {
+        self.field_bool = match bool::get_from_storage(Source::Storage(&mut storage), Some(16)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1366,51 +1417,51 @@ impl StructEncode for StructExampleA {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.encode(5) {
+        match self.field_str.get_buf_to_store(Some(5)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.encode(6) {
+        match self.field_u8.get_buf_to_store(Some(6)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.encode(7) {
+        match self.field_u16.get_buf_to_store(Some(7)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.encode(8) {
+        match self.field_u32.get_buf_to_store(Some(8)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.encode(9) {
+        match self.field_u64.get_buf_to_store(Some(9)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.encode(10) {
+        match self.field_i8.get_buf_to_store(Some(10)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.encode(11) {
+        match self.field_i16.get_buf_to_store(Some(11)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.encode(12) {
+        match self.field_i32.get_buf_to_store(Some(12)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.encode(13) {
+        match self.field_i64.get_buf_to_store(Some(13)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.encode(14) {
+        match self.field_f32.get_buf_to_store(Some(14)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.encode(15) {
+        match self.field_f64.get_buf_to_store(Some(15)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.encode(16) {
+        match self.field_bool.get_buf_to_store(Some(16)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -1454,51 +1505,51 @@ impl StructDecode for StructExampleB {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match Vec::<String>::decode(&mut storage, 18) {
+        self.field_str = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(18)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match Vec::<u8>::decode(&mut storage, 19) {
+        self.field_u8 = match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(19)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match Vec::<u16>::decode(&mut storage, 20) {
+        self.field_u16 = match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(20)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match Vec::<u32>::decode(&mut storage, 21) {
+        self.field_u32 = match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(21)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match Vec::<u64>::decode(&mut storage, 22) {
+        self.field_u64 = match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(22)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match Vec::<i8>::decode(&mut storage, 23) {
+        self.field_i8 = match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(23)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match Vec::<i16>::decode(&mut storage, 24) {
+        self.field_i16 = match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(24)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match Vec::<i32>::decode(&mut storage, 25) {
+        self.field_i32 = match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(25)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match Vec::<i64>::decode(&mut storage, 26) {
+        self.field_i64 = match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(26)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match Vec::<f32>::decode(&mut storage, 27) {
+        self.field_f32 = match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(27)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match Vec::<f64>::decode(&mut storage, 28) {
+        self.field_f64 = match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(28)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match Vec::<bool>::decode(&mut storage, 29) {
+        self.field_bool = match Vec::<bool>::get_from_storage(Source::Storage(&mut storage), Some(29)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1511,51 +1562,51 @@ impl StructEncode for StructExampleB {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.encode(18) {
+        match self.field_str.get_buf_to_store(Some(18)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.encode(19) {
+        match self.field_u8.get_buf_to_store(Some(19)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.encode(20) {
+        match self.field_u16.get_buf_to_store(Some(20)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.encode(21) {
+        match self.field_u32.get_buf_to_store(Some(21)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.encode(22) {
+        match self.field_u64.get_buf_to_store(Some(22)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.encode(23) {
+        match self.field_i8.get_buf_to_store(Some(23)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.encode(24) {
+        match self.field_i16.get_buf_to_store(Some(24)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.encode(25) {
+        match self.field_i32.get_buf_to_store(Some(25)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.encode(26) {
+        match self.field_i64.get_buf_to_store(Some(26)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.encode(27) {
+        match self.field_f32.get_buf_to_store(Some(27)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.encode(28) {
+        match self.field_f64.get_buf_to_store(Some(28)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.encode(29) {
+        match self.field_bool.get_buf_to_store(Some(29)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -1599,51 +1650,51 @@ impl StructDecode for StructExampleC {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match Option::<String>::decode(&mut storage, 31) {
+        self.field_str = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(31)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match Option::<u8>::decode(&mut storage, 32) {
+        self.field_u8 = match Option::<u8>::get_from_storage(Source::Storage(&mut storage), Some(32)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match Option::<u16>::decode(&mut storage, 33) {
+        self.field_u16 = match Option::<u16>::get_from_storage(Source::Storage(&mut storage), Some(33)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match Option::<u32>::decode(&mut storage, 34) {
+        self.field_u32 = match Option::<u32>::get_from_storage(Source::Storage(&mut storage), Some(34)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match Option::<u64>::decode(&mut storage, 35) {
+        self.field_u64 = match Option::<u64>::get_from_storage(Source::Storage(&mut storage), Some(35)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match Option::<i8>::decode(&mut storage, 36) {
+        self.field_i8 = match Option::<i8>::get_from_storage(Source::Storage(&mut storage), Some(36)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match Option::<i16>::decode(&mut storage, 37) {
+        self.field_i16 = match Option::<i16>::get_from_storage(Source::Storage(&mut storage), Some(37)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match Option::<i32>::decode(&mut storage, 38) {
+        self.field_i32 = match Option::<i32>::get_from_storage(Source::Storage(&mut storage), Some(38)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match Option::<i64>::decode(&mut storage, 39) {
+        self.field_i64 = match Option::<i64>::get_from_storage(Source::Storage(&mut storage), Some(39)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match Option::<f32>::decode(&mut storage, 40) {
+        self.field_f32 = match Option::<f32>::get_from_storage(Source::Storage(&mut storage), Some(40)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match Option::<f64>::decode(&mut storage, 41) {
+        self.field_f64 = match Option::<f64>::get_from_storage(Source::Storage(&mut storage), Some(41)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match Option::<bool>::decode(&mut storage, 42) {
+        self.field_bool = match Option::<bool>::get_from_storage(Source::Storage(&mut storage), Some(42)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1656,51 +1707,51 @@ impl StructEncode for StructExampleC {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.encode(31) {
+        match self.field_str.get_buf_to_store(Some(31)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.encode(32) {
+        match self.field_u8.get_buf_to_store(Some(32)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.encode(33) {
+        match self.field_u16.get_buf_to_store(Some(33)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.encode(34) {
+        match self.field_u32.get_buf_to_store(Some(34)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.encode(35) {
+        match self.field_u64.get_buf_to_store(Some(35)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.encode(36) {
+        match self.field_i8.get_buf_to_store(Some(36)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.encode(37) {
+        match self.field_i16.get_buf_to_store(Some(37)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.encode(38) {
+        match self.field_i32.get_buf_to_store(Some(38)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.encode(39) {
+        match self.field_i64.get_buf_to_store(Some(39)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.encode(40) {
+        match self.field_f32.get_buf_to_store(Some(40)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.encode(41) {
+        match self.field_f64.get_buf_to_store(Some(41)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.encode(42) {
+        match self.field_bool.get_buf_to_store(Some(42)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -1744,51 +1795,51 @@ impl StructDecode for StructExampleD {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match Option::<Vec::<String>>::decode(&mut storage, 44) {
+        self.field_str = match Option::<Vec::<String>>::get_from_storage(Source::Storage(&mut storage), Some(44)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match Option::<Vec::<u8>>::decode(&mut storage, 45) {
+        self.field_u8 = match Option::<Vec::<u8>>::get_from_storage(Source::Storage(&mut storage), Some(45)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match Option::<Vec::<u16>>::decode(&mut storage, 46) {
+        self.field_u16 = match Option::<Vec::<u16>>::get_from_storage(Source::Storage(&mut storage), Some(46)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match Option::<Vec::<u32>>::decode(&mut storage, 47) {
+        self.field_u32 = match Option::<Vec::<u32>>::get_from_storage(Source::Storage(&mut storage), Some(47)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match Option::<Vec::<u64>>::decode(&mut storage, 48) {
+        self.field_u64 = match Option::<Vec::<u64>>::get_from_storage(Source::Storage(&mut storage), Some(48)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match Option::<Vec::<i8>>::decode(&mut storage, 49) {
+        self.field_i8 = match Option::<Vec::<i8>>::get_from_storage(Source::Storage(&mut storage), Some(49)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match Option::<Vec::<i16>>::decode(&mut storage, 50) {
+        self.field_i16 = match Option::<Vec::<i16>>::get_from_storage(Source::Storage(&mut storage), Some(50)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match Option::<Vec::<i32>>::decode(&mut storage, 51) {
+        self.field_i32 = match Option::<Vec::<i32>>::get_from_storage(Source::Storage(&mut storage), Some(51)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match Option::<Vec::<i64>>::decode(&mut storage, 52) {
+        self.field_i64 = match Option::<Vec::<i64>>::get_from_storage(Source::Storage(&mut storage), Some(52)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match Option::<Vec::<f32>>::decode(&mut storage, 53) {
+        self.field_f32 = match Option::<Vec::<f32>>::get_from_storage(Source::Storage(&mut storage), Some(53)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match Option::<Vec::<f64>>::decode(&mut storage, 54) {
+        self.field_f64 = match Option::<Vec::<f64>>::get_from_storage(Source::Storage(&mut storage), Some(54)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match Option::<Vec::<bool>>::decode(&mut storage, 55) {
+        self.field_bool = match Option::<Vec::<bool>>::get_from_storage(Source::Storage(&mut storage), Some(55)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1801,51 +1852,51 @@ impl StructEncode for StructExampleD {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.encode(44) {
+        match self.field_str.get_buf_to_store(Some(44)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.encode(45) {
+        match self.field_u8.get_buf_to_store(Some(45)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.encode(46) {
+        match self.field_u16.get_buf_to_store(Some(46)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.encode(47) {
+        match self.field_u32.get_buf_to_store(Some(47)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.encode(48) {
+        match self.field_u64.get_buf_to_store(Some(48)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.encode(49) {
+        match self.field_i8.get_buf_to_store(Some(49)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.encode(50) {
+        match self.field_i16.get_buf_to_store(Some(50)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.encode(51) {
+        match self.field_i32.get_buf_to_store(Some(51)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.encode(52) {
+        match self.field_i64.get_buf_to_store(Some(52)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.encode(53) {
+        match self.field_f32.get_buf_to_store(Some(53)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.encode(54) {
+        match self.field_f64.get_buf_to_store(Some(54)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.encode(55) {
+        match self.field_bool.get_buf_to_store(Some(55)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -1871,15 +1922,15 @@ impl StructDecode for StructExampleE {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match EnumExampleA::decode(&mut storage, 57) {
+        self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(57)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_b = match EnumExampleB::decode(&mut storage, 58) {
+        self.field_b = match EnumExampleB::get_from_storage(Source::Storage(&mut storage), Some(58)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_c = match EnumExampleC::decode(&mut storage, 59) {
+        self.field_c = match EnumExampleC::get_from_storage(Source::Storage(&mut storage), Some(59)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1892,15 +1943,15 @@ impl StructEncode for StructExampleE {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.encode(57) {
+        match self.field_a.get_buf_to_store(Some(57)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_b.encode(58) {
+        match self.field_b.get_buf_to_store(Some(58)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_c.encode(59) {
+        match self.field_c.get_buf_to_store(Some(59)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -1930,7 +1981,7 @@ impl StructDecode for StructExampleF {
             if buf.is_empty() {
                 self.field_a = None;
             } else {
-                self.field_a = match EnumExampleA::decode(&mut storage, 61) {
+                self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(61)) {
                     Ok(val) => Some(val),
                     Err(e) => { return Err(e) },
                 };
@@ -1942,7 +1993,7 @@ impl StructDecode for StructExampleF {
             if buf.is_empty() {
                 self.field_b = None;
             } else {
-                self.field_b = match EnumExampleB::decode(&mut storage, 62) {
+                self.field_b = match EnumExampleB::get_from_storage(Source::Storage(&mut storage), Some(62)) {
                     Ok(val) => Some(val),
                     Err(e) => { return Err(e) },
                 };
@@ -1954,7 +2005,7 @@ impl StructDecode for StructExampleF {
             if buf.is_empty() {
                 self.field_c = None;
             } else {
-                self.field_c = match EnumExampleC::decode(&mut storage, 63) {
+                self.field_c = match EnumExampleC::get_from_storage(Source::Storage(&mut storage), Some(63)) {
                     Ok(val) => Some(val),
                     Err(e) => { return Err(e) },
                 };
@@ -1972,34 +2023,34 @@ impl StructEncode for StructExampleF {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         if let Some(mut val) = self.field_a.clone() {
-            match val.encode(61) {
+            match val.get_buf_to_store(Some(61)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
         } else {
-            match get_empty_buffer_val(61) {
+            match get_empty_buffer_val(Some(61)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
         }
         if let Some(mut val) = self.field_b.clone() {
-            match val.encode(62) {
+            match val.get_buf_to_store(Some(62)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
         } else {
-            match get_empty_buffer_val(62) {
+            match get_empty_buffer_val(Some(62)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
         }
         if let Some(mut val) = self.field_c.clone() {
-            match val.encode(63) {
+            match val.get_buf_to_store(Some(63)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
         } else {
-            match get_empty_buffer_val(63) {
+            match get_empty_buffer_val(Some(63)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
@@ -2052,11 +2103,11 @@ impl StructDecode for StructExampleG {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match StructExampleA::decode(&mut storage, 65) {
+        self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(65)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_b = match StructExampleB::decode(&mut storage, 66) {
+        self.field_b = match StructExampleB::get_from_storage(Source::Storage(&mut storage), Some(66)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2069,11 +2120,11 @@ impl StructEncode for StructExampleG {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.encode(65) {
+        match self.field_a.get_buf_to_store(Some(65)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_b.encode(66) {
+        match self.field_b.get_buf_to_store(Some(66)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2097,11 +2148,11 @@ impl StructDecode for StructExampleJ {
         }
     }
     fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match Option::<StructExampleA>::decode(&mut storage, 68) {
+        self.field_a = match Option::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(68)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_b = match Option::<StructExampleB>::decode(&mut storage, 69) {
+        self.field_b = match Option::<StructExampleB>::get_from_storage(Source::Storage(&mut storage), Some(69)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2114,11 +2165,11 @@ impl StructEncode for StructExampleJ {
     }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.encode(68) {
+        match self.field_a.get_buf_to_store(Some(68)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_b.encode(69) {
+        match self.field_b.get_buf_to_store(Some(69)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2149,11 +2200,11 @@ pub mod GroupA {
                 Err(e) => { return Err(e); }
             };
             match id {
-                0 => match String::decode(&mut storage, id) {
+                0 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(EnumExampleA::Option_a(v)),
                     Err(e) => Err(e)
                 },
-                1 => match String::decode(&mut storage, id) {
+                1 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(EnumExampleA::Option_b(v)),
                     Err(e) => Err(e)
                 },
@@ -2164,8 +2215,8 @@ pub mod GroupA {
     impl EnumEncode for EnumExampleA {
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             match match self {
-                Self::Option_a(v) => v.encode(0),
-                Self::Option_b(v) => v.encode(1),
+                Self::Option_a(v) => v.get_buf_to_store(Some(0)),
+                Self::Option_b(v) => v.get_buf_to_store(Some(1)),
                 _ => Err(String::from("Not supportable option")),
             } {
                 Ok(buf) => Ok(buf),
@@ -2192,15 +2243,15 @@ pub mod GroupA {
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u8 = match u8::decode(&mut storage, 73) {
+            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(73)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_u16 = match u16::decode(&mut storage, 74) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(74)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.opt = match EnumExampleA::decode(&mut storage, 75) {
+            self.opt = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(75)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -2213,15 +2264,15 @@ pub mod GroupA {
         }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u8.encode(73) {
+            match self.field_u8.get_buf_to_store(Some(73)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_u16.encode(74) {
+            match self.field_u16.get_buf_to_store(Some(74)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.opt.encode(75) {
+            match self.opt.get_buf_to_store(Some(75)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -2252,15 +2303,15 @@ pub mod GroupA {
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u8 = match u8::decode(&mut storage, 77) {
+            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(77)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_u16 = match u16::decode(&mut storage, 78) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(78)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.strct = match StructExampleA::decode(&mut storage, 79) {
+            self.strct = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(79)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -2273,15 +2324,15 @@ pub mod GroupA {
         }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u8.encode(77) {
+            match self.field_u8.get_buf_to_store(Some(77)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_u16.encode(78) {
+            match self.field_u16.get_buf_to_store(Some(78)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.strct.encode(79) {
+            match self.strct.get_buf_to_store(Some(79)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -2312,11 +2363,11 @@ pub mod GroupB {
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u8 = match u8::decode(&mut storage, 82) {
+            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(82)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_u16 = match u16::decode(&mut storage, 83) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(83)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -2329,11 +2380,11 @@ pub mod GroupB {
         }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u8.encode(82) {
+            match self.field_u8.get_buf_to_store(Some(82)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_u16.encode(83) {
+            match self.field_u16.get_buf_to_store(Some(83)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -2362,11 +2413,11 @@ pub mod GroupB {
                 }
             }
             fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-                self.field_u8 = match u8::decode(&mut storage, 86) {
+                self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(86)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
-                self.field_u16 = match u16::decode(&mut storage, 87) {
+                self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(87)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
@@ -2379,11 +2430,11 @@ pub mod GroupB {
             }
             fn abduct(&mut self) -> Result<Vec<u8>, String> {
                 let mut buffer: Vec<u8> = vec!();
-                match self.field_u8.encode(86) {
+                match self.field_u8.get_buf_to_store(Some(86)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
-                match self.field_u16.encode(87) {
+                match self.field_u16.get_buf_to_store(Some(87)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
@@ -2413,15 +2464,15 @@ pub mod GroupB {
                 }
             }
             fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-                self.field_u8 = match u8::decode(&mut storage, 89) {
+                self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(89)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
-                self.field_u16 = match u16::decode(&mut storage, 90) {
+                self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(90)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
-                self.strct = match StructExampleA::decode(&mut storage, 91) {
+                self.strct = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(91)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
@@ -2434,15 +2485,15 @@ pub mod GroupB {
             }
             fn abduct(&mut self) -> Result<Vec<u8>, String> {
                 let mut buffer: Vec<u8> = vec!();
-                match self.field_u8.encode(89) {
+                match self.field_u8.get_buf_to_store(Some(89)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
-                match self.field_u16.encode(90) {
+                match self.field_u16.get_buf_to_store(Some(90)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
-                match self.strct.encode(91) {
+                match self.strct.get_buf_to_store(Some(91)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };

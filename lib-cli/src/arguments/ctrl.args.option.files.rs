@@ -60,7 +60,7 @@ impl ArgsOptionFiles {
         let t_render = Instant::now();
         let content: String = render.render(store);
         match OpenOptions::new()
-            .write(overwrite)
+            .write(true)
             .create(true)
             .open(dest.clone())
         {

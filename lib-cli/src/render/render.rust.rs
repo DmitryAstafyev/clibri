@@ -99,7 +99,7 @@ impl RustRender {
                         body = format!("{}{}if buf.is_empty() {{\n", body, self.spaces(level + 3));
                         body = format!("{}{}self.{} = None;\n", body, self.spaces(level + 4), field.name);
                         body = format!("{}{}}} else {{\n", body, self.spaces(level + 3));
-                        body = format!("{}{}self.{} = match {}::decode(&mut storage, {}) {{\n", body, self.spaces(level + 4), field.name, enums.name, field.id);
+                        body = format!("{}{}self.{} = match {}::get_from_storage(Source::Storage(&mut storage), Some({})) {{\n", body, self.spaces(level + 4), field.name, enums.name, field.id);
                         body = format!("{}{}Ok(val) => Some(val),\n", body, self.spaces(level + 5));
                         body = format!("{}{}Err(e) => {{ return Err(e) }},\n", body, self.spaces(level + 5));
                         body = format!("{}{}}};\n", body, self.spaces(level + 4));
@@ -112,7 +112,7 @@ impl RustRender {
                 }
             }
             body = format!(
-                "{}{}self.{} = match {}::decode(&mut storage, {}) {{\n",
+                "{}{}self.{} = match {}::get_from_storage(Source::Storage(&mut storage), Some({})) {{\n",
                 body,
                 self.spaces(level + 2),
                 field.name,
@@ -154,12 +154,12 @@ impl RustRender {
                 if let Some(id) = field.ref_type_id {
                     if store.get_enum(id).is_some() {
                         body = format!("{}{}if let Some(mut val) = self.{}.clone() {{\n", body, self.spaces(level + 2), field.name);
-                        body = format!("{}{}match val.encode({}) {{\n", body, self.spaces(level + 3), field.id);
+                        body = format!("{}{}match val.get_buf_to_store(Some({})) {{\n", body, self.spaces(level + 3), field.id);
                         body = format!("{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n", body, self.spaces(level + 4));
                         body = format!("{}{}Err(e) => {{ return  Err(e); }},\n", body, self.spaces(level + 4));
                         body = format!("{}{}}};\n", body, self.spaces(level + 3));
                         body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
-                        body = format!("{}{}match get_empty_buffer_val({}) {{\n", body, self.spaces(level + 3), field.id);
+                        body = format!("{}{}match get_empty_buffer_val(Some({})) {{\n", body, self.spaces(level + 3), field.id);
                         body = format!("{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n", body, self.spaces(level + 4));
                         body = format!("{}{}Err(e) => {{ return  Err(e); }},\n", body, self.spaces(level + 4));
                         body = format!("{}{}}};\n", body, self.spaces(level + 3));
@@ -169,7 +169,7 @@ impl RustRender {
                 }
             }
             body = format!(
-                "{}{}match self.{}.encode({}) {{\n",
+                "{}{}match self.{}.get_buf_to_store(Some({})) {{\n",
                 body,
                 self.spaces(level + 2),
                 field.name,
@@ -256,7 +256,7 @@ impl RustRender {
         for (index, item) in enums.variants.iter().enumerate() {
             let item_type = self.enum_item_type(item.clone(), store);
             body = format!(
-                "{}{}{} => match {}::decode(&mut storage, id) {{\n",
+                "{}{}{} => match {}::get_from_storage(Source::Storage(&mut storage), Some(id)) {{\n",
                 body,
                 self.spaces(level + 3),
                 index,
@@ -295,7 +295,7 @@ impl RustRender {
         body = format!("{}{}match match self {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
             body = format!(
-                "{}{}Self::{}(v) => v.encode({}),\n",
+                "{}{}Self::{}(v) => v.get_buf_to_store(Some({})),\n",
                 body,
                 self.spaces(level + 3),
                 item.name,

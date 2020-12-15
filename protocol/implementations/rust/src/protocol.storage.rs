@@ -5,6 +5,7 @@ use bytes::{ Buf };
 use super::{ sizes };
 
 // injectable
+#[derive(Debug, Clone)]
 pub struct Storage {
     map: HashMap<u16, Vec<u8>>,
 }

@@ -5,7 +5,7 @@ use super::*;
 mod tests { 
     use super::*;
     use encode::{ StructEncode, EnumEncode, Encode, EncodeEnum, get_empty_buffer_val };
-    use decode::{ StructDecode, EnumDecode, Decode, DecodeEnum };
+    use decode::{ StructDecode, EnumDecode, Decode, DecodeEnum, Source };
     use storage::{ Storage };
     use std::io::Cursor;
     use bytes::{ Buf };
@@ -43,30 +43,30 @@ mod tests {
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             match match self {
-                Self::OptionString(v) => v.encode(1),
-                Self::Optionu8(v) => v.encode(2),
-                Self::Optionu16(v) => v.encode(3),
-                Self::Optionu32(v) => v.encode(4),
-                Self::Optionu64(v) => v.encode(5),
-                Self::Optioni8(v) => v.encode(6),
-                Self::Optioni16(v) => v.encode(7),
-                Self::Optioni32(v) => v.encode(8),
-                Self::Optioni64(v) => v.encode(9),
-                Self::Optionf32(v) => v.encode(10),
-                Self::Optionf64(v) => v.encode(11),
-                Self::OptionBool(v) => v.encode(12),
-                Self::OptionStruct(v) => v.encode(13),
-                Self::Optionu8Vec(v) => v.encode(14),
-                Self::Optionu16Vec(v) => v.encode(15),
-                Self::Optionu32Vec(v) => v.encode(16),
-                Self::Optionu64Vec(v) => v.encode(17),
-                Self::Optioni8Vec(v) => v.encode(18),
-                Self::Optioni16Vec(v) => v.encode(19),
-                Self::Optioni32Vec(v) => v.encode(20),
-                Self::Optioni64Vec(v) => v.encode(21),
-                Self::Optionf32Vec(v) => v.encode(22),
-                Self::Optionf64Vec(v) => v.encode(23),
-                Self::OptionStructVec(v) => v.encode(24),
+                Self::OptionString(v) => v.get_buf_to_store(Some(1)),
+                Self::Optionu8(v) => v.get_buf_to_store(Some(2)),
+                Self::Optionu16(v) => v.get_buf_to_store(Some(3)),
+                Self::Optionu32(v) => v.get_buf_to_store(Some(4)),
+                Self::Optionu64(v) => v.get_buf_to_store(Some(5)),
+                Self::Optioni8(v) => v.get_buf_to_store(Some(6)),
+                Self::Optioni16(v) => v.get_buf_to_store(Some(7)),
+                Self::Optioni32(v) => v.get_buf_to_store(Some(8)),
+                Self::Optioni64(v) => v.get_buf_to_store(Some(9)),
+                Self::Optionf32(v) => v.get_buf_to_store(Some(10)),
+                Self::Optionf64(v) => v.get_buf_to_store(Some(11)),
+                Self::OptionBool(v) => v.get_buf_to_store(Some(12)),
+                Self::OptionStruct(v) => v.get_buf_to_store(Some(13)),
+                Self::Optionu8Vec(v) => v.get_buf_to_store(Some(14)),
+                Self::Optionu16Vec(v) => v.get_buf_to_store(Some(15)),
+                Self::Optionu32Vec(v) => v.get_buf_to_store(Some(16)),
+                Self::Optionu64Vec(v) => v.get_buf_to_store(Some(17)),
+                Self::Optioni8Vec(v) => v.get_buf_to_store(Some(18)),
+                Self::Optioni16Vec(v) => v.get_buf_to_store(Some(19)),
+                Self::Optioni32Vec(v) => v.get_buf_to_store(Some(20)),
+                Self::Optioni64Vec(v) => v.get_buf_to_store(Some(21)),
+                Self::Optionf32Vec(v) => v.get_buf_to_store(Some(22)),
+                Self::Optionf64Vec(v) => v.get_buf_to_store(Some(23)),
+                Self::OptionStructVec(v) => v.get_buf_to_store(Some(24)),
                 _ => Err(String::from("Not supportable option")),
             } {
                 Ok(buf) => Ok(buf),
@@ -89,99 +89,99 @@ mod tests {
                 Err(e) => { return Err(e); }
             };
             match id {
-                1 => match String::decode(&mut storage, id) {
+                1 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::OptionString(v)),
                     Err(e) => Err(e),
                 },
-                2 => match u8::decode(&mut storage, id) {
+                2 => match u8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu8(v)),
                     Err(e) => Err(e),
                 },
-                3 => match u16::decode(&mut storage, id) {
+                3 => match u16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu16(v)),
                     Err(e) => Err(e),
                 },
-                4 => match u32::decode(&mut storage, id) {
+                4 => match u32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu32(v)),
                     Err(e) => Err(e),
                 },
-                5 => match u64::decode(&mut storage, id) {
+                5 => match u64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu64(v)),
                     Err(e) => Err(e),
                 },
-                6 => match i8::decode(&mut storage, id) {
+                6 => match i8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni8(v)),
                     Err(e) => Err(e),
                 },
-                7 => match i16::decode(&mut storage, id) {
+                7 => match i16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni16(v)),
                     Err(e) => Err(e),
                 },
-                8 => match i32::decode(&mut storage, id) {
+                8 => match i32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni32(v)),
                     Err(e) => Err(e),
                 },
-                9 => match i64::decode(&mut storage, id) {
+                9 => match i64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni64(v)),
                     Err(e) => Err(e),
                 },
-                10 => match f32::decode(&mut storage, id) {
+                10 => match f32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionf32(v)),
                     Err(e) => Err(e),
                 },
-                11 => match f64::decode(&mut storage, id) {
+                11 => match f64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionf64(v)),
                     Err(e) => Err(e),
                 },
-                12 => match bool::decode(&mut storage, id) {
+                12 => match bool::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::OptionBool(v)),
                     Err(e) => Err(e),
                 },
-                13 => match Nested::decode(&mut storage, id) {
+                13 => match Nested::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::OptionStruct(v)),
                     Err(e) => Err(e),
                 },
-                14 => match Vec::<u8>::decode(&mut storage, id) {
+                14 => match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu8Vec(v)),
                     Err(e) => Err(e),
                 },
-                15 => match Vec::<u16>::decode(&mut storage, id) {
+                15 => match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu16Vec(v)),
                     Err(e) => Err(e),
                 },
-                16 => match Vec::<u32>::decode(&mut storage, id) {
+                16 => match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu32Vec(v)),
                     Err(e) => Err(e),
                 },
-                17 => match Vec::<u64>::decode(&mut storage, id) {
+                17 => match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionu64Vec(v)),
                     Err(e) => Err(e),
                 },
-                18 => match Vec::<i8>::decode(&mut storage, id) {
+                18 => match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni8Vec(v)),
                     Err(e) => Err(e),
                 },
-                19 => match Vec::<i16>::decode(&mut storage, id) {
+                19 => match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni16Vec(v)),
                     Err(e) => Err(e),
                 },
-                20 => match Vec::<i32>::decode(&mut storage, id) {
+                20 => match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni32Vec(v)),
                     Err(e) => Err(e),
                 },
-                21 => match Vec::<i64>::decode(&mut storage, id) {
+                21 => match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optioni64Vec(v)),
                     Err(e) => Err(e),
                 },
-                22 => match Vec::<f32>::decode(&mut storage, id) {
+                22 => match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionf32Vec(v)),
                     Err(e) => Err(e),
                 },
-                23 => match Vec::<f64>::decode(&mut storage, id) {
+                23 => match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::Optionf64Vec(v)),
                     Err(e) => Err(e),
                 },
-                24 => match Vec::<Nested>::decode(&mut storage, id) {
+                24 => match Vec::<Nested>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
                     Ok(v) => Ok(TargetEnum::OptionStructVec(v)),
                     Err(e) => Err(e),
                 },
@@ -213,15 +213,15 @@ mod tests {
         }
 
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u16 = match u16::decode(&mut storage, 1) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(1)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_utf8_string = match String::decode(&mut storage, 2) {
+            self.field_utf8_string = match String::get_from_storage(Source::Storage(&mut storage), Some(2)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_optional = match Option::<u8>::decode(&mut storage, 3) {
+            self.field_optional = match Option::<u8>::get_from_storage(Source::Storage(&mut storage), Some(3)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -237,15 +237,15 @@ mod tests {
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u16.encode(1) {
+            match self.field_u16.get_buf_to_store(Some(1)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.field_utf8_string.encode(2) {
+            match self.field_utf8_string.get_buf_to_store(Some(2)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.field_optional.encode(3) {
+            match self.field_optional.get_buf_to_store(Some(3)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
@@ -324,107 +324,107 @@ mod tests {
             }
         }
         fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.prop_u8 = match u8::decode(&mut storage, 1) {
+            self.prop_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(1)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u16 = match u16::decode(&mut storage, 2) {
+            self.prop_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(2)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u32 = match u32::decode(&mut storage, 3) {
+            self.prop_u32 = match u32::get_from_storage(Source::Storage(&mut storage), Some(3)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u64 = match u64::decode(&mut storage, 4) {
+            self.prop_u64 = match u64::get_from_storage(Source::Storage(&mut storage), Some(4)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i8 = match i8::decode(&mut storage, 5) {
+            self.prop_i8 = match i8::get_from_storage(Source::Storage(&mut storage), Some(5)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i16 = match i16::decode(&mut storage, 6) {
+            self.prop_i16 = match i16::get_from_storage(Source::Storage(&mut storage), Some(6)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i32 = match i32::decode(&mut storage, 7) {
+            self.prop_i32 = match i32::get_from_storage(Source::Storage(&mut storage), Some(7)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i64 = match i64::decode(&mut storage, 8) {
+            self.prop_i64 = match i64::get_from_storage(Source::Storage(&mut storage), Some(8)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u8_vec = match Vec::<u8>::decode(&mut storage, 9) {
+            self.prop_u8_vec = match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(9)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u16_vec = match Vec::<u16>::decode(&mut storage, 10) {
+            self.prop_u16_vec = match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(10)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u32_vec = match Vec::<u32>::decode(&mut storage, 11) {
+            self.prop_u32_vec = match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(11)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_u64_vec = match Vec::<u64>::decode(&mut storage, 12) {
+            self.prop_u64_vec = match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(12)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f32_vec = match Vec::<f32>::decode(&mut storage, 13) {
+            self.prop_f32_vec = match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(13)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f64_vec = match Vec::<f64>::decode(&mut storage, 14) {
+            self.prop_f64_vec = match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(14)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i8_vec = match Vec::<i8>::decode(&mut storage, 15) {
+            self.prop_i8_vec = match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(15)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i16_vec = match Vec::<i16>::decode(&mut storage, 16) {
+            self.prop_i16_vec = match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(16)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i32_vec = match Vec::<i32>::decode(&mut storage, 17) {
+            self.prop_i32_vec = match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(17)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_i64_vec = match Vec::<i64>::decode(&mut storage, 18) {
+            self.prop_i64_vec = match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(18)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_string = match String::decode(&mut storage, 19) {
+            self.prop_string = match String::get_from_storage(Source::Storage(&mut storage), Some(19)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f32 = match f32::decode(&mut storage, 20) {
+            self.prop_f32 = match f32::get_from_storage(Source::Storage(&mut storage), Some(20)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_f64 = match f64::decode(&mut storage, 21) {
+            self.prop_f64 = match f64::get_from_storage(Source::Storage(&mut storage), Some(21)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_utf8_string_vec = match Vec::<String>::decode(&mut storage, 22) {
+            self.prop_utf8_string_vec = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(22)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_nested = match <Nested as Decode<Nested>>::decode(&mut storage, 23) {
+            self.prop_nested = match <Nested as Decode<Nested>>::get_from_storage(Source::Storage(&mut storage), Some(23)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_nested_vec = match Vec::<Nested>::decode(&mut storage, 24) {
+            self.prop_nested_vec = match Vec::<Nested>::get_from_storage(Source::Storage(&mut storage), Some(24)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_enum = match TargetEnum::decode(&mut storage, 25) {
+            self.prop_enum = match TargetEnum::get_from_storage(Source::Storage(&mut storage), Some(25)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.prop_optional_strct = match Option::<Nested>::decode(&mut storage, 26) {
+            self.prop_optional_strct = match Option::<Nested>::get_from_storage(Source::Storage(&mut storage), Some(26)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -432,7 +432,7 @@ mod tests {
                 if buf.is_empty() {
                     self.prop_optional_enum = None;
                 } else {
-                    self.prop_optional_enum = match TargetEnum::decode(&mut storage, 27) {
+                    self.prop_optional_enum = match TargetEnum::get_from_storage(Source::Storage(&mut storage), Some(27)) {
                         Ok(val) => Some(val),
                         Err(e) => { return Err(e) },
                     };
@@ -440,7 +440,7 @@ mod tests {
             } else {
                 return Err("Buffer for property prop_optional_enum isn\'t found".to_string());
             }
-            self.prop_enum_vec = match Vec::<TargetEnum>::decode(&mut storage, 28) {
+            self.prop_enum_vec = match Vec::<TargetEnum>::get_from_storage(Source::Storage(&mut storage), Some(28)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -448,7 +448,7 @@ mod tests {
                 if buf.is_empty() {
                     self.prop_optional_enum_vec = None;
                 } else {
-                    self.prop_optional_enum_vec = match Vec::<TargetEnum>::decode(&mut storage, 29) {
+                    self.prop_optional_enum_vec = match Vec::<TargetEnum>::get_from_storage(Source::Storage(&mut storage), Some(29)) {
                         Ok(val) => Some(val),
                         Err(e) => { return Err(e) },
                     };
@@ -468,132 +468,132 @@ mod tests {
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.prop_u8.encode(1) {
+            match self.prop_u8.get_buf_to_store(Some(1)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u16.encode(2) {
+            match self.prop_u16.get_buf_to_store(Some(2)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u32.encode(3) {
+            match self.prop_u32.get_buf_to_store(Some(3)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u64.encode(4) {
+            match self.prop_u64.get_buf_to_store(Some(4)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i8.encode(5) {
+            match self.prop_i8.get_buf_to_store(Some(5)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i16.encode(6) {
+            match self.prop_i16.get_buf_to_store(Some(6)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i32.encode(7) {
+            match self.prop_i32.get_buf_to_store(Some(7)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i64.encode(8) {
+            match self.prop_i64.get_buf_to_store(Some(8)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u8_vec.encode(9) {
+            match self.prop_u8_vec.get_buf_to_store(Some(9)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u16_vec.encode(10) {
+            match self.prop_u16_vec.get_buf_to_store(Some(10)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u32_vec.encode(11) {
+            match self.prop_u32_vec.get_buf_to_store(Some(11)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_u64_vec.encode(12) {
+            match self.prop_u64_vec.get_buf_to_store(Some(12)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f32_vec.encode(13) {
+            match self.prop_f32_vec.get_buf_to_store(Some(13)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f64_vec.encode(14) {
+            match self.prop_f64_vec.get_buf_to_store(Some(14)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i8_vec.encode(15) {
+            match self.prop_i8_vec.get_buf_to_store(Some(15)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i16_vec.encode(16) {
+            match self.prop_i16_vec.get_buf_to_store(Some(16)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i32_vec.encode(17) {
+            match self.prop_i32_vec.get_buf_to_store(Some(17)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_i64_vec.encode(18) {
+            match self.prop_i64_vec.get_buf_to_store(Some(18)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_string.encode(19) {
+            match self.prop_string.get_buf_to_store(Some(19)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f32.encode(20) {
+            match self.prop_f32.get_buf_to_store(Some(20)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_f64.encode(21) {
+            match self.prop_f64.get_buf_to_store(Some(21)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_utf8_string_vec.encode(22) {
+            match self.prop_utf8_string_vec.get_buf_to_store(Some(22)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match Encode::encode(&mut self.prop_nested, 23) {
+            match Encode::get_buf_to_store(&mut self.prop_nested, Some(23)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_nested_vec.encode(24) {
+            match self.prop_nested_vec.get_buf_to_store(Some(24)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_enum.encode(25) {
+            match self.prop_enum.get_buf_to_store(Some(25)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
-            match self.prop_optional_strct.encode(26) {
+            match self.prop_optional_strct.get_buf_to_store(Some(26)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
             if let Some(mut val) = self.prop_optional_enum.clone() {
-                match val.encode(27) {
+                match val.get_buf_to_store(Some(27)) {
                     Ok(mut buf) => { buffer.append(&mut buf); },
                     Err(e) => { return  Err(e); }
                 };
             } else {
-                match get_empty_buffer_val(27) {
+                match get_empty_buffer_val(Some(27)) {
                     Ok(mut buf) => { buffer.append(&mut buf); },
                     Err(e) => { return  Err(e); }
                 };
             }
-            match self.prop_enum_vec.encode(28) {
+            match self.prop_enum_vec.get_buf_to_store(Some(28)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); }
             };
             if let Some(mut val) = self.prop_optional_enum_vec.clone() {
-                match val.encode(29) {
+                match val.get_buf_to_store(Some(29)) {
                     Ok(mut buf) => { buffer.append(&mut buf); },
                     Err(e) => { return  Err(e); }
                 };
             } else {
-                match get_empty_buffer_val(29) {
+                match get_empty_buffer_val(Some(29)) {
                     Ok(mut buf) => { buffer.append(&mut buf); },
                     Err(e) => { return  Err(e); }
                 };
@@ -678,6 +678,8 @@ mod tests {
                 return;
             }
         };
+        println!("{:?}", s);
+
         match b.extract(s) {
             Ok(_) => {},
             Err(e) => {
