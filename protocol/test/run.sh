@@ -6,3 +6,6 @@ cd ./typescript
 npm run build
 node ./dist/index.js
 cd ..
+cd ./rust
+cargo run
+cd ..
