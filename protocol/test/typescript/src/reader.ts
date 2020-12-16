@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as Protocol from './protocol';
-import * as _ from 'lodash';
 import { usecases as samples } from './writer';
 
 const usecases: Array<{ name: string, entity: any }> = [
@@ -19,6 +18,75 @@ const usecases: Array<{ name: string, entity: any }> = [
     { name: 'GroupCStructExampleA' , entity: Protocol.GroupB.GroupC.StructExampleA },
     { name: 'GroupCStructExampleB' , entity: Protocol.GroupB.GroupC.StructExampleB },
 ];
+
+function isFloat(n){
+    return Number(n) === n && n % 1 !== 0;
+}
+
+function isEqualProp(a: any, b: any): boolean {
+    if (typeof a !== typeof b) {
+        console.log(`Left: ${a}, right: ${b}`)
+        return false;
+    }
+    if (typeof a === 'bigint') {
+        if (a !== b) {
+            console.log(`Left: ${a}, right: ${b}`)
+            return false;
+        }
+        return true;
+    }
+    // JS has problems with float... 0.1 can be after parsing 0.1000000001, well, let's prevent it
+    if (isFloat(a)) {
+        if (a.toFixed(2) !== b.toFixed(2)) {
+            console.log(`Left: ${a}, right: ${b}`)
+            return false;
+        }
+        return true;
+    }
+    if (a instanceof Array) {
+        try {
+            a.forEach((v, i) => {
+                if (!isEqualProp(a[i], b[i])) {
+                    throw false;
+                }
+            });
+        } catch (e) {
+            return false;
+        }
+        return true;
+    }
+    if (typeof a === 'object') {
+        if (!isEqual(a, b)) {
+            console.log(`Left: ${a}, right: ${b}`)
+            return false;
+        }
+        return true;
+    }
+    if (a !== b) {
+        console.log(`Left: ${a}, right: ${b}`)
+        return false;
+    }
+    return true;
+}
+
+function isEqual(a: any, b: any): boolean {
+    if (Object.keys(a).length !== Object.keys(b).length) {
+        return false;
+    }
+    try {
+        Object.keys(a).forEach((key: string) => {
+            if (typeof a[key] === 'function') {
+                return;
+            }
+            if (!isEqualProp(a[key], b[key])) {
+                throw false;
+            }
+        });
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
 
 export function read(): Promise<void> {
     const dest: string = path.resolve(path.dirname(module.filename), '../../rust/binary');
@@ -42,13 +110,10 @@ export function read(): Promise<void> {
                             return rej(new Error(`Fail to parse usecase "${usecase.name}": ${inst.message}`));
                         }
                         const sample = samples[index].entity;
-                        console.log(`[TS] File: ${target} has beed read.`);
-                        /*
-                        if (!_.isEqual(inst, sample)) {
-                            console.log(sample);
-                            console.log(inst);
+                        if (!isEqual(sample, inst)) {
+                            return rej(new Error(`Parsed object from ${target} isn't equal to sample.`));
                         }
-                        */
+                        console.log(`[TS] File: ${target} has beed read.`);
                         res(undefined);
                     });
                 });
