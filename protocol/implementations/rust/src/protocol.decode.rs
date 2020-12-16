@@ -98,7 +98,6 @@ pub trait Decode<T> {
             Source::Storage(storage) => {
                 if let Some(id) = id {
                     if let Some(buf) = storage.get(id) {
-                        println!("FOUND: {:?}", buf);
                         Ok(buf)
                     } else {
                         Err(format!("Buffer for property {} isn't found", id))

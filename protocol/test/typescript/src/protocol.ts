@@ -2326,6 +2326,30 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
         }
     }
 
+    public static from(obj: any): StructExampleA | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleA.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleA.scheme);
+            return error instanceof Error ? error : new StructExampleA({
+                field_str: obj.field_str,
+                field_u8: obj.field_u8,
+                field_u16: obj.field_u16,
+                field_u32: obj.field_u32,
+                field_u64: obj.field_u64,
+                field_i8: obj.field_i8,
+                field_i16: obj.field_i16,
+                field_i32: obj.field_i32,
+                field_i64: obj.field_i64,
+                field_f32: obj.field_f32,
+                field_f64: obj.field_f64,
+                field_bool: obj.field_bool,
+            });
+        }
+    }
+
     public field_str: string;
     public field_u8: number;
     public field_u16: number;
@@ -2526,6 +2550,30 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
         }
     }
 
+    public static from(obj: any): StructExampleB | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleB.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleB.scheme);
+            return error instanceof Error ? error : new StructExampleB({
+                field_str: obj.field_str,
+                field_u8: obj.field_u8,
+                field_u16: obj.field_u16,
+                field_u32: obj.field_u32,
+                field_u64: obj.field_u64,
+                field_i8: obj.field_i8,
+                field_i16: obj.field_i16,
+                field_i32: obj.field_i32,
+                field_i64: obj.field_i64,
+                field_f32: obj.field_f32,
+                field_f64: obj.field_f64,
+                field_bool: obj.field_bool,
+            });
+        }
+    }
+
     public field_str: Array<string>;
     public field_u8: Array<number>;
     public field_u16: Array<number>;
@@ -2723,6 +2771,30 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
             return { validate(obj: any): Error | undefined {
                 return obj instanceof StructExampleC ? undefined : new Error(`Expecting instance of StructExampleC`);
             }};
+        }
+    }
+
+    public static from(obj: any): StructExampleC | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleC.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleC.scheme);
+            return error instanceof Error ? error : new StructExampleC({
+                field_str: obj.field_str,
+                field_u8: obj.field_u8,
+                field_u16: obj.field_u16,
+                field_u32: obj.field_u32,
+                field_u64: obj.field_u64,
+                field_i8: obj.field_i8,
+                field_i16: obj.field_i16,
+                field_i32: obj.field_i32,
+                field_i64: obj.field_i64,
+                field_f32: obj.field_f32,
+                field_f64: obj.field_f64,
+                field_bool: obj.field_bool,
+            });
         }
     }
 
@@ -3022,6 +3094,30 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
     }
 
+    public static from(obj: any): StructExampleD | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleD.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleD.scheme);
+            return error instanceof Error ? error : new StructExampleD({
+                field_str: obj.field_str,
+                field_u8: obj.field_u8,
+                field_u16: obj.field_u16,
+                field_u32: obj.field_u32,
+                field_u64: obj.field_u64,
+                field_i8: obj.field_i8,
+                field_i16: obj.field_i16,
+                field_i32: obj.field_i32,
+                field_i64: obj.field_i64,
+                field_f32: obj.field_f32,
+                field_f64: obj.field_f64,
+                field_bool: obj.field_bool,
+            });
+        }
+    }
+
     public field_str: Array<string | undefined>;
     public field_u8: Array<number | undefined>;
     public field_u16: Array<number | undefined>;
@@ -3315,6 +3411,21 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             return { validate(obj: any): Error | undefined {
                 return obj instanceof StructExampleE ? undefined : new Error(`Expecting instance of StructExampleE`);
             }};
+        }
+    }
+
+    public static from(obj: any): StructExampleE | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleE.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleE.scheme);
+            return error instanceof Error ? error : new StructExampleE({
+                field_a: obj.field_a,
+                field_b: obj.field_b,
+                field_c: obj.field_c,
+            });
         }
     }
 
@@ -3710,6 +3821,21 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
             return { validate(obj: any): Error | undefined {
                 return obj instanceof StructExampleF ? undefined : new Error(`Expecting instance of StructExampleF`);
             }};
+        }
+    }
+
+    public static from(obj: any): StructExampleF | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleF.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleF.scheme);
+            return error instanceof Error ? error : new StructExampleF({
+                field_a: obj.field_a,
+                field_b: obj.field_b,
+                field_c: obj.field_c,
+            });
         }
     }
 
@@ -4128,6 +4254,20 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
         }
     }
 
+    public static from(obj: any): StructExampleG | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleG.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleG.scheme);
+            return error instanceof Error ? error : new StructExampleG({
+                field_a: obj.field_a,
+                field_b: obj.field_b,
+            });
+        }
+    }
+
     public field_a: StructExampleA;
     public field_b: StructExampleB;
 
@@ -4251,6 +4391,20 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
             return { validate(obj: any): Error | undefined {
                 return obj instanceof StructExampleJ ? undefined : new Error(`Expecting instance of StructExampleJ`);
             }};
+        }
+    }
+
+    public static from(obj: any): StructExampleJ | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructExampleJ.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructExampleJ.scheme);
+            return error instanceof Error ? error : new StructExampleJ({
+                field_a: obj.field_a,
+                field_b: obj.field_b,
+            });
         }
     }
 
@@ -4409,6 +4563,21 @@ export namespace GroupA {
             }
         }
 
+        public static from(obj: any): StructExampleA | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = StructExampleA.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, StructExampleA.scheme);
+                return error instanceof Error ? error : new StructExampleA({
+                    field_u8: obj.field_u8,
+                    field_u16: obj.field_u16,
+                    opt: obj.opt,
+                });
+            }
+        }
+
         public field_u8: number;
         public field_u16: number;
         public opt: EnumExampleA;
@@ -4549,6 +4718,21 @@ export namespace GroupA {
             }
         }
 
+        public static from(obj: any): StructExampleB | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = StructExampleB.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, StructExampleB.scheme);
+                return error instanceof Error ? error : new StructExampleB({
+                    field_u8: obj.field_u8,
+                    field_u16: obj.field_u16,
+                    strct: obj.strct,
+                });
+            }
+        }
+
         public field_u8: number;
         public field_u16: number;
         public strct: StructExampleA;
@@ -4660,6 +4844,20 @@ export namespace GroupB {
             }
         }
 
+        public static from(obj: any): StructExampleA | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = StructExampleA.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, StructExampleA.scheme);
+                return error instanceof Error ? error : new StructExampleA({
+                    field_u8: obj.field_u8,
+                    field_u16: obj.field_u16,
+                });
+            }
+        }
+
         public field_u8: number;
         public field_u16: number;
 
@@ -4749,6 +4947,20 @@ export namespace GroupB {
                     return { validate(obj: any): Error | undefined {
                         return obj instanceof StructExampleA ? undefined : new Error(`Expecting instance of StructExampleA`);
                     }};
+                }
+            }
+
+            public static from(obj: any): StructExampleA | Error {
+                if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                    const inst = StructExampleA.defaults();
+                    const err = inst.decode(obj);
+                    return err instanceof Error ? err : inst;
+                } else {
+                    const error: Error | undefined = Protocol.validate(obj, StructExampleA.scheme);
+                    return error instanceof Error ? error : new StructExampleA({
+                        field_u8: obj.field_u8,
+                        field_u16: obj.field_u16,
+                    });
                 }
             }
 
@@ -4845,6 +5057,21 @@ export namespace GroupB {
                     return { validate(obj: any): Error | undefined {
                         return obj instanceof StructExampleB ? undefined : new Error(`Expecting instance of StructExampleB`);
                     }};
+                }
+            }
+
+            public static from(obj: any): StructExampleB | Error {
+                if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                    const inst = StructExampleB.defaults();
+                    const err = inst.decode(obj);
+                    return err instanceof Error ? err : inst;
+                } else {
+                    const error: Error | undefined = Protocol.validate(obj, StructExampleB.scheme);
+                    return error instanceof Error ? error : new StructExampleB({
+                        field_u8: obj.field_u8,
+                        field_u16: obj.field_u16,
+                        strct: obj.strct,
+                    });
                 }
             }
 

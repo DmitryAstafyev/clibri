@@ -88,6 +88,8 @@ impl TypescriptRender {
 
         body = format!("{}\n{}", body, self.struct_validator(&strct, level + 1));
 
+        body = format!("{}\n{}", body, self.struct_from(&strct, level + 1));
+
         for field in &strct.fields {
             body = format!(
                 "{}\n{}{}",
@@ -426,6 +428,24 @@ impl TypescriptRender {
             strct.name
         );
         body = format!("{}\n{}}}}};", body, self.spaces(level + 2));
+        body = format!("{}\n{}}}", body, self.spaces(level + 1));
+        body = format!("{}\n{}}}\n", body, self.spaces(level));
+        body
+    }
+
+    fn struct_from(&self, strct: &Struct, level: u8) -> String {
+        let mut body = format!("{}public static from(obj: any): {} | Error {{", self.spaces(level), strct.name);
+        body = format!("{}\n{}if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {{", body, self.spaces(level + 1));
+        body = format!("{}\n{}const inst = {}.defaults();", body, self.spaces(level + 2), strct.name);
+        body = format!("{}\n{}const err = inst.decode(obj);", body, self.spaces(level + 2));
+        body = format!("{}\n{}return err instanceof Error ? err : inst;", body, self.spaces(level + 2));
+        body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
+        body = format!("{}\n{}const error: Error | undefined = Protocol.validate(obj, {}.scheme);", body, self.spaces(level + 2), strct.name);
+        body = format!("{}\n{}return error instanceof Error ? error : new {}({{", body, self.spaces(level + 2), strct.name);
+        for field in &strct.fields {
+            body = format!("{}\n{}{}: obj.{},", body, self.spaces(level + 3), field.name, field.name);
+        }
+        body = format!("{}\n{}}});", body, self.spaces(level + 2));
         body = format!("{}\n{}}}", body, self.spaces(level + 1));
         body = format!("{}\n{}}}\n", body, self.spaces(level));
         body

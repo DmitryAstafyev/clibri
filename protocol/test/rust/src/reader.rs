@@ -69,6 +69,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleA: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -97,6 +98,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleB: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleB.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -125,6 +127,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleC: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleC.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -153,6 +156,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleD: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleD.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -172,6 +176,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleE: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleE.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -191,6 +196,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleF: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleF.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -235,6 +241,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleG: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleG.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -266,6 +273,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("StructExampleJ: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleJ.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -285,6 +293,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("GroupA::StructExampleA: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -308,6 +317,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("GroupA::StructExampleB: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleB.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -326,6 +336,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("GroupB::StructExampleA: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupBStructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -344,6 +355,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("GroupB::GroupC::StructExampleA: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -366,6 +378,7 @@ pub fn read() -> Result<(), String> {
                     if entity != src {
                         panic!("GroupB::GroupC::StructExampleB: failed: \n\t{:?}\n\t{:?})", entity, src)
                     }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleB.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }

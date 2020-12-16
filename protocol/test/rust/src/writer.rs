@@ -67,6 +67,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleA.prot.bin"));
     }
     if let Ok(buf) = (StructExampleB {
         field_str: vec![String::from("test_a"), String::from("test_b")],
@@ -85,6 +86,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleB.prot.bin"));
     }
     if let Ok(buf) = (StructExampleC {
         field_str: Some(String::from("test")),
@@ -103,6 +105,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleC.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleC.prot.bin"));
     }
     if let Ok(buf) = (StructExampleD {
         field_str: Some(vec![String::from("test_a"), String::from("test_b")]),
@@ -121,6 +124,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleD.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleD.prot.bin"));
     }
     if let Ok(buf) = (StructExampleE {
         field_a: EnumExampleA::Option_a(String::from("Option_a")),
@@ -130,6 +134,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleE.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleE.prot.bin"));
     }
     if let Ok(buf) = (StructExampleF {
         field_a: None,
@@ -139,6 +144,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleF.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleF.prot.bin"));
     }
     if let Ok(buf) = (StructExampleG {
         field_a: StructExampleA {
@@ -173,6 +179,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleG.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleG.prot.bin"));
     }
     if let Ok(buf) = (StructExampleJ {
         field_a: Some(StructExampleA {
@@ -194,6 +201,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./StructExampleJ.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleJ.prot.bin"));
     }
     if let Ok(buf) = (GroupA::StructExampleA {
         field_u8: 1,
@@ -203,6 +211,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./GroupAStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupAStructExampleA.prot.bin"));
     }
     if let Ok(buf) = (GroupA::StructExampleB {
         field_u8: 1,
@@ -216,6 +225,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./GroupAStructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupAStructExampleB.prot.bin"));
     }
     if let Ok(buf) = (GroupB::StructExampleA {
         field_u8: 1,
@@ -224,6 +234,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./GroupBStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupBStructExampleA.prot.bin"));
     }
     if let Ok(buf) = (GroupB::GroupC::StructExampleA {
         field_u8: 1,
@@ -232,6 +243,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./GroupCStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleA.prot.bin"));
     }
     if let Ok(buf) = (GroupB::GroupC::StructExampleB {
         field_u8: 1,
@@ -244,6 +256,7 @@ pub fn write() -> Result<(), String> {
         if let Err(e) = writeFile(root.join("./GroupCStructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleB.prot.bin"));
     }
     Ok(())
 }

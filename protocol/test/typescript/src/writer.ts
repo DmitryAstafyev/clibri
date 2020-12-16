@@ -2,7 +2,7 @@ import * as Protocol from './protocol';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const usecases: Array<{ name: string, entity: Protocol.Convertor }> = [
+export const usecases: Array<{ name: string, entity: Protocol.Convertor }> = [
     { name: 'StructExampleA' , entity: new Protocol.StructExampleA({
         field_str: 'test',
         field_u8: 1,
@@ -179,7 +179,8 @@ export function write(): Promise<void> {
                     if (errWrite) {
                         return reject(errWrite);
                     }
-                    resolve();
+                    console.log(`[TS] File: ${target} has beed written.`);
+                    resolve(undefined);
                 });
             });
         });

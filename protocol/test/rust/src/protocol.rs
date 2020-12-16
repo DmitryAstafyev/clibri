@@ -125,7 +125,6 @@ pub trait Decode<T> {
             Source::Storage(storage) => {
                 if let Some(id) = id {
                     if let Some(buf) = storage.get(id) {
-                        println!("FOUND: {:?}", buf);
                         Ok(buf)
                     } else {
                         Err(format!("Buffer for property {} isn't found", id))
@@ -650,25 +649,25 @@ fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<
     let mut buffer: Vec<u8> = vec!();
     if let Some(id) = id {
         buffer.append(&mut id.to_le_bytes().to_vec());
+        match size {
+            ESize::U8(size) => {
+                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U16(size) => {
+                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U32(size) => {
+                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U64(size) => {
+                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+        };
     }
-    match size {
-        ESize::U8(size) => {
-            buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U16(size) => {
-            buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U32(size) => {
-            buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U64(size) => {
-            buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-    };
     buffer.append(&mut value);
     Ok(buffer)
 }
@@ -1099,17 +1098,15 @@ impl EnumDecode for EnumExampleA {
             return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
         }
         let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
-        let id = cursor.get_u16_le();
-        let mut storage = match Storage::new(buf) {
-            Ok(s) => s,
-            Err(e) => { return Err(e); }
-        };
-        match id {
-            0 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+        let index = cursor.get_u16_le();
+        let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];
+        body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);
+        match index {
+            0 => match String::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleA::Option_a(v)),
                 Err(e) => Err(e)
             },
-            1 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            1 => match String::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleA::Option_b(v)),
                 Err(e) => Err(e)
             },
@@ -1119,14 +1116,19 @@ impl EnumDecode for EnumExampleA {
 }
 impl EnumEncode for EnumExampleA {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        match match self {
-            Self::Option_a(v) => v.get_buf_to_store(Some(0)),
-            Self::Option_b(v) => v.get_buf_to_store(Some(1)),
-            _ => Err(String::from("Not supportable option")),
-        } {
-            Ok(buf) => Ok(buf),
-            Err(e) => Err(e),
-        }
+        let (buf, index) = match self {
+            Self::Option_a(v) => (v.encode(), 0),
+            Self::Option_b(v) => (v.encode(), 1),
+            _ => { return Err(String::from("Not supportable option")); },
+        };
+        let mut buf = match buf {
+            Ok(buf) => buf,
+            Err(e) => { return Err(e); },
+        };
+        let mut buffer: Vec<u8> = vec!();
+        buffer.append(&mut (index as u16).to_le_bytes().to_vec());
+        buffer.append(&mut buf);
+        Ok(buffer)
     }
 }
 
@@ -1151,53 +1153,51 @@ impl EnumDecode for EnumExampleB {
             return Err(String::from("Fail to extract value for EnumExampleB because buffer too small"));
         }
         let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
-        let id = cursor.get_u16_le();
-        let mut storage = match Storage::new(buf) {
-            Ok(s) => s,
-            Err(e) => { return Err(e); }
-        };
-        match id {
-            0 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+        let index = cursor.get_u16_le();
+        let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];
+        body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);
+        match index {
+            0 => match String::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_str(v)),
                 Err(e) => Err(e)
             },
-            1 => match u8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            1 => match u8::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_u8(v)),
                 Err(e) => Err(e)
             },
-            2 => match u16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            2 => match u16::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_u16(v)),
                 Err(e) => Err(e)
             },
-            3 => match u32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            3 => match u32::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_u32(v)),
                 Err(e) => Err(e)
             },
-            4 => match u64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            4 => match u64::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_u64(v)),
                 Err(e) => Err(e)
             },
-            5 => match i8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            5 => match i8::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_i8(v)),
                 Err(e) => Err(e)
             },
-            6 => match i16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            6 => match i16::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_i16(v)),
                 Err(e) => Err(e)
             },
-            7 => match i32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            7 => match i32::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_i32(v)),
                 Err(e) => Err(e)
             },
-            8 => match i64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            8 => match i64::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_i64(v)),
                 Err(e) => Err(e)
             },
-            9 => match f32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            9 => match f32::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_f32(v)),
                 Err(e) => Err(e)
             },
-            10 => match f64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            10 => match f64::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleB::Option_f64(v)),
                 Err(e) => Err(e)
             },
@@ -1207,23 +1207,28 @@ impl EnumDecode for EnumExampleB {
 }
 impl EnumEncode for EnumExampleB {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        match match self {
-            Self::Option_str(v) => v.get_buf_to_store(Some(0)),
-            Self::Option_u8(v) => v.get_buf_to_store(Some(1)),
-            Self::Option_u16(v) => v.get_buf_to_store(Some(2)),
-            Self::Option_u32(v) => v.get_buf_to_store(Some(3)),
-            Self::Option_u64(v) => v.get_buf_to_store(Some(4)),
-            Self::Option_i8(v) => v.get_buf_to_store(Some(5)),
-            Self::Option_i16(v) => v.get_buf_to_store(Some(6)),
-            Self::Option_i32(v) => v.get_buf_to_store(Some(7)),
-            Self::Option_i64(v) => v.get_buf_to_store(Some(8)),
-            Self::Option_f32(v) => v.get_buf_to_store(Some(9)),
-            Self::Option_f64(v) => v.get_buf_to_store(Some(10)),
-            _ => Err(String::from("Not supportable option")),
-        } {
-            Ok(buf) => Ok(buf),
-            Err(e) => Err(e),
-        }
+        let (buf, index) = match self {
+            Self::Option_str(v) => (v.encode(), 0),
+            Self::Option_u8(v) => (v.encode(), 1),
+            Self::Option_u16(v) => (v.encode(), 2),
+            Self::Option_u32(v) => (v.encode(), 3),
+            Self::Option_u64(v) => (v.encode(), 4),
+            Self::Option_i8(v) => (v.encode(), 5),
+            Self::Option_i16(v) => (v.encode(), 6),
+            Self::Option_i32(v) => (v.encode(), 7),
+            Self::Option_i64(v) => (v.encode(), 8),
+            Self::Option_f32(v) => (v.encode(), 9),
+            Self::Option_f64(v) => (v.encode(), 10),
+            _ => { return Err(String::from("Not supportable option")); },
+        };
+        let mut buf = match buf {
+            Ok(buf) => buf,
+            Err(e) => { return Err(e); },
+        };
+        let mut buffer: Vec<u8> = vec!();
+        buffer.append(&mut (index as u16).to_le_bytes().to_vec());
+        buffer.append(&mut buf);
+        Ok(buffer)
     }
 }
 
@@ -1248,53 +1253,51 @@ impl EnumDecode for EnumExampleC {
             return Err(String::from("Fail to extract value for EnumExampleC because buffer too small"));
         }
         let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
-        let id = cursor.get_u16_le();
-        let mut storage = match Storage::new(buf) {
-            Ok(s) => s,
-            Err(e) => { return Err(e); }
-        };
-        match id {
-            0 => match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+        let index = cursor.get_u16_le();
+        let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];
+        body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);
+        match index {
+            0 => match Vec::<String>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_str(v)),
                 Err(e) => Err(e)
             },
-            1 => match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            1 => match Vec::<u8>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_u8(v)),
                 Err(e) => Err(e)
             },
-            2 => match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            2 => match Vec::<u16>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_u16(v)),
                 Err(e) => Err(e)
             },
-            3 => match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            3 => match Vec::<u32>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_u32(v)),
                 Err(e) => Err(e)
             },
-            4 => match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            4 => match Vec::<u64>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_u64(v)),
                 Err(e) => Err(e)
             },
-            5 => match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            5 => match Vec::<i8>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_i8(v)),
                 Err(e) => Err(e)
             },
-            6 => match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            6 => match Vec::<i16>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_i16(v)),
                 Err(e) => Err(e)
             },
-            7 => match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            7 => match Vec::<i32>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_i32(v)),
                 Err(e) => Err(e)
             },
-            8 => match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            8 => match Vec::<i64>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_i64(v)),
                 Err(e) => Err(e)
             },
-            9 => match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            9 => match Vec::<f32>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_f32(v)),
                 Err(e) => Err(e)
             },
-            10 => match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            10 => match Vec::<f64>::decode(&body_buf) {
                 Ok(v) => Ok(EnumExampleC::Option_f64(v)),
                 Err(e) => Err(e)
             },
@@ -1304,23 +1307,28 @@ impl EnumDecode for EnumExampleC {
 }
 impl EnumEncode for EnumExampleC {
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        match match self {
-            Self::Option_str(v) => v.get_buf_to_store(Some(0)),
-            Self::Option_u8(v) => v.get_buf_to_store(Some(1)),
-            Self::Option_u16(v) => v.get_buf_to_store(Some(2)),
-            Self::Option_u32(v) => v.get_buf_to_store(Some(3)),
-            Self::Option_u64(v) => v.get_buf_to_store(Some(4)),
-            Self::Option_i8(v) => v.get_buf_to_store(Some(5)),
-            Self::Option_i16(v) => v.get_buf_to_store(Some(6)),
-            Self::Option_i32(v) => v.get_buf_to_store(Some(7)),
-            Self::Option_i64(v) => v.get_buf_to_store(Some(8)),
-            Self::Option_f32(v) => v.get_buf_to_store(Some(9)),
-            Self::Option_f64(v) => v.get_buf_to_store(Some(10)),
-            _ => Err(String::from("Not supportable option")),
-        } {
-            Ok(buf) => Ok(buf),
-            Err(e) => Err(e),
-        }
+        let (buf, index) = match self {
+            Self::Option_str(v) => (v.encode(), 0),
+            Self::Option_u8(v) => (v.encode(), 1),
+            Self::Option_u16(v) => (v.encode(), 2),
+            Self::Option_u32(v) => (v.encode(), 3),
+            Self::Option_u64(v) => (v.encode(), 4),
+            Self::Option_i8(v) => (v.encode(), 5),
+            Self::Option_i16(v) => (v.encode(), 6),
+            Self::Option_i32(v) => (v.encode(), 7),
+            Self::Option_i64(v) => (v.encode(), 8),
+            Self::Option_f32(v) => (v.encode(), 9),
+            Self::Option_f64(v) => (v.encode(), 10),
+            _ => { return Err(String::from("Not supportable option")); },
+        };
+        let mut buf = match buf {
+            Ok(buf) => buf,
+            Err(e) => { return Err(e); },
+        };
+        let mut buffer: Vec<u8> = vec!();
+        buffer.append(&mut (index as u16).to_le_bytes().to_vec());
+        buffer.append(&mut buf);
+        Ok(buffer)
     }
 }
 
@@ -2194,17 +2202,15 @@ pub mod GroupA {
                 return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
-            let id = cursor.get_u16_le();
-            let mut storage = match Storage::new(buf) {
-                Ok(s) => s,
-                Err(e) => { return Err(e); }
-            };
-            match id {
-                0 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            let index = cursor.get_u16_le();
+            let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];
+            body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);
+            match index {
+                0 => match String::decode(&body_buf) {
                     Ok(v) => Ok(EnumExampleA::Option_a(v)),
                     Err(e) => Err(e)
                 },
-                1 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                1 => match String::decode(&body_buf) {
                     Ok(v) => Ok(EnumExampleA::Option_b(v)),
                     Err(e) => Err(e)
                 },
@@ -2214,14 +2220,19 @@ pub mod GroupA {
     }
     impl EnumEncode for EnumExampleA {
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
-            match match self {
-                Self::Option_a(v) => v.get_buf_to_store(Some(0)),
-                Self::Option_b(v) => v.get_buf_to_store(Some(1)),
-                _ => Err(String::from("Not supportable option")),
-            } {
-                Ok(buf) => Ok(buf),
-                Err(e) => Err(e),
-            }
+            let (buf, index) = match self {
+                Self::Option_a(v) => (v.encode(), 0),
+                Self::Option_b(v) => (v.encode(), 1),
+                _ => { return Err(String::from("Not supportable option")); },
+            };
+            let mut buf = match buf {
+                Ok(buf) => buf,
+                Err(e) => { return Err(e); },
+            };
+            let mut buffer: Vec<u8> = vec!();
+            buffer.append(&mut (index as u16).to_le_bytes().to_vec());
+            buffer.append(&mut buf);
+            Ok(buffer)
         }
     }
 

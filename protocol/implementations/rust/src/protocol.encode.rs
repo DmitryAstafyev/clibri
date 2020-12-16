@@ -6,25 +6,25 @@ fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<
     let mut buffer: Vec<u8> = vec!();
     if let Some(id) = id {
         buffer.append(&mut id.to_le_bytes().to_vec());
+        match size {
+            ESize::U8(size) => {
+                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U16(size) => {
+                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U32(size) => {
+                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+            ESize::U64(size) => {
+                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut size.to_le_bytes().to_vec());
+            },
+        };
     }
-    match size {
-        ESize::U8(size) => {
-            buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U16(size) => {
-            buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U32(size) => {
-            buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-        ESize::U64(size) => {
-            buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
-            buffer.append(&mut size.to_le_bytes().to_vec());
-        },
-    };
     buffer.append(&mut value);
     Ok(buffer)
 }

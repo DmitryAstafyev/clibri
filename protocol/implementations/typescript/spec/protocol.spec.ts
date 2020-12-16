@@ -293,35 +293,41 @@ class Message extends Protocol.Convertor implements IMessage {
     }
 
     public static from(obj: any): Message | Error {
-        const error: Error | undefined = Protocol.validate(obj, Message.scheme);
-        return error instanceof Error ? error : new Message({
-            u8: obj.u8,
-            u16: obj.u16,
-            u32: obj.u32,
-            u64: obj.u64,
-            i8: obj.i8,
-            i16: obj.i16,
-            i32: obj.i32,
-            i64: obj.i64,
-            f32: obj.f32,
-            f64: obj.f64,
-            bool: obj.bool,
-            nested: obj.nested,
-            arrNested: obj.arrNested,
-            arrU8: obj.arrU8,
-            arrU16: obj.arrU16,
-            arrU32: obj.arrU32,
-            arrU64: obj.arrU64,
-            arrI8: obj.arrI8,
-            arrI16: obj.arrI16,
-            arrI32: obj.arrI32,
-            arrI64: obj.arrI64,
-            arrF32: obj.arrF32,
-            arrF64: obj.arrF64,
-            str: obj.str,
-            arrStr: obj.arrStr,
-            arrBool: obj.arrBool,
-        });
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = Message.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, Message.scheme);
+            return error instanceof Error ? error : new Message({
+                u8: obj.u8,
+                u16: obj.u16,
+                u32: obj.u32,
+                u64: obj.u64,
+                i8: obj.i8,
+                i16: obj.i16,
+                i32: obj.i32,
+                i64: obj.i64,
+                f32: obj.f32,
+                f64: obj.f64,
+                bool: obj.bool,
+                nested: obj.nested,
+                arrNested: obj.arrNested,
+                arrU8: obj.arrU8,
+                arrU16: obj.arrU16,
+                arrU32: obj.arrU32,
+                arrU64: obj.arrU64,
+                arrI8: obj.arrI8,
+                arrI16: obj.arrI16,
+                arrI32: obj.arrI32,
+                arrI64: obj.arrI64,
+                arrF32: obj.arrF32,
+                arrF64: obj.arrF64,
+                str: obj.str,
+                arrStr: obj.arrStr,
+                arrBool: obj.arrBool,
+            });
+        }
     }
 
     public u8: number;

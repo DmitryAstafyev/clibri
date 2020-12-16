@@ -236,27 +236,18 @@ impl RustRender {
             self.spaces(level + 2)
         );
         body = format!(
-            "{}{}let id = cursor.get_u16_le();\n",
+            "{}{}let index = cursor.get_u16_le();\n",
             body,
             self.spaces(level + 2)
         );
-        body = format!(
-            "{}{}let mut storage = match Storage::new(buf) {{\n",
-            body,
-            self.spaces(level + 2)
-        );
-        body = format!("{}{}Ok(s) => s,\n", body, self.spaces(level + 3));
-        body = format!(
-            "{}{}Err(e) => {{ return Err(e); }}\n",
-            body,
-            self.spaces(level + 3)
-        );
-        body = format!("{}{}}};\n", body, self.spaces(level + 2));
-        body = format!("{}{}match id {{\n", body, self.spaces(level + 2));
+
+        body = format!("{}{}let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];\n", body, self.spaces(level + 2));
+        body = format!("{}{}body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);\n", body, self.spaces(level + 2));
+        body = format!("{}{}match index {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
             let item_type = self.enum_item_type(item.clone(), store);
             body = format!(
-                "{}{}{} => match {}::get_from_storage(Source::Storage(&mut storage), Some(id)) {{\n",
+                "{}{}{} => match {}::decode(&body_buf) {{\n",
                 body,
                 self.spaces(level + 3),
                 index,
@@ -292,21 +283,26 @@ impl RustRender {
             body,
             self.spaces(level + 1)
         );
-        body = format!("{}{}match match self {{\n", body, self.spaces(level + 2));
+        body = format!("{}{}let (buf, index) = match self {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
             body = format!(
-                "{}{}Self::{}(v) => v.get_buf_to_store(Some({})),\n",
+                "{}{}Self::{}(v) => (v.encode(), {}),\n",
                 body,
                 self.spaces(level + 3),
                 item.name,
                 index
             );
         }
-        body = format!("{}{}_ => Err(String::from(\"Not supportable option\")),\n", body, self.spaces(level + 3));
-        body = format!("{}{}}} {{\n", body, self.spaces(level + 2));
-        body = format!("{}{}Ok(buf) => Ok(buf),\n", body, self.spaces(level + 3));
-        body = format!("{}{}Err(e) => Err(e),\n", body, self.spaces(level + 3));
-        body = format!("{}{}}}\n", body, self.spaces(level + 2));
+        body = format!("{}{}_ => {{ return Err(String::from(\"Not supportable option\")); }},\n", body, self.spaces(level + 3));
+        body = format!("{}{}}};\n", body, self.spaces(level + 2));
+        body = format!("{}{}let mut buf = match buf {{\n", body, self.spaces(level + 2));
+        body = format!("{}{}Ok(buf) => buf,\n", body, self.spaces(level + 3));
+        body = format!("{}{}Err(e) => {{ return Err(e); }},\n", body, self.spaces(level + 3));
+        body = format!("{}{}}};\n", body, self.spaces(level + 2));
+        body = format!("{}{}let mut buffer: Vec<u8> = vec!();\n", body, self.spaces(level + 2));
+        body = format!("{}{}buffer.append(&mut (index as u16).to_le_bytes().to_vec());\n", body, self.spaces(level + 2));
+        body = format!("{}{}buffer.append(&mut buf);\n", body, self.spaces(level + 2));
+        body = format!("{}{}Ok(buffer)\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
         body

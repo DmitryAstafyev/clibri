@@ -7,6 +7,7 @@ mod tests {
     use encode::{ StructEncode, EnumEncode, Encode, EncodeEnum, get_empty_buffer_val };
     use decode::{ StructDecode, EnumDecode, Decode, DecodeEnum, Source };
     use storage::{ Storage };
+    use sizes::{ U16_LEN };
     use std::io::Cursor;
     use bytes::{ Buf };
 
@@ -42,36 +43,41 @@ mod tests {
     impl EnumEncode for TargetEnum {
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
-            match match self {
-                Self::OptionString(v) => v.get_buf_to_store(Some(1)),
-                Self::Optionu8(v) => v.get_buf_to_store(Some(2)),
-                Self::Optionu16(v) => v.get_buf_to_store(Some(3)),
-                Self::Optionu32(v) => v.get_buf_to_store(Some(4)),
-                Self::Optionu64(v) => v.get_buf_to_store(Some(5)),
-                Self::Optioni8(v) => v.get_buf_to_store(Some(6)),
-                Self::Optioni16(v) => v.get_buf_to_store(Some(7)),
-                Self::Optioni32(v) => v.get_buf_to_store(Some(8)),
-                Self::Optioni64(v) => v.get_buf_to_store(Some(9)),
-                Self::Optionf32(v) => v.get_buf_to_store(Some(10)),
-                Self::Optionf64(v) => v.get_buf_to_store(Some(11)),
-                Self::OptionBool(v) => v.get_buf_to_store(Some(12)),
-                Self::OptionStruct(v) => v.get_buf_to_store(Some(13)),
-                Self::Optionu8Vec(v) => v.get_buf_to_store(Some(14)),
-                Self::Optionu16Vec(v) => v.get_buf_to_store(Some(15)),
-                Self::Optionu32Vec(v) => v.get_buf_to_store(Some(16)),
-                Self::Optionu64Vec(v) => v.get_buf_to_store(Some(17)),
-                Self::Optioni8Vec(v) => v.get_buf_to_store(Some(18)),
-                Self::Optioni16Vec(v) => v.get_buf_to_store(Some(19)),
-                Self::Optioni32Vec(v) => v.get_buf_to_store(Some(20)),
-                Self::Optioni64Vec(v) => v.get_buf_to_store(Some(21)),
-                Self::Optionf32Vec(v) => v.get_buf_to_store(Some(22)),
-                Self::Optionf64Vec(v) => v.get_buf_to_store(Some(23)),
-                Self::OptionStructVec(v) => v.get_buf_to_store(Some(24)),
-                _ => Err(String::from("Not supportable option")),
-            } {
-                Ok(buf) => Ok(buf),
-                Err(e) => Err(e),
-            }
+            let (buf, index) = match self {
+                Self::OptionString(v) => (v.encode(), 1),
+                Self::Optionu8(v) => (v.encode(), 2),
+                Self::Optionu16(v) => (v.encode(), 3),
+                Self::Optionu32(v) => (v.encode(), 4),
+                Self::Optionu64(v) => (v.encode(), 5),
+                Self::Optioni8(v) => (v.encode(), 6),
+                Self::Optioni16(v) => (v.encode(), 7),
+                Self::Optioni32(v) => (v.encode(), 8),
+                Self::Optioni64(v) => (v.encode(), 9),
+                Self::Optionf32(v) => (v.encode(), 10),
+                Self::Optionf64(v) => (v.encode(), 11),
+                Self::OptionBool(v) => (v.encode(), 12),
+                Self::OptionStruct(v) => (v.encode(), 13),
+                Self::Optionu8Vec(v) => (v.encode(), 14),
+                Self::Optionu16Vec(v) => (v.encode(), 15),
+                Self::Optionu32Vec(v) => (v.encode(), 16),
+                Self::Optionu64Vec(v) => (v.encode(), 17),
+                Self::Optioni8Vec(v) => (v.encode(), 18),
+                Self::Optioni16Vec(v) => (v.encode(), 19),
+                Self::Optioni32Vec(v) => (v.encode(), 20),
+                Self::Optioni64Vec(v) => (v.encode(), 21),
+                Self::Optionf32Vec(v) => (v.encode(), 22),
+                Self::Optionf64Vec(v) => (v.encode(), 23),
+                Self::OptionStructVec(v) => (v.encode(), 24),
+                _ => { return Err(String::from("Not supportable option")); },
+            };
+            let mut buf = match buf {
+                Ok(buf) => buf,
+                Err(e) => { return Err(e); },
+            };
+            let mut buffer: Vec<u8> = vec!();
+            buffer.append(&mut (index as u16).to_le_bytes().to_vec());
+            buffer.append(&mut buf);
+            Ok(buffer)
         }
 
     }
@@ -83,105 +89,103 @@ mod tests {
                 return Err(String::from("Fail to extract value for TargetEnum because buffer too small"));
             }
             let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
-            let id = cursor.get_u16_le();
-            let mut storage = match Storage::new(buf) {
-                Ok(s) => s,
-                Err(e) => { return Err(e); }
-            };
-            match id {
-                1 => match String::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+            let index = cursor.get_u16_le();
+            let mut body_buf = vec![0; buf.len() - U16_LEN];
+            body_buf.copy_from_slice(&buf[U16_LEN..]);
+            match index {
+                1 => match String::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::OptionString(v)),
                     Err(e) => Err(e),
                 },
-                2 => match u8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                2 => match u8::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu8(v)),
                     Err(e) => Err(e),
                 },
-                3 => match u16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                3 => match u16::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu16(v)),
                     Err(e) => Err(e),
                 },
-                4 => match u32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                4 => match u32::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu32(v)),
                     Err(e) => Err(e),
                 },
-                5 => match u64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                5 => match u64::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu64(v)),
                     Err(e) => Err(e),
                 },
-                6 => match i8::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                6 => match i8::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni8(v)),
                     Err(e) => Err(e),
                 },
-                7 => match i16::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                7 => match i16::decode(&body_buf){
                     Ok(v) => Ok(TargetEnum::Optioni16(v)),
                     Err(e) => Err(e),
                 },
-                8 => match i32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                8 => match i32::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni32(v)),
                     Err(e) => Err(e),
                 },
-                9 => match i64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                9 => match i64::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni64(v)),
                     Err(e) => Err(e),
                 },
-                10 => match f32::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                10 => match f32::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionf32(v)),
                     Err(e) => Err(e),
                 },
-                11 => match f64::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                11 => match f64::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionf64(v)),
                     Err(e) => Err(e),
                 },
-                12 => match bool::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                12 => match bool::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::OptionBool(v)),
                     Err(e) => Err(e),
                 },
-                13 => match Nested::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                13 => match Nested::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::OptionStruct(v)),
                     Err(e) => Err(e),
                 },
-                14 => match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                14 => match Vec::<u8>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu8Vec(v)),
                     Err(e) => Err(e),
                 },
-                15 => match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                15 => match Vec::<u16>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu16Vec(v)),
                     Err(e) => Err(e),
                 },
-                16 => match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                16 => match Vec::<u32>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu32Vec(v)),
                     Err(e) => Err(e),
                 },
-                17 => match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                17 => match Vec::<u64>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionu64Vec(v)),
                     Err(e) => Err(e),
                 },
-                18 => match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                18 => match Vec::<i8>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni8Vec(v)),
                     Err(e) => Err(e),
                 },
-                19 => match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                19 => match Vec::<i16>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni16Vec(v)),
                     Err(e) => Err(e),
                 },
-                20 => match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                20 => match Vec::<i32>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni32Vec(v)),
                     Err(e) => Err(e),
                 },
-                21 => match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                21 => match Vec::<i64>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optioni64Vec(v)),
                     Err(e) => Err(e),
                 },
-                22 => match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                22 => match Vec::<f32>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionf32Vec(v)),
                     Err(e) => Err(e),
                 },
-                23 => match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                23 => match Vec::<f64>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::Optionf64Vec(v)),
                     Err(e) => Err(e),
                 },
-                24 => match Vec::<Nested>::get_from_storage(Source::Storage(&mut storage), Some(id)) {
+                24 => match Vec::<Nested>::decode(&body_buf) {
                     Ok(v) => Ok(TargetEnum::OptionStructVec(v)),
                     Err(e) => Err(e),
                 },
