@@ -56,7 +56,7 @@ impl ArgsOptionFiles {
         }
     }
 
-    fn write(&self, dest: PathBuf, overwrite: bool, store: Store, render: impl Render) -> Result<(), String> {
+    fn write(&self, dest: PathBuf, store: Store, render: impl Render) -> Result<(), String> {
         let t_render = Instant::now();
         let content: String = render.render(store);
         match OpenOptions::new()
@@ -209,7 +209,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, overwrite, store.clone(), RustRender::new(embedded)) {
+                        if let Err(e) = self.write(dest, store.clone(), RustRender::new(embedded)) {
                             return Err(e);
                         }
                     }
@@ -230,7 +230,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, overwrite, store, TypescriptRender::new(embedded)) {
+                        if let Err(e) = self.write(dest, store, TypescriptRender::new(embedded)) {
                             return Err(e);
                         }
                     }

@@ -3,7 +3,7 @@ pub mod protocol;
 
 use protocol::*;
 use std::fs::{File, create_dir};
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::io::prelude::*;
 
 pub fn get_ts_bin_dir() -> Result<PathBuf, String> {

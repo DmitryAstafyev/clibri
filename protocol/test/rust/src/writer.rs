@@ -3,10 +3,10 @@ pub mod protocol;
 
 use protocol::*;
 use std::fs::{OpenOptions, remove_file, create_dir};
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::io::prelude::*;
 
-fn writeFile(dest: PathBuf, buf: &Vec<u8>) -> Result<(), String> {
+fn write_file(dest: PathBuf, buf: &Vec<u8>) -> Result<(), String> {
     if dest.exists() {
         if let Err(err) = remove_file(dest.clone()) {
             return Err(format!("Fail to remove file {:?} due error: {}", dest, err));
@@ -64,7 +64,7 @@ pub fn write() -> Result<(), String> {
         field_f64: 0.2,
         field_bool: true,
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleA.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleA.prot.bin"));
@@ -83,7 +83,7 @@ pub fn write() -> Result<(), String> {
         field_f64: vec![0.1, 0.2, 0.3, 0.4],
         field_bool: vec![true, false, true],
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleB.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleB.prot.bin"));
@@ -102,7 +102,7 @@ pub fn write() -> Result<(), String> {
         field_f64: None,
         field_bool: None,
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleC.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleC.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleC.prot.bin"));
@@ -121,7 +121,7 @@ pub fn write() -> Result<(), String> {
         field_f64: None,
         field_bool: None,
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleD.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleD.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleD.prot.bin"));
@@ -131,7 +131,7 @@ pub fn write() -> Result<(), String> {
         field_b: EnumExampleB::Option_u8(1),
         field_c: EnumExampleC::Option_u8(vec![1]),
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleE.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleE.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleE.prot.bin"));
@@ -141,7 +141,7 @@ pub fn write() -> Result<(), String> {
         field_b: None,
         field_c: Some(EnumExampleC::Option_u8(vec![1])),
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleF.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleF.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleF.prot.bin"));
@@ -176,7 +176,7 @@ pub fn write() -> Result<(), String> {
             field_bool: vec![true, false, true],
         },
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleG.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleG.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleG.prot.bin"));
@@ -198,7 +198,7 @@ pub fn write() -> Result<(), String> {
         }),
         field_b: None,
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./StructExampleJ.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./StructExampleJ.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleJ.prot.bin"));
@@ -208,7 +208,7 @@ pub fn write() -> Result<(), String> {
         field_u16: 2,
         opt: GroupA::EnumExampleA::Option_a(String::from("Option_a")),
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./GroupAStructExampleA.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./GroupAStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupAStructExampleA.prot.bin"));
@@ -222,7 +222,7 @@ pub fn write() -> Result<(), String> {
             opt: GroupA::EnumExampleA::Option_a(String::from("Option_a")),
         },
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./GroupAStructExampleB.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./GroupAStructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupAStructExampleB.prot.bin"));
@@ -231,7 +231,7 @@ pub fn write() -> Result<(), String> {
         field_u8: 1,
         field_u16: 2,
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./GroupBStructExampleA.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./GroupBStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupBStructExampleA.prot.bin"));
@@ -240,7 +240,7 @@ pub fn write() -> Result<(), String> {
         field_u8: 1,
         field_u16: 2,
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./GroupCStructExampleA.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./GroupCStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleA.prot.bin"));
@@ -253,7 +253,7 @@ pub fn write() -> Result<(), String> {
             field_u16: 2,
         }
     }.encode()) {
-        if let Err(e) = writeFile(root.join("./GroupCStructExampleB.prot.bin"), &buf) {
+        if let Err(e) = write_file(root.join("./GroupCStructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleB.prot.bin"));
