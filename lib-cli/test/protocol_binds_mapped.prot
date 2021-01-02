@@ -1,0 +1,15 @@
+struct SendMessageRequest {
+    str sender;
+    str reciever;
+    u64 timestamp;
+    str msg;
+} > struct SendMessageResponse {
+        str error?;
+} : message {
+        str sender;
+        str reciever;
+        u64 timestamp;
+        str msg;
+} : stat {
+
+}

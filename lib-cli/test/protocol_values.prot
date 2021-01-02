@@ -1,10 +1,12 @@
 struct StructName {
     u8 age;
     str name;
+    UserType userType;
 }
 StructName {
-    u8 age = 23;
-    str name = "Hello, World";
+    age = 23;
+    name = "Hello, World";
+    userType = UserType("Admin");
 }
 enum EnumWithSctructs {
     OptionA a;
