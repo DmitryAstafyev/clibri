@@ -1,10 +1,14 @@
 #[path = "./request.observer.rs"]
-pub mod observer;
+pub mod request_observer;
+
+#[path = "./event.observer.rs"]
+pub mod event_observer;
 
 #[path = "./context.rs"]
 pub mod context;
 
-use observer::*;
+use request_observer::{ Observer as RequestObserver};
+use event_observer::{ Observer as EventObserver};
 use context::*;
 
 /*
@@ -28,11 +32,11 @@ pub struct UserLoginResponse {
     error: Option<String>,
 }
 
-pub struct LifeCircle {}
+pub struct UserLoginEvents {}
 
 pub struct Producer {
 
-    pub UserLogin: Observer<UserLoginRequest, LifeCircle, Identification>,
+    pub UserLogin: RequestObserver<UserLoginRequest, UserLoginEvents, Identification>,
     
 }
 

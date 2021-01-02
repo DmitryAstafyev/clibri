@@ -17,21 +17,21 @@ pub enum RequestObserverErrors {
     NoHandlerForRequest,
 }
 
-pub trait RequestObserver<Request: Clone, LifeCircle, Identification> {
+pub trait RequestObserver<Request: Clone, Events, Identification> {
 
     fn subscribe(&mut self, hanlder: &'static RequestHandler<Request, Identification>) -> Result<(), RequestObserverErrors>;
     fn unsubscribe(&mut self) -> Result<(), RequestObserverErrors>;
     fn emit(&mut self, cx: &mut dyn Context<Identification>, request: Request) -> Result<(), RequestObserverErrors>;
-    fn lifecircle(&self) -> &LifeCircle;
+    fn events(&self) -> &Events;
 
 }
 
-pub struct Observer<Request: Clone, LifeCircle, Identification> {
+pub struct Observer<Request: Clone, Events, Identification> {
     handler: Option<Box<RequestHandler<Request, Identification>>>,
-    circle: LifeCircle,
+    circle: Events,
 }
 
-impl<Request: Clone, LifeCircle, Identification> RequestObserver<Request, LifeCircle, Identification> for  Observer<Request, LifeCircle, Identification> {
+impl<Request: Clone, Events, Identification> RequestObserver<Request, Events, Identification> for  Observer<Request, Events, Identification> {
 
     fn subscribe(&mut self, hanlder: &'static RequestHandler<Request, Identification>) -> Result<(), RequestObserverErrors> {
         if self.handler.is_some() {
@@ -72,7 +72,7 @@ impl<Request: Clone, LifeCircle, Identification> RequestObserver<Request, LifeCi
         }
     }
 
-    fn lifecircle(&self) -> &LifeCircle {
+    fn events(&self) -> &Events {
         &self.circle
     }
 
