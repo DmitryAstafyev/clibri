@@ -1,4 +1,7 @@
 use super::context::{ Context };
+use super::events_holder::EventsHolder;
+use std::collections::{ HashMap };
+use uuid::Uuid;
 
 pub trait Response {
 
@@ -15,23 +18,23 @@ pub enum RequestObserverErrors {
     ResponsingError(String),
     GettingResponseError(String),
     NoHandlerForRequest,
+    ErrorOnEventsEmit(HashMap<Uuid, String>),
 }
 
-pub trait RequestObserver<Request: Clone, Events, Identification> {
+pub trait RequestObserver<Request: Clone, Identification> {
 
     fn subscribe(&mut self, hanlder: &'static RequestHandler<Request, Identification>) -> Result<(), RequestObserverErrors>;
     fn unsubscribe(&mut self) -> Result<(), RequestObserverErrors>;
     fn emit(&mut self, cx: &mut dyn Context<Identification>, request: Request) -> Result<(), RequestObserverErrors>;
-    fn events(&self) -> &Events;
 
 }
 
-pub struct Observer<Request: Clone, Events, Identification> {
+pub struct Observer<Request: Clone, Identification> {
     handler: Option<Box<RequestHandler<Request, Identification>>>,
-    circle: Events,
+    pub events: dyn EventsHolder<Request, Identification>,
 }
 
-impl<Request: Clone, Events, Identification> RequestObserver<Request, Events, Identification> for  Observer<Request, Events, Identification> {
+impl<Request: Clone, Identification> RequestObserver<Request, Identification> for  Observer<Request, Identification> {
 
     fn subscribe(&mut self, hanlder: &'static RequestHandler<Request, Identification>) -> Result<(), RequestObserverErrors> {
         if self.handler.is_some() {
@@ -53,11 +56,13 @@ impl<Request: Clone, Events, Identification> RequestObserver<Request, Events, Id
 
     fn emit(&mut self, cx: &mut dyn Context<Identification>, request: Request) -> Result<(), RequestObserverErrors> {
         if let Some(handler) = &self.handler {
-            match handler(request, cx) {
+            match handler(request.clone(), cx) {
                 Ok(buffer) => {
                     if let Some(conn) = cx.connection() {
                         if let Err(e) = conn.send(buffer) {
                             Err(RequestObserverErrors::ResponsingError(e))
+                        } else if let Err(errs) = self.events.emit(cx, request) {
+                            Err(RequestObserverErrors::ErrorOnEventsEmit(errs))
                         } else {
                             Ok(())
                         }
@@ -70,10 +75,6 @@ impl<Request: Clone, Events, Identification> RequestObserver<Request, Events, Id
         } else {
             Err(RequestObserverErrors::NoHandlerForRequest)
         }
-    }
-
-    fn events(&self) -> &Events {
-        &self.circle
     }
 
 }
