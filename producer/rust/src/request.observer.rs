@@ -1,6 +1,6 @@
 use super::context::Context;
-use super::events_holder::EventsHolder;
 use super::event_observer::EventObserverErrors;
+use super::events_holder::EventsHolder;
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -36,14 +36,32 @@ pub trait RequestObserver<Request: Clone, Identification, Conclusion: Eq + Hash>
     ) -> Result<(), RequestObserverErrors>;
 }
 
-pub struct Observer<Request: Clone, Identification, Conclusion: Eq + Hash> {
+pub struct Observer<Request: Clone, Identification, Conclusion: Eq + Hash, E>
+where
+    E: EventsHolder<Request, Identification, Conclusion> + Sized,
+{
     handler: Option<Box<RequestHandler<Request, Identification, Conclusion>>>,
-    pub events: dyn EventsHolder<Request, Identification, Conclusion>,
+    pub events: E,
 }
 
-impl<Request: Clone, Identification, Conclusion: Eq + Hash>
+impl<Request: Clone, Identification, Conclusion: Eq + Hash, E>
+    Observer<Request, Identification, Conclusion, E>
+where
+    E: EventsHolder<Request, Identification, Conclusion> + Sized,
+{
+    pub fn new(events: E) -> Self {
+        Observer {
+            handler: None,
+            events,
+        }
+    }
+}
+
+impl<Request: Clone, Identification, Conclusion: Eq + Hash, E>
     RequestObserver<Request, Identification, Conclusion>
-    for Observer<Request, Identification, Conclusion>
+    for Observer<Request, Identification, Conclusion, E>
+where
+    E: EventsHolder<Request, Identification, Conclusion> + Sized,
 {
     fn subscribe(
         &mut self,

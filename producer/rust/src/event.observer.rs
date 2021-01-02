@@ -24,17 +24,28 @@ pub trait EventObserver<Request: Clone, Identification, Conclusion: Eq + Hash> {
         conclusion: Conclusion,
         cx: &mut dyn Context<Identification>,
         request: Request,
-    ) -> Result<(), HashMap<Conclusion, String>>;
+    ) -> Result<(), EventObserverErrors>;
 }
 
 pub struct Observer<Request: Clone, Identification, Conclusion: Eq + Hash> {
     handlers: HashMap<Conclusion, Box<EventHandler<Request, Identification>>>,
 }
 
+impl<Request: Clone, Identification, Conclusion: Eq + Hash> Observer<Request, Identification, Conclusion> {
+
+    pub fn new() -> Self {
+        Observer {
+            handlers: HashMap::new(),
+        }    
+    }
+    
+}
+
 impl<Request: Clone, Identification, Conclusion: Eq + Hash>
     EventObserver<Request, Identification, Conclusion>
     for Observer<Request, Identification, Conclusion>
 {
+
     fn subscribe(
         &mut self,
         conclusion: Conclusion,
