@@ -1,11 +1,14 @@
-#[path = "./request.observer.rs"]
+#[path = "./observer.request.rs"]
 pub mod request_observer;
 
-#[path = "./event.observer.rs"]
+#[path = "./observer.event.rs"]
 pub mod event_observer;
 
-#[path = "./broadcast.observer.rs"]
+#[path = "./observer.broadcast.rs"]
 pub mod broadcast_observer;
+
+#[path = "./broadcast.rs"]
+pub mod broadcast;
 
 #[path = "./events.holder.rs"]
 pub mod events_holder;
@@ -24,6 +27,7 @@ use std::cmp::{ PartialEq, Eq };
 use std::collections::{ HashMap };
 use uuid::Uuid;
 */
+
 pub struct Identification {
     pub uuid: Option<String>,
     pub location: Option<String>,
@@ -109,6 +113,21 @@ impl EventsHolder<UserSingInRequest, Identification, UserSingInConclusion> for U
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct UserDisconnected {
+    login: String,
+}
+
+impl Encodable for UserDisconnected {
+    fn abduct(&mut self) -> Result<Vec<u8>, String> {
+        Ok(vec![])
+    }
+}
+
+pub enum Broadcasting {
+    UserDisconnected(UserDisconnected)
+}
+
 #[allow(non_snake_case)]
 pub struct Producer {
 
@@ -117,11 +136,17 @@ pub struct Producer {
 }
 
 impl Producer {
+
     pub fn new() -> Result<Self, String> {
         Ok(Producer {
             UserSingIn: RequestObserver::new(UserSingInEvents::new())
         })
     }
+
+    pub fn broadcast(&mut self, ident: Identification, broadcast: Broadcasting) -> Result<(), String> {
+        Ok(())
+    }
+
 }
 
 
