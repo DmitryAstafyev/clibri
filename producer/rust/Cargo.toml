@@ -4,5 +4,5 @@ edition = "2018"
 name = "fiber_producer_rs"
 version = "0.1.0"
 [dependencies]
+fiber = { path = "../../lib" }
 uuid = { version = "0.8.1", features = ["v4"] }
-

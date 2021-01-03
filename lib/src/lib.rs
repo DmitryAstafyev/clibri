@@ -28,5 +28,3 @@ pub mod protocol;
 #[path = "./protocol/protocol.package.rs"]
 pub mod package;
 
-#[path = "./test/main.rs"]
-mod test;
