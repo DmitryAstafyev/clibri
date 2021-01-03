@@ -21,8 +21,8 @@ use std::collections::{ HashMap };
 use uuid::Uuid;
 */
 pub struct Identification {
-    uuid: Option<String>,
-    location: Option<String>,
+    pub uuid: Option<String>,
+    pub location: Option<String>,
 }
 
 #[derive(Debug, Clone)]

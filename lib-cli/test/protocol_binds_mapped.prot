@@ -1,15 +1,62 @@
-struct SendMessageRequest {
-    str sender;
-    str reciever;
-    u64 timestamp;
-    str msg;
-} > struct SendMessageResponse {
-        str error?;
-} : message {
-        str sender;
-        str reciever;
-        u64 timestamp;
-        str msg;
-} : stat {
+# Example of identification object
+@Identification{
+    str uuid;
+    u64 id;
+    str location;
+}
 
+# Example of request with implementation
+struct UserSignInRequest {
+    str login;
+    str hash;
+    u64 timestamp;
+} > struct UserSignInResponse {
+    str error?;
+} : (Accept)    > accept;
+                > broadcast:struct UserAccepted {
+                      str login;
+                  };
+  : (Deny)      > deny;
+
+
+
+# Example of request, just declaration
+struct UserAccepted {
+    str login;
+}
+
+struct UserSignInRequest {
+    str login;
+    str hash;
+    u64 timestamp;
+}
+
+struct UserSignInResponse {
+    str error?;
+}
+
+UserSignInRequest > UserSignInResponse
+   : (Accept) > accept;
+              > broadcast: UserAccepted;
+   : (Deny)   > deny;
+
+
+
+# Example of consumer event
+struct UserSignOut {
+    str login;
+    u64 timestamp;
+}: (Done) > accept;
+          > notify: struct UserLogout {
+                str login;
+            };
+
+# Broadcast version
+
+@broadcasts {
+    AddComment: struct AddCommentEvent {
+        str login;
+        str comment;
+        u64 timestamp;
+    }
 }
