@@ -1,4 +1,5 @@
 use super::context::Context;
+use super::broadcast_observer::BroadcastObserverErrors;
 use std::cmp::Eq;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -10,6 +11,7 @@ pub enum EventObserverErrors {
     HanderIsAlreadyExist,
     NoHandlerFound,
     ErrorOnHandeling(String),
+    ErrorOnBroadcasting(BroadcastObserverErrors),
 }
 
 pub trait EventObserver<Request: Clone, Identification, Conclusion: Eq + Hash> {

@@ -37,7 +37,7 @@ struct UserSignInResponse {
 
 UserSignInRequest > UserSignInResponse
    : (Accept) > accept;
-              > broadcast: UserAccepted;
+              > broadcast: UserSignInBroadcast;
    : (Deny)   > deny;
 
 
@@ -47,16 +47,15 @@ struct UserSignOut {
     str login;
     u64 timestamp;
 }: (Done) > accept;
-          > notify: struct UserLogout {
+          > broadcast: struct UserSignOutBroadcast {
                 str login;
             };
 
 # Broadcast version
 
 @broadcasts {
-    AddComment: struct AddCommentEvent {
+    struct UserDisconnected {
         str login;
-        str comment;
         u64 timestamp;
     }
 }

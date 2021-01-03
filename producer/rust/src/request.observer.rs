@@ -1,32 +1,27 @@
-use super::context::Context;
+use super::context::{ Context, Encodable };
 use super::event_observer::EventObserverErrors;
 use super::events_holder::EventsHolder;
 use std::cmp::Eq;
-use std::collections::HashMap;
 use std::hash::Hash;
-use uuid::Uuid;
 
-pub trait Response {
-    fn get_buffer(&mut self) -> Vec<u8>;
-}
-
-pub type RequestHandler<Request, Identification, Conclusion: Eq + Hash> =
-    dyn Fn(Request, &mut dyn Context<Identification>) -> Result<(Vec<u8>, Conclusion), String>;
+pub type RequestHandler<Request, Response: Encodable, Identification, Conclusion: Eq + Hash> =
+    dyn Fn(Request, &mut dyn Context<Identification>) -> Result<(Response, Conclusion), String>;
 
 pub enum RequestObserverErrors {
     AlreadySubscribed,
     AlreadyUnsubscrided,
-    NoConnectionTpResponse,
+    NoConnectionToResponse,
     ResponsingError(String),
     GettingResponseError(String),
+    EncodingResponseError(String),
     NoHandlerForRequest,
     ErrorOnEventsEmit(EventObserverErrors),
 }
 
-pub trait RequestObserver<Request: Clone, Identification, Conclusion: Eq + Hash> {
+pub trait RequestObserver<Request: Clone, Response: Encodable, Identification, Conclusion: Eq + Hash> {
     fn subscribe(
         &mut self,
-        hanlder: &'static RequestHandler<Request, Identification, Conclusion>,
+        hanlder: &'static RequestHandler<Request, Response, Identification, Conclusion>,
     ) -> Result<(), RequestObserverErrors>;
     fn unsubscribe(&mut self) -> Result<(), RequestObserverErrors>;
     fn emit(
@@ -36,16 +31,16 @@ pub trait RequestObserver<Request: Clone, Identification, Conclusion: Eq + Hash>
     ) -> Result<(), RequestObserverErrors>;
 }
 
-pub struct Observer<Request: Clone, Identification, Conclusion: Eq + Hash, E>
+pub struct Observer<Request: Clone, Response: Encodable, Identification, Conclusion: Eq + Hash, E>
 where
     E: EventsHolder<Request, Identification, Conclusion> + Sized,
 {
-    handler: Option<Box<RequestHandler<Request, Identification, Conclusion>>>,
+    handler: Option<Box<RequestHandler<Request, Response, Identification, Conclusion>>>,
     pub events: E,
 }
 
-impl<Request: Clone, Identification, Conclusion: Eq + Hash, E>
-    Observer<Request, Identification, Conclusion, E>
+impl<Request: Clone, Response: Encodable, Identification, Conclusion: Eq + Hash, E>
+    Observer<Request, Response, Identification, Conclusion, E>
 where
     E: EventsHolder<Request, Identification, Conclusion> + Sized,
 {
@@ -57,15 +52,15 @@ where
     }
 }
 
-impl<Request: Clone, Identification, Conclusion: Eq + Hash, E>
-    RequestObserver<Request, Identification, Conclusion>
-    for Observer<Request, Identification, Conclusion, E>
+impl<Request: Clone, Response: Encodable, Identification, Conclusion: Eq + Hash, E>
+    RequestObserver<Request, Response, Identification, Conclusion>
+    for Observer<Request, Response, Identification, Conclusion, E>
 where
     E: EventsHolder<Request, Identification, Conclusion> + Sized,
 {
     fn subscribe(
         &mut self,
-        hanlder: &'static RequestHandler<Request, Identification, Conclusion>,
+        hanlder: &'static RequestHandler<Request, Response, Identification, Conclusion>,
     ) -> Result<(), RequestObserverErrors> {
         if self.handler.is_some() {
             Err(RequestObserverErrors::AlreadySubscribed)
@@ -91,17 +86,20 @@ where
     ) -> Result<(), RequestObserverErrors> {
         if let Some(handler) = &self.handler {
             match handler(request.clone(), cx) {
-                Ok((buffer, conclusion)) => {
+                Ok((mut msg, conclusion)) => {
                     if let Some(conn) = cx.connection() {
-                        if let Err(e) = conn.send(buffer) {
-                            Err(RequestObserverErrors::ResponsingError(e))
-                        } else if let Err(e) = self.events.emit(conclusion, cx, request) {
-                            Err(RequestObserverErrors::ErrorOnEventsEmit(e))
-                        } else {
-                            Ok(())
+                        match msg.abduct() {
+                            Ok(buffer) => if let Err(e) = conn.send(buffer) {
+                                Err(RequestObserverErrors::ResponsingError(e))
+                            } else if let Err(e) = self.events.emit(conclusion, cx, request) {
+                                Err(RequestObserverErrors::ErrorOnEventsEmit(e))
+                            } else {
+                                Ok(())
+                            },
+                            Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
                         }
                     } else {
-                        Err(RequestObserverErrors::NoConnectionTpResponse)
+                        Err(RequestObserverErrors::NoConnectionToResponse)
                     }
                 }
                 Err(e) => Err(RequestObserverErrors::GettingResponseError(e)),
