@@ -130,19 +130,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "134951f4028bdadb9b84baf4232681efbf277da25144b9b0ad65df75946c422b"
 
 [[package]]
-name = "fiber_protocol_rs"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "uuid",
-]
-
-[[package]]
 name = "fiber_transport_server"
 version = "0.1.0"
 dependencies = [
  "bytes",
- "fiber_protocol_rs",
  "log",
  "log4rs",
  "tungstenite",

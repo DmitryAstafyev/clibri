@@ -68,19 +68,6 @@ impl Connection {
                                             },
                                         };
                                     },
-                                    ProtocolMessage::Text(text) => {
-                                        match channel.send(connection_channel::Messages::Text {
-                                            uuid,
-                                            text,
-                                        }) {
-                                            Ok(_) => break,
-                                            Err(e) => {
-                                                error!("{}:: fail to send data to session due error: {}", uuid, e);
-                                                connection_error = Some(connection_channel::Error::Channel(format!("{}", e)));
-                                                break;
-                                            },
-                                        };
-                                    },
                                     ProtocolMessage::Close(close_frame) => {
                                         if let Some(frame) = close_frame {
                                             disconnect_frame = Some(frame);

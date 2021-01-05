@@ -10,10 +10,10 @@ use std::collections::HashMap;
 use std::net::TcpStream;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::thread::spawn;
-use std::{sync::PoisonError, time::Duration};
+use std::{time::Duration};
 use tungstenite::accept_hdr;
 use tungstenite::protocol::WebSocket;
 
@@ -78,32 +78,27 @@ impl Server {
     }
 
     fn redirect(&self, rx_channel: Receiver<connection_channel::Messages>, cx: ConnectionContext) {
-        let contrl = self.controller.clone();
+        let controller = self.controller.clone();
         spawn(move || {
             let timeout = Duration::from_millis(50);
             loop {
                 match rx_channel.try_recv() {
                     Ok(msg) => {
-                        match msg {
-                            connection_channel::Messages::Binary { uuid, buffer } => {
-                                // TODO: send buffer
-                            }
-                            connection_channel::Messages::Text { uuid, text } => {
-                                // TODO: send test
-                            }
-                            connection_channel::Messages::Error { uuid, error } => {
-                                // Report Error
-                                /*
-                                let err: session::Error = match error {
-                                    connection_channel::Error::Parsing(err_msg) => session::Error::Parsing(err_msg),
-                                    connection_channel::Error::ReadSocket(err_msg) => session::Error::ReadSocket(err_msg),
-                                    connection_channel::Error::Channel(err_msg) => session::Error::Channel(err_msg),
-                                };
-                                */
-                            }
-                            connection_channel::Messages::Disconnect { uuid, frame } => {
-                                // Report disconnection
-                            }
+                        match controller.write() {
+                            Ok(mut controller) => {
+                                match msg {
+                                    connection_channel::Messages::Binary { uuid, buffer } => {
+                                        controller.received(uuid, cx.clone(), buffer);
+                                    }
+                                    connection_channel::Messages::Error { uuid, error } => {
+                                        controller.error(uuid, format!("{:?}", error).to_string());
+                                    }
+                                    connection_channel::Messages::Disconnect { uuid, frame: _ } => {
+                                        controller.disconnected(uuid, cx.clone());
+                                    }
+                                }
+                            },
+                            Err(e) => error!("Fail get access to controller due error: {}", e),
                         }
                     }
                     Err(_) => {

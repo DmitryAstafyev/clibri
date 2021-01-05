@@ -15,6 +15,3 @@ pub mod connection_channel;
 
 #[path = "./connection/connection.context.rs"]
 pub mod connection_context;
-
-
-

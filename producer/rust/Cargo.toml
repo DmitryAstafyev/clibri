@@ -5,4 +5,5 @@ name = "fiber_producer_rs"
 version = "0.1.0"
 [dependencies]
 fiber = { path = "../../lib" }
+fiber_transport_server = { path = "../../transport/server/rust" }
 uuid = { version = "0.8.1", features = ["v4"] }

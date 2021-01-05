@@ -154,6 +154,7 @@ name = "fiber_producer_rs"
 version = "0.1.0"
 dependencies = [
  "fiber",
+ "fiber_transport_server",
  "uuid",
 ]
 
@@ -162,6 +163,17 @@ name = "fiber_protocol_rs"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "uuid",
+]
+
+[[package]]
+name = "fiber_transport_server"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "log",
+ "log4rs",
+ "tungstenite",
  "uuid",
 ]
 

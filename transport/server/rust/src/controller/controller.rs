@@ -1,9 +1,6 @@
-use super::{ Request, Response, ErrorResponse };
-
-#[derive(Debug, Clone)]
-pub enum Error {
-    Session(String),
-}
+use super::{ Request, Response, ErrorResponse, connection_context };
+use connection_context::ConnectionContext;
+use uuid::Uuid;
 
 #[allow(unused_variables)]
 pub trait Controller: Send + Sync {
@@ -13,8 +10,19 @@ pub trait Controller: Send + Sync {
         Ok(response)
     }
 
-    fn error(&mut self, err: Error) {
+    fn error(&mut self, uuid: Uuid, err: String) {
 
     }
 
+    fn connected(&mut self, uuid: Uuid, cx: ConnectionContext) {
+
+    }
+
+    fn received(&mut self, uuid: Uuid, cx: ConnectionContext, buffer: Vec<u8>) {
+
+    }
+
+    fn disconnected(&mut self, uuid: Uuid, cx: ConnectionContext) {
+
+    }
 }
