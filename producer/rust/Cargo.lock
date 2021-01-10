@@ -141,11 +141,6 @@ checksum = "88d7ed2934d741c6b37e33e3832298e8850b53fd2d2bea03873375596c7cea4e"
 name = "fiber"
 version = "0.1.0"
 dependencies = [
- "bytes",
- "fiber_protocol_rs",
- "log",
- "log4rs",
- "tungstenite",
  "uuid",
 ]
 
@@ -153,7 +148,9 @@ dependencies = [
 name = "fiber_producer_rs"
 version = "0.1.0"
 dependencies = [
+ "bytes",
  "fiber",
+ "fiber_protocol_rs",
  "fiber_transport_server",
  "uuid",
 ]
@@ -171,6 +168,7 @@ name = "fiber_transport_server"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "fiber",
  "log",
  "log4rs",
  "tungstenite",

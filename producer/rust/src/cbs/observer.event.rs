@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 pub type EventHandler<Request, Identification> =
-    dyn Fn(Request, &mut dyn Context<Identification>) -> Result<(), String>;
+    dyn (Fn(Request, &mut dyn Context<Identification>) -> Result<(), String>) + Send + Sync;
 
 pub enum EventObserverErrors {
     HanderIsAlreadyExist,

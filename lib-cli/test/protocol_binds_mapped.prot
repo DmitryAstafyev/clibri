@@ -40,6 +40,12 @@ UserSignInRequest > UserSignInResponse
               > broadcast: UserSignInBroadcast;
    : (Deny)   > deny;
 
+# Conclusion before response
+UserSignInRequest > (Accept, Deny) > UserSignInResponse
+   : (Accept) > accept;
+              > broadcast: UserSignInBroadcast;
+   : (Deny)   > deny;
+
 
 
 # Example of consumer event

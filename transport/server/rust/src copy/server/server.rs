@@ -19,10 +19,10 @@ use tungstenite::protocol::WebSocket;
 use uuid::Uuid;
 use std::net::TcpListener;
 
-pub enum ServerEvents<T: ServerConnectionContext> {
-    Connected(Uuid, T),
-    Disconnected(Uuid, T),
-    Received(Uuid, T, Vec<u8>),
+pub enum ServerEvents {
+    Connected(Uuid, ConnectionContext),
+    Disconnected(Uuid, ConnectionContext),
+    Received(Uuid, ConnectionContext, Vec<u8>),
     Error(Option<Uuid>, String),
 }
 
@@ -35,7 +35,7 @@ pub enum ServerHeartbeat {
 pub struct Server {
     addr: String,
     connections: Arc<RwLock<HashMap<Uuid, Connection>>>,
-    events: Option<Arc<Mutex<Sender<ServerEvents<ConnectionContext>>>>>,
+    events: Option<Arc<Mutex<Sender<ServerEvents>>>>,
     handshake: Option<Arc<RwLock<dyn (Fn(&Request, Response) -> Result<Response, ErrorResponse>) + Send + Sync + 'static>>>,
     heartbeat: (Sender<ServerHeartbeat>, Receiver<ServerHeartbeat>),
 }
@@ -62,7 +62,7 @@ impl Server {
         }
     }
 
-    pub fn listen(&mut self, channel: Sender<ServerEvents<ConnectionContext>>) -> Result<(), String> {
+    pub fn listen(&mut self, channel: Sender<ServerEvents>) -> Result<(), String> {
         self.events = Some(Arc::new(Mutex::new(channel)));
         let events = if let Some(events) = self.events.clone() {
             events

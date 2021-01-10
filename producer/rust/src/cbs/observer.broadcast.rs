@@ -1,7 +1,7 @@
 use super::context::{ Context, Encodable };
 
 pub type BroadcastHandler<Request, Broadcast: Encodable, Identification> =
-    dyn Fn(Request, &mut dyn Context<Identification>) -> Result<(Broadcast, Identification), String>;
+    dyn (Fn(Request, &mut dyn Context<Identification>) -> Result<(Broadcast, Identification), String>) + Send + Sync;
 
 pub enum BroadcastObserverErrors {
     AlreadySubscribed,

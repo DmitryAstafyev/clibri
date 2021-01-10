@@ -1,5 +1,17 @@
-#[path = "./traits/observer.rs"]
-pub mod observer;
+#[path = "./observer.request.rs"]
+pub mod request_observer;
+
+#[path = "./observer.event.rs"]
+pub mod event_observer;
+
+#[path = "./observer.broadcast.rs"]
+pub mod broadcast_observer;
+
+#[path = "./broadcast.rs"]
+pub mod broadcast;
+
+#[path = "./events.holder.rs"]
+pub mod events_holder;
 
 #[path = "./context.rs"]
 pub mod context;
@@ -16,35 +28,23 @@ pub mod protocol;
 #[path = "./consumer.rs"]
 pub mod consumer;
 
-#[path = "./declarations/observer.UserSingInRequest.rs"]
-pub mod DeclUserSingInRequest;
-
-#[path = "./declarations/observer.UserJoinRequest.rs"]
-pub mod DeclUserJoinRequest;
-
-#[path = "./implementations/observer.UserSingInRequest.rs"]
-pub mod ImplUserSingInRequest;
-
-#[path = "./implementations/observer.UserJoinRequest.rs"]
-pub mod ImplUserJoinRequest;
-
+use request_observer::{ RequestObserver as RequestObserverTrait, Observer as RequestObserver};
+use broadcast_observer::{ BroadcastObserver as BroadcastObserverTrait, Observer as BroadcastObserver };
+use event_observer::{ EventObserver as EventObserverTrait, Observer as EventObserver, EventObserverErrors};
+use events_holder:: { EventsHolder };
 use context::*;
 use consumer::{ Consumer };
-use ImplUserSingInRequest::{ UserSingInRequest };
-use DeclUserSingInRequest::{ UserSingInObserver };
-use ImplUserJoinRequest::{ UserJoinRequest };
-use DeclUserJoinRequest::{ UserJoinObserver };
-
+use std::cmp::{ PartialEq, Eq };
+use fiber_transport_server::connection_context::{ ConnectionContext };
 use fiber_transport_server::server::{ Server, ServerEvents };
 use std::thread;
 use std::thread::spawn;
 use uuid::Uuid;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock };
+use std::sync::{Arc, RwLock, Mutex};
 use std::{time::Duration};
 use std::collections::HashMap;
-use fiber::server::context::{ ConnectionContext };
 
 /*
 use std::collections::{ HashMap };
@@ -53,7 +53,6 @@ use uuid::Uuid;
 
 pub enum Messages {
     UserSingInRequest(UserSingInRequest),
-    UserJoinRequest(UserJoinRequest),
 }
 
 #[derive(Debug, Clone)]
@@ -78,6 +77,12 @@ pub struct Identification {
 }
 
 #[derive(Debug, Clone)]
+pub struct UserSingInRequest {
+    pub login: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone)]
 pub struct UserSingInBroadcast {
     login: String,
 }
@@ -88,9 +93,68 @@ impl Encodable for UserSingInBroadcast {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct UserSingInResponse {
+    error: Option<String>,
+}
 
+impl Encodable for UserSingInResponse {
+    fn abduct(&mut self) -> Result<Vec<u8>, String> {
+        Ok(vec![])
+    }
+}
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum UserSingInConclusion {
+    Accept,
+    Deny,
+}
 
+pub struct UserSingInEvents {
+    pub accept: EventObserver<UserSingInRequest, Identification, UserSingInConclusion>,
+    pub broadcast: BroadcastObserver<UserSingInRequest, UserSingInBroadcast, Identification>,
+    pub deny: EventObserver<UserSingInRequest, Identification, UserSingInConclusion>,
+}
+
+impl Default for UserSingInEvents {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl UserSingInEvents {
+
+    pub fn new() -> Self {
+        UserSingInEvents {
+            accept: EventObserver::new(),
+            broadcast: BroadcastObserver::new(),
+            deny: EventObserver::new(),
+        }
+    }
+
+}
+
+impl EventsHolder<UserSingInRequest, Identification, UserSingInConclusion> for UserSingInEvents {
+    fn emit(
+        &mut self,
+        conclusion: UserSingInConclusion,
+        cx: &mut dyn Context<Identification>,
+        request: UserSingInRequest,
+    ) -> Result<(), EventObserverErrors> {
+        match conclusion {
+            UserSingInConclusion::Accept => {
+                if let Err(e) = self.accept.emit(conclusion, cx, request.clone()) {
+                    return Err(e);
+                }
+                if let Err(e) = self.broadcast.emit(cx, request) {
+                    return Err(EventObserverErrors::ErrorOnBroadcasting(e));
+                }
+                Ok(())
+            },
+            UserSingInConclusion::Deny => self.deny.emit(conclusion, cx, request),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct UserDisconnected {
@@ -111,8 +175,8 @@ pub enum Broadcasting {
 pub struct Producer {
     server: Server,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
-    UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
-    UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
+    pub UserSingIn: Arc<RwLock<RequestObserver<UserSingInRequest, UserSingInResponse, Identification, UserSingInConclusion, UserSingInEvents>>>,
+    // pub UserSingIn: RequestObserver<UserSingInRequest, UserSingInResponse, Identification, UserSingInConclusion, UserSingInEvents>,
     
 }
 
@@ -122,8 +186,7 @@ impl Producer {
         Producer {
             server,
             consumers: Arc::new(RwLock::new(HashMap::new())),
-            UserSingIn: Arc::new(RwLock::new(ImplUserSingInRequest::ObserverRequest::new())),
-            UserJoin: Arc::new(RwLock::new(ImplUserJoinRequest::ObserverRequest::new())),
+            UserSingIn: Arc::new(RwLock::new(RequestObserver::new(UserSingInEvents::new()))),
         }
     }
 
@@ -134,7 +197,6 @@ impl Producer {
         ) = mpsc::channel();
         let consumers = self.consumers.clone();
         let UserSingIn = self.UserSingIn.clone();
-        let UserJoin = self.UserJoin.clone();
         spawn(move || {
             let timeout = Duration::from_millis(50);
             loop {
@@ -142,7 +204,7 @@ impl Producer {
                     Ok(event) => match event {
                         ServerEvents::Connected(uuid, cx) => match consumers.write() {
                             Ok(mut consumers) => {
-                                let consumer = consumers.entry(uuid).or_insert(Consumer::new(cx));
+                                let consumer = consumers.entry(uuid).or_insert_with(Consumer::new);
                             },
                             Err(e) => {},
                         },
@@ -160,21 +222,9 @@ impl Producer {
                                             Messages::UserSingInRequest(request) => {
                                                 match UserSingIn.write() {
                                                     Ok(mut UserSingIn) => {
-                                                        if let Err(e) = UserSingIn.emit(&mut consumer.get_cx(), request) {
-                                                            // TODO: error channel
-                                                            println!("{:?}", e);        
-                                                        }
-                                                    },
-                                                    Err(e) => {},
-                                                }
-                                            },
-                                            Messages::UserJoinRequest(request) => {
-                                                match UserJoin.write() {
-                                                    Ok(mut UserJoin) => {
-                                                        if let Err(e) = UserJoin.emit(&mut consumer.get_cx(), request) {
-                                                            // TODO: error channel
-                                                            println!("{:?}", e);        
-                                                        }
+                                                        let mut cx = consumer.get_cx();
+                                                        UserSingIn.emit(&mut cx, request);
+                                                        println!("");        
                                                     },
                                                     Err(e) => {},
                                                 }
@@ -209,12 +259,16 @@ impl Producer {
 
 }
 
-
-
 fn test() {
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
-    let mut producer: Producer = Producer::new(server);
-    producer.listen();
+    let producer: Producer = Producer::new(server);
+    // (Fn(Request, &mut dyn Context<Identification>) -> Result<(Response, Conclusion), String>)
+    match producer.UserSingIn.write() {
+        Ok(mut UserSingIn) => {
+            UserSingIn.subscribe(&on_UserSingInRequest);
+        },
+        Err(e) => {},
+    };
 }
 
 

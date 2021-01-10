@@ -5,7 +5,7 @@ use std::cmp::Eq;
 use std::hash::Hash;
 
 pub type RequestHandler<Request, Response: Encodable, Identification, Conclusion: Eq + Hash> =
-    dyn Fn(Request, &mut dyn Context<Identification>) -> Result<(Response, Conclusion), String>;
+    dyn (Fn(Request, &mut dyn Context<Identification>) -> Result<(Response, Conclusion), String>) + Send + Sync;
 
 pub enum RequestObserverErrors {
     AlreadySubscribed,
@@ -53,7 +53,7 @@ where
 }
 
 impl<Request: Clone, Response: Encodable, Identification, Conclusion: Eq + Hash, E>
-    RequestObserver<Request, Response, Identification, Conclusion>
+    RequestObserver<Request, Response, Identification, Conclusion> 
     for Observer<Request, Response, Identification, Conclusion, E>
 where
     E: EventsHolder<Request, Identification, Conclusion> + Sized,
@@ -86,26 +86,21 @@ where
     ) -> Result<(), RequestObserverErrors> {
         if let Some(handler) = &self.handler {
             match handler(request.clone(), cx) {
-                Ok((mut msg, conclusion)) => {
-                    if let Some(conn) = cx.connection() {
-                        match msg.abduct() {
-                            Ok(buffer) => if let Err(e) = conn.send(buffer) {
-                                Err(RequestObserverErrors::ResponsingError(e))
-                            } else if let Err(e) = self.events.emit(conclusion, cx, request) {
-                                Err(RequestObserverErrors::ErrorOnEventsEmit(e))
-                            } else {
-                                Ok(())
-                            },
-                            Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
-                        }
+                Ok((mut msg, conclusion)) => match msg.abduct() {
+                    Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                        Err(RequestObserverErrors::ResponsingError(e))
+                    } else if let Err(e) = self.events.emit(conclusion, cx, request) {
+                        Err(RequestObserverErrors::ErrorOnEventsEmit(e))
                     } else {
-                        Err(RequestObserverErrors::NoConnectionToResponse)
-                    }
-                }
+                        Ok(())
+                    },
+                    Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
+                },
                 Err(e) => Err(RequestObserverErrors::GettingResponseError(e)),
             }
         } else {
             Err(RequestObserverErrors::NoHandlerForRequest)
         }
     }
+
 }

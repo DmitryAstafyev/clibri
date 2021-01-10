@@ -1,16 +1,16 @@
 use super::{
-    connection, connection_channel, connection_context, ErrorResponse, Request,
+    connection, connection_channel, connection_context, controller, ErrorResponse, Request,
     Response,
 };
 use connection::Connection;
 use connection_context::ConnectionContext;
-use fiber::server::context::{ConnectionContext as ServerConnectionContext};
+use controller::Controller;
 use log::{debug, error, warn};
 use std::collections::HashMap;
 use std::net::TcpStream;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::thread::spawn;
 use std::{time::Duration};
@@ -19,37 +19,33 @@ use tungstenite::protocol::WebSocket;
 use uuid::Uuid;
 use std::net::TcpListener;
 
-pub enum ServerEvents<T: ServerConnectionContext> {
-    Connected(Uuid, T),
-    Disconnected(Uuid, T),
-    Received(Uuid, T, Vec<u8>),
+pub enum ServerEvents {
+    Connected(Uuid, ConnectionContext),
+    Disconnected(Uuid, ConnectionContext),
+    Received(Uuid, ConnectionContext, Vec<u8>),
     Error(Option<Uuid>, String),
-}
-
-pub enum ServerHeartbeat {
-    Stop,
-    Error(String),
 }
 
 // #[derive(Copy, Clone)]
 pub struct Server {
-    addr: String,
     connections: Arc<RwLock<HashMap<Uuid, Connection>>>,
-    events: Option<Arc<Mutex<Sender<ServerEvents<ConnectionContext>>>>>,
+    error: Option<Arc<RwLock<dyn Fn(Option<Uuid>, String) + Send + Sync + 'static>>>,
+    connected: Option<Arc<RwLock<dyn Fn(Uuid, ConnectionContext) + Send + Sync + 'static>>>,
+    disconnected: Option<Arc<RwLock<dyn Fn(Uuid, ConnectionContext) + Send + Sync + 'static>>>,
+    received: Option<Arc<RwLock<dyn Fn(Uuid, ConnectionContext, Vec<u8>) + Send + Sync + 'static>>>,
     handshake: Option<Arc<RwLock<dyn (Fn(&Request, Response) -> Result<Response, ErrorResponse>) + Send + Sync + 'static>>>,
-    heartbeat: (Sender<ServerHeartbeat>, Receiver<ServerHeartbeat>),
 }
 
-impl Server {
-
+impl<'a> Server where 'a: 'static{
     #[allow(unused_mut)]
-    pub fn new(addr: String) -> Self {
+    pub fn new() -> Self {
         Server {
-            addr,
             connections: Arc::new(RwLock::new(HashMap::new())),
             handshake: None,
-            events: None,
-            heartbeat: mpsc::channel()
+            error: None,
+            connected: None,
+            disconnected: None,
+            received: None
         }
     }
 
@@ -62,79 +58,88 @@ impl Server {
         }
     }
 
-    pub fn listen(&mut self, channel: Sender<ServerEvents<ConnectionContext>>) -> Result<(), String> {
-        self.events = Some(Arc::new(Mutex::new(channel)));
-        let events = if let Some(events) = self.events.clone() {
-            events
+    pub fn received<T>(&mut self, handler: T) -> Result<(), String> where T: Fn(Uuid, ConnectionContext, Vec<u8>) + Send + Sync + 'static {
+        if self.received.is_some() {
+            Err(String::from("connected handler is already defined"))
         } else {
-            return Err(String::from(""));
+            self.received = Some(Arc::new(RwLock::new(handler)));
+            Ok(())    
+        }
+    }
+
+    pub fn connected<T>(&mut self, handler: T) -> Result<(), String> where T: Fn(Uuid, ConnectionContext) + Send + Sync + 'static {
+        if self.connected.is_some() {
+            Err(String::from("connected handler is already defined"))
+        } else {
+            self.connected = Some(Arc::new(RwLock::new(handler)));
+            Ok(())    
+        }
+    }
+
+    pub fn disconnected<T>(&mut self, handler: T) -> Result<(), String> where T: Fn(Uuid, ConnectionContext) + Send + Sync + 'static {
+        if self.disconnected.is_some() {
+            Err(String::from("disconnected handler is already defined"))
+        } else {
+            self.disconnected = Some(Arc::new(RwLock::new(handler)));
+            Ok(())    
+        }
+    }
+
+    pub fn error<T>(&mut self, handler: T) -> Result<(), String> where T: Fn(Option<Uuid>, String) + Send + Sync + 'static {
+        if self.error.is_some() {
+            Err(String::from("error handler is already defined"))
+        } else {
+            self.error = Some(Arc::new(RwLock::new(handler)));
+            Ok(())    
+        }
+    }
+
+    pub fn listen(&'static mut self, addr: String) -> Result<(), String> {
+        let connected_handler = if let Some(handler) = self.connected.clone() {
+            handler
+        } else {
+            return Err(String::from("No connected handler"));
         };
-        let (tx_channel, rx_channel): (
-            Sender<TcpStream>,
-            Receiver<TcpStream>,
-        ) = mpsc::channel();
-        let addr: String = self.addr.clone();
+        let error_handler = if let Some(handler) = self.error.clone() {
+            handler
+        } else {
+            return Err(String::from("No error handler"));
+        };
+        let server: Arc<RwLock<&'static mut Server>> = Arc::new(RwLock::new(self));
         spawn(move || {
             let listener = TcpListener::bind(addr).unwrap();
             for stream in listener.incoming() {
                 match stream {
                     Ok(stream) => {
-                        if let Err(e) = tx_channel.send(stream) {
-                            match events.lock() {
-                                Ok(events) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                                    error!("");
-                                },
+                        match server.write() {
+                            Ok(mut server) => {
+                                match server.add(stream) {
+                                    Ok((uuid, cx)) => {
+                                        match connected_handler.write() {
+                                            Ok(connected_handler) => connected_handler(uuid, cx.clone()),
+                                            Err(e) => error!("Fail get access to received handler due error: {}", e)
+                                        }
+                                    },
+                                    Err(e) => match error_handler.write() {
+                                        Ok(error_handler) => error_handler(None, format!("{:?}", e).to_string()),
+                                        Err(e) => error!("{}", e)
+                                    },
+                                }
+                            },
+                            Err(e) => match error_handler.write() {
+                                Ok(error_handler) => error_handler(None, format!("{:?}", e).to_string()),
                                 Err(e) => error!("{}", e)
-                            }
-                        }
+                            },
+                        };
                     },
-                    Err(e) => match events.lock() {
-                        Ok(events) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                            error!("");
-                        },
+                    Err(e) => match error_handler.write() {
+                        Ok(error_handler) => error_handler(None, format!("{:?}", e).to_string()),
                         Err(e) => error!("{}", e)
                     }
                 }
             }
         });
-        let events = if let Some(events) = self.events.clone() {
-            events
-        } else {
-            return Err(String::from(""));
-        };
-        let timeout = Duration::from_millis(50);
-        loop {
-            if let Ok(reason) = self.heartbeat.1.try_recv() { match reason {
-                ServerHeartbeat::Stop => {
-                    return Ok(());
-                },
-                ServerHeartbeat::Error(e) => {
-                    return Err(e);
-                }
-            }};
-            match rx_channel.try_recv() {
-                Ok(stream) => match self.add(stream) {
-                    Ok((uuid, cx)) => {
-                        match events.lock() {
-                            Ok(events) => if let Err(e) = events.send(ServerEvents::Connected(uuid, cx.clone())) {
-                                error!("");
-                            },
-                            Err(e) => error!("Fail get access to received handler due error: {}", e)
-                        }
-                    },
-                    Err(e) => match events.lock() {
-                        Ok(events) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                            error!("");
-                        },
-                        Err(e) => error!("{}", e)
-                    },
-                },
-                Err(_) => {
-                    // No needs logs here;
-                    thread::sleep(timeout);
-                }
-            }
-        }
+        Ok(())
     }
 
     pub fn add(&mut self, stream: TcpStream) -> Result<(Uuid, ConnectionContext), String> {
@@ -183,8 +188,18 @@ impl Server {
     }
 
     fn redirect(&self, rx_channel: Receiver<connection_channel::Messages>, cx: ConnectionContext) {
-        let events = if let Some(events) = self.events.clone() {
-            events
+        let received_handler = if let Some(handler) = self.received.clone() {
+            handler
+        } else {
+            return;
+        };
+        let error_handler = if let Some(handler) = self.error.clone() {
+            handler
+        } else {
+            return;
+        };
+        let disconnected_handler = if let Some(handler) = self.disconnected.clone() {
+            handler
         } else {
             return;
         };
@@ -195,26 +210,20 @@ impl Server {
                     Ok(msg) => {
                         match msg {
                             connection_channel::Messages::Binary { uuid, buffer } => {
-                                match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Received(uuid, cx.clone(), buffer)) {
-                                        error!("");
-                                    },
+                                match received_handler.write() {
+                                    Ok(received_handler) => received_handler(uuid, cx.clone(), buffer),
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
                                 }
                             }
                             connection_channel::Messages::Error { uuid, error } => {
-                                match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Error(Some(uuid), format!("{:?}", error).to_string())) {
-                                        error!("");
-                                    },
+                                match error_handler.write() {
+                                    Ok(error_handler) => error_handler(Some(uuid), format!("{:?}", error).to_string()),
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
                                 }
                             }
                             connection_channel::Messages::Disconnect { uuid, frame: _ } => {
-                                match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Disconnected(uuid, cx.clone())) {
-                                        error!("");
-                                    },
+                                match disconnected_handler.write() {
+                                    Ok(disconnected_handler) => disconnected_handler(uuid, cx.clone()),
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
                                 }
                             }

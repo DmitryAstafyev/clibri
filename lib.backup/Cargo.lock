@@ -133,18 +133,19 @@ checksum = "134951f4028bdadb9b84baf4232681efbf277da25144b9b0ad65df75946c422b"
 name = "fiber"
 version = "0.1.0"
 dependencies = [
+ "bytes",
+ "fiber_protocol_rs",
+ "log",
+ "log4rs",
+ "tungstenite",
  "uuid",
 ]
 
 [[package]]
-name = "fiber_transport_server"
+name = "fiber_protocol_rs"
 version = "0.1.0"
 dependencies = [
  "bytes",
- "fiber",
- "log",
- "log4rs",
- "tungstenite",
  "uuid",
 ]
 
