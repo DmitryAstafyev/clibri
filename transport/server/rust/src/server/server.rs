@@ -4,7 +4,10 @@ use super::{
 };
 use connection::Connection;
 use connection_context::ConnectionContext;
-use fiber::server::context::{ConnectionContext as ServerConnectionContext};
+use fiber::server::context::{ ConnectionContext as ServerConnectionContext };
+use fiber::server::events::{ ServerEvents };
+use fiber::server::server::{ Server as ServerTrait };
+
 use log::{debug, error, warn};
 use std::collections::HashMap;
 use std::net::TcpStream;
@@ -18,13 +21,6 @@ use tungstenite::accept_hdr;
 use tungstenite::protocol::WebSocket;
 use uuid::Uuid;
 use std::net::TcpListener;
-
-pub enum ServerEvents<T: ServerConnectionContext> {
-    Connected(Uuid, T),
-    Disconnected(Uuid, T),
-    Received(Uuid, T, Vec<u8>),
-    Error(Option<Uuid>, String),
-}
 
 pub enum ServerHeartbeat {
     Stop,
@@ -40,29 +36,9 @@ pub struct Server {
     heartbeat: (Sender<ServerHeartbeat>, Receiver<ServerHeartbeat>),
 }
 
-impl Server {
+impl ServerTrait<ConnectionContext> for Server {
 
-    #[allow(unused_mut)]
-    pub fn new(addr: String) -> Self {
-        Server {
-            addr,
-            connections: Arc::new(RwLock::new(HashMap::new())),
-            handshake: None,
-            events: None,
-            heartbeat: mpsc::channel()
-        }
-    }
-
-    pub fn handshake<T>(&mut self, handler: T) -> Result<(), String> where T: (Fn(&Request, Response) -> Result<Response, ErrorResponse>) + Send + Sync + 'static {
-        if self.handshake.is_some() {
-            Err(String::from("Handshake handler is already defined"))
-        } else {
-            self.handshake = Some(Arc::new(RwLock::new(handler)));
-            Ok(())    
-        }
-    }
-
-    pub fn listen(&mut self, channel: Sender<ServerEvents<ConnectionContext>>) -> Result<(), String> {
+    fn listen(&mut self, channel: Sender<ServerEvents<ConnectionContext>>) -> Result<(), String> {
         self.events = Some(Arc::new(Mutex::new(channel)));
         let events = if let Some(events) = self.events.clone() {
             events
@@ -116,7 +92,7 @@ impl Server {
                 Ok(stream) => match self.add(stream) {
                     Ok((uuid, cx)) => {
                         match events.lock() {
-                            Ok(events) => if let Err(e) = events.send(ServerEvents::Connected(uuid, cx.clone())) {
+                            Ok(events) => if let Err(e) = events.send(ServerEvents::Connected(uuid, Arc::new(Mutex::new(cx.clone())))) {
                                 error!("");
                             },
                             Err(e) => error!("Fail get access to received handler due error: {}", e)
@@ -134,6 +110,30 @@ impl Server {
                     thread::sleep(timeout);
                 }
             }
+        }
+    }
+
+}
+
+impl Server {
+
+    #[allow(unused_mut)]
+    pub fn new(addr: String) -> Self {
+        Server {
+            addr,
+            connections: Arc::new(RwLock::new(HashMap::new())),
+            handshake: None,
+            events: None,
+            heartbeat: mpsc::channel()
+        }
+    }
+
+    pub fn handshake<H>(&mut self, handler: H) -> Result<(), String> where H: (Fn(&Request, Response) -> Result<Response, ErrorResponse>) + Send + Sync + 'static {
+        if self.handshake.is_some() {
+            Err(String::from("Handshake handler is already defined"))
+        } else {
+            self.handshake = Some(Arc::new(RwLock::new(handler)));
+            Ok(())    
         }
     }
 
@@ -196,7 +196,7 @@ impl Server {
                         match msg {
                             connection_channel::Messages::Binary { uuid, buffer } => {
                                 match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Received(uuid, cx.clone(), buffer)) {
+                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Received(uuid, Arc::new(Mutex::new(cx.clone())), buffer)) {
                                         error!("");
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
@@ -212,7 +212,7 @@ impl Server {
                             }
                             connection_channel::Messages::Disconnect { uuid, frame: _ } => {
                                 match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Disconnected(uuid, cx.clone())) {
+                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Disconnected(uuid, Arc::new(Mutex::new(cx.clone())))) {
                                         error!("");
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)

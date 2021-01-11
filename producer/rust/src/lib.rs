@@ -35,7 +35,8 @@ use DeclUserSingInRequest::{ UserSingInObserver };
 use ImplUserJoinRequest::{ UserJoinRequest };
 use DeclUserJoinRequest::{ UserJoinObserver };
 
-use fiber_transport_server::server::{ Server, ServerEvents };
+use fiber_transport_server::server::{ Server };
+use fiber_transport_server::connection_context::{ ConnectionContext as ServerConnectionContext };
 use std::thread;
 use std::thread::spawn;
 use uuid::Uuid;
@@ -45,7 +46,8 @@ use std::sync::{Arc, RwLock };
 use std::{time::Duration};
 use std::collections::HashMap;
 use fiber::server::context::{ ConnectionContext };
-
+use fiber::server::events::{ ServerEvents };
+use fiber::server::server::{ Server as ServerTrait };
 /*
 use std::collections::{ HashMap };
 use uuid::Uuid;
@@ -108,17 +110,17 @@ pub enum Broadcasting {
 }
 
 #[allow(non_snake_case)]
-pub struct Producer {
-    server: Server,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
+pub struct Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionContext + Send + Sync {
+    server: S,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
     UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
     
 }
 
-impl Producer {
+impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionContext + Send + Sync {
 
-    pub fn new(server: Server) -> Self {
+    pub fn new(server: S) -> Self {
         Producer {
             server,
             consumers: Arc::new(RwLock::new(HashMap::new())),
@@ -129,8 +131,8 @@ impl Producer {
 
     pub fn listen(&mut self) -> Result<(), String> {
         let (tx_channel, rx_channel): (
-            Sender<ServerEvents>,
-            Receiver<ServerEvents>,
+            Sender<ServerEvents<CX>>,
+            Receiver<ServerEvents<CX>>,
         ) = mpsc::channel();
         let consumers = self.consumers.clone();
         let UserSingIn = self.UserSingIn.clone();
@@ -213,7 +215,7 @@ impl Producer {
 
 fn test() {
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
-    let mut producer: Producer = Producer::new(server);
+    let mut producer: Producer<Server, ServerConnectionContext> = Producer::new(server);
     producer.listen();
 }
 

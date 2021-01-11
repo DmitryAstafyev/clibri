@@ -2,6 +2,7 @@ use super::{ Messages, Protocol, Identification };
 use super::buffer::{ Buffer };
 use super::context::{ Context };
 use fiber::server::context::{ ConnectionContext };
+use fiber_transport_server::connection_context::{ ConnectionContext as ServerConnectionContext };
 use uuid::Uuid;
 use std::sync::{ Arc, RwLock, Mutex };
 
@@ -21,20 +22,20 @@ impl Context<Identification> for Cx {
 
 }
 
-pub struct Consumer {
+pub struct Consumer<T> where T: ConnectionContext + Send + Sync {
     uuid: Uuid,
     buffer: Buffer<Protocol>,
-    cx: Arc<Mutex<dyn ConnectionContext>>
+    cx: Arc<Mutex<T>>
 }
 
-impl Consumer {
+impl<T> Consumer<T> where T: ConnectionContext + Send + Sync  {
 
-    pub fn new(cx: dyn ConnectionContext) -> Self {
+    pub fn new(cx: Arc<Mutex<T>>) -> Self {
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,
             buffer: Buffer::new(uuid),
-            cx: Arc::new(Mutex::new(cx)),
+            cx,
         }
     }
 
