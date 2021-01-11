@@ -12,31 +12,30 @@ pub enum UserJoinConclusion {
 pub trait UserJoinObserver<
     Request: Clone,
     Response: Encodable,
-    Identification,
     Conclusion: Eq + Hash,
->: ConfirmedRequestObserver<Request, Response, Identification, UserJoinConclusion>
+>: ConfirmedRequestObserver<Request, Response, UserJoinConclusion>
 {
     fn accept(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn broadcast(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn deny(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> {
         match self.conclusion(request.clone(), cx) {

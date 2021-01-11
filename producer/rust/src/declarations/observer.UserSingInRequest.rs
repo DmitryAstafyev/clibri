@@ -12,31 +12,30 @@ pub enum UserSingInConclusion {
 pub trait UserSingInObserver<
     Request: Clone,
     Response: Encodable,
-    Identification,
     Conclusion: Eq + Hash,
->: RequestObserver<Request, Response, Identification, UserSingInConclusion>
+>: RequestObserver<Request, Response, UserSingInConclusion>
 {
     fn accept(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn broadcast(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn deny(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> {
         match self.response(request.clone(), cx) {

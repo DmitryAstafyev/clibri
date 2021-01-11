@@ -1,7 +1,6 @@
 use super::context::{Context, Encodable};
 use super::observer::{ ConfirmedRequestObserver };
 use super::DeclUserJoinRequest::{ UserJoinObserver, UserJoinConclusion };
-use super::{ Identification };
 
 #[derive(Debug, Clone)]
 pub struct UserJoinRequest {
@@ -33,12 +32,12 @@ impl ObserverRequest {
 
 }
 
-impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, Identification, UserJoinConclusion> for ObserverRequest {
+impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for ObserverRequest {
 
     fn conclusion(
         &mut self,
         request: UserJoinRequest,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
     ) -> Result<UserJoinConclusion, String> {
         Ok(UserJoinConclusion::Accept)
     }
@@ -46,18 +45,18 @@ impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, Identification,
     fn response(
         &mut self,
         request: UserJoinRequest,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         conclusion: UserJoinConclusion,
     ) -> Result<UserJoinResponse, String> {
         Ok(UserJoinResponse { error: None })
     }
 }
 
-impl UserJoinObserver<UserJoinRequest, UserJoinResponse, Identification, UserJoinConclusion> for ObserverRequest {
+impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for ObserverRequest {
 
     fn accept(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -65,7 +64,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, Identification, UserJoi
 
     fn broadcast(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -73,7 +72,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, Identification, UserJoi
 
     fn deny(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())

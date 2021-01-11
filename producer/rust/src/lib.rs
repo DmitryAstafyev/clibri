@@ -13,8 +13,11 @@ pub mod package;
 #[path = "./protocol.rs"]
 pub mod protocol;
 
-#[path = "./consumer.rs"]
+#[path = "./consumer/consumer.rs"]
 pub mod consumer;
+
+#[path = "./consumer/consumer.identification.rs"]
+pub mod consumer_identification;
 
 #[path = "./declarations/observer.UserSingInRequest.rs"]
 pub mod DeclUserSingInRequest;
@@ -74,11 +77,6 @@ impl protocol::Protocol<Messages> for Protocol {
 
 }
 
-pub struct Identification {
-    pub uuid: Option<String>,
-    pub location: Option<String>,
-}
-
 #[derive(Debug, Clone)]
 pub struct UserSingInBroadcast {
     login: String,
@@ -113,8 +111,8 @@ pub enum Broadcasting {
 pub struct Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionContext + Send + Sync {
     server: S,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
-    UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
-    UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
+    pub UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
+    pub UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
     
 }
 
@@ -129,6 +127,7 @@ impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionCon
         }
     }
 
+    #[allow(non_snake_case)]
     pub fn listen(&mut self) -> Result<(), String> {
         let (tx_channel, rx_channel): (
             Sender<ServerEvents<CX>>,
@@ -205,7 +204,7 @@ impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionCon
         }
     }
 
-    pub fn broadcast(&mut self, ident: Identification, broadcast: Broadcasting) -> Result<(), String> {
+    pub fn broadcast(&mut self, ident: HashMap<String, String>, broadcast: Broadcasting) -> Result<(), String> {
         Ok(())
     }
 

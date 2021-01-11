@@ -15,19 +15,18 @@ pub enum RequestObserverErrors {
 pub trait RequestObserver<
     Request: Clone,
     Response: Encodable,
-    Identification,
     Conclusion: Eq + Hash,
 >
 {
     fn response(
         &mut self,
         request: Request,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
     ) -> Result<(Response, Conclusion), String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> { Ok(()) }
 }
@@ -35,7 +34,6 @@ pub trait RequestObserver<
 pub trait ConfirmedRequestObserver<
     Request: Clone,
     Response: Encodable,
-    Identification,
     Conclusion: Eq + Hash,
 >
 {
@@ -43,19 +41,19 @@ pub trait ConfirmedRequestObserver<
     fn conclusion(
         &mut self,
         request: Request,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
     ) -> Result<Conclusion, String>;
 
     fn response(
         &mut self,
         request: Request,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         conclusion: Conclusion,
     ) -> Result<Response, String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context<Identification>,
+        cx: &mut dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> { Ok(()) }
 }
