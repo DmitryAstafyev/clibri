@@ -12,7 +12,7 @@ pub struct Cx<T>
 where
     T: ConnectionContext + Send + Sync,
 {
-    cx: Arc<Mutex<T>>,
+    cx: Arc<RwLock<T>>,
 }
 
 impl<T> Context for Cx<T>
@@ -34,7 +34,7 @@ where
 {
     uuid: Uuid,
     buffer: Buffer<Protocol>,
-    cx: Arc<Mutex<T>>,
+    cx: Arc<RwLock<T>>,
     identification: Identification,
 }
 
@@ -42,7 +42,7 @@ impl<T> Consumer<T>
 where
     T: ConnectionContext + Send + Sync,
 {
-    pub fn new(cx: Arc<Mutex<T>>) -> Self {
+    pub fn new(cx: Arc<RwLock<T>>) -> Self {
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,

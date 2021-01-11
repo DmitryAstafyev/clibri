@@ -92,7 +92,7 @@ impl ServerTrait<ConnectionContext> for Server {
                 Ok(stream) => match self.add(stream) {
                     Ok((uuid, cx)) => {
                         match events.lock() {
-                            Ok(events) => if let Err(e) = events.send(ServerEvents::Connected(uuid, Arc::new(Mutex::new(cx.clone())))) {
+                            Ok(events) => if let Err(e) = events.send(ServerEvents::Connected(uuid, Arc::new(RwLock::new(cx.clone())))) {
                                 error!("");
                             },
                             Err(e) => error!("Fail get access to received handler due error: {}", e)
@@ -196,7 +196,7 @@ impl Server {
                         match msg {
                             connection_channel::Messages::Binary { uuid, buffer } => {
                                 match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Received(uuid, Arc::new(Mutex::new(cx.clone())), buffer)) {
+                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Received(uuid, Arc::new(RwLock::new(cx.clone())), buffer)) {
                                         error!("");
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
@@ -212,7 +212,7 @@ impl Server {
                             }
                             connection_channel::Messages::Disconnect { uuid, frame: _ } => {
                                 match events.lock() {
-                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Disconnected(uuid, Arc::new(Mutex::new(cx.clone())))) {
+                                    Ok(events) => if let Err(e) = events.send(ServerEvents::Disconnected(uuid, Arc::new(RwLock::new(cx.clone())))) {
                                         error!("");
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
