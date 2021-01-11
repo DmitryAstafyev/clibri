@@ -8,6 +8,7 @@ pub enum EFilterMatchCondition {
     Equal,
 }
 
+#[derive(Debug, Clone)]
 pub struct Identification {
     fp: HashMap<String, String>,
 }
@@ -29,7 +30,7 @@ impl Identification {
         self.remove(key);
     }
 
-    pub fn filter(&mut self, request: HashMap<String, String>, condition: EFilterMatchCondition) -> bool {
+    pub fn filter(&self, request: HashMap<String, String>, condition: EFilterMatchCondition) -> bool {
         fn is_match(key: String, value: String, request: HashMap<String, String>) -> bool {
             if let Some(v) = request.get(&key) {
                 v == &*value

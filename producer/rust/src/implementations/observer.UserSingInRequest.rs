@@ -1,4 +1,4 @@
-use super::context::{Context, Encodable};
+use super::consumer_context::{Context, Encodable};
 use super::observer::{ RequestObserver };
 use super::DeclUserSingInRequest::{ UserSingInObserver, UserSingInConclusion };
 

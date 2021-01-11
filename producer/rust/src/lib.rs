@@ -1,9 +1,6 @@
 #[path = "./traits/observer.rs"]
 pub mod observer;
 
-#[path = "./context.rs"]
-pub mod context;
-
 #[path = "./buffer.rs"]
 pub mod buffer;
 
@@ -19,6 +16,9 @@ pub mod consumer;
 #[path = "./consumer/consumer.identification.rs"]
 pub mod consumer_identification;
 
+#[path = "./consumer/consumer.context.rs"]
+pub mod consumer_context;
+
 #[path = "./declarations/observer.UserSingInRequest.rs"]
 pub mod DeclUserSingInRequest;
 
@@ -31,7 +31,7 @@ pub mod ImplUserSingInRequest;
 #[path = "./implementations/observer.UserJoinRequest.rs"]
 pub mod ImplUserJoinRequest;
 
-use context::*;
+use consumer_context::*;
 use consumer::{ Consumer };
 use ImplUserSingInRequest::{ UserSingInRequest };
 use DeclUserSingInRequest::{ UserSingInObserver };
@@ -142,8 +142,8 @@ impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionCon
                 match rx_channel.try_recv() {
                     Ok(event) => match event {
                         ServerEvents::Connected(uuid, cx) => match consumers.write() {
-                            Ok(mut consumers) => {
-                                let consumer = consumers.entry(uuid).or_insert(Consumer::new(cx));
+                            Ok(mut storage) => {
+                                let consumer = storage.entry(uuid).or_insert(Consumer::new(cx, consumers.clone()));
                             },
                             Err(e) => {},
                         },
