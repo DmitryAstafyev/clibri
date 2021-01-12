@@ -21,12 +21,12 @@ pub trait RequestObserver<
     fn response(
         &mut self,
         request: Request,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
     ) -> Result<(Response, Conclusion), String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> { Ok(()) }
 }
@@ -41,19 +41,19 @@ pub trait ConfirmedRequestObserver<
     fn conclusion(
         &mut self,
         request: Request,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
     ) -> Result<Conclusion, String>;
 
     fn response(
         &mut self,
         request: Request,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         conclusion: Conclusion,
     ) -> Result<Response, String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> { Ok(()) }
 }

@@ -161,7 +161,7 @@ impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionCon
                                             Messages::UserSingInRequest(request) => {
                                                 match UserSingIn.write() {
                                                     Ok(mut UserSingIn) => {
-                                                        if let Err(e) = UserSingIn.emit(&mut consumer.get_cx(), request) {
+                                                        if let Err(e) = UserSingIn.emit(consumer.get_cx(), request) {
                                                             // TODO: error channel
                                                             println!("{:?}", e);        
                                                         }
@@ -172,7 +172,7 @@ impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionCon
                                             Messages::UserJoinRequest(request) => {
                                                 match UserJoin.write() {
                                                     Ok(mut UserJoin) => {
-                                                        if let Err(e) = UserJoin.emit(&mut consumer.get_cx(), request) {
+                                                        if let Err(e) = UserJoin.emit(consumer.get_cx(), request) {
                                                             // TODO: error channel
                                                             println!("{:?}", e);        
                                                         }

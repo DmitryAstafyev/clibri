@@ -9,6 +9,6 @@ pub trait Context {
 
     fn send(&self, buffer: Vec<u8>) -> Result<(), String>;
 
-    fn send_to(&mut self, buffer: Vec<u8>, filter: HashMap<String, String>, condition: EFilterMatchCondition) -> Result<(), String>;
+    fn send_to(&self, buffer: Vec<u8>, filter: HashMap<String, String>, condition: EFilterMatchCondition) -> Result<(), String>;
 
 }

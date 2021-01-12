@@ -37,7 +37,7 @@ impl RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion
     fn response(
         &mut self,
         request: UserSingInRequest,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
     ) -> Result<(UserSingInResponse, UserSingInConclusion), String> {
         Ok((UserSingInResponse { error: None }, UserSingInConclusion::Accept))
     }
@@ -47,7 +47,7 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
 
     fn accept(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: UserSingInRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -55,7 +55,7 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
 
     fn broadcast(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: UserSingInRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -63,7 +63,7 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
 
     fn deny(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: UserSingInRequest,
     ) -> Result<(), String> {
         Ok(())

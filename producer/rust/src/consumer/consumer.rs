@@ -1,6 +1,6 @@
 use super::buffer::Buffer;
-use super::consumer_identification::{EFilterMatchCondition, Identification};
 use super::consumer_context::Context;
+use super::consumer_identification::{EFilterMatchCondition, Identification};
 use super::{Messages, Protocol};
 use fiber::server::context::ConnectionContext;
 use std::collections::HashMap;
@@ -26,12 +26,19 @@ where
         }
     }
 
-    fn send_to(&mut self, buffer: Vec<u8>, filter: HashMap<String, String>, condition: EFilterMatchCondition) -> Result<(), String> {
+    fn send_to(
+        &self,
+        buffer: Vec<u8>,
+        filter: HashMap<String, String>,
+        condition: EFilterMatchCondition,
+    ) -> Result<(), String> {
         match self.consumers.write() {
             Ok(consumers) => {
                 let mut errors: Vec<String> = vec![];
                 for (uuid, consumer) in consumers.iter() {
-                    if let Err(e) = consumer.send_if(buffer.clone(), filter.clone(), condition.clone()) {
+                    if let Err(e) =
+                        consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
+                    {
                         errors.push(format!("Fail to send data to {}, due error: {}", uuid, e));
                     }
                 }
@@ -40,7 +47,7 @@ where
                 } else {
                     Err(errors.join("\n"))
                 }
-            },
+            }
             Err(e) => Err(format!("{}", e)),
         }
     }
@@ -70,10 +77,7 @@ where
             own: own.clone(),
             consumers: consumers.clone(),
             identification: Identification::new(),
-            cx: Cx {
-                own: own,
-                consumers: consumers,
-            },
+            cx: Cx { own, consumers },
         }
     }
 
@@ -102,10 +106,13 @@ where
         }
     }
 
-    pub fn get_cx(&self) -> impl Context {
+    pub fn get_cx(&mut self) -> &impl Context {
+        &self.cx
+        /*
         Cx {
             own: self.own.clone(),
             consumers: self.consumers.clone(),
         }
+        */
     }
 }

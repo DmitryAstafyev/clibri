@@ -17,25 +17,25 @@ pub trait UserJoinObserver<
 {
     fn accept(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn broadcast(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn deny(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: Request,
     ) -> Result<(), String>;
 
     fn emit(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: Request,
     ) -> Result<(), RequestObserverErrors> {
         match self.conclusion(request.clone(), cx) {

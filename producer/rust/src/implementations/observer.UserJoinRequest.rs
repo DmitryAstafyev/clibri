@@ -37,7 +37,7 @@ impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclus
     fn conclusion(
         &mut self,
         request: UserJoinRequest,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
     ) -> Result<UserJoinConclusion, String> {
         Ok(UserJoinConclusion::Accept)
     }
@@ -45,7 +45,7 @@ impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclus
     fn response(
         &mut self,
         request: UserJoinRequest,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         conclusion: UserJoinConclusion,
     ) -> Result<UserJoinResponse, String> {
         Ok(UserJoinResponse { error: None })
@@ -56,7 +56,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for
 
     fn accept(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -64,7 +64,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for
 
     fn broadcast(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -72,7 +72,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for
 
     fn deny(
         &mut self,
-        cx: &mut dyn Context,
+        cx: &dyn Context,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
