@@ -33,6 +33,7 @@ pub mod ImplUserJoinRequest;
 
 use consumer_context::*;
 use consumer::{ Consumer };
+use consumer_identification::{EFilterMatchCondition};
 use ImplUserSingInRequest::{ UserSingInRequest };
 use DeclUserSingInRequest::{ UserSingInObserver };
 use ImplUserJoinRequest::{ UserJoinRequest };
@@ -204,8 +205,34 @@ impl<S, CX: 'static> Producer<S, CX> where S: ServerTrait<CX>, CX: ConnectionCon
         }
     }
 
-    pub fn broadcast(&mut self, ident: HashMap<String, String>, broadcast: Broadcasting) -> Result<(), String> {
-        Ok(())
+    pub fn broadcast(&mut self, filter: HashMap<String, String>, broadcast: Broadcasting, condition: EFilterMatchCondition) -> Result<(), String> {
+        match self.consumers.write() {
+            Ok(consumers) => {
+                match broadcast {
+                    Broadcasting::UserDisconnected(mut msg) => {
+                        match msg.abduct() {
+                            Ok(buffer) => {
+                                let mut errors: Vec<String> = vec![];
+                                for (uuid, consumer) in consumers.iter() {
+                                    if let Err(e) =
+                                        consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
+                                    {
+                                        errors.push(format!("Fail to send data to {}, due error: {}", uuid, e));
+                                    }
+                                }
+                                if errors.is_empty() {
+                                    Ok(())
+                                } else {
+                                    Err(errors.join("\n"))
+                                }
+                            },
+                            Err(e) => Err(e)
+                        }
+                    }
+                }
+            }
+            Err(e) => Err(format!("{}", e)),
+        }
     }
 
 }
