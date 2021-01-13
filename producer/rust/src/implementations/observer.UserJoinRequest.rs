@@ -1,6 +1,9 @@
 use super::consumer_context::{Context, Encodable};
 use super::observer::{ ConfirmedRequestObserver };
 use super::DeclUserJoinRequest::{ UserJoinObserver, UserJoinConclusion };
+use super::consumer_identification::EFilterMatchCondition;
+use super::{ Broadcasting };
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct UserJoinRequest {
@@ -66,6 +69,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for
         &mut self,
         cx: &dyn Context,
         request: UserJoinRequest,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         Ok(())
     }

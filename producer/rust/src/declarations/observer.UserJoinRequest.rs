@@ -1,7 +1,10 @@
 use super::consumer_context::{Context, Encodable};
 use super::observer::{ConfirmedRequestObserver, RequestObserverErrors};
+use super::consumer_identification::EFilterMatchCondition;
+use super::{ Broadcasting };
 use std::cmp::{Eq, PartialEq};
 use std::hash::Hash;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UserJoinConclusion {
@@ -25,6 +28,7 @@ pub trait UserJoinObserver<
         &mut self,
         cx: &dyn Context,
         request: Request,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String>;
 
     fn deny(
@@ -37,6 +41,7 @@ pub trait UserJoinObserver<
         &mut self,
         cx: &dyn Context,
         request: Request,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         match self.conclusion(request.clone(), cx) {
             Ok(conclusion) => match self.response(request.clone(), cx, conclusion.clone()) {
@@ -50,7 +55,7 @@ pub trait UserJoinObserver<
                                     if let Err(e) = self.accept(cx, request.clone()) {
                                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                     }
-                                    if let Err(e) = self.broadcast(cx, request) {
+                                    if let Err(e) = self.broadcast(cx, request, broadcast) {
                                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                     }
                                 },

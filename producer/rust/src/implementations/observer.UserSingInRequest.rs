@@ -1,6 +1,9 @@
 use super::consumer_context::{Context, Encodable};
 use super::observer::{ RequestObserver };
 use super::DeclUserSingInRequest::{ UserSingInObserver, UserSingInConclusion };
+use super::consumer_identification::EFilterMatchCondition;
+use super::{ Broadcasting };
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct UserSingInRequest {
@@ -57,6 +60,7 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
         &mut self,
         cx: &dyn Context,
         request: UserSingInRequest,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         Ok(())
     }

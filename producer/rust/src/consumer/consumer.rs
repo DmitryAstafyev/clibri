@@ -108,11 +108,5 @@ where
 
     pub fn get_cx(&mut self) -> &impl Context {
         &self.cx
-        /*
-        Cx {
-            own: self.own.clone(),
-            consumers: self.consumers.clone(),
-        }
-        */
     }
 }
