@@ -19,6 +19,7 @@ pub trait StructDecode {
 
 pub trait EnumDecode {
 
+    fn get_id(&self) -> u32;
     fn extract(buf: Vec<u8>) -> Result<Self, String> where Self: std::marker::Sized;
 
 }

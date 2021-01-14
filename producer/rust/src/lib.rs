@@ -146,13 +146,13 @@ where
                             }
                             Err(e) => {}
                         },
-                        ServerEvents::Disconnected(uuid, cx) => match consumers_ref.write() {
+                        ServerEvents::Disconnected(uuid, _cx) => match consumers_ref.write() {
                             Ok(mut consumers) => {
                                 consumers.remove(&uuid);
                             }
                             Err(e) => {}
                         },
-                        ServerEvents::Received(uuid, cx, buffer) => match consumers_ref.write() {
+                        ServerEvents::Received(uuid, _cx, buffer) => match consumers_ref.write() {
                             Ok(mut consumers) => {
                                 if let Some(consumer) = consumers.get_mut(&uuid) {
                                     let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {

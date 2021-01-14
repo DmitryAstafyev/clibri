@@ -7,6 +7,7 @@ mod tests {
     use encode::{ StructEncode, EnumEncode, Encode, EncodeEnum, get_empty_buffer_val };
     use decode::{ StructDecode, EnumDecode, Decode, DecodeEnum, Source };
     use storage::{ Storage };
+    use packing::{ PackingStruct, PackingEnum };
     use sizes::{ U16_LEN };
     use std::io::Cursor;
     use bytes::{ Buf };
@@ -41,6 +42,10 @@ mod tests {
     }
 
     impl EnumEncode for TargetEnum {
+
+        fn get_id(&self) -> u32 {
+            1001
+        }
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let (buf, index) = match self {
@@ -83,6 +88,10 @@ mod tests {
     }
 
     impl EnumDecode for TargetEnum {
+
+        fn get_id(&self) -> u32 {
+            1001
+        }
 
         fn extract(buf: Vec<u8>) -> Result<TargetEnum, String> {
             if buf.len() <= sizes::U16_LEN {
@@ -195,6 +204,10 @@ mod tests {
 
     }
 
+    impl PackingEnum for TargetEnum {
+
+    }
+
     #[derive(Debug, Clone, PartialEq)]
     pub struct Nested {
         field_u16: u16,
@@ -255,6 +268,9 @@ mod tests {
             };
             Ok(buffer)
         }
+    }
+
+    impl PackingStruct for Nested {
     }
 
     #[derive(Debug, Clone)]
@@ -605,6 +621,9 @@ mod tests {
             Ok(buffer)
         }
 
+    }
+
+    impl PackingStruct for Target {
     }
 
     #[test]
