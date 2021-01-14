@@ -1,53 +1,52 @@
-use uuid::Uuid;
-use super::{ packing };
-use packing::{ Header };
+use super::packing;
+use packing::Header;
 
 pub enum ReadError {
     Header(String),
     Parsing(String),
+    Signature(String),
 }
 
 #[derive(Clone)]
-pub struct IncomeMessage<T: Send + Sync + Clone + 'static> {
+pub struct IncomeMessage<T: Clone> {
     pub header: Header,
     pub msg: T,
 }
 
-pub struct Buffer<T: Send + Sync + Clone + 'static>{
-    uuid: Uuid,
+pub trait DecodeBuffer<T> {
+    fn get_msg(&self, id: u32, buf: &[u8]) -> Result<T, String>;
+    fn get_signature(&self) -> u16;
+}
+
+pub struct Buffer<T: Clone> {
     buffer: Vec<u8>,
     queue: Vec<IncomeMessage<T>>,
 }
 
-impl<T: Send + Sync + Clone + 'static> Buffer<T> {
+impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
 
-    fn get_message(
-        &self,
-        header: &Header,
-        buf: &[u8],
-        protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static,
-    ) -> Result<T, String> {
-        println!("{}:: has been gotten message ID {}, declared len: {}, actual len: {}", self.uuid, header.id, header.len, buf.len());
-        match protocol.get_msg(header.id, buf) {
+    fn get_message(&self, header: &Header, buf: &[u8]) -> Result<T, String> {
+        if self.get_signature() != header.signature {
+            Err()
+        }
+        match self.get_msg(header.id, buf) {
             Ok(msg) => Ok(msg),
-            Err(e) => Err(format!("Fail get message ID={} due error: {}", header.id, e))
+            Err(e) => Err(format!(
+                "Fail get message id={}, signature={} due error: {}",
+                header.id, header.signature, e
+            )),
         }
     }
 
-    pub fn new(uuid: Uuid) -> Self {
+    pub fn new() -> Self {
         Buffer {
-            uuid,
-            buffer: vec!(),
-            queue: vec!(),
+            buffer: vec![],
+            queue: vec![],
         }
     }
 
     #[allow(clippy::ptr_arg)]
-    pub fn chunk(
-        &mut self,
-        buf: &Vec<u8>,
-        protocol: impl protocol::Protocol<T> + Send + Sync + Clone + 'static,
-    ) -> Result<(), ReadError> {
+    pub fn chunk(&mut self, buf: &Vec<u8>) -> Result<(), ReadError> {
         // Add data into buffer
         self.buffer.append(&mut buf.clone());
         if !packing::has_header(&self.buffer) {
@@ -56,33 +55,30 @@ impl<T: Send + Sync + Clone + 'static> Buffer<T> {
         // Get header
         let header: Header = match packing::get_header(&self.buffer) {
             Ok(v) => v,
-            Err(e) => { return Err(ReadError::Header(e)); },
+            Err(e) => {
+                return Err(ReadError::Header(e));
+            }
         };
-        println!("{}:: reading... len: {}, buffer: {}", self.uuid, header.len, self.buffer.len());
         if !packing::has_body(&self.buffer, &header) {
             return Ok(());
         }
         let (body, rest) = match packing::get_body(&self.buffer, &header) {
             Ok(v) => v,
-            Err(e) => { return Err(ReadError::Parsing(e)); },
+            Err(e) => {
+                return Err(ReadError::Parsing(e));
+            }
         };
         self.buffer = rest;
-        match Self::get_message(self, &header, &body, protocol.clone()) {
+        match Self::get_message(self, &header, &body) {
             Ok(msg) => {
-                self.queue.push(IncomeMessage {
-                    header,
-                    msg,
-                });
+                self.queue.push(IncomeMessage { header, msg });
                 if !self.buffer.is_empty() {
-                    self.read(&vec!(), protocol)
+                    self.chunk(&vec![])
                 } else {
                     Ok(())
                 }
-            },
-            Err(e) => {
-                println!("{}:: fail parse message due error: {}", self.uuid, e);
-                Err(ReadError::Parsing(e))
-            },
+            }
+            Err(e) => Err(ReadError::Parsing(e))
         }
     }
 

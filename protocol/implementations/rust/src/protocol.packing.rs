@@ -6,12 +6,14 @@ use std::convert::TryFrom;
 use std::time::{ SystemTime, UNIX_EPOCH };
 
 const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
+                                sizes::U16_LEN + // {u16} signature
                                 sizes::U64_LEN + // {u64} body size
                                 sizes::U64_LEN;  // {u64} timestamp
 
 #[derive(Debug, Clone)]
 pub struct Header {
     pub id: u32,
+    pub signature: u16,
     pub len: u64,
     pub ts: u64,
     pub len_usize: usize,
@@ -28,6 +30,8 @@ pub fn get_header(buf: &[u8]) -> Result<Header, String> {
     }
     // Get message id
     let id: u32 = header.get_u32_le();
+    // Get signature
+    let signature: u16 = header.get_u16_le();
     // Get timestamp
     let ts: u64 = header.get_u64_le();
     // Get length of payload and payload
@@ -38,7 +42,7 @@ pub fn get_header(buf: &[u8]) -> Result<Header, String> {
             return Err(format!("{}", e));
         }
     };
-    Ok(Header { id, ts, len, len_usize })
+    Ok(Header { id, signature, ts, len, len_usize })
 }
 
 pub fn has_body(buf: &[u8], header: &Header) -> bool {
@@ -58,28 +62,18 @@ pub fn get_body(buf: &[u8], header: &Header) -> Result<(Vec<u8>, Vec<u8>), Strin
 }
 
 pub fn pack<T>(mut msg: T) -> Result<Vec<u8>, String> where T: StructEncode {
-    match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => {
-            let msg_buf = match msg.abduct() {
-                Ok(v) => v,
-                Err(e) => { return Err(e); },
-            };
-            let mut buf: Vec<u8> = vec!();
-            buf.append(&mut msg.get_id().to_le_bytes().to_vec());
-            buf.append(&mut duration.as_secs().to_le_bytes().to_vec());
-            buf.append(&mut (msg_buf.len() as u64).to_le_bytes().to_vec());
-            buf.append(&mut msg_buf.to_vec());
-            Ok(buf)
-        },
-        Err(e) => Err(e.to_string()),
+    match msg.abduct() {
+        Ok(buffer) => pack_buffer(msg.get_id(), msg.get_signature(), buffer),
+        Err(e) => Err(e),
     }
 }
 
-pub fn pack_buffer(msg_id: u32, msg_buf: Vec<u8>) -> Result<Vec<u8>, String> {
+pub fn pack_buffer(msg_id: u32, signature: u16, msg_buf: Vec<u8>) -> Result<Vec<u8>, String> {
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(duration) => {
             let mut buf: Vec<u8> = vec!();
             buf.append(&mut msg_id.to_le_bytes().to_vec());
+            buf.append(&mut signature.to_le_bytes().to_vec());
             buf.append(&mut duration.as_secs().to_le_bytes().to_vec());
             buf.append(&mut (msg_buf.len() as u64).to_le_bytes().to_vec());
             buf.append(&mut msg_buf.to_vec());
@@ -93,7 +87,7 @@ pub trait PackingStruct: StructEncode {
 
     fn pack(&mut self) -> Result<Vec<u8>, String> {
         match self.abduct() {
-            Ok(buf) => pack_buffer(self.get_id(), buf),
+            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), buf),
             Err(e) => Err(e),
         }
     }
@@ -104,7 +98,7 @@ pub trait PackingEnum: EnumEncode {
 
     fn pack(&mut self) -> Result<Vec<u8>, String> {
         match self.abduct() {
-            Ok(buf) => pack_buffer(self.get_id(), buf),
+            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), buf),
             Err(e) => Err(e),
         }
     }

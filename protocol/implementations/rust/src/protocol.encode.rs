@@ -36,6 +36,7 @@ pub fn get_empty_buffer_val(id: Option<u16>) -> Result<Vec<u8>, String> {
 pub trait StructEncode {
 
     fn get_id(&self) -> u32;
+    fn get_signature(&self) -> u16;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
 
 }
@@ -43,6 +44,7 @@ pub trait StructEncode {
 pub trait EnumEncode {
     
     fn get_id(&self) -> u32;
+    fn get_signature(&self) -> u16;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
 
 }

@@ -43,9 +43,9 @@ mod tests {
 
     impl EnumEncode for TargetEnum {
 
-        fn get_id(&self) -> u32 {
-            1001
-        }
+        fn get_id(&self) -> u32 { 1001 }
+
+        fn get_signature(&self) -> u16 { 0 }
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let (buf, index) = match self {
@@ -89,9 +89,7 @@ mod tests {
 
     impl EnumDecode for TargetEnum {
 
-        fn get_id(&self) -> u32 {
-            1001
-        }
+        fn get_id(&self) -> u32 { 1001 }
 
         fn extract(buf: Vec<u8>) -> Result<TargetEnum, String> {
             if buf.len() <= sizes::U16_LEN {
@@ -251,6 +249,8 @@ mod tests {
         fn get_id(&self) -> u32 {
             1
         }
+
+        fn get_signature(&self) -> u16 { 0 }
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
@@ -485,6 +485,8 @@ mod tests {
         fn get_id(&self) -> u32 {
             2
         }
+
+        fn get_signature(&self) -> u16 { 0 }
 
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
