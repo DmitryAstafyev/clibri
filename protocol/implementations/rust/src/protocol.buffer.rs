@@ -1,6 +1,7 @@
 use super::packing;
 use packing::Header;
 
+#[derive(Debug)]
 pub enum ReadError {
     Header(String),
     Parsing(String),
@@ -22,19 +23,20 @@ pub struct Buffer<T: Clone> {
     buffer: Vec<u8>,
     queue: Vec<IncomeMessage<T>>,
 }
-
+#[allow(clippy::len_without_is_empty)]
 impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
 
-    fn get_message(&self, header: &Header, buf: &[u8]) -> Result<T, String> {
+    fn get_message(&self, header: &Header, buf: &[u8]) -> Result<T, ReadError> {
         if self.get_signature() != header.signature {
-            Err()
-        }
-        match self.get_msg(header.id, buf) {
-            Ok(msg) => Ok(msg),
-            Err(e) => Err(format!(
-                "Fail get message id={}, signature={} due error: {}",
-                header.id, header.signature, e
-            )),
+            Err(ReadError::Signature(format!("Signature dismatch; expectation: {}; message: {}", self.get_signature(), header.signature)))
+        } else {
+            match self.get_msg(header.id, buf) {
+                Ok(msg) => Ok(msg),
+                Err(e) => Err(ReadError::Parsing(format!(
+                    "Fail get message id={}, signature={} due error: {}",
+                    header.id, header.signature, e
+                ))),
+            }
         }
     }
 
@@ -78,7 +80,7 @@ impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
                     Ok(())
                 }
             }
-            Err(e) => Err(ReadError::Parsing(e))
+            Err(e) => Err(e)
         }
     }
 
@@ -94,6 +96,14 @@ impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
             self.queue.clear();
         }
         message
+    }
+
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
+
+    pub fn pending(&self) -> usize {
+        self.queue.len()
     }
 
 }

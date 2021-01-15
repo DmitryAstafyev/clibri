@@ -9,12 +9,24 @@ pub enum Source<'a> {
     Buffer(&'a Vec<u8>),
 }
 
-pub trait StructDecode {
+pub trait StructDecode where Self: Sized {
 
     fn get_id() -> u32;
     fn defaults() -> Self;
-    fn extract(&mut self, storage: Storage) -> Result<(), String>;
-
+    fn extract_from_storage(&mut self, storage: Storage) -> Result<(), String>;
+    fn extract(buf: Vec<u8>) -> Result<Self, String> {
+        let mut instance: Self = Self::defaults();
+        let storage = match Storage::new(buf) {
+            Ok(storage) => storage,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+        match instance.extract_from_storage(storage) {
+            Ok(()) => Ok(instance),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 pub trait EnumDecode {
@@ -290,7 +302,7 @@ impl<T> Decode<T> for T where T: StructDecode,  {
                 }
             };
             let mut strct: T = T::defaults();
-            match strct.extract(sctruct_storage) {
+            match strct.extract_from_storage(sctruct_storage) {
                 Ok(_) => Ok(strct),
                 Err(e) => Err(e),
             }
@@ -588,7 +600,7 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                     }
                 };
                 let mut strct: T = T::defaults();
-                match strct.extract(sctruct_storage) {
+                match strct.extract_from_storage(sctruct_storage) {
                     Ok(_) => {},
                     Err(e) => { return Err(e); },
                 }

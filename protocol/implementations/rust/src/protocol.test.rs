@@ -8,6 +8,7 @@ mod tests {
     use decode::{ StructDecode, EnumDecode, Decode, DecodeEnum, Source };
     use storage::{ Storage };
     use packing::{ PackingStruct, PackingEnum };
+    use buffer::{ DecodeBuffer, Buffer };
     use sizes::{ U16_LEN };
     use std::io::Cursor;
     use bytes::{ Buf };
@@ -227,7 +228,7 @@ mod tests {
             }
         }
 
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(1)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -343,7 +344,7 @@ mod tests {
                 prop_optional_enum_vec: None,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.prop_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(1)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -628,6 +629,37 @@ mod tests {
     impl PackingStruct for Target {
     }
 
+    #[derive(Debug, Clone)]
+    enum Messages {
+        Nested(Nested),
+        Target(Target),
+        TargetEnum(TargetEnum),
+    }
+
+    impl DecodeBuffer<Messages> for Buffer<Messages> {
+
+        fn get_msg(&self, id: u32, buf: &[u8]) -> Result<Messages, String> {
+            match id {
+                1 => match Nested::extract(buf.to_vec()) {
+                    Ok(structs) => Ok(Messages::Nested(structs)),
+                    Err(e) => Err(e),
+                },
+                2 => match Target::extract(buf.to_vec()) {
+                    Ok(structs) => Ok(Messages::Target(structs)),
+                    Err(e) => Err(e),
+                },
+                1001 => match TargetEnum::extract(buf.to_vec()) {
+                    Ok(enums) => Ok(Messages::TargetEnum(enums)),
+                    Err(e) => Err(e), 
+                },
+                _ => Err(String::from("No message has been found"))
+            }
+        }
+
+        fn get_signature(&self) -> u16 { 0 }
+
+    }
+
     #[test]
     fn encode_decode() {
         let mut a: Target = Target {
@@ -705,7 +737,7 @@ mod tests {
         };
         println!("{:?}", s);
 
-        match b.extract(s) {
+        match b.extract_from_storage(s) {
             Ok(_) => {},
             Err(e) => {
                 println!("{}", e);
@@ -808,6 +840,74 @@ mod tests {
                 }
             };
         }
+        let mut buffer = Buffer::new();
+        let mut buf: Vec<u8> = vec!();
+        let mut c = Nested {
+            field_u16: 999,
+            field_utf8_string: String::from("Hello, from Nested!"),
+            field_optional: Some(2),
+        };
+        buf.append(&mut a.pack().unwrap());
+        buf.append(&mut c.pack().unwrap());
+        for item in enums.iter() {
+            let mut item = item.clone();
+            buf.append(&mut item.pack().unwrap());
+        }
+        if let Err(e) = buffer.chunk(&buf) {
+            println!("{:?}", e);
+            assert_eq!(true, false);
+        }
+        let mut count = 10 + 20 + enums.len();
+        loop {
+            if let Some(msg) = buffer.next() {
+                match msg.msg {
+                    Messages::Nested(b) => {
+                        count -= 10;
+                        assert_eq!(a.prop_nested, b);
+                        assert_eq!(a.prop_nested.field_optional, b.field_optional);
+                    },
+                    Messages::Target(b) => {
+                        count -= 20;
+                        assert_eq!(a.prop_u8, b.prop_u8);
+                        assert_eq!(a.prop_u16, b.prop_u16);
+                        assert_eq!(a.prop_u32, b.prop_u32);
+                        assert_eq!(a.prop_u64, b.prop_u64);
+                        assert_eq!(a.prop_i8, b.prop_i8);
+                        assert_eq!(a.prop_i16, b.prop_i16);
+                        assert_eq!(a.prop_i32, b.prop_i32);
+                        assert_eq!(a.prop_i64, b.prop_i64);
+                        assert_eq!(a.prop_u8_vec, b.prop_u8_vec);
+                        assert_eq!(a.prop_u16_vec, b.prop_u16_vec);
+                        assert_eq!(a.prop_u32_vec, b.prop_u32_vec);
+                        assert_eq!(a.prop_u64_vec, b.prop_u64_vec);
+                        assert_eq!(a.prop_i8_vec, b.prop_i8_vec);
+                        assert_eq!(a.prop_i16_vec, b.prop_i16_vec);
+                        assert_eq!(a.prop_i32_vec, b.prop_i32_vec);
+                        assert_eq!(a.prop_i64_vec, b.prop_i64_vec);
+                        assert_eq!(a.prop_f32_vec, b.prop_f32_vec);
+                        assert_eq!(a.prop_f64_vec, b.prop_f64_vec);
+                        assert_eq!(a.prop_f32, b.prop_f32);
+                        assert_eq!(a.prop_f64, b.prop_f64);
+                        assert_eq!(a.prop_utf8_string_vec, b.prop_utf8_string_vec);
+                        assert_eq!(a.prop_nested, b.prop_nested);
+                        assert_eq!(a.prop_nested.field_optional, b.prop_nested.field_optional);
+                        assert_eq!(a.prop_nested_vec, b.prop_nested_vec);
+                        assert_eq!(a.prop_enum, b.prop_enum);
+                        assert_eq!(a.prop_optional_strct, b.prop_optional_strct);
+                        assert_eq!(a.prop_optional_enum, b.prop_optional_enum);
+                        assert_eq!(a.prop_optional_enum_vec, b.prop_optional_enum_vec);
+                    },
+                    Messages::TargetEnum(pack) => {
+                        count -= 1;
+                    },
+                };
+            } else {
+                break;
+            }
+        }
+        assert_eq!(count, 0);
+        assert_eq!(buffer.len(), 0);
+        assert_eq!(buffer.pending(), 0);
         //assert_eq!(true, false);
     }
 
