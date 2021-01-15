@@ -5,13 +5,14 @@ use std::io::Cursor;
 use std::convert::TryFrom;
 use std::time::{ SystemTime, UNIX_EPOCH };
 
+// injectable
 const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
                                 sizes::U16_LEN + // {u16} signature
                                 sizes::U64_LEN + // {u64} body size
                                 sizes::U64_LEN;  // {u64} timestamp
 
 #[derive(Debug, Clone)]
-pub struct Header {
+pub struct PackageHeader {
     pub id: u32,
     pub signature: u16,
     pub len: u64,
@@ -23,7 +24,7 @@ pub fn has_header(buf: &[u8]) -> bool {
     buf.len() > MSG_HEADER_LEN
 }
 
-pub fn get_header(buf: &[u8]) -> Result<Header, String> {
+pub fn get_header(buf: &[u8]) -> Result<PackageHeader, String> {
     let mut header = Cursor::new(buf);
     if buf.len() < MSG_HEADER_LEN {
         return Err(format!("Cannot extract header of package because size of header {} bytes, but size of buffer {} bytes.", MSG_HEADER_LEN, buf.len()));
@@ -42,14 +43,14 @@ pub fn get_header(buf: &[u8]) -> Result<Header, String> {
             return Err(format!("{}", e));
         }
     };
-    Ok(Header { id, signature, ts, len, len_usize })
+    Ok(PackageHeader { id, signature, ts, len, len_usize })
 }
 
-pub fn has_body(buf: &[u8], header: &Header) -> bool {
+pub fn has_body(buf: &[u8], header: &PackageHeader) -> bool {
     buf.len() >= header.len_usize + MSG_HEADER_LEN
 }
 
-pub fn get_body(buf: &[u8], header: &Header) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn get_body(buf: &[u8], header: &PackageHeader) -> Result<(Vec<u8>, Vec<u8>), String> {
     if buf.len() < header.len_usize + MSG_HEADER_LEN {
         return Err(format!("Cannot extract body of package because size in header {} bytes, but size of buffer {} bytes.", header.len, buf.len() - MSG_HEADER_LEN));
     }

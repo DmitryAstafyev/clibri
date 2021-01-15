@@ -209,7 +209,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, store.clone(), RustRender::new(embedded)) {
+                        if let Err(e) = self.write(dest, store.clone(), RustRender::new(embedded, 0)) {
                             return Err(e);
                         }
                     }
@@ -230,7 +230,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, store, TypescriptRender::new(embedded)) {
+                        if let Err(e) = self.write(dest, store, TypescriptRender::new(embedded, 0)) {
                             return Err(e);
                         }
                     }

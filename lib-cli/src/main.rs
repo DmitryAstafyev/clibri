@@ -38,7 +38,7 @@ mod tests {
                         // println!("{:?}", store.groups);
                         let rust_render: RustRender = RustRender::new(true);
                         println!("{}", rust_render.render(store));
-                        assert_eq!(true, false);
+                        assert_eq!(true, true);
                     },
                     Err(e) => {
                         println!("{}", e[0]);

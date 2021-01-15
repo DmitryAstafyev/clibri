@@ -1,6 +1,7 @@
 use super::packing;
-use packing::Header;
+use packing::PackageHeader;
 
+// injectable
 #[derive(Debug)]
 pub enum ReadError {
     Header(String),
@@ -10,7 +11,7 @@ pub enum ReadError {
 
 #[derive(Clone)]
 pub struct IncomeMessage<T: Clone> {
-    pub header: Header,
+    pub header: PackageHeader,
     pub msg: T,
 }
 
@@ -23,12 +24,20 @@ pub struct Buffer<T: Clone> {
     buffer: Vec<u8>,
     queue: Vec<IncomeMessage<T>>,
 }
-#[allow(clippy::len_without_is_empty)]
-impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
 
-    fn get_message(&self, header: &Header, buf: &[u8]) -> Result<T, ReadError> {
+#[allow(clippy::len_without_is_empty)]
+#[allow(clippy::new_without_default)]
+impl<T: Clone> Buffer<T>
+where
+    Self: DecodeBuffer<T>,
+{
+    fn get_message(&self, header: &PackageHeader, buf: &[u8]) -> Result<T, ReadError> {
         if self.get_signature() != header.signature {
-            Err(ReadError::Signature(format!("Signature dismatch; expectation: {}; message: {}", self.get_signature(), header.signature)))
+            Err(ReadError::Signature(format!(
+                "Signature dismatch; expectation: {}; message: {}",
+                self.get_signature(),
+                header.signature
+            )))
         } else {
             match self.get_msg(header.id, buf) {
                 Ok(msg) => Ok(msg),
@@ -55,7 +64,7 @@ impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
             return Ok(());
         }
         // Get header
-        let header: Header = match packing::get_header(&self.buffer) {
+        let header: PackageHeader = match packing::get_header(&self.buffer) {
             Ok(v) => v,
             Err(e) => {
                 return Err(ReadError::Header(e));
@@ -80,7 +89,7 @@ impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
                     Ok(())
                 }
             }
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 
@@ -105,5 +114,4 @@ impl<T: Clone> Buffer<T> where Self: DecodeBuffer<T> {
     pub fn pending(&self) -> usize {
         self.queue.len()
     }
-
 }

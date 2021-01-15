@@ -10,6 +10,7 @@ use std::include_str;
 
 pub struct TypescriptRender {
     embedded: bool,
+    signature: u16,
 }
 
 impl TypescriptRender {
@@ -1322,8 +1323,8 @@ impl TypescriptRender {
 }
 
 impl Render for TypescriptRender {
-    fn new(embedded: bool) -> Self {
-        TypescriptRender { embedded }
+    fn new(embedded: bool, signature: u16) -> Self {
+        TypescriptRender { embedded, signature }
     }
 
     fn render(&self, store: Store) -> String {

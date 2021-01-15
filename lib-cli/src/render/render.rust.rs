@@ -5,20 +5,21 @@ use super::parser::store::Store;
 use super::parser::structs::Struct;
 use super::parser::types::PrimitiveTypes;
 use super::Render;
-use std::{include_str};
 use regex::Regex;
+use std::include_str;
 
 pub struct RustRender {
     embedded: bool,
+    signature: u16,
 }
 
 impl RustRender {
-
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}pub mod {} {{\n", self.spaces(level), group.name);
         body = format!("{}{}use super::*;\n", body, self.spaces(level + 1));
         body = format!("{}{}use std::io::Cursor;\n", body, self.spaces(level + 1));
         body = format!("{}{}use bytes::{{ Buf }};\n", body, self.spaces(level + 1));
+        body = format!("{}{}", body, self.get_messages_list(Some(group), &mut store.clone(), level + 1));
         for enum_id in &group.enums {
             if let Some(enums) = store.get_enum(*enum_id) {
                 body = format!(
@@ -56,7 +57,11 @@ impl RustRender {
                 "{}\n{}{}",
                 body,
                 self.spaces(level + 1),
-                format!("pub {}: {},", field.name, self.get_declare_type_ref(field, &mut store.clone())),
+                format!(
+                    "pub {}: {},",
+                    field.name,
+                    self.get_declare_type_ref(field, &mut store.clone())
+                ),
             );
         }
         body = format!("{}\n{}}}\n", body, self.spaces(level));
@@ -95,17 +100,36 @@ impl RustRender {
             if field.optional {
                 if let Some(id) = field.ref_type_id {
                     if let Some(enums) = store.get_enum(id) {
-                        body = format!("{}{}if let Some(buf) = storage.get({}) {{\n", body, self.spaces(level + 2), field.id);
+                        body = format!(
+                            "{}{}if let Some(buf) = storage.get({}) {{\n",
+                            body,
+                            self.spaces(level + 2),
+                            field.id
+                        );
                         body = format!("{}{}if buf.is_empty() {{\n", body, self.spaces(level + 3));
-                        body = format!("{}{}self.{} = None;\n", body, self.spaces(level + 4), field.name);
+                        body = format!(
+                            "{}{}self.{} = None;\n",
+                            body,
+                            self.spaces(level + 4),
+                            field.name
+                        );
                         body = format!("{}{}}} else {{\n", body, self.spaces(level + 3));
                         body = format!("{}{}self.{} = match {}::get_from_storage(Source::Storage(&mut storage), Some({})) {{\n", body, self.spaces(level + 4), field.name, enums.name, field.id);
                         body = format!("{}{}Ok(val) => Some(val),\n", body, self.spaces(level + 5));
-                        body = format!("{}{}Err(e) => {{ return Err(e) }},\n", body, self.spaces(level + 5));
+                        body = format!(
+                            "{}{}Err(e) => {{ return Err(e) }},\n",
+                            body,
+                            self.spaces(level + 5)
+                        );
                         body = format!("{}{}}};\n", body, self.spaces(level + 4));
                         body = format!("{}{}}}\n", body, self.spaces(level + 3));
                         body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
-                        body = format!("{}{}return Err(\"Buffer for property {} isn't found\".to_string());\n", body, self.spaces(level + 3), field.name);
+                        body = format!(
+                            "{}{}return Err(\"Buffer for property {} isn't found\".to_string());\n",
+                            body,
+                            self.spaces(level + 3),
+                            field.name
+                        );
                         body = format!("{}{}}}\n", body, self.spaces(level + 2));
                         continue;
                     }
@@ -136,9 +160,18 @@ impl RustRender {
             self.spaces(level),
             strct.name
         );
-        body = format!("{}{}fn get_id(&self) -> u32 {{\n", body, self.spaces(level + 1));
-        body = format!("{}{}{}\n", body, self.spaces(level + 2), strct.id);
-        body = format!("{}{}}}\n", body, self.spaces(level + 1));
+        body = format!(
+            "{}{}fn get_id(&self) -> u32 {{ {} }}\n",
+            body,
+            self.spaces(level + 1),
+            strct.id
+        );
+        body = format!(
+            "{}{}fn get_signature(&self) -> u16 {{ {} }}\n",
+            body,
+            self.spaces(level + 1),
+            self.signature,
+        );
         body = format!(
             "{}{}fn abduct(&mut self) -> Result<Vec<u8>, String> {{\n",
             body,
@@ -153,15 +186,46 @@ impl RustRender {
             if field.optional {
                 if let Some(id) = field.ref_type_id {
                     if store.get_enum(id).is_some() {
-                        body = format!("{}{}if let Some(mut val) = self.{}.clone() {{\n", body, self.spaces(level + 2), field.name);
-                        body = format!("{}{}match val.get_buf_to_store(Some({})) {{\n", body, self.spaces(level + 3), field.id);
-                        body = format!("{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n", body, self.spaces(level + 4));
-                        body = format!("{}{}Err(e) => {{ return  Err(e); }},\n", body, self.spaces(level + 4));
+                        body = format!(
+                            "{}{}if let Some(mut val) = self.{}.clone() {{\n",
+                            body,
+                            self.spaces(level + 2),
+                            field.name
+                        );
+                        body = format!(
+                            "{}{}match val.get_buf_to_store(Some({})) {{\n",
+                            body,
+                            self.spaces(level + 3),
+                            field.id
+                        );
+                        body = format!(
+                            "{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n",
+                            body,
+                            self.spaces(level + 4)
+                        );
+                        body = format!(
+                            "{}{}Err(e) => {{ return  Err(e); }},\n",
+                            body,
+                            self.spaces(level + 4)
+                        );
                         body = format!("{}{}}};\n", body, self.spaces(level + 3));
                         body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
-                        body = format!("{}{}match get_empty_buffer_val(Some({})) {{\n", body, self.spaces(level + 3), field.id);
-                        body = format!("{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n", body, self.spaces(level + 4));
-                        body = format!("{}{}Err(e) => {{ return  Err(e); }},\n", body, self.spaces(level + 4));
+                        body = format!(
+                            "{}{}match get_empty_buffer_val(Some({})) {{\n",
+                            body,
+                            self.spaces(level + 3),
+                            field.id
+                        );
+                        body = format!(
+                            "{}{}Ok(mut buf) => {{ buffer.append(&mut buf); }},\n",
+                            body,
+                            self.spaces(level + 4)
+                        );
+                        body = format!(
+                            "{}{}Err(e) => {{ return  Err(e); }},\n",
+                            body,
+                            self.spaces(level + 4)
+                        );
                         body = format!("{}{}}};\n", body, self.spaces(level + 3));
                         body = format!("{}{}}}\n", body, self.spaces(level + 2));
                         continue;
@@ -190,6 +254,12 @@ impl RustRender {
         body = format!("{}{}Ok(buffer)\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
+        body = format!(
+            "{}{}impl PackingStruct for {} {{ }}\n",
+            body,
+            self.spaces(level),
+            strct.name
+        );
         body
     }
 
@@ -205,7 +275,11 @@ impl RustRender {
                 format!(
                     "{}({})",
                     item.name,
-                    if item.repeated { format!("Vec<{}>", item_type) } else { item_type }
+                    if item.repeated {
+                        format!("Vec<{}>", item_type)
+                    } else {
+                        item_type
+                    }
                 ),
             );
         }
@@ -241,8 +315,16 @@ impl RustRender {
             self.spaces(level + 2)
         );
 
-        body = format!("{}{}let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];\n", body, self.spaces(level + 2));
-        body = format!("{}{}body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);\n", body, self.spaces(level + 2));
+        body = format!(
+            "{}{}let mut body_buf = vec![0; buf.len() - sizes::U16_LEN];\n",
+            body,
+            self.spaces(level + 2)
+        );
+        body = format!(
+            "{}{}body_buf.copy_from_slice(&buf[sizes::U16_LEN..]);\n",
+            body,
+            self.spaces(level + 2)
+        );
         body = format!("{}{}match index {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
             let item_type = self.enum_item_type(item.clone(), store);
@@ -251,7 +333,11 @@ impl RustRender {
                 body,
                 self.spaces(level + 3),
                 index,
-                if item.repeated { format!("Vec::<{}>", item_type) } else { item_type }
+                if item.repeated {
+                    format!("Vec::<{}>", item_type)
+                } else {
+                    item_type
+                }
             );
             body = format!(
                 "{}{}Ok(v) => Ok({}::{}(v)),\n",
@@ -279,11 +365,27 @@ impl RustRender {
             enums.name
         );
         body = format!(
+            "{}{}fn get_id(&mut self) -> u32 {{ {} }}\n",
+            body,
+            self.spaces(level + 1),
+            enums.id,
+        );
+        body = format!(
+            "{}{}fn get_signature(&mut self) -> u16 {{ {} }}\n",
+            body,
+            self.spaces(level + 1),
+            self.signature,
+        );
+        body = format!(
             "{}{}fn abduct(&mut self) -> Result<Vec<u8>, String> {{\n",
             body,
             self.spaces(level + 1)
         );
-        body = format!("{}{}let (buf, index) = match self {{\n", body, self.spaces(level + 2));
+        body = format!(
+            "{}{}let (buf, index) = match self {{\n",
+            body,
+            self.spaces(level + 2)
+        );
         for (index, item) in enums.variants.iter().enumerate() {
             body = format!(
                 "{}{}Self::{}(v) => (v.encode(), {}),\n",
@@ -293,18 +395,48 @@ impl RustRender {
                 index
             );
         }
-        body = format!("{}{}_ => {{ return Err(String::from(\"Not supportable option\")); }},\n", body, self.spaces(level + 3));
+        body = format!(
+            "{}{}_ => {{ return Err(String::from(\"Not supportable option\")); }},\n",
+            body,
+            self.spaces(level + 3)
+        );
         body = format!("{}{}}};\n", body, self.spaces(level + 2));
-        body = format!("{}{}let mut buf = match buf {{\n", body, self.spaces(level + 2));
+        body = format!(
+            "{}{}let mut buf = match buf {{\n",
+            body,
+            self.spaces(level + 2)
+        );
         body = format!("{}{}Ok(buf) => buf,\n", body, self.spaces(level + 3));
-        body = format!("{}{}Err(e) => {{ return Err(e); }},\n", body, self.spaces(level + 3));
+        body = format!(
+            "{}{}Err(e) => {{ return Err(e); }},\n",
+            body,
+            self.spaces(level + 3)
+        );
         body = format!("{}{}}};\n", body, self.spaces(level + 2));
-        body = format!("{}{}let mut buffer: Vec<u8> = vec!();\n", body, self.spaces(level + 2));
-        body = format!("{}{}buffer.append(&mut (index as u16).to_le_bytes().to_vec());\n", body, self.spaces(level + 2));
-        body = format!("{}{}buffer.append(&mut buf);\n", body, self.spaces(level + 2));
+        body = format!(
+            "{}{}let mut buffer: Vec<u8> = vec!();\n",
+            body,
+            self.spaces(level + 2)
+        );
+        body = format!(
+            "{}{}buffer.append(&mut (index as u16).to_le_bytes().to_vec());\n",
+            body,
+            self.spaces(level + 2)
+        );
+        body = format!(
+            "{}{}buffer.append(&mut buf);\n",
+            body,
+            self.spaces(level + 2)
+        );
         body = format!("{}{}Ok(buffer)\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
+        body = format!(
+            "{}{}impl PackingEnum for {} {{}}\n",
+            body,
+            self.spaces(level),
+            enums.name
+        );
         body
     }
 
@@ -446,14 +578,75 @@ impl RustRender {
         }
     }
 
+    fn get_messages_list(&self, group: Option<&Group>, store: &mut Store, level: u8) -> String {
+        let mut body = String::from("");
+        if let Some(group) = group {
+            body = format!("{}{}pub enum AvailableMessages {{\n", body, self.spaces(level));
+            for enum_id in &group.enums {
+                if let Some(enums) = store.get_enum(*enum_id) {
+                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), enums.name, enums.name);
+                }
+            }
+            for struct_id in &group.structs {
+                if let Some(strct) = store.get_struct(*struct_id) {
+                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), strct.name, strct.name);
+                }
+            }
+            body = format!("{}{}}}\n", body, self.spaces(level));
+        } else {
+            body = format!("{}{}pub enum AvailableMessages {{\n", body, self.spaces(level));
+            for enums in &store.enums {
+                if enums.parent == 0 {
+                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), enums.name, enums.name);
+                }
+            }
+            for strct in &store.structs {
+                if strct.parent == 0 {
+                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), strct.name, strct.name);
+                }
+            }
+            body = format!("{}{}}}\n", body, self.spaces(level));
+        }
+        body
+    }
+
+    fn buffer(&self, store: &mut Store) -> String {
+        let level = 0;
+        let mut body = format!("{}#[derive(Debug, Clone)]\n", self.spaces(level));
+        // body = format!("{}{}{}\n", body, self.spaces(level), self.get_messages_list(None, store, level));
+        
+        /*
+        body = format!("{}{}impl DecodeBuffer<RecievedMessages> for Buffer<RecievedMessages> {{\n", body, self.spaces(0));
+        body = format!("{}{}}}\n", body, self.spaces(0));
+        */
+        body
+    }
+
     fn includes(&self) -> String {
         if self.embedded {
-            format!("{}{}{}{}{}\n",
-                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.uses.rs")),
-                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.sizes.mod.rs")),
-                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.decode.rs")),
-                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.encode.rs")),
-                self.get_injectable(include_str!("../../../protocol/implementations/rust/src/protocol.storage.rs")),
+            format!(
+                "{}{}{}{}{}{}{}\n",
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.uses.rs"
+                )),
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.sizes.mod.rs"
+                )),
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.decode.rs"
+                )),
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.encode.rs"
+                )),
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.storage.rs"
+                )),
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.packing.rs"
+                )),
+                self.get_injectable(include_str!(
+                    "../../../protocol/implementations/rust/src/protocol.buffer.rs"
+                )),
             )
         } else {
             String::new()
@@ -471,31 +664,32 @@ impl RustRender {
 }
 
 impl Render for RustRender {
-
-    fn new(embedded: bool) -> Self {
-        RustRender { embedded }
+    fn new(embedded: bool, signature: u16) -> Self {
+        RustRender { embedded, signature }
     }
 
     fn render(&self, store: Store) -> String {
         let mut body = format!("{}\n", self.includes());
+        body = format!("{}{}", body, self.get_messages_list(None, &mut store.clone(), 0));
         for enums in &store.enums {
             if enums.parent == 0 {
                 body =
-                    format!("{}{}\n", body, self.enums(enums, &mut store.clone(), 0)).to_string();
+                    format!("{}{}\n", body, self.enums(enums, &mut store.clone(), 0));
             }
         }
         for strct in &store.structs {
             if strct.parent == 0 {
                 body =
-                    format!("{}{}\n", body, self.structs(strct, &mut store.clone(), 0)).to_string();
+                    format!("{}{}\n", body, self.structs(strct, &mut store.clone(), 0));
             }
         }
         for group in &store.groups {
             if group.parent == 0 {
                 body =
-                    format!("{}{}\n", body, self.groups(group, &mut store.clone(), 0)).to_string();
+                    format!("{}{}\n", body, self.groups(group, &mut store.clone(), 0));
             }
         }
+        body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
         body
     }
 }
