@@ -1,4 +1,5 @@
 use super::packing;
+use packing::{has_buffer_header, get_header_from_buffer, has_buffer_body, get_body_from_buffer};
 use packing::PackageHeader;
 
 // injectable
@@ -60,20 +61,20 @@ where
     pub fn chunk(&mut self, buf: &Vec<u8>) -> Result<(), ReadError> {
         // Add data into buffer
         self.buffer.append(&mut buf.clone());
-        if !packing::has_header(&self.buffer) {
+        if !has_buffer_header(&self.buffer) {
             return Ok(());
         }
         // Get header
-        let header: PackageHeader = match packing::get_header(&self.buffer) {
+        let header: PackageHeader = match get_header_from_buffer(&self.buffer) {
             Ok(v) => v,
             Err(e) => {
                 return Err(ReadError::Header(e));
             }
         };
-        if !packing::has_body(&self.buffer, &header) {
+        if !has_buffer_body(&self.buffer, &header) {
             return Ok(());
         }
-        let (body, rest) = match packing::get_body(&self.buffer, &header) {
+        let (body, rest) = match get_body_from_buffer(&self.buffer, &header) {
             Ok(v) => v,
             Err(e) => {
                 return Err(ReadError::Parsing(e));

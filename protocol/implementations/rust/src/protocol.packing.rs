@@ -20,11 +20,11 @@ pub struct PackageHeader {
     pub len_usize: usize,
 }
 
-pub fn has_header(buf: &[u8]) -> bool {
+pub fn has_buffer_header(buf: &[u8]) -> bool {
     buf.len() > MSG_HEADER_LEN
 }
 
-pub fn get_header(buf: &[u8]) -> Result<PackageHeader, String> {
+pub fn get_header_from_buffer(buf: &[u8]) -> Result<PackageHeader, String> {
     let mut header = Cursor::new(buf);
     if buf.len() < MSG_HEADER_LEN {
         return Err(format!("Cannot extract header of package because size of header {} bytes, but size of buffer {} bytes.", MSG_HEADER_LEN, buf.len()));
@@ -46,11 +46,11 @@ pub fn get_header(buf: &[u8]) -> Result<PackageHeader, String> {
     Ok(PackageHeader { id, signature, ts, len, len_usize })
 }
 
-pub fn has_body(buf: &[u8], header: &PackageHeader) -> bool {
+pub fn has_buffer_body(buf: &[u8], header: &PackageHeader) -> bool {
     buf.len() >= header.len_usize + MSG_HEADER_LEN
 }
 
-pub fn get_body(buf: &[u8], header: &PackageHeader) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader) -> Result<(Vec<u8>, Vec<u8>), String> {
     if buf.len() < header.len_usize + MSG_HEADER_LEN {
         return Err(format!("Cannot extract body of package because size in header {} bytes, but size of buffer {} bytes.", header.len, buf.len() - MSG_HEADER_LEN));
     }

@@ -4,8 +4,9 @@
 #![allow(unused_imports)]
 use std::convert::TryFrom;
 use std::io::Cursor;
-use std::collections::{HashMap};
+use std::collections::{ HashMap };
 use bytes::{ Buf };
+use std::time::{ SystemTime, UNIX_EPOCH };
 
 pub mod sizes {
     use std::mem;
@@ -36,16 +37,29 @@ pub enum Source<'a> {
     Buffer(&'a Vec<u8>),
 }
 
-pub trait StructDecode {
+pub trait StructDecode where Self: Sized {
 
     fn get_id() -> u32;
     fn defaults() -> Self;
-    fn extract(&mut self, storage: Storage) -> Result<(), String>;
-
+    fn extract_from_storage(&mut self, storage: Storage) -> Result<(), String>;
+    fn extract(buf: Vec<u8>) -> Result<Self, String> {
+        let mut instance: Self = Self::defaults();
+        let storage = match Storage::new(buf) {
+            Ok(storage) => storage,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+        match instance.extract_from_storage(storage) {
+            Ok(()) => Ok(instance),
+            Err(e) => Err(e),
+        }
+    }
 }
 
 pub trait EnumDecode {
 
+    fn get_id(&self) -> u32;
     fn extract(buf: Vec<u8>) -> Result<Self, String> where Self: std::marker::Sized;
 
 }
@@ -316,7 +330,7 @@ impl<T> Decode<T> for T where T: StructDecode,  {
                 }
             };
             let mut strct: T = T::defaults();
-            match strct.extract(sctruct_storage) {
+            match strct.extract_from_storage(sctruct_storage) {
                 Ok(_) => Ok(strct),
                 Err(e) => Err(e),
             }
@@ -614,7 +628,7 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                     }
                 };
                 let mut strct: T = T::defaults();
-                match strct.extract(sctruct_storage) {
+                match strct.extract_from_storage(sctruct_storage) {
                     Ok(_) => {},
                     Err(e) => { return Err(e); },
                 }
@@ -651,19 +665,19 @@ fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<
         buffer.append(&mut id.to_le_bytes().to_vec());
         match size {
             ESize::U8(size) => {
-                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 8_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
             ESize::U16(size) => {
-                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 16_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
             ESize::U32(size) => {
-                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 32_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
             ESize::U64(size) => {
-                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 64_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
         };
@@ -679,12 +693,15 @@ pub fn get_empty_buffer_val(id: Option<u16>) -> Result<Vec<u8>, String> {
 pub trait StructEncode {
 
     fn get_id(&self) -> u32;
+    fn get_signature(&self) -> u16;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
 
 }
 
 pub trait EnumEncode {
     
+    fn get_id(&self) -> u32;
+    fn get_signature(&self) -> u16;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
 
 }
@@ -1085,7 +1102,237 @@ impl Storage {
 
 }
 
+const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
+                                sizes::U16_LEN + // {u16} signature
+                                sizes::U64_LEN + // {u64} body size
+                                sizes::U64_LEN;  // {u64} timestamp
 
+#[derive(Debug, Clone)]
+pub struct PackageHeader {
+    pub id: u32,
+    pub signature: u16,
+    pub len: u64,
+    pub ts: u64,
+    pub len_usize: usize,
+}
+
+pub fn has_buffer_header(buf: &[u8]) -> bool {
+    buf.len() > MSG_HEADER_LEN
+}
+
+pub fn get_header_from_buffer(buf: &[u8]) -> Result<PackageHeader, String> {
+    let mut header = Cursor::new(buf);
+    if buf.len() < MSG_HEADER_LEN {
+        return Err(format!("Cannot extract header of package because size of header {} bytes, but size of buffer {} bytes.", MSG_HEADER_LEN, buf.len()));
+    }
+    // Get message id
+    let id: u32 = header.get_u32_le();
+    // Get signature
+    let signature: u16 = header.get_u16_le();
+    // Get timestamp
+    let ts: u64 = header.get_u64_le();
+    // Get length of payload and payload
+    let len: u64 = header.get_u64_le();
+    let len_usize = match usize::try_from(len) {
+        Ok(v) => v,
+        Err(e) => {
+            return Err(format!("{}", e));
+        }
+    };
+    Ok(PackageHeader { id, signature, ts, len, len_usize })
+}
+
+pub fn has_buffer_body(buf: &[u8], header: &PackageHeader) -> bool {
+    buf.len() >= header.len_usize + MSG_HEADER_LEN
+}
+
+pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader) -> Result<(Vec<u8>, Vec<u8>), String> {
+    if buf.len() < header.len_usize + MSG_HEADER_LEN {
+        return Err(format!("Cannot extract body of package because size in header {} bytes, but size of buffer {} bytes.", header.len, buf.len() - MSG_HEADER_LEN));
+    }
+    // Get body
+    let mut body = vec![0; header.len_usize];
+    body.copy_from_slice(&buf[MSG_HEADER_LEN..(MSG_HEADER_LEN + header.len_usize)]);
+    let mut rest = vec![0; buf.len() - MSG_HEADER_LEN - header.len_usize];
+    rest.copy_from_slice(&buf[(MSG_HEADER_LEN + header.len_usize)..]);
+    Ok((body, rest))
+}
+
+pub fn pack<T>(mut msg: T) -> Result<Vec<u8>, String> where T: StructEncode {
+    match msg.abduct() {
+        Ok(buffer) => pack_buffer(msg.get_id(), msg.get_signature(), buffer),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn pack_buffer(msg_id: u32, signature: u16, msg_buf: Vec<u8>) -> Result<Vec<u8>, String> {
+    match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(duration) => {
+            let mut buf: Vec<u8> = vec!();
+            buf.append(&mut msg_id.to_le_bytes().to_vec());
+            buf.append(&mut signature.to_le_bytes().to_vec());
+            buf.append(&mut duration.as_secs().to_le_bytes().to_vec());
+            buf.append(&mut (msg_buf.len() as u64).to_le_bytes().to_vec());
+            buf.append(&mut msg_buf.to_vec());
+            Ok(buf)
+        },
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+pub trait PackingStruct: StructEncode {
+
+    fn pack(&mut self) -> Result<Vec<u8>, String> {
+        match self.abduct() {
+            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), buf),
+            Err(e) => Err(e),
+        }
+    }
+
+}
+
+pub trait PackingEnum: EnumEncode {
+
+    fn pack(&mut self) -> Result<Vec<u8>, String> {
+        match self.abduct() {
+            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), buf),
+            Err(e) => Err(e),
+        }
+    }
+
+}
+
+#[derive(Debug)]
+pub enum ReadError {
+    Header(String),
+    Parsing(String),
+    Signature(String),
+}
+
+#[derive(Clone)]
+pub struct IncomeMessage<T: Clone> {
+    pub header: PackageHeader,
+    pub msg: T,
+}
+
+pub trait DecodeBuffer<T> {
+    fn get_msg(&self, id: u32, buf: &[u8]) -> Result<T, String>;
+    fn get_signature(&self) -> u16;
+}
+
+pub struct Buffer<T: Clone> {
+    buffer: Vec<u8>,
+    queue: Vec<IncomeMessage<T>>,
+}
+
+#[allow(clippy::len_without_is_empty)]
+#[allow(clippy::new_without_default)]
+impl<T: Clone> Buffer<T>
+where
+    Self: DecodeBuffer<T>,
+{
+    fn get_message(&self, header: &PackageHeader, buf: &[u8]) -> Result<T, ReadError> {
+        if self.get_signature() != header.signature {
+            Err(ReadError::Signature(format!(
+                "Signature dismatch; expectation: {}; message: {}",
+                self.get_signature(),
+                header.signature
+            )))
+        } else {
+            match self.get_msg(header.id, buf) {
+                Ok(msg) => Ok(msg),
+                Err(e) => Err(ReadError::Parsing(format!(
+                    "Fail get message id={}, signature={} due error: {}",
+                    header.id, header.signature, e
+                ))),
+            }
+        }
+    }
+
+    pub fn new() -> Self {
+        Buffer {
+            buffer: vec![],
+            queue: vec![],
+        }
+    }
+
+    #[allow(clippy::ptr_arg)]
+    pub fn chunk(&mut self, buf: &Vec<u8>) -> Result<(), ReadError> {
+        // Add data into buffer
+        self.buffer.append(&mut buf.clone());
+        if !has_buffer_header(&self.buffer) {
+            return Ok(());
+        }
+        // Get header
+        let header: PackageHeader = match get_header_from_buffer(&self.buffer) {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(ReadError::Header(e));
+            }
+        };
+        if !has_buffer_body(&self.buffer, &header) {
+            return Ok(());
+        }
+        let (body, rest) = match get_body_from_buffer(&self.buffer, &header) {
+            Ok(v) => v,
+            Err(e) => {
+                return Err(ReadError::Parsing(e));
+            }
+        };
+        self.buffer = rest;
+        match Self::get_message(self, &header, &body) {
+            Ok(msg) => {
+                self.queue.push(IncomeMessage { header, msg });
+                if !self.buffer.is_empty() {
+                    self.chunk(&vec![])
+                } else {
+                    Ok(())
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> Option<IncomeMessage<T>> {
+        if self.queue.is_empty() {
+            return None;
+        }
+        let message = Some(self.queue[0].clone());
+        if self.queue.len() > 1 {
+            self.queue = self.queue.drain(1..).collect();
+        } else {
+            self.queue.clear();
+        }
+        message
+    }
+
+    pub fn len(&self) -> usize {
+        self.buffer.len()
+    }
+
+    pub fn pending(&self) -> usize {
+        self.queue.len()
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub enum AvailableMessages {
+    EnumExampleA(EnumExampleA),
+    EnumExampleB(EnumExampleB),
+    EnumExampleC(EnumExampleC),
+    StructExampleA(StructExampleA),
+    StructExampleB(StructExampleB),
+    StructExampleC(StructExampleC),
+    StructExampleD(StructExampleD),
+    StructExampleE(StructExampleE),
+    StructExampleF(StructExampleF),
+    StructExampleG(StructExampleG),
+    StructExampleJ(StructExampleJ),
+    GroupA(GroupA::AvailableMessages),
+    GroupB(GroupB::AvailableMessages),
+}
 #[derive(Debug, Clone, PartialEq)]
 pub enum EnumExampleA {
     Option_a(String),
@@ -1093,6 +1340,7 @@ pub enum EnumExampleA {
     Defaults,
 }
 impl EnumDecode for EnumExampleA {
+    fn get_id(&self) -> u32 { 1 }
     fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
@@ -1115,6 +1363,8 @@ impl EnumDecode for EnumExampleA {
     }
 }
 impl EnumEncode for EnumExampleA {
+    fn get_id(&self) -> u32 { 1 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let (buf, index) = match self {
             Self::Option_a(v) => (v.encode(), 0),
@@ -1131,6 +1381,7 @@ impl EnumEncode for EnumExampleA {
         Ok(buffer)
     }
 }
+impl PackingEnum for EnumExampleA {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EnumExampleB {
@@ -1148,6 +1399,7 @@ pub enum EnumExampleB {
     Defaults,
 }
 impl EnumDecode for EnumExampleB {
+    fn get_id(&self) -> u32 { 2 }
     fn extract(buf: Vec<u8>) -> Result<EnumExampleB, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleB because buffer too small"));
@@ -1206,6 +1458,8 @@ impl EnumDecode for EnumExampleB {
     }
 }
 impl EnumEncode for EnumExampleB {
+    fn get_id(&self) -> u32 { 2 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let (buf, index) = match self {
             Self::Option_str(v) => (v.encode(), 0),
@@ -1231,6 +1485,7 @@ impl EnumEncode for EnumExampleB {
         Ok(buffer)
     }
 }
+impl PackingEnum for EnumExampleB {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EnumExampleC {
@@ -1248,6 +1503,7 @@ pub enum EnumExampleC {
     Defaults,
 }
 impl EnumDecode for EnumExampleC {
+    fn get_id(&self) -> u32 { 3 }
     fn extract(buf: Vec<u8>) -> Result<EnumExampleC, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleC because buffer too small"));
@@ -1306,6 +1562,8 @@ impl EnumDecode for EnumExampleC {
     }
 }
 impl EnumEncode for EnumExampleC {
+    fn get_id(&self) -> u32 { 3 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let (buf, index) = match self {
             Self::Option_str(v) => (v.encode(), 0),
@@ -1331,6 +1589,7 @@ impl EnumEncode for EnumExampleC {
         Ok(buffer)
     }
 }
+impl PackingEnum for EnumExampleC {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleA {
@@ -1367,7 +1626,7 @@ impl StructDecode for StructExampleA {
             field_bool: true,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match String::get_from_storage(Source::Storage(&mut storage), Some(5)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1420,9 +1679,8 @@ impl StructDecode for StructExampleA {
     }
 }
 impl StructEncode for StructExampleA {
-    fn get_id(&self) -> u32 {
-        4
-    }
+    fn get_id(&self) -> u32 { 4 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_str.get_buf_to_store(Some(5)) {
@@ -1476,6 +1734,7 @@ impl StructEncode for StructExampleA {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleA { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleB {
@@ -1512,7 +1771,7 @@ impl StructDecode for StructExampleB {
             field_bool: vec![],
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(18)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1565,9 +1824,8 @@ impl StructDecode for StructExampleB {
     }
 }
 impl StructEncode for StructExampleB {
-    fn get_id(&self) -> u32 {
-        17
-    }
+    fn get_id(&self) -> u32 { 17 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_str.get_buf_to_store(Some(18)) {
@@ -1621,6 +1879,7 @@ impl StructEncode for StructExampleB {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleB { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleC {
@@ -1657,7 +1916,7 @@ impl StructDecode for StructExampleC {
             field_bool: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(31)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1710,9 +1969,8 @@ impl StructDecode for StructExampleC {
     }
 }
 impl StructEncode for StructExampleC {
-    fn get_id(&self) -> u32 {
-        30
-    }
+    fn get_id(&self) -> u32 { 30 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_str.get_buf_to_store(Some(31)) {
@@ -1766,6 +2024,7 @@ impl StructEncode for StructExampleC {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleC { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleD {
@@ -1802,7 +2061,7 @@ impl StructDecode for StructExampleD {
             field_bool: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match Option::<Vec::<String>>::get_from_storage(Source::Storage(&mut storage), Some(44)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1855,9 +2114,8 @@ impl StructDecode for StructExampleD {
     }
 }
 impl StructEncode for StructExampleD {
-    fn get_id(&self) -> u32 {
-        43
-    }
+    fn get_id(&self) -> u32 { 43 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_str.get_buf_to_store(Some(44)) {
@@ -1911,6 +2169,7 @@ impl StructEncode for StructExampleD {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleD { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleE {
@@ -1929,7 +2188,7 @@ impl StructDecode for StructExampleE {
             field_c: EnumExampleC::Defaults,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(57)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1946,9 +2205,8 @@ impl StructDecode for StructExampleE {
     }
 }
 impl StructEncode for StructExampleE {
-    fn get_id(&self) -> u32 {
-        56
-    }
+    fn get_id(&self) -> u32 { 56 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_a.get_buf_to_store(Some(57)) {
@@ -1966,6 +2224,7 @@ impl StructEncode for StructExampleE {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleE { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleF {
@@ -1984,7 +2243,7 @@ impl StructDecode for StructExampleF {
             field_c: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         if let Some(buf) = storage.get(61) {
             if buf.is_empty() {
                 self.field_a = None;
@@ -2025,9 +2284,8 @@ impl StructDecode for StructExampleF {
     }
 }
 impl StructEncode for StructExampleF {
-    fn get_id(&self) -> u32 {
-        60
-    }
+    fn get_id(&self) -> u32 { 60 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         if let Some(mut val) = self.field_a.clone() {
@@ -2066,6 +2324,7 @@ impl StructEncode for StructExampleF {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleF { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleG {
@@ -2110,7 +2369,7 @@ impl StructDecode for StructExampleG {
 ,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(65)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -2123,9 +2382,8 @@ impl StructDecode for StructExampleG {
     }
 }
 impl StructEncode for StructExampleG {
-    fn get_id(&self) -> u32 {
-        64
-    }
+    fn get_id(&self) -> u32 { 64 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_a.get_buf_to_store(Some(65)) {
@@ -2139,6 +2397,7 @@ impl StructEncode for StructExampleG {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleG { }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleJ {
@@ -2155,7 +2414,7 @@ impl StructDecode for StructExampleJ {
             field_b: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_a = match Option::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(68)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -2168,9 +2427,8 @@ impl StructDecode for StructExampleJ {
     }
 }
 impl StructEncode for StructExampleJ {
-    fn get_id(&self) -> u32 {
-        67
-    }
+    fn get_id(&self) -> u32 { 67 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         match self.field_a.get_buf_to_store(Some(68)) {
@@ -2184,11 +2442,18 @@ impl StructEncode for StructExampleJ {
         Ok(buffer)
     }
 }
+impl PackingStruct for StructExampleJ { }
 
 pub mod GroupA {
     use super::*;
     use std::io::Cursor;
     use bytes::{ Buf };
+    #[derive(Debug, Clone)]
+    pub enum AvailableMessages {
+        EnumExampleA(EnumExampleA),
+        StructExampleA(StructExampleA),
+        StructExampleB(StructExampleB),
+    }
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum EnumExampleA {
@@ -2197,6 +2462,7 @@ pub mod GroupA {
         Defaults,
     }
     impl EnumDecode for EnumExampleA {
+        fn get_id(&self) -> u32 { 71 }
         fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
             if buf.len() <= sizes::U16_LEN {
                 return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
@@ -2219,6 +2485,8 @@ pub mod GroupA {
         }
     }
     impl EnumEncode for EnumExampleA {
+        fn get_id(&self) -> u32 { 71 }
+        fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let (buf, index) = match self {
                 Self::Option_a(v) => (v.encode(), 0),
@@ -2235,6 +2503,7 @@ pub mod GroupA {
             Ok(buffer)
         }
     }
+    impl PackingEnum for EnumExampleA {}
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct StructExampleA {
@@ -2253,7 +2522,7 @@ pub mod GroupA {
                 opt: EnumExampleA::Defaults,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(73)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -2270,9 +2539,8 @@ pub mod GroupA {
         }
     }
     impl StructEncode for StructExampleA {
-        fn get_id(&self) -> u32 {
-            72
-        }
+        fn get_id(&self) -> u32 { 72 }
+        fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
             match self.field_u8.get_buf_to_store(Some(73)) {
@@ -2290,6 +2558,7 @@ pub mod GroupA {
             Ok(buffer)
         }
     }
+    impl PackingStruct for StructExampleA { }
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct StructExampleB {
@@ -2313,7 +2582,7 @@ pub mod GroupA {
 ,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(77)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -2330,9 +2599,8 @@ pub mod GroupA {
         }
     }
     impl StructEncode for StructExampleB {
-        fn get_id(&self) -> u32 {
-            76
-        }
+        fn get_id(&self) -> u32 { 76 }
+        fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
             match self.field_u8.get_buf_to_store(Some(77)) {
@@ -2350,6 +2618,7 @@ pub mod GroupA {
             Ok(buffer)
         }
     }
+    impl PackingStruct for StructExampleB { }
 
 }
 
@@ -2357,6 +2626,11 @@ pub mod GroupB {
     use super::*;
     use std::io::Cursor;
     use bytes::{ Buf };
+    #[derive(Debug, Clone)]
+    pub enum AvailableMessages {
+        StructExampleA(StructExampleA),
+        GroupC(GroupC::AvailableMessages),
+    }
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct StructExampleA {
@@ -2373,7 +2647,7 @@ pub mod GroupB {
                 field_u16: 0,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(82)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -2386,9 +2660,8 @@ pub mod GroupB {
         }
     }
     impl StructEncode for StructExampleA {
-        fn get_id(&self) -> u32 {
-            81
-        }
+        fn get_id(&self) -> u32 { 81 }
+        fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
             match self.field_u8.get_buf_to_store(Some(82)) {
@@ -2402,11 +2675,17 @@ pub mod GroupB {
             Ok(buffer)
         }
     }
+    impl PackingStruct for StructExampleA { }
 
     pub mod GroupC {
         use super::*;
         use std::io::Cursor;
         use bytes::{ Buf };
+        #[derive(Debug, Clone)]
+        pub enum AvailableMessages {
+            StructExampleA(StructExampleA),
+            StructExampleB(StructExampleB),
+        }
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct StructExampleA {
@@ -2423,7 +2702,7 @@ pub mod GroupB {
                     field_u16: 0,
                 }
             }
-            fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+            fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
                 self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(86)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
@@ -2436,9 +2715,8 @@ pub mod GroupB {
             }
         }
         impl StructEncode for StructExampleA {
-            fn get_id(&self) -> u32 {
-                85
-            }
+            fn get_id(&self) -> u32 { 85 }
+            fn get_signature(&self) -> u16 { 0 }
             fn abduct(&mut self) -> Result<Vec<u8>, String> {
                 let mut buffer: Vec<u8> = vec!();
                 match self.field_u8.get_buf_to_store(Some(86)) {
@@ -2452,6 +2730,7 @@ pub mod GroupB {
                 Ok(buffer)
             }
         }
+        impl PackingStruct for StructExampleA { }
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct StructExampleB {
@@ -2474,7 +2753,7 @@ pub mod GroupB {
 ,
                 }
             }
-            fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+            fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
                 self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(89)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
@@ -2491,9 +2770,8 @@ pub mod GroupB {
             }
         }
         impl StructEncode for StructExampleB {
-            fn get_id(&self) -> u32 {
-                88
-            }
+            fn get_id(&self) -> u32 { 88 }
+            fn get_signature(&self) -> u16 { 0 }
             fn abduct(&mut self) -> Result<Vec<u8>, String> {
                 let mut buffer: Vec<u8> = vec!();
                 match self.field_u8.get_buf_to_store(Some(89)) {
@@ -2511,8 +2789,86 @@ pub mod GroupB {
                 Ok(buffer)
             }
         }
+        impl PackingStruct for StructExampleB { }
 
     }
 
+}
+
+impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
+    fn get_msg(&self, id: u32, buf: &[u8]) -> Result<AvailableMessages, String> {
+        match id {
+            1 => match EnumExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EnumExampleA(m)),
+                Err(e) => Err(e),
+            },
+            2 => match EnumExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EnumExampleB(m)),
+                Err(e) => Err(e),
+            },
+            3 => match EnumExampleC::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EnumExampleC(m)),
+                Err(e) => Err(e),
+            },
+            71 => match GroupA::EnumExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::EnumExampleA(m))),
+                Err(e) => Err(e),
+            },
+            4 => match StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleA(m)),
+                Err(e) => Err(e),
+            },
+            17 => match StructExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleB(m)),
+                Err(e) => Err(e),
+            },
+            30 => match StructExampleC::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleC(m)),
+                Err(e) => Err(e),
+            },
+            43 => match StructExampleD::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleD(m)),
+                Err(e) => Err(e),
+            },
+            56 => match StructExampleE::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleE(m)),
+                Err(e) => Err(e),
+            },
+            60 => match StructExampleF::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleF(m)),
+                Err(e) => Err(e),
+            },
+            64 => match StructExampleG::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleG(m)),
+                Err(e) => Err(e),
+            },
+            67 => match StructExampleJ::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleJ(m)),
+                Err(e) => Err(e),
+            },
+            72 => match GroupA::StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::StructExampleA(m))),
+                Err(e) => Err(e),
+            },
+            76 => match GroupA::StructExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::StructExampleB(m))),
+                Err(e) => Err(e),
+            },
+            81 => match GroupB::StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::StructExampleA(m))),
+                Err(e) => Err(e),
+            },
+            85 => match GroupB::GroupC::StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::GroupC(GroupB::GroupC::AvailableMessages::StructExampleA(m)))),
+                Err(e) => Err(e),
+            },
+            88 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::GroupC(GroupB::GroupC::AvailableMessages::StructExampleB(m)))),
+                Err(e) => Err(e),
+            },
+            _ => Err(String::from("No message has been found"))
+        }
+    }
+    fn get_signature(&self) -> u16 { 0 }
 }
 

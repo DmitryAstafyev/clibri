@@ -1,4 +1,5 @@
 
+#[derive(Debug, Clone)]
 pub enum AvailableMessages {
     EnumExampleA(EnumExampleA),
     EnumExampleB(EnumExampleB),
@@ -21,6 +22,7 @@ pub enum EnumExampleA {
     Defaults,
 }
 impl EnumDecode for EnumExampleA {
+    fn get_id(&self) -> u32 { 1 }
     fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
@@ -43,8 +45,8 @@ impl EnumDecode for EnumExampleA {
     }
 }
 impl EnumEncode for EnumExampleA {
-    fn get_id(&mut self) -> u32 { 1 }
-    fn get_signature(&mut self) -> u16 { 0 }
+    fn get_id(&self) -> u32 { 1 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let (buf, index) = match self {
             Self::Option_a(v) => (v.encode(), 0),
@@ -79,6 +81,7 @@ pub enum EnumExampleB {
     Defaults,
 }
 impl EnumDecode for EnumExampleB {
+    fn get_id(&self) -> u32 { 2 }
     fn extract(buf: Vec<u8>) -> Result<EnumExampleB, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleB because buffer too small"));
@@ -137,8 +140,8 @@ impl EnumDecode for EnumExampleB {
     }
 }
 impl EnumEncode for EnumExampleB {
-    fn get_id(&mut self) -> u32 { 2 }
-    fn get_signature(&mut self) -> u16 { 0 }
+    fn get_id(&self) -> u32 { 2 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let (buf, index) = match self {
             Self::Option_str(v) => (v.encode(), 0),
@@ -182,6 +185,7 @@ pub enum EnumExampleC {
     Defaults,
 }
 impl EnumDecode for EnumExampleC {
+    fn get_id(&self) -> u32 { 3 }
     fn extract(buf: Vec<u8>) -> Result<EnumExampleC, String> {
         if buf.len() <= sizes::U16_LEN {
             return Err(String::from("Fail to extract value for EnumExampleC because buffer too small"));
@@ -240,8 +244,8 @@ impl EnumDecode for EnumExampleC {
     }
 }
 impl EnumEncode for EnumExampleC {
-    fn get_id(&mut self) -> u32 { 3 }
-    fn get_signature(&mut self) -> u16 { 0 }
+    fn get_id(&self) -> u32 { 3 }
+    fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let (buf, index) = match self {
             Self::Option_str(v) => (v.encode(), 0),
@@ -304,7 +308,7 @@ impl StructDecode for StructExampleA {
             field_bool: true,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match String::get_from_storage(Source::Storage(&mut storage), Some(5)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -449,7 +453,7 @@ impl StructDecode for StructExampleB {
             field_bool: vec![],
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(18)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -594,7 +598,7 @@ impl StructDecode for StructExampleC {
             field_bool: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(31)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -739,7 +743,7 @@ impl StructDecode for StructExampleD {
             field_bool: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_str = match Option::<Vec::<String>>::get_from_storage(Source::Storage(&mut storage), Some(44)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -866,7 +870,7 @@ impl StructDecode for StructExampleE {
             field_c: EnumExampleC::Defaults,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(57)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -921,7 +925,7 @@ impl StructDecode for StructExampleF {
             field_c: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         if let Some(buf) = storage.get(61) {
             if buf.is_empty() {
                 self.field_a = None;
@@ -1047,7 +1051,7 @@ impl StructDecode for StructExampleG {
 ,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(65)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1092,7 +1096,7 @@ impl StructDecode for StructExampleJ {
             field_b: None,
         }
     }
-    fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
         self.field_a = match Option::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(68)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
@@ -1126,6 +1130,7 @@ pub mod GroupA {
     use super::*;
     use std::io::Cursor;
     use bytes::{ Buf };
+    #[derive(Debug, Clone)]
     pub enum AvailableMessages {
         EnumExampleA(EnumExampleA),
         StructExampleA(StructExampleA),
@@ -1139,6 +1144,7 @@ pub mod GroupA {
         Defaults,
     }
     impl EnumDecode for EnumExampleA {
+        fn get_id(&self) -> u32 { 71 }
         fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
             if buf.len() <= sizes::U16_LEN {
                 return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
@@ -1161,8 +1167,8 @@ pub mod GroupA {
         }
     }
     impl EnumEncode for EnumExampleA {
-        fn get_id(&mut self) -> u32 { 71 }
-        fn get_signature(&mut self) -> u16 { 0 }
+        fn get_id(&self) -> u32 { 71 }
+        fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let (buf, index) = match self {
                 Self::Option_a(v) => (v.encode(), 0),
@@ -1198,7 +1204,7 @@ pub mod GroupA {
                 opt: EnumExampleA::Defaults,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(73)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -1258,7 +1264,7 @@ pub mod GroupA {
 ,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(77)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -1302,6 +1308,7 @@ pub mod GroupB {
     use super::*;
     use std::io::Cursor;
     use bytes::{ Buf };
+    #[derive(Debug, Clone)]
     pub enum AvailableMessages {
         StructExampleA(StructExampleA),
         GroupC(GroupC::AvailableMessages),
@@ -1322,7 +1329,7 @@ pub mod GroupB {
                 field_u16: 0,
             }
         }
-        fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
             self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(82)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
@@ -1356,6 +1363,7 @@ pub mod GroupB {
         use super::*;
         use std::io::Cursor;
         use bytes::{ Buf };
+        #[derive(Debug, Clone)]
         pub enum AvailableMessages {
             StructExampleA(StructExampleA),
             StructExampleB(StructExampleB),
@@ -1376,7 +1384,7 @@ pub mod GroupB {
                     field_u16: 0,
                 }
             }
-            fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+            fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
                 self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(86)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
@@ -1427,7 +1435,7 @@ pub mod GroupB {
 ,
                 }
             }
-            fn extract(&mut self, mut storage: Storage) -> Result<(), String> {
+            fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
                 self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(89)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
@@ -1469,7 +1477,6 @@ pub mod GroupB {
 
 }
 
-#[derive(Debug, Clone)]
 impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
     fn get_msg(&self, id: u32, buf: &[u8]) -> Result<Messages, String> {
         match id {
@@ -1486,7 +1493,7 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Err(e) => Err(e),
             },
             71 => match GroupA::EnumExampleA::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::EnumExampleA(m))),
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::EnumExampleA(m))),
                 Err(e) => Err(e),
             },
             4 => match StructExampleA::extract(buf.to_vec()) {
@@ -1522,23 +1529,23 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Err(e) => Err(e),
             },
             72 => match GroupA::StructExampleA::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::StructExampleA(m))),
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::StructExampleA(m))),
                 Err(e) => Err(e),
             },
             76 => match GroupA::StructExampleB::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::StructExampleB(m))),
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::StructExampleB(m))),
                 Err(e) => Err(e),
             },
             81 => match GroupB::StructExampleA::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::StructExampleA(m))),
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::StructExampleA(m))),
                 Err(e) => Err(e),
             },
             85 => match GroupB::GroupC::StructExampleA::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleA(m))))),
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::GroupC(GroupB::GroupC::AvailableMessages::StructExampleA(m)))),
                 Err(e) => Err(e),
             },
             88 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleB(m))))),
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::GroupC(GroupB::GroupC::AvailableMessages::StructExampleB(m)))),
                 Err(e) => Err(e),
             },
             _ => Err(String::from("No message has been found"))

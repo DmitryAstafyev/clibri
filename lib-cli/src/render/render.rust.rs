@@ -96,7 +96,7 @@ impl RustRender {
         body = format!("{}{}}}\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!(
-            "{}{}fn extract(&mut self, mut storage: Storage) -> Result<(), String> {{\n",
+            "{}{}fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {{\n",
             body,
             self.spaces(level + 1)
         );
@@ -296,6 +296,12 @@ impl RustRender {
             enums.name
         );
         body = format!(
+            "{}{}fn get_id(&self) -> u32 {{ {} }}\n",
+            body,
+            self.spaces(level + 1),
+            enums.id
+        );
+        body = format!(
             "{}{}fn extract(buf: Vec<u8>) -> Result<{}, String> {{\n",
             body,
             self.spaces(level + 1),
@@ -369,13 +375,13 @@ impl RustRender {
             enums.name
         );
         body = format!(
-            "{}{}fn get_id(&mut self) -> u32 {{ {} }}\n",
+            "{}{}fn get_id(&self) -> u32 {{ {} }}\n",
             body,
             self.spaces(level + 1),
             enums.id,
         );
         body = format!(
-            "{}{}fn get_signature(&mut self) -> u16 {{ {} }}\n",
+            "{}{}fn get_signature(&self) -> u16 {{ {} }}\n",
             body,
             self.spaces(level + 1),
             self.signature,
@@ -583,7 +589,7 @@ impl RustRender {
     }
 
     fn get_messages_list(&self, group: Option<&Group>, store: &mut Store, level: u8) -> String {
-        let mut body = String::from("");
+        let mut body = format!("{}#[derive(Debug, Clone)]\n", self.spaces(level));
         if let Some(group) = group {
             body = format!(
                 "{}{}pub enum AvailableMessages {{\n",
@@ -721,57 +727,35 @@ impl RustRender {
         } else {
             let mut chain = String::from("");
             for (pos, part) in path.iter().enumerate() {
-                chain = format!(
-                    "{}{}{}",
-                    chain,
-                    if chain.is_empty() { "" } else { "::" },
-                    part
-                );
                 result = format!(
-                    "{}{}{}{}({}::{}(",
-                    if result.is_empty() && path.len() > 1 {
-                        ""
-                    } else {
-                        "AvailableMessages::"
-                    },
+                    "{}{}AvailableMessages::{}(",
                     result,
                     chain,
-                    if result.is_empty() {
-                        ""
-                    } else {
-                        "::AvailableMessages"
-                    },
+                    part
+                );
+                chain = format!(
+                    "{}{}::",
                     chain,
-                    if pos == path.len() - 1 {
-                        name
-                    } else {
-                        "AvailableMessages"
-                    }
+                    part
                 );
             }
-            result = format!("{}m{}", result, ")".repeat(path.len() * 2));
+            result = format!(
+                "{}{}AvailableMessages::{}(m){}",
+                result,
+                chain,
+                name, 
+                ")".repeat(path.len())
+            );
         }
         result
     }
 
-    /**
-       88 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
-           Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleB(m())),
-
-           Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleB(m))))),
-           Err(e) => Err(e),
-       },
-    */
-
     fn buffer(&self, store: &mut Store) -> String {
-        let level = 0;
-        let mut body = format!("{}#[derive(Debug, Clone)]\n", self.spaces(level));
-        body = format!(
-            "{}{}impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {{\n",
-            body,
+        let mut body = format!(
+            "{}impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {{\n",
             self.spaces(0)
         );
-        body = format!("{}{}fn get_msg(&self, id: u32, buf: &[u8]) -> Result<Messages, String> {{\n", body, self.spaces(1));
+        body = format!("{}{}fn get_msg(&self, id: u32, buf: &[u8]) -> Result<AvailableMessages, String> {{\n", body, self.spaces(1));
         body = format!("{}{}match id {{\n", body, self.spaces(2));
         for enums in &store.enums {
             body = format!(
