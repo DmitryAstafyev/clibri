@@ -11,8 +11,9 @@ pub enum AvailableMessages {
     StructExampleF(StructExampleF),
     StructExampleG(StructExampleG),
     StructExampleJ(StructExampleJ),
+    GroupA(GroupA::AvailableMessages),
+    GroupB(GroupB::AvailableMessages),
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum EnumExampleA {
     Option_a(String),
@@ -1131,7 +1132,6 @@ pub mod GroupA {
         StructExampleB(StructExampleB),
     }
 
-
     #[derive(Debug, Clone, PartialEq)]
     pub enum EnumExampleA {
         Option_a(String),
@@ -1304,8 +1304,8 @@ pub mod GroupB {
     use bytes::{ Buf };
     pub enum AvailableMessages {
         StructExampleA(StructExampleA),
+        GroupC(GroupC::AvailableMessages),
     }
-
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct StructExampleA {
@@ -1360,7 +1360,6 @@ pub mod GroupB {
             StructExampleA(StructExampleA),
             StructExampleB(StructExampleB),
         }
-
 
         #[derive(Debug, Clone, PartialEq)]
         pub struct StructExampleA {
@@ -1471,4 +1470,80 @@ pub mod GroupB {
 }
 
 #[derive(Debug, Clone)]
+impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
+    fn get_msg(&self, id: u32, buf: &[u8]) -> Result<Messages, String> {
+        match id {
+            1 => match EnumExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EnumExampleA(m)),
+                Err(e) => Err(e),
+            },
+            2 => match EnumExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EnumExampleB(m)),
+                Err(e) => Err(e),
+            },
+            3 => match EnumExampleC::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EnumExampleC(m)),
+                Err(e) => Err(e),
+            },
+            71 => match GroupA::EnumExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::EnumExampleA(m))),
+                Err(e) => Err(e),
+            },
+            4 => match StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleA(m)),
+                Err(e) => Err(e),
+            },
+            17 => match StructExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleB(m)),
+                Err(e) => Err(e),
+            },
+            30 => match StructExampleC::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleC(m)),
+                Err(e) => Err(e),
+            },
+            43 => match StructExampleD::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleD(m)),
+                Err(e) => Err(e),
+            },
+            56 => match StructExampleE::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleE(m)),
+                Err(e) => Err(e),
+            },
+            60 => match StructExampleF::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleF(m)),
+                Err(e) => Err(e),
+            },
+            64 => match StructExampleG::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleG(m)),
+                Err(e) => Err(e),
+            },
+            67 => match StructExampleJ::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::StructExampleJ(m)),
+                Err(e) => Err(e),
+            },
+            72 => match GroupA::StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::StructExampleA(m))),
+                Err(e) => Err(e),
+            },
+            76 => match GroupA::StructExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupA(GroupA::StructExampleB(m))),
+                Err(e) => Err(e),
+            },
+            81 => match GroupB::StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::StructExampleA(m))),
+                Err(e) => Err(e),
+            },
+            85 => match GroupB::GroupC::StructExampleA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleA(m))))),
+                Err(e) => Err(e),
+            },
+            88 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleB(m))))),
+                Err(e) => Err(e),
+            },
+            _ => Err(String::from("No message has been found"))
+        }
+    }
+    fn get_signature(&self) -> u16 { 0 }
+}
 

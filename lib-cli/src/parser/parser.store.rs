@@ -46,6 +46,14 @@ impl Store {
         }
     }
 
+    pub fn get_group(&mut self, id: usize) -> Option<Group> {
+        if let Some(group) = self.groups.iter().find(|s| s.id == id) {
+            Some(group.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn get_child_groups(&mut self, parent_id: usize) -> Vec<Group> {
         let mut groups = vec!();
         for group in self.groups.iter() {

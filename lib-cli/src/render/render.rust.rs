@@ -19,7 +19,11 @@ impl RustRender {
         body = format!("{}{}use super::*;\n", body, self.spaces(level + 1));
         body = format!("{}{}use std::io::Cursor;\n", body, self.spaces(level + 1));
         body = format!("{}{}use bytes::{{ Buf }};\n", body, self.spaces(level + 1));
-        body = format!("{}{}", body, self.get_messages_list(Some(group), &mut store.clone(), level + 1));
+        body = format!(
+            "{}{}",
+            body,
+            self.get_messages_list(Some(group), &mut store.clone(), level + 1)
+        );
         for enum_id in &group.enums {
             if let Some(enums) = store.get_enum(*enum_id) {
                 body = format!(
@@ -581,28 +585,83 @@ impl RustRender {
     fn get_messages_list(&self, group: Option<&Group>, store: &mut Store, level: u8) -> String {
         let mut body = String::from("");
         if let Some(group) = group {
-            body = format!("{}{}pub enum AvailableMessages {{\n", body, self.spaces(level));
+            body = format!(
+                "{}{}pub enum AvailableMessages {{\n",
+                body,
+                self.spaces(level)
+            );
             for enum_id in &group.enums {
                 if let Some(enums) = store.get_enum(*enum_id) {
-                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), enums.name, enums.name);
+                    body = format!(
+                        "{}{}{}({}),\n",
+                        body,
+                        self.spaces(level + 1),
+                        enums.name,
+                        enums.name
+                    );
                 }
             }
             for struct_id in &group.structs {
                 if let Some(strct) = store.get_struct(*struct_id) {
-                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), strct.name, strct.name);
+                    body = format!(
+                        "{}{}{}({}),\n",
+                        body,
+                        self.spaces(level + 1),
+                        strct.name,
+                        strct.name
+                    );
+                }
+            }
+            let childs = store.get_child_groups(group.id);
+            for child in childs {
+                if child.parent == group.id {
+                    body = format!(
+                        "{}{}{}({}::AvailableMessages),\n",
+                        body,
+                        self.spaces(level + 1),
+                        child.name,
+                        child.name
+                    );
                 }
             }
             body = format!("{}{}}}\n", body, self.spaces(level));
         } else {
-            body = format!("{}{}pub enum AvailableMessages {{\n", body, self.spaces(level));
+            body = format!(
+                "{}{}pub enum AvailableMessages {{\n",
+                body,
+                self.spaces(level)
+            );
             for enums in &store.enums {
                 if enums.parent == 0 {
-                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), enums.name, enums.name);
+                    body = format!(
+                        "{}{}{}({}),\n",
+                        body,
+                        self.spaces(level + 1),
+                        enums.name,
+                        enums.name
+                    );
                 }
             }
             for strct in &store.structs {
                 if strct.parent == 0 {
-                    body = format!("{}{}{}({}),\n", body, self.spaces(level + 1), strct.name, strct.name);
+                    body = format!(
+                        "{}{}{}({}),\n",
+                        body,
+                        self.spaces(level + 1),
+                        strct.name,
+                        strct.name
+                    );
+                }
+            }
+            for group in &store.groups {
+                if group.parent == 0 {
+                    body = format!(
+                        "{}{}{}({}::AvailableMessages),\n",
+                        body,
+                        self.spaces(level + 1),
+                        group.name,
+                        group.name
+                    );
                 }
             }
             body = format!("{}{}}}\n", body, self.spaces(level));
@@ -610,15 +669,153 @@ impl RustRender {
         body
     }
 
+    fn get_path(&self, mut parent: usize, store: &mut Store) -> Vec<String> {
+        let mut path: Vec<String> = vec![];
+        loop {
+            if parent == 0 {
+                break;
+            }
+            if let Some(group) = store.get_group(parent) {
+                path.push(group.name.clone());
+                parent = group.parent;
+            } else {
+                break;
+            }
+        }
+        path.reverse();
+        path
+    }
+
+    fn get_full_name(&self, name: String, parent: usize, store: &mut Store) -> String {
+        let path: Vec<String> = self.get_path(parent, store);
+        if path.is_empty() {
+            name
+        } else {
+            format!("{}::{}", path.join("::"), name)
+        }
+    }
+
+    fn get_entity_path(&self, parent: usize, store: &mut Store) -> Vec<String> {
+        let mut path: Vec<String> = vec![];
+        let mut parent = parent;
+        loop {
+            if parent == 0 {
+                break;
+            }
+            if let Some(group) = store.get_group(parent) {
+                path.push(group.name.clone());
+                parent = group.parent;
+            } else {
+                break;
+            }
+        }
+        path.reverse();
+        path
+    }
+
+    fn get_available_entity(&self, parent: usize, name: &str, store: &mut Store) -> String {
+        let mut result = String::from("");
+        let path = self.get_entity_path(parent, store);
+        if path.is_empty() {
+            result = format!("AvailableMessages::{}(m)", name);
+        } else {
+            let mut chain = String::from("");
+            for (pos, part) in path.iter().enumerate() {
+                chain = format!(
+                    "{}{}{}",
+                    chain,
+                    if chain.is_empty() { "" } else { "::" },
+                    part
+                );
+                result = format!(
+                    "{}{}{}{}({}::{}(",
+                    if result.is_empty() && path.len() > 1 {
+                        ""
+                    } else {
+                        "AvailableMessages::"
+                    },
+                    result,
+                    chain,
+                    if result.is_empty() {
+                        ""
+                    } else {
+                        "::AvailableMessages"
+                    },
+                    chain,
+                    if pos == path.len() - 1 {
+                        name
+                    } else {
+                        "AvailableMessages"
+                    }
+                );
+            }
+            result = format!("{}m{}", result, ")".repeat(path.len() * 2));
+        }
+        result
+    }
+
+    /**
+       88 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
+           Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleB(m())),
+
+           Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages(GroupB::GroupC::AvailableMessages(GroupB::GroupC::StructExampleB(m))))),
+           Err(e) => Err(e),
+       },
+    */
+
     fn buffer(&self, store: &mut Store) -> String {
         let level = 0;
         let mut body = format!("{}#[derive(Debug, Clone)]\n", self.spaces(level));
-        // body = format!("{}{}{}\n", body, self.spaces(level), self.get_messages_list(None, store, level));
-        
-        /*
-        body = format!("{}{}impl DecodeBuffer<RecievedMessages> for Buffer<RecievedMessages> {{\n", body, self.spaces(0));
+        body = format!(
+            "{}{}impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {{\n",
+            body,
+            self.spaces(0)
+        );
+        body = format!("{}{}fn get_msg(&self, id: u32, buf: &[u8]) -> Result<Messages, String> {{\n", body, self.spaces(1));
+        body = format!("{}{}match id {{\n", body, self.spaces(2));
+        for enums in &store.enums {
+            body = format!(
+                "{}{}{} => match {}::extract(buf.to_vec()) {{\n",
+                body,
+                self.spaces(3),
+                enums.id,
+                self.get_full_name(enums.name.clone(), enums.parent, &mut store.clone())
+            );
+            body = format!(
+                "{}{}Ok(m) => Ok({}),\n",
+                body,
+                self.spaces(4),
+                self.get_available_entity(enums.parent, &enums.name, &mut store.clone())
+            );
+            body = format!("{}{}Err(e) => Err(e),\n", body, self.spaces(4));
+            body = format!("{}{}}},\n", body, self.spaces(3));
+        }
+        for structs in &store.structs {
+            body = format!(
+                "{}{}{} => match {}::extract(buf.to_vec()) {{\n",
+                body,
+                self.spaces(3),
+                structs.id,
+                self.get_full_name(structs.name.clone(), structs.parent, &mut store.clone())
+            );
+            body = format!(
+                "{}{}Ok(m) => Ok({}),\n",
+                body,
+                self.spaces(4),
+                self.get_available_entity(structs.parent, &structs.name, &mut store.clone())
+            );
+            body = format!("{}{}Err(e) => Err(e),\n", body, self.spaces(4));
+            body = format!("{}{}}},\n", body, self.spaces(3));
+        }
+        body = format!(
+            "{}{}_ => Err(String::from(\"No message has been found\"))\n",
+            body,
+            self.spaces(3)
+        );
+        body = format!("{}{}}}\n", body, self.spaces(2));
+        body = format!("{}{}}}\n", body, self.spaces(1));
+        body = format!("{}{}fn get_signature(&self) -> u16 {{ {} }}\n", body, self.spaces(1), self.signature);
         body = format!("{}{}}}\n", body, self.spaces(0));
-        */
         body
     }
 
@@ -665,28 +862,32 @@ impl RustRender {
 
 impl Render for RustRender {
     fn new(embedded: bool, signature: u16) -> Self {
-        RustRender { embedded, signature }
+        RustRender {
+            embedded,
+            signature,
+        }
     }
 
     fn render(&self, store: Store) -> String {
         let mut body = format!("{}\n", self.includes());
-        body = format!("{}{}", body, self.get_messages_list(None, &mut store.clone(), 0));
+        body = format!(
+            "{}{}",
+            body,
+            self.get_messages_list(None, &mut store.clone(), 0)
+        );
         for enums in &store.enums {
             if enums.parent == 0 {
-                body =
-                    format!("{}{}\n", body, self.enums(enums, &mut store.clone(), 0));
+                body = format!("{}{}\n", body, self.enums(enums, &mut store.clone(), 0));
             }
         }
         for strct in &store.structs {
             if strct.parent == 0 {
-                body =
-                    format!("{}{}\n", body, self.structs(strct, &mut store.clone(), 0));
+                body = format!("{}{}\n", body, self.structs(strct, &mut store.clone(), 0));
             }
         }
         for group in &store.groups {
             if group.parent == 0 {
-                body =
-                    format!("{}{}\n", body, self.groups(group, &mut store.clone(), 0));
+                body = format!("{}{}\n", body, self.groups(group, &mut store.clone(), 0));
             }
         }
         body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
