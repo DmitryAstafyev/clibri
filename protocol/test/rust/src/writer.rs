@@ -50,6 +50,98 @@ pub fn write() -> Result<(), String> {
         Ok(root) => root,
         Err(e) => panic!(e),
     };
+    let mut buffer: Vec<u8> = vec![];
+    if let Ok(buf) = EnumExampleA::Option_a("Option_a".to_owned()).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleA.a.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleA.a.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleA::Option_b("Option_b".to_owned()).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleA.b.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleA.b.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_str("Option_str".to_owned()).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.str.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.str.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_u8(8).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.u8.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u8.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_u16(16).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.u16.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u16.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_u32(32).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.u32.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u32.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_u64(64).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.u64.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u64.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_i8(-8).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.i8.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i8.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_i16(-16).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.i16.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i16.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_i32(-32).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.i32.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i32.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_i64(-64).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.i64.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i64.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_f32(0.02).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.f32.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.f32.prot.bin"));
+    }
+    if let Ok(buf) = EnumExampleB::Option_f64(0.02).encode() {
+        buffer.append(&mut buf.clone());
+        if let Err(e) = write_file(root.join("./EnumExampleB.f64.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.f64.prot.bin"));
+    }
     if let Ok(buf) = (StructExampleA {
         field_str: String::from("test"),
         field_u8: 1,
@@ -64,6 +156,7 @@ pub fn write() -> Result<(), String> {
         field_f64: 0.2,
         field_bool: true,
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
@@ -83,6 +176,7 @@ pub fn write() -> Result<(), String> {
         field_f64: vec![0.1, 0.2, 0.3, 0.4],
         field_bool: vec![true, false, true],
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
@@ -102,6 +196,7 @@ pub fn write() -> Result<(), String> {
         field_f64: None,
         field_bool: None,
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleC.prot.bin"), &buf) {
             panic!(e);
         }
@@ -121,6 +216,7 @@ pub fn write() -> Result<(), String> {
         field_f64: None,
         field_bool: None,
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleD.prot.bin"), &buf) {
             panic!(e);
         }
@@ -131,6 +227,7 @@ pub fn write() -> Result<(), String> {
         field_b: EnumExampleB::Option_u8(1),
         field_c: EnumExampleC::Option_u8(vec![1]),
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleE.prot.bin"), &buf) {
             panic!(e);
         }
@@ -141,6 +238,7 @@ pub fn write() -> Result<(), String> {
         field_b: None,
         field_c: Some(EnumExampleC::Option_u8(vec![1])),
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleF.prot.bin"), &buf) {
             panic!(e);
         }
@@ -176,6 +274,7 @@ pub fn write() -> Result<(), String> {
             field_bool: vec![true, false, true],
         },
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleG.prot.bin"), &buf) {
             panic!(e);
         }
@@ -198,6 +297,7 @@ pub fn write() -> Result<(), String> {
         }),
         field_b: None,
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./StructExampleJ.prot.bin"), &buf) {
             panic!(e);
         }
@@ -208,6 +308,7 @@ pub fn write() -> Result<(), String> {
         field_u16: 2,
         opt: GroupA::EnumExampleA::Option_a(String::from("Option_a")),
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./GroupAStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
@@ -222,6 +323,7 @@ pub fn write() -> Result<(), String> {
             opt: GroupA::EnumExampleA::Option_a(String::from("Option_a")),
         },
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./GroupAStructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
@@ -231,6 +333,7 @@ pub fn write() -> Result<(), String> {
         field_u8: 1,
         field_u16: 2,
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./GroupBStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
@@ -240,6 +343,7 @@ pub fn write() -> Result<(), String> {
         field_u8: 1,
         field_u16: 2,
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./GroupCStructExampleA.prot.bin"), &buf) {
             panic!(e);
         }
@@ -253,10 +357,15 @@ pub fn write() -> Result<(), String> {
             field_u16: 2,
         }
     }.encode()) {
+        buffer.append(&mut buf.clone());
         if let Err(e) = write_file(root.join("./GroupCStructExampleB.prot.bin"), &buf) {
             panic!(e);
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleB.prot.bin"));
     }
+    if let Err(e) = write_file(root.join("./buffer.prot.bin"), &buffer) {
+        panic!(e);
+    }
+    println!("[RS]: File {:?} has beed written.", root.join("./buffer.prot.bin"));
     Ok(())
 }

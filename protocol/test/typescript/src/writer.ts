@@ -2,7 +2,118 @@ import * as Protocol from './protocol';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export const usecases: Array<{ name: string, entity: Protocol.Convertor }> = [
+function EnumExampleAFactory(): Protocol.Primitives.Enum {
+    return new Protocol.Primitives.Enum([
+        Protocol.Primitives.StrUTF8.getSignature(),
+        Protocol.Primitives.StrUTF8.getSignature(),
+    ], (id: number): Protocol.ISigned<any> | undefined => {
+        switch (id) {
+            case 0: return new Protocol.Primitives.StrUTF8('');
+            case 1: return new Protocol.Primitives.StrUTF8('');
+        }
+    });
+}
+
+function EnumExampleBFactory(): Protocol.Primitives.Enum {
+    return new Protocol.Primitives.Enum([
+        Protocol.Primitives.StrUTF8.getSignature(),
+        Protocol.Primitives.u8.getSignature(),
+        Protocol.Primitives.u16.getSignature(),
+        Protocol.Primitives.u32.getSignature(),
+        Protocol.Primitives.u64.getSignature(),
+        Protocol.Primitives.i8.getSignature(),
+        Protocol.Primitives.i16.getSignature(),
+        Protocol.Primitives.i32.getSignature(),
+        Protocol.Primitives.i64.getSignature(),
+        Protocol.Primitives.f32.getSignature(),
+        Protocol.Primitives.f64.getSignature(),
+    ], (id: number): Protocol.ISigned<any> | undefined => {
+        switch (id) {
+            case 0: return new Protocol.Primitives.StrUTF8('');
+            case 1: return new Protocol.Primitives.u8(0);
+            case 2: return new Protocol.Primitives.u16(0);
+            case 3: return new Protocol.Primitives.u32(0);
+            case 4: return new Protocol.Primitives.u64(BigInt(0));
+            case 5: return new Protocol.Primitives.i8(0);
+            case 6: return new Protocol.Primitives.i16(0);
+            case 7: return new Protocol.Primitives.i32(0);
+            case 8: return new Protocol.Primitives.i64(BigInt(0));
+            case 9: return new Protocol.Primitives.f32(0);
+            case 10: return new Protocol.Primitives.f64(0);
+        }
+    });
+}
+
+export const usecases: Array<{ name: string, entity: Protocol.Convertor | Protocol.Enum }> = [];
+
+usecases.push({ name: 'EnumExampleA.a', entity: (() => {
+    const EnumExampleA = EnumExampleAFactory();
+    EnumExampleA.set(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(`Option_a`)));
+    return EnumExampleA;
+})()});
+usecases.push({ name: 'EnumExampleA.b', entity: (() => {
+    const EnumExampleA = EnumExampleAFactory();
+    EnumExampleA.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(`Option_b`)));
+    return EnumExampleA;
+})()});
+usecases.push({ name: 'EnumExampleB.str', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(`Option_str`)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.u8', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(1, new Protocol.Primitives.u8(8)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.u16', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(16)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.u32', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(3, new Protocol.Primitives.u32(32)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.u64', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<bigint>(4, new Protocol.Primitives.u64(BigInt(64))));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.i8', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(5, new Protocol.Primitives.i8(-8)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.i16', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(6, new Protocol.Primitives.i16(-16)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.i32', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(7, new Protocol.Primitives.i32(-32)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.i64', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<bigint>(8, new Protocol.Primitives.i64(-BigInt(64))));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.f32', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(9, new Protocol.Primitives.f32(0.02)));
+    return EnumExampleB;
+})()});
+usecases.push({ name: 'EnumExampleB.f64', entity: (() => {
+    const EnumExampleB = EnumExampleBFactory();
+    EnumExampleB.set(new Protocol.Primitives.Option<number>(10, new Protocol.Primitives.f64(0.02)));
+    return EnumExampleB;
+})()});
+
+
+usecases.push(...[
     { name: 'StructExampleA' , entity: new Protocol.StructExampleA({
         field_str: 'test',
         field_u8: 1,
@@ -158,16 +269,12 @@ export const usecases: Array<{ name: string, entity: Protocol.Convertor }> = [
             field_u16: 2,
         })
     }) },
-];
+]);
 
 export function write(): Promise<void> {
-    const dest: string = path.resolve(path.dirname(module.filename), '../binary');
-    if (!fs.existsSync(dest)) {
-        fs.mkdirSync(dest);
-    }
-    return Promise.all(usecases.map((usecase) => {
+    function wr(name: string, entity: Protocol.Convertor | Protocol.Enum | Buffer): Promise<void> {
         return new Promise((resolve, reject) => {
-            const target = path.resolve(dest, `${usecase.name}.prot.bin`);
+            const target = path.resolve(dest, `${name}.prot.bin`);
             if (fs.existsSync(target)) {
                 fs.unlinkSync(target);
             }
@@ -175,7 +282,9 @@ export function write(): Promise<void> {
                 if (errOpen) {
                     return reject(errOpen);
                 }
-                fs.writeFile(file, Buffer.from(usecase.entity.encode()), (errWrite: Error | undefined) => {
+                const buf = entity instanceof Buffer ? entity : Buffer.from(entity.encode());
+                buffers.push(buf);
+                fs.writeFile(file, buf, (errWrite: Error | undefined) => {
                     if (errWrite) {
                         return reject(errWrite);
                     }
@@ -184,7 +293,17 @@ export function write(): Promise<void> {
                 });
             });
         });
-    })).then(() => {
-        return Promise.resolve();
+    }
+    const dest: string = path.resolve(path.dirname(module.filename), '../binary');
+    const buffers: Buffer[] = [];
+    if (!fs.existsSync(dest)) {
+        fs.mkdirSync(dest);
+    }
+    return new Promise((resolve) => {
+        Promise.all(usecases.map((usecase) => {
+            return wr(usecase.name, usecase.entity);
+        })).then(() => {
+            wr('buffer', Buffer.concat(buffers)).then(resolve);
+        });
     });
 }
