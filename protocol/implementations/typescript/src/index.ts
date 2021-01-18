@@ -10,6 +10,8 @@ export { ESize } from './protocol.sizes';
 export { Primitives };
 export { Convertor } from './protocol.convertor';
 export { validate, IPropScheme } from './protocol.validator';
+export { BufferReader, IAvailableMessage } from './packing';
+export { MessageHeader } from './packing.header';
 
 // injectable
 type ESizeAlias = ESize; const ESizeAlias = ESize;

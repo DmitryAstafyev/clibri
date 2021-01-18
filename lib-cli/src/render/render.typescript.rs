@@ -16,6 +16,11 @@ pub struct TypescriptRender {
 impl TypescriptRender {
     fn groups(&self, group: &Group, store: &mut Store, level: u8) -> String {
         let mut body = format!("{}export namespace {} {{\n", self.spaces(level), group.name);
+        body = format!(
+            "{}{}",
+            body,
+            self.get_messages_list(Some(group), &mut store.clone(), level + 1)
+        );
         for enum_id in &group.enums {
             if let Some(enums) = store.get_enum(*enum_id) {
                 body = format!(
@@ -124,25 +129,25 @@ impl TypescriptRender {
         );
         body = format!("{}\n", body);
         body = format!(
-            "{}{}public getSignature(): string {{\n",
+            "{}{}public signature(): number {{ return {}; }}\n",
             body,
-            self.spaces(level + 1)
+            self.spaces(level + 1),
+            self.signature
         );
-        body = format!(
-            "{}{}return '{}';\n",
-            body,
-            self.spaces(level + 2),
-            strct.name
-        );
-        body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}\n", body);
         body = format!(
-            "{}{}public getId(): number {{\n",
+            "{}{}public getSignature(): string {{ return '{}'; }}\n",
             body,
-            self.spaces(level + 1)
+            self.spaces(level + 1),
+            strct.name
         );
-        body = format!("{}{}return {};\n", body, self.spaces(level + 2), strct.id);
-        body = format!("{}{}}}\n", body, self.spaces(level + 1));
+        body = format!("{}\n", body);
+        body = format!(
+            "{}{}public getId(): number {{ return {}; }}\n",
+            body,
+            self.spaces(level + 1),
+            strct.id
+        );
         body = format!("{}\n", body);
         body = format!(
             "{}{}public encode(): ArrayBufferLike {{\n",
@@ -204,6 +209,69 @@ impl TypescriptRender {
         body = format!("{}{}}}\n", body, self.spaces(level));
         body
     }
+    fn enum_constructor(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
+        let mut body = "new Primitives.Enum([".to_string();
+        for variant in &enums.variants {
+            if let Some(prim_type_ref) = variant.types.clone() {
+                body = format!(
+                    "{}\n{}Protocol.Primitives.{}.getSignature(),",
+                    body,
+                    self.spaces(level + 1),
+                    self.etype(prim_type_ref, variant.repeated)
+                );
+            } else if let Some(ref_type_id) = variant.ref_type_id {
+                if let Some(strct) = store.get_struct(ref_type_id) {
+                    body = format!(
+                        "{}\n{}{}.getSignature(),",
+                        body,
+                        self.spaces(level + 1),
+                        strct.name
+                    );
+                } else {
+                    panic!(
+                        "Unknown type of data in scope of enum {} / {}, ref_type_id: {} ",
+                        enums.name, variant.name, ref_type_id
+                    );
+                }
+            }
+        }
+        body = format!(
+            "{}\n{}], (id: number): ISigned<any> | undefined => {{",
+            body,
+            self.spaces(level)
+        );
+        body = format!("{}\n{}switch (id) {{", body, self.spaces(level + 1));
+        for (pos, variant) in enums.variants.iter().enumerate() {
+            if let Some(prim_type_ref) = variant.types.clone() {
+                body = format!(
+                    "{}\n{}case {}: return new Protocol.Primitives.{}({});",
+                    body,
+                    self.spaces(level + 2),
+                    pos,
+                    self.etype(prim_type_ref.clone(), variant.repeated),
+                    self.etype_def(prim_type_ref, variant.repeated)
+                );
+            } else if let Some(ref_type_id) = variant.ref_type_id {
+                if let Some(strct) = store.get_struct(ref_type_id) {
+                    body = format!(
+                        "{}\n{}case {}: return {}.defaults();",
+                        body,
+                        self.spaces(level + 2),
+                        pos,
+                        strct.name
+                    );
+                } else {
+                    panic!(
+                        "Unknown type of data in scope of enum {} / {}, ref_type_id: {} ",
+                        enums.name, variant.name, ref_type_id
+                    );
+                }
+            }
+        }
+        body = format!("{}\n{}}}", body, self.spaces(level + 1));
+        body = format!("{}\n{}}});", body, self.spaces(level));
+        body
+    }
 
     fn struct_constructor(&self, strct: &Struct, store: &mut Store, level: u8) -> String {
         let mut body = format!(
@@ -226,65 +294,14 @@ impl TypescriptRender {
         for field in &strct.fields {
             if let Some(ref_type_id) = field.ref_type_id {
                 if let Some(enums) = store.get_enum(ref_type_id) {
+                    // -------
                     body = format!(
-                        "{}\n{}this._{} = new Primitives.Enum([",
+                        "{}\n{}this._{} = {}",
                         body,
                         self.spaces(level + 1),
-                        field.name
+                        field.name,
+                        self.enum_constructor(&enums, store, level + 1)
                     );
-                    for variant in &enums.variants {
-                        if let Some(prim_type_ref) = variant.types.clone() {
-                            body = format!(
-                                "{}\n{}Protocol.Primitives.{}.getSignature(),",
-                                body,
-                                self.spaces(level + 2),
-                                self.etype(prim_type_ref, variant.repeated)
-                            );
-                        } else if let Some(ref_type_id) = variant.ref_type_id {
-                            if let Some(strct) = store.get_struct(ref_type_id) {
-                                body = format!(
-                                    "{}\n{}{}.getSignature(),",
-                                    body,
-                                    self.spaces(level + 2),
-                                    strct.name
-                                );
-                            } else {
-                                panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {} ", enums.name, variant.name, ref_type_id);
-                            }
-                        }
-                    }
-                    body = format!(
-                        "{}\n{}], (id: number): ISigned<any> | undefined => {{",
-                        body,
-                        self.spaces(level + 1)
-                    );
-                    body = format!("{}\n{}switch (id) {{", body, self.spaces(level + 2));
-                    for (pos, variant) in enums.variants.iter().enumerate() {
-                        if let Some(prim_type_ref) = variant.types.clone() {
-                            body = format!(
-                                "{}\n{}case {}: return new Protocol.Primitives.{}({});",
-                                body,
-                                self.spaces(level + 3),
-                                pos,
-                                self.etype(prim_type_ref.clone(), variant.repeated),
-                                self.etype_def(prim_type_ref, variant.repeated)
-                            );
-                        } else if let Some(ref_type_id) = variant.ref_type_id {
-                            if let Some(strct) = store.get_struct(ref_type_id) {
-                                body = format!(
-                                    "{}\n{}case {}: return {}.defaults();",
-                                    body,
-                                    self.spaces(level + 3),
-                                    pos,
-                                    strct.name
-                                );
-                            } else {
-                                panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {} ", enums.name, variant.name, ref_type_id);
-                            }
-                        }
-                    }
-                    body = format!("{}\n{}}}", body, self.spaces(level + 2));
-                    body = format!("{}\n{}}});", body, self.spaces(level + 1));
                     let optional_enum = if field.optional {
                         format!("this.{} !== undefined && ", field.name)
                     } else {
@@ -435,16 +452,49 @@ impl TypescriptRender {
     }
 
     fn struct_from(&self, strct: &Struct, level: u8) -> String {
-        let mut body = format!("{}public static from(obj: any): {} | Error {{", self.spaces(level), strct.name);
+        let mut body = format!(
+            "{}public static from(obj: any): {} | Error {{",
+            self.spaces(level),
+            strct.name
+        );
         body = format!("{}\n{}if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {{", body, self.spaces(level + 1));
-        body = format!("{}\n{}const inst = {}.defaults();", body, self.spaces(level + 2), strct.name);
-        body = format!("{}\n{}const err = inst.decode(obj);", body, self.spaces(level + 2));
-        body = format!("{}\n{}return err instanceof Error ? err : inst;", body, self.spaces(level + 2));
+        body = format!(
+            "{}\n{}const inst = {}.defaults();",
+            body,
+            self.spaces(level + 2),
+            strct.name
+        );
+        body = format!(
+            "{}\n{}const err = inst.decode(obj);",
+            body,
+            self.spaces(level + 2)
+        );
+        body = format!(
+            "{}\n{}return err instanceof Error ? err : inst;",
+            body,
+            self.spaces(level + 2)
+        );
         body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
-        body = format!("{}\n{}const error: Error | undefined = Protocol.validate(obj, {}.scheme);", body, self.spaces(level + 2), strct.name);
-        body = format!("{}\n{}return error instanceof Error ? error : new {}({{", body, self.spaces(level + 2), strct.name);
+        body = format!(
+            "{}\n{}const error: Error | undefined = Protocol.validate(obj, {}.scheme);",
+            body,
+            self.spaces(level + 2),
+            strct.name
+        );
+        body = format!(
+            "{}\n{}return error instanceof Error ? error : new {}({{",
+            body,
+            self.spaces(level + 2),
+            strct.name
+        );
         for field in &strct.fields {
-            body = format!("{}\n{}{}: obj.{},", body, self.spaces(level + 3), field.name, field.name);
+            body = format!(
+                "{}\n{}{}: obj.{},",
+                body,
+                self.spaces(level + 3),
+                field.name,
+                field.name
+            );
         }
         body = format!("{}\n{}}});", body, self.spaces(level + 2));
         body = format!("{}\n{}}}", body, self.spaces(level + 1));
@@ -895,6 +945,56 @@ impl TypescriptRender {
         }
     }
 
+    fn get_enum_decode(
+        &self,
+        field_name: &str,
+        holder_name: &str,
+        prop_name: &str,
+        enums: &Enum,
+        store: &mut Store,
+        force_type: bool,
+        level: u8,
+    ) -> String {
+        let mut body = format!(
+            "{}switch ({}{}.getValueIndex()) {{",
+            self.spaces(level),
+            holder_name,
+            field_name
+        );
+        for (pos, variant) in enums.variants.iter().enumerate() {
+            let types = if let Some(prim_type_ref) = variant.types.clone() {
+                self.etype_ts(prim_type_ref, variant.repeated)
+            } else if let Some(ref_type_id) = variant.ref_type_id {
+                if let Some(strct) = store.get_struct(ref_type_id) {
+                    strct.name
+                } else {
+                    panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
+                }
+            } else {
+                panic!(
+                    "Unknown type of data in scope of enum {} / {}",
+                    enums.name, variant.name
+                );
+            };
+            body = format!(
+                "{}\n{}case {}: {}{}.{} = {}.get<{}>(); break;",
+                body,
+                self.spaces(level + 1),
+                pos,
+                prop_name,
+                field_name,
+                variant.name,
+                if force_type {
+                    format!("({}{} as Enum)", holder_name, field_name)
+                } else {
+                    format!("{}{}", holder_name, field_name)
+                },
+                types
+            );
+        }
+        body = format!("{}\n{}}}", body, self.spaces(level));
+        body
+    }
     fn get_field_decode(&self, field: &Field, store: &mut Store, level: u8) -> String {
         let mut body: String;
         if let Some(entity_id) = field.ref_type_id {
@@ -1038,38 +1138,10 @@ impl TypescriptRender {
                 );
                 body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
                 body = format!(
-                    "{}\n{}switch (this._{}.getValueIndex()) {{",
+                    "{}\n{}",
                     body,
-                    self.spaces(level + 2),
-                    field.name
+                    self.get_enum_decode(&field.name, "this._", "this.", &enums, store, false, level + 2)
                 );
-                for (pos, variant) in enums.variants.iter().enumerate() {
-                    let types = if let Some(prim_type_ref) = variant.types.clone() {
-                        self.etype_ts(prim_type_ref, variant.repeated)
-                    } else if let Some(ref_type_id) = variant.ref_type_id {
-                        if let Some(strct) = store.get_struct(ref_type_id) {
-                            strct.name
-                        } else {
-                            panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
-                        }
-                    } else {
-                        panic!(
-                            "Unknown type of data in scope of enum {} / {}",
-                            enums.name, variant.name
-                        );
-                    };
-                    body = format!(
-                        "{}\n{}case {}: this.{}.{} = this._{}.get<{}>(); break;",
-                        body,
-                        self.spaces(level + 3),
-                        pos,
-                        field.name,
-                        variant.name,
-                        field.name,
-                        types
-                    );
-                }
-                body = format!("{}\n{}}}", body, self.spaces(level + 2));
                 body = format!("{}\n{}}}", body, self.spaces(level + 1));
                 body = format!("{}\n{}}}", body, self.spaces(level));
             } else {
@@ -1265,9 +1337,210 @@ impl TypescriptRender {
         }
     }
 
+    fn get_messages_list(&self, group: Option<&Group>, store: &mut Store, level: u8) -> String {
+        let mut body = String::from("");
+        if let Some(group) = group {
+            body = format!(
+                "{}{}export interface IAvailableMessages {{\n",
+                body,
+                self.spaces(level)
+            );
+            for enum_id in &group.enums {
+                if let Some(enums) = store.get_enum(*enum_id) {
+                    body = format!(
+                        "{}{}{}?: {},\n",
+                        body,
+                        self.spaces(level + 1),
+                        enums.name,
+                        enums.name
+                    );
+                }
+            }
+            for struct_id in &group.structs {
+                if let Some(strct) = store.get_struct(*struct_id) {
+                    body = format!(
+                        "{}{}{}?: {},\n",
+                        body,
+                        self.spaces(level + 1),
+                        strct.name,
+                        strct.name
+                    );
+                }
+            }
+            let childs = store.get_child_groups(group.id);
+            for child in childs {
+                if child.parent == group.id {
+                    body = format!(
+                        "{}{}{}?: {}.IAvailableMessages,\n",
+                        body,
+                        self.spaces(level + 1),
+                        child.name,
+                        child.name
+                    );
+                }
+            }
+            body = format!("{}{}}}\n", body, self.spaces(level));
+        } else {
+            body = format!(
+                "{}{}export interface IAvailableMessages {{\n",
+                body,
+                self.spaces(level)
+            );
+            for enums in &store.enums {
+                if enums.parent == 0 {
+                    body = format!(
+                        "{}{}{}?: {},\n",
+                        body,
+                        self.spaces(level + 1),
+                        enums.name,
+                        enums.name
+                    );
+                }
+            }
+            for strct in &store.structs {
+                if strct.parent == 0 {
+                    body = format!(
+                        "{}{}{}?: {},\n",
+                        body,
+                        self.spaces(level + 1),
+                        strct.name,
+                        strct.name
+                    );
+                }
+            }
+            for group in &store.groups {
+                if group.parent == 0 {
+                    body = format!(
+                        "{}{}{}?: {}.IAvailableMessages,\n",
+                        body,
+                        self.spaces(level + 1),
+                        group.name,
+                        group.name
+                    );
+                }
+            }
+            body = format!("{}{}}}\n", body, self.spaces(level));
+        }
+        body
+    }
+
+    fn get_path(&self, mut parent: usize, store: &mut Store) -> Vec<String> {
+        let mut path: Vec<String> = vec![];
+        loop {
+            if parent == 0 {
+                break;
+            }
+            if let Some(group) = store.get_group(parent) {
+                path.push(group.name.clone());
+                parent = group.parent;
+            } else {
+                break;
+            }
+        }
+        path.reverse();
+        path
+    }
+
+    fn get_full_name(&self, name: String, parent: usize, store: &mut Store) -> String {
+        let path: Vec<String> = self.get_path(parent, store);
+        if path.is_empty() {
+            name
+        } else {
+            format!("{}.{}", path.join("."), name)
+        }
+    }
+
+    fn get_entity_path(&self, parent: usize, store: &mut Store) -> Vec<String> {
+        let mut path: Vec<String> = vec![];
+        let mut parent = parent;
+        loop {
+            if parent == 0 {
+                break;
+            }
+            if let Some(group) = store.get_group(parent) {
+                path.push(group.name.clone());
+                parent = group.parent;
+            } else {
+                break;
+            }
+        }
+        path.reverse();
+        path
+    }
+
+    fn get_available_entity(&self, parent: usize, name: &str, store: &mut Store) -> String {
+        let mut result = String::from("");
+        //GroupB: { GroupC: { StructExampleB: instance } }
+        let path = self.get_entity_path(parent, store);
+        if path.is_empty() {
+            result = format!("{}: instance ", name);
+        } else {
+            for part in path.iter() {
+                result = format!("{}{}: {{ ", result, part);
+            }
+            result = format!("{}{}: instance {}", result, name, "} ".repeat(path.len()));
+        }
+        result
+    }
+
+    fn buffer(&self, store: &mut Store) -> String {
+        let mut body = format!(
+            "{}export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvailableMessages>> {{\n",
+            self.spaces(0)
+        );
+        body = format!(
+            "{}{}public signature(): number {{ return {}; }}\n",
+            body,
+            self.spaces(1),
+            self.signature
+        );
+        body = format!("{}{}public getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): IAvailableMessage<IAvailableMessages> | Error {{\n", body, self.spaces(1));
+        body = format!("{}{}let instance: any;\n", body, self.spaces(2));
+        body = format!("{}{}const enum_instance: any = {{}};\n", body, self.spaces(2));
+        body = format!("{}{}let err: Error | undefined;\n", body, self.spaces(2));
+        body = format!("{}{}switch (header.id) {{\n", body, self.spaces(2));
+        for enums in &store.enums {
+            body = format!("{}{}case {}:\n", body, self.spaces(3), enums.id);
+            body = format!(
+                "{}{}instance = {}\n",
+                body,
+                self.spaces(4),
+                self.enum_constructor(&enums, &mut store.clone(), 4)
+            );
+            body = format!("{}{}err = instance.decode(buffer);\n", body, self.spaces(4));
+            body = format!(
+                "{}{}if (err instanceof Error) {{ return err; }}\n",
+                body,
+                self.spaces(4)
+            );
+            body = format!(
+                "{}{}\n",
+                body,
+                self.get_enum_decode("instance", "", "enum_", &enums, &mut store.clone(), true, 4),
+            );
+            body = format!("{}{}instance = enum_instance;\n", body, self.spaces(4));
+            body = format!("{}{}return {{ header: {{ id: header.id, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(enums.parent, &enums.name, &mut store.clone()));
+        }
+        for structs in &store.structs {
+            body = format!("{}{}case {}:\n", body, self.spaces(3), structs.id);
+            body = format!(
+                "{}{}instance = {}.defaults();\n",
+                body,
+                self.spaces(4),
+                self.get_full_name(structs.name.clone(), structs.parent, &mut store.clone())
+            );
+            body = format!("{}{}err = instance.decode(buffer);\n", body, self.spaces(4));
+            body = format!("{}{}return err instanceof Error ? err : {{ header: {{ id: header.id, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(structs.parent, &structs.name, &mut store.clone()));
+        }
+        body = format!("{}{}}}\n", body, self.spaces(2));
+        body = format!("{}{}}}\n", body, self.spaces(1));
+        body = format!("{}{}}}\n", body, self.spaces(0));
+        body
+    }
+
     fn includes(&self) -> String {
         if self.embedded {
-            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.injection.embedded.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/index.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/tools.arraybuffer.ts")),
@@ -1302,6 +1575,8 @@ impl TypescriptRender {
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.primitives.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.storage.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.ts")),
+                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/packing.header.ts")),
+                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/packing.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/index.ts")),
             )
         } else {
@@ -1313,8 +1588,6 @@ impl TypescriptRender {
     fn get_injectable(&self, content: &str) -> String {
         let re_injectable = Regex::new(r"^([\n\r]|.)*(//\s?injectable)").unwrap();
         re_injectable.replace_all(content, "").to_string()
-        //let re_export = Regex::new(r"(?m)^export\s*").unwrap();
-        //re_export.replace_all(&re_injectable.replace_all(content, "").to_string(), "").to_string()
     }
 
     fn spaces(&self, level: u8) -> String {
@@ -1324,11 +1597,19 @@ impl TypescriptRender {
 
 impl Render for TypescriptRender {
     fn new(embedded: bool, signature: u16) -> Self {
-        TypescriptRender { embedded, signature }
+        TypescriptRender {
+            embedded,
+            signature,
+        }
     }
 
     fn render(&self, store: Store) -> String {
         let mut body = format!("{}\n", self.includes());
+        body = format!(
+            "{}{}",
+            body,
+            self.get_messages_list(None, &mut store.clone(), 0)
+        );
         for enums in &store.enums {
             if enums.parent == 0 {
                 body =
@@ -1347,6 +1628,7 @@ impl Render for TypescriptRender {
                     format!("{}{}\n", body, self.groups(group, &mut store.clone(), 0)).to_string();
             }
         }
+        body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
         body
     }
 }

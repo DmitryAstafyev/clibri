@@ -106,6 +106,10 @@ class Nested extends Protocol.Convertor implements INested {
         }
     }
 
+    public signature(): number {
+        return 0;
+    }
+
     public getSignature(): string {
         return 'nested';
     }
@@ -364,6 +368,10 @@ class Message extends Protocol.Convertor implements IMessage {
         });
     }
 
+    public signature(): number {
+        return 0;
+    }
+
     public getSignature(): string {
         return 'Message';
     }
@@ -578,6 +586,43 @@ class Message extends Protocol.Convertor implements IMessage {
 
 }
 
+export interface IAvailableMessages {
+    Message?: Message;
+    Nested?: Nested;
+}
+
+export class BufferReaderMessages extends Protocol.BufferReader<Protocol.IAvailableMessage<IAvailableMessages>> {
+
+    public signature(): number {
+        return 0;
+    }
+
+    public getMessage(header: Protocol.MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): Protocol.IAvailableMessage<IAvailableMessages> | Error {
+        let instance: any;
+        let err: Error | undefined;
+        switch (header.id) {
+            case 2: 
+                instance = Nested.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { Nested: instance } };
+            case 1: 
+                instance = Message.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { Message: instance } };
+        }
+        return new Error(`Fail to find message id=${header.id}`);
+    }
+
+}
+
+export interface IUnpackedMessage {
+    header: {
+        id: number;
+        signature: number;
+        timestamp: BigInt;
+    },
+    msg: IAvailableMessages,
+}
 
 describe('Protocol tests', () => {
 
@@ -926,9 +971,110 @@ describe('Protocol tests', () => {
         expect(Message.from(msgObjA)).toBeInstanceOf(Message);
         expect(Message.from(msgObjB)).toBeInstanceOf(Error);
         expect(Message.from(msgObjC)).toBeInstanceOf(Error);
+
         done();
 
     });
 
+    it('Pack / Buffer', (done: Function)=> {
+        const a: Message = new Message({
+            u8: 1,
+            u16: 2,
+            u32: 3,
+            u64: BigInt(4),
+            i8: 5,
+            i16: 6,
+            i32: 7,
+            i64: BigInt(8),
+            f32: 9,
+            f64: 10,
+            bool: true,
+            nested: new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+            arrNested: [
+                new Nested({ u8: 10, u16: 11, u32: 12, opt: { u8: 10 } }),
+                new Nested({ u8: 11, u16: 12, u32: 14, opt: { u8: 11 } }),
+                new Nested({ u8: 12, u16: 13, u32: 15, opt: { u16: 12 } })
+            ],
+            arrU8: [1,2,3,4,5],
+            arrU16: [1,2,3,4,5],
+            arrU32: [1,2,3,4,5],
+            arrU64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrI8: [1,2,3,4,5],
+            arrI16: [1,2,3,4,5],
+            arrI32: [1,2,3,4,5],
+            arrI64: [BigInt(1),BigInt(2),BigInt(3),BigInt(4),BigInt(5)],
+            arrF32: [0.1,0.2,0.3,0.4,0.5],
+            arrF64: [0.1,0.2,0.3,0.4,0.5],
+            str: "Hello, from string!",
+            arrStr: ["string 1", "string 2", "string 3"],
+            arrBool: [true, false, true]
+        });
+        const b = new Nested({ u8: undefined, u16: 11, u32: 12, opt: { u16: 22 } });
+        const buffer = new BufferReaderMessages();
+        buffer.chunk(a.pack());
+        buffer.chunk(b.pack());
+        buffer.chunk(a.pack());
+        buffer.chunk(b.pack());
+        expect(buffer.pending()).toEqual(4);
+        let count: number = 0;
+        let counts = { a: 0, b: 0 };
+        do {
+            const msg = buffer.next();
+            if (msg === undefined) {
+                break;
+            }
+            if (msg.msg.Message !== undefined) {
+                counts.a += 1;
+                expect(a.u8).toBe(msg.msg.Message.u8);
+                expect(a.u16).toBe(msg.msg.Message.u16);
+                expect(a.u32).toBe(msg.msg.Message.u32);
+                expect(a.u64).toBe(msg.msg.Message.u64);
+                expect(a.i8).toBe(msg.msg.Message.i8);
+                expect(a.i16).toBe(msg.msg.Message.i16);
+                expect(a.i32).toBe(msg.msg.Message.i32);
+                expect(a.i64).toBe(msg.msg.Message.i64);
+                expect(a.f32).toBe(msg.msg.Message.f32);
+                expect(a.f64).toBe(msg.msg.Message.f64);
+                expect(a.bool).toBe(msg.msg.Message.bool);
+                expect(a.nested.u16).toBe(msg.msg.Message.nested.u16);
+                expect(a.nested.u32).toBe(msg.msg.Message.nested.u32);
+                expect(a.nested.opt.u8).toBe(msg.msg.Message.nested.opt.u8);
+                expect(a.nested.opt.u16).toBe(msg.msg.Message.nested.opt.u16);
+                expect(a.arrU8.join(',')).toBe(msg.msg.Message.arrU8.join(','));
+                expect(a.arrU16.join(',')).toBe(msg.msg.Message.arrU16.join(','));
+                expect(a.arrU32.join(',')).toBe(msg.msg.Message.arrU32.join(','));
+                expect(a.arrU64.join(',')).toBe(msg.msg.Message.arrU64.join(','));
+                expect(a.arrI8.join(',')).toBe(msg.msg.Message.arrI8.join(','));
+                expect(a.arrI16.join(',')).toBe(msg.msg.Message.arrI16.join(','));
+                expect(a.arrI32.join(',')).toBe(msg.msg.Message.arrI32.join(','));
+                expect(a.arrI64.join(',')).toBe(msg.msg.Message.arrI64.join(','));
+                expect(a.arrF32.join(',')).toBe(msg.msg.Message.arrF32.map(i => i.toFixed(1)).join(','));
+                expect(a.arrF64.join(',')).toBe(msg.msg.Message.arrF64.map(i => i.toFixed(1)).join(','));
+                expect(a.str).toBe(msg.msg.Message.str);
+                expect(a.arrStr.join(',')).toBe(msg.msg.Message.arrStr.join(','));
+                expect(a.arrBool.join(',')).toBe(msg.msg.Message.arrBool.join(','));
+                a.arrNested.forEach((aNested: Nested, index: number) => {
+                    expect(aNested.u8).toBe(msg.msg.Message.arrNested[index].u8);
+                    expect(aNested.u16).toBe(msg.msg.Message.arrNested[index].u16);
+                    expect(aNested.u32).toBe(msg.msg.Message.arrNested[index].u32);
+                });
+            } else if (msg.msg.Nested !== undefined) {
+                counts.b += 1;
+                expect(b.u8).toBe(msg.msg.Nested.u8);
+                expect(b.u16).toBe(msg.msg.Nested.u16);
+                expect(b.u32).toBe(msg.msg.Nested.u32);
+                expect(b.opt.u8).toBe(msg.msg.Nested.opt.u8);
+                expect(b.opt.u16).toBe(msg.msg.Nested.opt.u16);
+            } else {
+                fail(`Unexpected message`)
+            }
+            count += 1;
+        } while (true);
+        expect(count).toEqual(4);
+        expect(counts.a).toEqual(2);
+        expect(counts.b).toEqual(2);
+        done();
+
+    });
 
 });

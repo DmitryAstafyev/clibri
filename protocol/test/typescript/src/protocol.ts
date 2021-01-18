@@ -1841,8 +1841,6 @@ export class Enum {
         }
     }
 
-
-
 }
 
 export interface IValidator {
@@ -2199,7 +2197,30 @@ export abstract class Convertor {
         return selfs;
     }
 
+    public pack(): ArrayBufferLike {
+        const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
+        const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const ts = BigInt((new Date()).getTime());
+        const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
+        if (id instanceof Error) {
+            throw new Error(`Fail to encode id (${this.getId()}) due error: ${id.message}`);
+        }
+        if (signature instanceof Error) {
+            throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (timestamp instanceof Error) {
+            throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
+        }
+        const buffer: ArrayBufferLike = this.encode();
+        const len: ArrayBufferLike | Error = Primitives.u32.encode(buffer.byteLength);
+        if (len instanceof Error) {
+            throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
+        }
+        return Tools.append([id, signature, timestamp, len, buffer]);
+    }
+
     public abstract getSignature(): string;
+    public abstract signature(): number;
     public abstract getId(): number;
     public abstract encode(): ArrayBufferLike;
     public abstract decode(buffer: ArrayBufferLike): Error | undefined;
@@ -2207,6 +2228,110 @@ export abstract class Convertor {
 
 }
 
+export class MessageHeader {
+    public static readonly ID_LENGTH = 4;
+    public static readonly SIGN_LENGTH = 2;
+    public static readonly TS_LENGTH = 8;
+    public static readonly LEN_LENGTH = 4;
+    public static readonly SIZE =
+        MessageHeader.ID_LENGTH +
+        MessageHeader.SIGN_LENGTH +
+        MessageHeader.TS_LENGTH +
+        MessageHeader.LEN_LENGTH;
+
+    public readonly id: number;
+    public readonly signature: number;
+    public readonly ts: BigInt;
+    public readonly len: number;
+
+    constructor(buffer: Buffer) {
+        if (MessageHeader.enow(buffer) === false) {
+            throw new Error(
+                `Cannot parse header because size problem. Buffer: ${buffer.byteLength} bytes; header size: ${MessageHeader.SIZE} bytes`
+            );
+        } else {
+            this.id = buffer.readUInt32LE(0);
+            this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
+            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
+            this.len = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH);
+        }
+    }
+
+    public static enow(buffer: Buffer): boolean {
+        return buffer.byteLength >= MessageHeader.SIZE;
+    }
+
+}
+
+
+export interface IAvailableMessage<T> {
+    header: {
+        id: number;
+        timestamp: BigInt;
+    },
+    msg: T
+}
+
+export abstract class BufferReader<T> {
+
+    private _buffer: Buffer = Buffer.alloc(0);
+    private _queue: T[] = [];
+
+    public abstract signature(): number;
+
+    public abstract getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): T | Error;
+
+    public chunk(buffer: Buffer | ArrayBuffer | ArrayBufferLike): Error[] | undefined {
+        const errors: Error[] = [];
+        this._buffer = Buffer.concat([this._buffer, buffer instanceof Buffer ? buffer : Buffer.from(buffer)]);
+        do {
+            if (!MessageHeader.enow(this._buffer)) {
+                break;
+            }
+            const headerBuf: Buffer = Buffer.alloc(MessageHeader.SIZE);
+            this._buffer.copy(headerBuf, 0, 0, MessageHeader.SIZE);
+            const header: MessageHeader = new MessageHeader(headerBuf);
+            if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
+                break;
+            }
+            const messageBuf: Buffer = Buffer.alloc(header.len);
+            this._buffer.copy(messageBuf, 0, MessageHeader.SIZE, MessageHeader.SIZE + header.len);
+            const _buffer: Buffer = Buffer.alloc(0);
+            this._buffer.copy(_buffer, 0, MessageHeader.SIZE + header.len, this._buffer.byteLength - (MessageHeader.SIZE + header.len));
+            this._buffer = _buffer;
+            if (header.signature !== this.signature()) {
+                errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
+            } else {
+                const msg = this.getMessage(header, messageBuf);
+                if (msg instanceof Error) {
+                    errors.push(msg);
+                } else {
+                    this._queue.push(msg);
+                }
+            }
+        } while (true);
+        return errors.length > 0 ? errors : undefined;
+    }
+
+    public destroy() {
+        // Drop buffer
+        this._buffer = Buffer.alloc(0);
+        this._queue = [];
+    }
+
+    public pending(): number {
+        return this._queue.length;
+    }
+
+    public let(): number {
+        return this._buffer.byteLength;
+    }
+
+    public next(): T | undefined {
+        return this._queue.length === 0 ? undefined : this._queue.splice(0, 1)[0];
+    }
+
+}
 type ESizeAlias = ESize; const ESizeAlias = ESize;
 type ConvertorAlias = Convertor; const ConvertorAlias = Convertor;
 type IPropSchemeAlias = IPropScheme;
@@ -2222,6 +2347,21 @@ namespace Protocol {
 }
 
 
+export interface IAvailableMessages {
+    EnumExampleA?: EnumExampleA,
+    EnumExampleB?: EnumExampleB,
+    EnumExampleC?: EnumExampleC,
+    StructExampleA?: StructExampleA,
+    StructExampleB?: StructExampleB,
+    StructExampleC?: StructExampleC,
+    StructExampleD?: StructExampleD,
+    StructExampleE?: StructExampleE,
+    StructExampleF?: StructExampleF,
+    StructExampleG?: StructExampleG,
+    StructExampleJ?: StructExampleJ,
+    GroupA?: GroupA.IAvailableMessages,
+    GroupB?: GroupB.IAvailableMessages,
+}
 export interface EnumExampleA {
     Option_a?: string;
     Option_b?: string;
@@ -2370,13 +2510,11 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
         });
     }
 
-    public getSignature(): string {
-        return 'StructExampleA';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 4;
-    }
+    public getSignature(): string { return 'StructExampleA'; }
+
+    public getId(): number { return 4; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -2594,13 +2732,11 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
         });
     }
 
-    public getSignature(): string {
-        return 'StructExampleB';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 17;
-    }
+    public getSignature(): string { return 'StructExampleB'; }
+
+    public getId(): number { return 17; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -2818,13 +2954,11 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         });
     }
 
-    public getSignature(): string {
-        return 'StructExampleC';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 30;
-    }
+    public getSignature(): string { return 'StructExampleC'; }
+
+    public getId(): number { return 30; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -3138,13 +3272,11 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         });
     }
 
-    public getSignature(): string {
-        return 'StructExampleD';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 43;
-    }
+    public getSignature(): string { return 'StructExampleD'; }
+
+    public getId(): number { return 43; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -3659,13 +3791,11 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public getSignature(): string {
-        return 'StructExampleE';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 56;
-    }
+    public getSignature(): string { return 'StructExampleE'; }
+
+    public getId(): number { return 56; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -4069,13 +4199,11 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public getSignature(): string {
-        return 'StructExampleF';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 60;
-    }
+    public getSignature(): string { return 'StructExampleF'; }
+
+    public getId(): number { return 60; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -4278,13 +4406,11 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
         });
     }
 
-    public getSignature(): string {
-        return 'StructExampleG';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 64;
-    }
+    public getSignature(): string { return 'StructExampleG'; }
+
+    public getId(): number { return 64; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -4418,13 +4544,11 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         });
     }
 
-    public getSignature(): string {
-        return 'StructExampleJ';
-    }
+    public signature(): number { return 0; }
 
-    public getId(): number {
-        return 67;
-    }
+    public getSignature(): string { return 'StructExampleJ'; }
+
+    public getId(): number { return 67; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -4510,6 +4634,11 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
 }
 
 export namespace GroupA {
+    export interface IAvailableMessages {
+        EnumExampleA?: EnumExampleA,
+        StructExampleA?: StructExampleA,
+        StructExampleB?: StructExampleB,
+    }
 
     export interface EnumExampleA {
         Option_a?: string;
@@ -4614,13 +4743,11 @@ export namespace GroupA {
             }
         }
 
-        public getSignature(): string {
-            return 'StructExampleA';
-        }
+        public signature(): number { return 0; }
 
-        public getId(): number {
-            return 72;
-        }
+        public getSignature(): string { return 'StructExampleA'; }
+
+        public getId(): number { return 72; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
@@ -4744,13 +4871,11 @@ export namespace GroupA {
             });
         }
 
-        public getSignature(): string {
-            return 'StructExampleB';
-        }
+        public signature(): number { return 0; }
 
-        public getId(): number {
-            return 76;
-        }
+        public getSignature(): string { return 'StructExampleB'; }
+
+        public getId(): number { return 76; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
@@ -4802,6 +4927,10 @@ export namespace GroupA {
 }
 
 export namespace GroupB {
+    export interface IAvailableMessages {
+        StructExampleA?: StructExampleA,
+        GroupC?: GroupC.IAvailableMessages,
+    }
 
     export interface IStructExampleA {
         field_u8: number;
@@ -4868,13 +4997,11 @@ export namespace GroupB {
             });
         }
 
-        public getSignature(): string {
-            return 'StructExampleA';
-        }
+        public signature(): number { return 0; }
 
-        public getId(): number {
-            return 81;
-        }
+        public getSignature(): string { return 'StructExampleA'; }
+
+        public getId(): number { return 81; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
@@ -4908,6 +5035,10 @@ export namespace GroupB {
     }
 
     export namespace GroupC {
+        export interface IAvailableMessages {
+            StructExampleA?: StructExampleA,
+            StructExampleB?: StructExampleB,
+        }
 
         export interface IStructExampleA {
             field_u8: number;
@@ -4974,13 +5105,11 @@ export namespace GroupB {
                 });
             }
 
-            public getSignature(): string {
-                return 'StructExampleA';
-            }
+            public signature(): number { return 0; }
 
-            public getId(): number {
-                return 85;
-            }
+            public getSignature(): string { return 'StructExampleA'; }
+
+            public getId(): number { return 85; }
 
             public encode(): ArrayBufferLike {
                 return this.collect([
@@ -5086,13 +5215,11 @@ export namespace GroupB {
                 });
             }
 
-            public getSignature(): string {
-                return 'StructExampleB';
-            }
+            public signature(): number { return 0; }
 
-            public getId(): number {
-                return 88;
-            }
+            public getSignature(): string { return 'StructExampleB'; }
+
+            public getId(): number { return 88; }
 
             public encode(): ArrayBufferLike {
                 return this.collect([
@@ -5142,5 +5269,194 @@ export namespace GroupB {
 
     }
 
+}
+
+export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvailableMessages>> {
+    public signature(): number { return 0; }
+    public getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): IAvailableMessage<IAvailableMessages> | Error {
+        let instance: any;
+        const enum_instance: any = {};
+        let err: Error | undefined;
+        switch (header.id) {
+            case 1:
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.StrUTF8('');
+                        case 1: return new Protocol.Primitives.StrUTF8('');
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_a = (instance as Enum).get<string>(); break;
+                    case 1: enum_instance.Option_b = (instance as Enum).get<string>(); break;
+                }
+                instance = enum_instance;
+                return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleA: instance } };
+            case 2:
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.u8.getSignature(),
+                    Protocol.Primitives.u16.getSignature(),
+                    Protocol.Primitives.u32.getSignature(),
+                    Protocol.Primitives.u64.getSignature(),
+                    Protocol.Primitives.i8.getSignature(),
+                    Protocol.Primitives.i16.getSignature(),
+                    Protocol.Primitives.i32.getSignature(),
+                    Protocol.Primitives.i64.getSignature(),
+                    Protocol.Primitives.f32.getSignature(),
+                    Protocol.Primitives.f64.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.StrUTF8('');
+                        case 1: return new Protocol.Primitives.u8(0);
+                        case 2: return new Protocol.Primitives.u16(0);
+                        case 3: return new Protocol.Primitives.u32(0);
+                        case 4: return new Protocol.Primitives.u64(BigInt(0));
+                        case 5: return new Protocol.Primitives.i8(0);
+                        case 6: return new Protocol.Primitives.i16(0);
+                        case 7: return new Protocol.Primitives.i32(0);
+                        case 8: return new Protocol.Primitives.i64(BigInt(0));
+                        case 9: return new Protocol.Primitives.f32(0);
+                        case 10: return new Protocol.Primitives.f64(0);
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_str = (instance as Enum).get<string>(); break;
+                    case 1: enum_instance.Option_u8 = (instance as Enum).get<number>(); break;
+                    case 2: enum_instance.Option_u16 = (instance as Enum).get<number>(); break;
+                    case 3: enum_instance.Option_u32 = (instance as Enum).get<number>(); break;
+                    case 4: enum_instance.Option_u64 = (instance as Enum).get<bigint>(); break;
+                    case 5: enum_instance.Option_i8 = (instance as Enum).get<number>(); break;
+                    case 6: enum_instance.Option_i16 = (instance as Enum).get<number>(); break;
+                    case 7: enum_instance.Option_i32 = (instance as Enum).get<number>(); break;
+                    case 8: enum_instance.Option_i64 = (instance as Enum).get<bigint>(); break;
+                    case 9: enum_instance.Option_f32 = (instance as Enum).get<number>(); break;
+                    case 10: enum_instance.Option_f64 = (instance as Enum).get<number>(); break;
+                }
+                instance = enum_instance;
+                return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleB: instance } };
+            case 3:
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.ArrayStrUTF8.getSignature(),
+                    Protocol.Primitives.ArrayU8.getSignature(),
+                    Protocol.Primitives.ArrayU16.getSignature(),
+                    Protocol.Primitives.ArrayU32.getSignature(),
+                    Protocol.Primitives.ArrayU64.getSignature(),
+                    Protocol.Primitives.ArrayI8.getSignature(),
+                    Protocol.Primitives.ArrayI16.getSignature(),
+                    Protocol.Primitives.ArrayI32.getSignature(),
+                    Protocol.Primitives.ArrayI64.getSignature(),
+                    Protocol.Primitives.ArrayF32.getSignature(),
+                    Protocol.Primitives.ArrayF64.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.ArrayStrUTF8(['']);
+                        case 1: return new Protocol.Primitives.ArrayU8([0]);
+                        case 2: return new Protocol.Primitives.ArrayU16([0]);
+                        case 3: return new Protocol.Primitives.ArrayU32([0]);
+                        case 4: return new Protocol.Primitives.ArrayU64([BigInt(0)]);
+                        case 5: return new Protocol.Primitives.ArrayI8([0]);
+                        case 6: return new Protocol.Primitives.ArrayI16([0]);
+                        case 7: return new Protocol.Primitives.ArrayI32([0]);
+                        case 8: return new Protocol.Primitives.ArrayI64([BigInt(0)]);
+                        case 9: return new Protocol.Primitives.ArrayF32([0]);
+                        case 10: return new Protocol.Primitives.ArrayF64([0]);
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_str = (instance as Enum).get<Array<string>>(); break;
+                    case 1: enum_instance.Option_u8 = (instance as Enum).get<Array<number>>(); break;
+                    case 2: enum_instance.Option_u16 = (instance as Enum).get<Array<number>>(); break;
+                    case 3: enum_instance.Option_u32 = (instance as Enum).get<Array<number>>(); break;
+                    case 4: enum_instance.Option_u64 = (instance as Enum).get<Array<bigint>>(); break;
+                    case 5: enum_instance.Option_i8 = (instance as Enum).get<Array<number>>(); break;
+                    case 6: enum_instance.Option_i16 = (instance as Enum).get<Array<number>>(); break;
+                    case 7: enum_instance.Option_i32 = (instance as Enum).get<Array<number>>(); break;
+                    case 8: enum_instance.Option_i64 = (instance as Enum).get<Array<bigint>>(); break;
+                    case 9: enum_instance.Option_f32 = (instance as Enum).get<Array<number>>(); break;
+                    case 10: enum_instance.Option_f64 = (instance as Enum).get<Array<number>>(); break;
+                }
+                instance = enum_instance;
+                return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleC: instance } };
+            case 71:
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.StrUTF8('');
+                        case 1: return new Protocol.Primitives.StrUTF8('');
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_a = (instance as Enum).get<string>(); break;
+                    case 1: enum_instance.Option_b = (instance as Enum).get<string>(); break;
+                }
+                instance = enum_instance;
+                return { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } } };
+            case 4:
+                instance = StructExampleA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleA: instance } };
+            case 17:
+                instance = StructExampleB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleB: instance } };
+            case 30:
+                instance = StructExampleC.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleC: instance } };
+            case 43:
+                instance = StructExampleD.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleD: instance } };
+            case 56:
+                instance = StructExampleE.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleE: instance } };
+            case 60:
+                instance = StructExampleF.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleF: instance } };
+            case 64:
+                instance = StructExampleG.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleG: instance } };
+            case 67:
+                instance = StructExampleJ.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleJ: instance } };
+            case 72:
+                instance = GroupA.StructExampleA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { StructExampleA: instance } } };
+            case 76:
+                instance = GroupA.StructExampleB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { StructExampleB: instance } } };
+            case 81:
+                instance = GroupB.StructExampleA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { StructExampleA: instance } } };
+            case 85:
+                instance = GroupB.GroupC.StructExampleA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleA: instance } } } };
+            case 88:
+                instance = GroupB.GroupC.StructExampleB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } } };
+        }
+    }
 }
 

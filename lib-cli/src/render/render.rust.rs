@@ -726,7 +726,7 @@ impl RustRender {
             result = format!("AvailableMessages::{}(m)", name);
         } else {
             let mut chain = String::from("");
-            for (pos, part) in path.iter().enumerate() {
+            for part in path.iter() {
                 result = format!(
                     "{}{}AvailableMessages::{}(",
                     result,

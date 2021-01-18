@@ -8,7 +8,7 @@ export enum EBufferEvents {
     error = 'error',
 }
 
-export class BufferReader<TIncomeMessages> extends Emitter<EBufferEvents>{
+export class BufferReader<TIncomeMessages> extends Emitter<EBufferEvents> {
 
     public static readonly events = EBufferEvents;
 
