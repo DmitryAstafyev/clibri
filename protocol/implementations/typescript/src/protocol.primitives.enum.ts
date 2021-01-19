@@ -33,26 +33,19 @@ export class Option<T> {
 
 }
 
-export class Enum {
+export abstract class Enum<T> {
 
-    private _allowed: string[] = [];
     private _value: Option<any> | undefined;
-    private _getter: (id: number) => ISigned<any>;
-
-    constructor(allowed: string[], getter: (id: number) => ISigned<any>) {
-        this._allowed = allowed;
-        this._getter = getter;
-    }
 
     public set(opt: Option<any>): Error | undefined {
         const signature: string = opt.getSigned().getSignature();
-        if (!this._allowed.includes(signature)) {
-            return new Error(`Fail to set value with signature "${signature}" because allows only: ${this._allowed.join(', ')}`);
+        if (!this.getAllowed().includes(signature)) {
+            return new Error(`Fail to set value with signature "${signature}" because allows only: ${this.getAllowed().join(', ')}`);
         }
         this._value = opt;
     }
 
-    public get<T>(): T {
+    public get<E>(): E {
         return this._value.get();
     }
 
@@ -78,7 +71,7 @@ export class Enum {
     public decode(bytes: ArrayBufferLike): Error | undefined {
         const buffer = Buffer.from(bytes);
         const id: number = buffer.readUInt16LE();
-        const target: ISigned<any> = this._getter(id);
+        const target: ISigned<any> = this.getValue(id);
         const error: Error | undefined = target.decode(bytes.slice(u16.getSize(), buffer.byteLength));
         if (error instanceof Error) {
             return error;
@@ -89,5 +82,13 @@ export class Enum {
             return new Error(`Fail to decode due error: ${e}`);
         }
     }
+
+    public abstract getAllowed(): string[];
+
+    public abstract getValue(id: number): ISigned<any>;
+
+    public abstract from(dest: T): Error | undefined;
+
+    public abstract to(src: T): Error | undefined;
 
 }

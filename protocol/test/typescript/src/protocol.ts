@@ -1784,21 +1784,14 @@ export class Option<T> {
 
 }
 
-export class Enum {
+export abstract class Enum<T> {
 
-    private _allowed: string[] = [];
     private _value: Option<any> | undefined;
-    private _getter: (id: number) => ISigned<any>;
-
-    constructor(allowed: string[], getter: (id: number) => ISigned<any>) {
-        this._allowed = allowed;
-        this._getter = getter;
-    }
 
     public set(opt: Option<any>): Error | undefined {
         const signature: string = opt.getSigned().getSignature();
-        if (!this._allowed.includes(signature)) {
-            return new Error(`Fail to set value with signature "${signature}" because allows only: ${this._allowed.join(', ')}`);
+        if (!this.getAllowed().includes(signature)) {
+            return new Error(`Fail to set value with signature "${signature}" because allows only: ${this.getAllowed().join(', ')}`);
         }
         this._value = opt;
     }
@@ -1829,7 +1822,7 @@ export class Enum {
     public decode(bytes: ArrayBufferLike): Error | undefined {
         const buffer = Buffer.from(bytes);
         const id: number = buffer.readUInt16LE();
-        const target: ISigned<any> = this._getter(id);
+        const target: ISigned<any> = this.getValue(id);
         const error: Error | undefined = target.decode(bytes.slice(u16.getSize(), buffer.byteLength));
         if (error instanceof Error) {
             return error;
@@ -1840,6 +1833,12 @@ export class Enum {
             return new Error(`Fail to decode due error: ${e}`);
         }
     }
+
+    public abstract getAllowed(): string[];
+
+    public abstract getValue(id: number): ISigned<any>;
+
+    public abstract assign(target: T): Error | undefined;
 
 }
 
@@ -1927,7 +1926,7 @@ type ArrayF64Alias = ArrayF64; const ArrayF64Alias = ArrayF64;
 type ArrayBoolAlias = ArrayBool; const ArrayBoolAlias = ArrayBool;
 type ArrayStrUTF8Alias = ArrayStrUTF8; const ArrayStrUTF8Alias = ArrayStrUTF8;
 type OptionAlias = Option<any>; const OptionAlias = Option;
-type EnumAlias = Enum; const EnumAlias = Enum;
+type EnumAlias = Enum<any>; const EnumAlias = Enum;
 type PrimitiveAlias = Primitive<any>; const PrimitiveAlias = Primitive;
 
 export namespace Primitives {
@@ -2348,8 +2347,8 @@ namespace Protocol {
 
 
 export interface IAvailableMessages {
-    EnumExampleA?: EnumExampleA,
-    EnumExampleB?: EnumExampleB,
+    EnumExampleA?: IEnumExampleA,
+    EnumExampleB?: IEnumExampleB,
     EnumExampleC?: EnumExampleC,
     StructExampleA?: StructExampleA,
     StructExampleB?: StructExampleB,
@@ -2362,12 +2361,41 @@ export interface IAvailableMessages {
     GroupA?: GroupA.IAvailableMessages,
     GroupB?: GroupB.IAvailableMessages,
 }
-export interface EnumExampleA {
+
+export interface IEnumExampleA {
     Option_a?: string;
     Option_b?: string;
 }
 
-export interface EnumExampleB {
+class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+
+    public getAllowed(): string[] {
+        return [
+            Protocol.Primitives.StrUTF8.getSignature(),
+            Protocol.Primitives.StrUTF8.getSignature(),
+        ];
+    }
+
+    public getValue(id: number): ISigned<any> {
+        switch (id) {
+            case 0: return new Protocol.Primitives.StrUTF8('');
+            case 1: return new Protocol.Primitives.StrUTF8('');
+        }
+    }
+
+    public assign(target: IEnumExampleA): Error | undefined {
+        if (typeof target !== 'object' || target === null) {
+            return new Error(`Target can be only object`);
+        }
+        switch (this.getValueIndex()) {
+            case 0: target.Option_a = this.get<string>(); return undefined;
+            case 1: target.Option_b = this.get<string>(); return undefined;
+        }
+        return new Error(`Fail to assing value index=${this.getValueIndex()} with target`);
+    }
+}
+
+export interface IEnumExampleB {
     Option_str?: string;
     Option_u8?: number;
     Option_u16?: number;
@@ -2379,6 +2407,61 @@ export interface EnumExampleB {
     Option_i64?: bigint;
     Option_f32?: number;
     Option_f64?: number;
+}
+
+class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
+
+    public getAllowed(): string[] {
+        return [
+            Protocol.Primitives.StrUTF8.getSignature(),
+            Protocol.Primitives.u8.getSignature(),
+            Protocol.Primitives.u16.getSignature(),
+            Protocol.Primitives.u32.getSignature(),
+            Protocol.Primitives.u64.getSignature(),
+            Protocol.Primitives.i8.getSignature(),
+            Protocol.Primitives.i16.getSignature(),
+            Protocol.Primitives.i32.getSignature(),
+            Protocol.Primitives.i64.getSignature(),
+            Protocol.Primitives.f32.getSignature(),
+            Protocol.Primitives.f64.getSignature(),
+        ];
+    }
+
+    public getValue(id: number): ISigned<any> {
+        switch (id) {
+            case 0: return new Protocol.Primitives.StrUTF8('');
+            case 1: return new Protocol.Primitives.u8(0);
+            case 2: return new Protocol.Primitives.u16(0);
+            case 3: return new Protocol.Primitives.u32(0);
+            case 4: return new Protocol.Primitives.u64(BigInt(0));
+            case 5: return new Protocol.Primitives.i8(0);
+            case 6: return new Protocol.Primitives.i16(0);
+            case 7: return new Protocol.Primitives.i32(0);
+            case 8: return new Protocol.Primitives.i64(BigInt(0));
+            case 9: return new Protocol.Primitives.f32(0);
+            case 10: return new Protocol.Primitives.f64(0);
+        }
+    }
+
+    public assign(target: IEnumExampleB): Error | undefined {
+        if (typeof target !== 'object' || target === null) {
+            return new Error(`Target can be only object`);
+        }
+        switch (this.getValueIndex()) {
+            case 0: target.Option_str = this.get<string>(); break;
+            case 1: target.Option_u8 = this.get<number>(); break;
+            case 2: target.Option_u16 = this.get<number>(); break;
+            case 3: target.Option_u32 = this.get<number>(); break;
+            case 4: target.Option_u64 = this.get<bigint>(); break;
+            case 5: target.Option_i8 = this.get<number>(); break;
+            case 6: target.Option_i16 = this.get<number>(); break;
+            case 7: target.Option_i32 = this.get<number>(); break;
+            case 8: target.Option_i64 = this.get<bigint>(); break;
+            case 9: target.Option_f32 = this.get<number>(); break;
+            case 10: target.Option_f64 = this.get<number>(); break;
+        }
+        return new Error(`Fail to assing value index=${this.getValueIndex()} with target`);
+    }
 }
 
 export interface EnumExampleC {
@@ -3476,8 +3559,8 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
 }
 
 export interface IStructExampleE {
-    field_a: EnumExampleA;
-    field_b: EnumExampleB;
+    field_a: IEnumExampleA;
+    field_b: IEnumExampleB;
     field_c: EnumExampleC;
 }
 export class StructExampleE extends Protocol.Convertor implements IStructExampleE {
@@ -3561,8 +3644,8 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_a: EnumExampleA;
-    public field_b: EnumExampleB;
+    public field_a: IEnumExampleA;
+    public field_b: IEnumExampleB;
     public field_c: EnumExampleC;
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
@@ -3573,15 +3656,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
-        this._field_a = new Primitives.Enum([
-            Protocol.Primitives.StrUTF8.getSignature(),
-            Protocol.Primitives.StrUTF8.getSignature(),
-        ], (id: number): ISigned<any> | undefined => {
-            switch (id) {
-                case 0: return new Protocol.Primitives.StrUTF8('');
-                case 1: return new Protocol.Primitives.StrUTF8('');
-            }
-        });
+        this._field_a = new EnumExampleA();
         if (Object.keys(this.field_a).length > 1) {
             throw new Error(`Option cannot have more then 1 value. Property "field_a" or class "StructExampleE"`);
         }
@@ -3597,33 +3672,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
                 throw err;
             }
         }
-        this._field_b = new Primitives.Enum([
-            Protocol.Primitives.StrUTF8.getSignature(),
-            Protocol.Primitives.u8.getSignature(),
-            Protocol.Primitives.u16.getSignature(),
-            Protocol.Primitives.u32.getSignature(),
-            Protocol.Primitives.u64.getSignature(),
-            Protocol.Primitives.i8.getSignature(),
-            Protocol.Primitives.i16.getSignature(),
-            Protocol.Primitives.i32.getSignature(),
-            Protocol.Primitives.i64.getSignature(),
-            Protocol.Primitives.f32.getSignature(),
-            Protocol.Primitives.f64.getSignature(),
-        ], (id: number): ISigned<any> | undefined => {
-            switch (id) {
-                case 0: return new Protocol.Primitives.StrUTF8('');
-                case 1: return new Protocol.Primitives.u8(0);
-                case 2: return new Protocol.Primitives.u16(0);
-                case 3: return new Protocol.Primitives.u32(0);
-                case 4: return new Protocol.Primitives.u64(BigInt(0));
-                case 5: return new Protocol.Primitives.i8(0);
-                case 6: return new Protocol.Primitives.i16(0);
-                case 7: return new Protocol.Primitives.i32(0);
-                case 8: return new Protocol.Primitives.i64(BigInt(0));
-                case 9: return new Protocol.Primitives.f32(0);
-                case 10: return new Protocol.Primitives.f64(0);
-            }
-        });
+        this._field_b = new EnumExampleB();
         if (Object.keys(this.field_b).length > 1) {
             throw new Error(`Option cannot have more then 1 value. Property "field_b" or class "StructExampleE"`);
         }
@@ -3884,8 +3933,8 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
 }
 
 export interface IStructExampleF {
-    field_a: EnumExampleA | undefined;
-    field_b: EnumExampleB | undefined;
+    field_a: IEnumExampleA | undefined;
+    field_b: IEnumExampleB | undefined;
     field_c: EnumExampleC | undefined;
 }
 export class StructExampleF extends Protocol.Convertor implements IStructExampleF {
@@ -3969,8 +4018,8 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_a: EnumExampleA | undefined;
-    public field_b: EnumExampleB | undefined;
+    public field_a: IEnumExampleA | undefined;
+    public field_b: IEnumExampleB | undefined;
     public field_c: EnumExampleC | undefined;
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
@@ -4635,20 +4684,48 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
 
 export namespace GroupA {
     export interface IAvailableMessages {
-        EnumExampleA?: EnumExampleA,
+        EnumExampleA?: IEnumExampleA,
         StructExampleA?: StructExampleA,
         StructExampleB?: StructExampleB,
     }
 
-    export interface EnumExampleA {
+    export interface IEnumExampleA {
         Option_a?: string;
         Option_b?: string;
+    }
+
+    class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+
+        public getAllowed(): string[] {
+            return [
+                Protocol.Primitives.StrUTF8.getSignature(),
+                Protocol.Primitives.StrUTF8.getSignature(),
+            ];
+        }
+
+        public getValue(id: number): ISigned<any> {
+            switch (id) {
+                case 0: return new Protocol.Primitives.StrUTF8('');
+                case 1: return new Protocol.Primitives.StrUTF8('');
+            }
+        }
+
+        public assign(target: IEnumExampleA): Error | undefined {
+            if (typeof target !== 'object' || target === null) {
+                return new Error(`Target can be only object`);
+            }
+            switch (this.getValueIndex()) {
+                case 0: target.Option_a = this.get<string>(); return undefined;
+                case 1: target.Option_b = this.get<string>(); return undefined;
+            }
+            return new Error(`Fail to assing value index=${this.getValueIndex()} with target`);
+        }
     }
 
     export interface IStructExampleA {
         field_u8: number;
         field_u16: number;
-        opt: EnumExampleA;
+        opt: IEnumExampleA;
     }
     export class StructExampleA extends Protocol.Convertor implements IStructExampleA {
 
@@ -4709,7 +4786,7 @@ export namespace GroupA {
 
         public field_u8: number;
         public field_u16: number;
-        public opt: EnumExampleA;
+        public opt: IEnumExampleA;
         private _opt: Primitives.Enum;
 
         constructor(params: IStructExampleA)  {
