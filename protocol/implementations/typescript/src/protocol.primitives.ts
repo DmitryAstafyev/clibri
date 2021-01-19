@@ -79,7 +79,7 @@ type ArrayF64Alias = ArrayF64; const ArrayF64Alias = ArrayF64;
 type ArrayBoolAlias = ArrayBool; const ArrayBoolAlias = ArrayBool;
 type ArrayStrUTF8Alias = ArrayStrUTF8; const ArrayStrUTF8Alias = ArrayStrUTF8;
 type OptionAlias = Option<any>; const OptionAlias = Option;
-type EnumAlias = Enum; const EnumAlias = Enum;
+type EnumAlias = Enum<any>; const EnumAlias = Enum;
 type PrimitiveAlias = Primitive<any>; const PrimitiveAlias = Primitive;
 
 export namespace Primitives {

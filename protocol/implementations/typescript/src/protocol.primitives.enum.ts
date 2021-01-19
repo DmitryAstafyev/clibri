@@ -37,7 +37,7 @@ export abstract class Enum<T> {
 
     private _value: Option<any> | undefined;
 
-    public set(opt: Option<any>): Error | undefined {
+    public setValue(opt: Option<any>): Error | undefined {
         const signature: string = opt.getSigned().getSignature();
         if (!this.getAllowed().includes(signature)) {
             return new Error(`Fail to set value with signature "${signature}" because allows only: ${this.getAllowed().join(', ')}`);
@@ -45,7 +45,7 @@ export abstract class Enum<T> {
         this._value = opt;
     }
 
-    public get<E>(): E {
+    public getValue<E>(): E {
         return this._value.get();
     }
 
@@ -71,7 +71,7 @@ export abstract class Enum<T> {
     public decode(bytes: ArrayBufferLike): Error | undefined {
         const buffer = Buffer.from(bytes);
         const id: number = buffer.readUInt16LE();
-        const target: ISigned<any> = this.getValue(id);
+        const target: ISigned<any> = this.getOptionValue(id);
         const error: Error | undefined = target.decode(bytes.slice(u16.getSize(), buffer.byteLength));
         if (error instanceof Error) {
             return error;
@@ -85,10 +85,10 @@ export abstract class Enum<T> {
 
     public abstract getAllowed(): string[];
 
-    public abstract getValue(id: number): ISigned<any>;
+    public abstract getOptionValue(id: number): ISigned<any>;
 
-    public abstract from(dest: T): Error | undefined;
+    public abstract get(): T;
 
-    public abstract to(src: T): Error | undefined;
+    public abstract set(src: T): Error | undefined;
 
 }

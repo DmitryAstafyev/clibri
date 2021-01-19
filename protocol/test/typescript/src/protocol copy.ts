@@ -2349,8 +2349,8 @@ namespace Protocol {
 
 
 export interface IAvailableMessages {
-    EnumExampleA?: EnumExampleA,
-    EnumExampleB?: EnumExampleB,
+    EnumExampleA?: IEnumExampleA,
+    EnumExampleB?: IEnumExampleB,
     EnumExampleC?: EnumExampleC,
     StructExampleA?: StructExampleA,
     StructExampleB?: StructExampleB,
@@ -2363,48 +2363,35 @@ export interface IAvailableMessages {
     GroupA?: GroupA.IAvailableMessages,
     GroupB?: GroupB.IAvailableMessages,
 }
+
 export interface IEnumExampleA {
     Option_a?: string;
     Option_b?: string;
 }
 
 class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.StrUTF8.getSignature(),
             Protocol.Primitives.StrUTF8.getSignature(),
         ];
     }
+
     public getOptionValue(id: number): ISigned<any> {
         switch (id) {
             case 0: return new Protocol.Primitives.StrUTF8('');
             case 1: return new Protocol.Primitives.StrUTF8('');
         }
     }
+
     public get(): IEnumExampleA {
-        const target: IEnumExampleA = {};
+        const target: IEnumExampleA = { };
         switch (this.getValueIndex()) {
             case 0: target.Option_a = this.getValue<string>(); break;
             case 1: target.Option_b = this.getValue<string>(); break;
         }
         return target;
-    }
-    public set(src: IEnumExampleA): Error | undefined{
-        if (Object.keys(src).length > 1) {
-            return new Error(`Option cannot have more then 1 value.`);
-        }
-        if (src.Option_a !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(src.Option_a)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_b !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(src.Option_b)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
     }
 }
 
@@ -2423,6 +2410,7 @@ export interface IEnumExampleB {
 }
 
 class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
+
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.StrUTF8.getSignature(),
@@ -2438,6 +2426,7 @@ class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
             Protocol.Primitives.f64.getSignature(),
         ];
     }
+
     public getOptionValue(id: number): ISigned<any> {
         switch (id) {
             case 0: return new Protocol.Primitives.StrUTF8('');
@@ -2453,6 +2442,7 @@ class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
             case 10: return new Protocol.Primitives.f64(0);
         }
     }
+
     public get(): IEnumExampleB {
         const target: IEnumExampleB = {};
         switch (this.getValueIndex()) {
@@ -2470,9 +2460,10 @@ class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
         }
         return target;
     }
-    public set(src: IEnumExampleB): Error | undefined{
+
+    public set(src: IEnumExampleB): Error | undefined {
         if (Object.keys(src).length > 1) {
-            return new Error(`Option cannot have more then 1 value.`);
+            return new Error(`Option cannot have more then 1 value. Property "field_b" or class "StructExampleE"`);
         }
         if (src.Option_str !== undefined) {
             const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(src.Option_str)));
@@ -2543,7 +2534,7 @@ class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
     }
 }
 
-export interface IEnumExampleC {
+export interface EnumExampleC {
     Option_str?: Array<string>;
     Option_u8?: Array<number>;
     Option_u16?: Array<number>;
@@ -2555,127 +2546,6 @@ export interface IEnumExampleC {
     Option_i64?: Array<bigint>;
     Option_f32?: Array<number>;
     Option_f64?: Array<number>;
-}
-
-class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
-    public getAllowed(): string[] {
-        return [
-            Protocol.Primitives.ArrayStrUTF8.getSignature(),
-            Protocol.Primitives.ArrayU8.getSignature(),
-            Protocol.Primitives.ArrayU16.getSignature(),
-            Protocol.Primitives.ArrayU32.getSignature(),
-            Protocol.Primitives.ArrayU64.getSignature(),
-            Protocol.Primitives.ArrayI8.getSignature(),
-            Protocol.Primitives.ArrayI16.getSignature(),
-            Protocol.Primitives.ArrayI32.getSignature(),
-            Protocol.Primitives.ArrayI64.getSignature(),
-            Protocol.Primitives.ArrayF32.getSignature(),
-            Protocol.Primitives.ArrayF64.getSignature(),
-        ];
-    }
-    public getOptionValue(id: number): ISigned<any> {
-        switch (id) {
-            case 0: return new Protocol.Primitives.ArrayStrUTF8(['']);
-            case 1: return new Protocol.Primitives.ArrayU8([0]);
-            case 2: return new Protocol.Primitives.ArrayU16([0]);
-            case 3: return new Protocol.Primitives.ArrayU32([0]);
-            case 4: return new Protocol.Primitives.ArrayU64([BigInt(0)]);
-            case 5: return new Protocol.Primitives.ArrayI8([0]);
-            case 6: return new Protocol.Primitives.ArrayI16([0]);
-            case 7: return new Protocol.Primitives.ArrayI32([0]);
-            case 8: return new Protocol.Primitives.ArrayI64([BigInt(0)]);
-            case 9: return new Protocol.Primitives.ArrayF32([0]);
-            case 10: return new Protocol.Primitives.ArrayF64([0]);
-        }
-    }
-    public get(): IEnumExampleC {
-        const target: IEnumExampleC = {};
-        switch (this.getValueIndex()) {
-            case 0: target.Option_str = this.getValue<Array<string>>(); break;
-            case 1: target.Option_u8 = this.getValue<Array<number>>(); break;
-            case 2: target.Option_u16 = this.getValue<Array<number>>(); break;
-            case 3: target.Option_u32 = this.getValue<Array<number>>(); break;
-            case 4: target.Option_u64 = this.getValue<Array<bigint>>(); break;
-            case 5: target.Option_i8 = this.getValue<Array<number>>(); break;
-            case 6: target.Option_i16 = this.getValue<Array<number>>(); break;
-            case 7: target.Option_i32 = this.getValue<Array<number>>(); break;
-            case 8: target.Option_i64 = this.getValue<Array<bigint>>(); break;
-            case 9: target.Option_f32 = this.getValue<Array<number>>(); break;
-            case 10: target.Option_f64 = this.getValue<Array<number>>(); break;
-        }
-        return target;
-    }
-    public set(src: IEnumExampleC): Error | undefined{
-        if (Object.keys(src).length > 1) {
-            return new Error(`Option cannot have more then 1 value.`);
-        }
-        if (src.Option_str !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<string>>(0, new Protocol.Primitives.ArrayStrUTF8(src.Option_str)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_u8 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(1, new Protocol.Primitives.ArrayU8(src.Option_u8)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_u16 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(2, new Protocol.Primitives.ArrayU16(src.Option_u16)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_u32 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(3, new Protocol.Primitives.ArrayU32(src.Option_u32)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_u64 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<bigint>>(4, new Protocol.Primitives.ArrayU64(src.Option_u64)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_i8 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(5, new Protocol.Primitives.ArrayI8(src.Option_i8)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_i16 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(6, new Protocol.Primitives.ArrayI16(src.Option_i16)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_i32 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(7, new Protocol.Primitives.ArrayI32(src.Option_i32)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_i64 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<bigint>>(8, new Protocol.Primitives.ArrayI64(src.Option_i64)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_f32 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(9, new Protocol.Primitives.ArrayF32(src.Option_f32)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Option_f64 !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<Array<number>>(10, new Protocol.Primitives.ArrayF64(src.Option_f64)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-    }
 }
 
 export interface IStructExampleA {
@@ -3761,7 +3631,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
 export interface IStructExampleE {
     field_a: IEnumExampleA;
     field_b: IEnumExampleB;
-    field_c: IEnumExampleC;
+    field_c: EnumExampleC;
 }
 export class StructExampleE extends Protocol.Convertor implements IStructExampleE {
 
@@ -3846,7 +3716,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
 
     public field_a: IEnumExampleA;
     public field_b: IEnumExampleB;
-    public field_c: IEnumExampleC;
+    public field_c: EnumExampleC;
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
@@ -3856,12 +3726,120 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
-        this._field_a = new EnumExampleA()
-        this._field_a.set(this.field_a);
-        this._field_b = new EnumExampleB()
-        this._field_b.set(this.field_b);
-        this._field_c = new EnumExampleC()
-        this._field_c.set(this.field_c);
+        this._field_a = new EnumExampleA();
+        if (Object.keys(this.field_a).length > 1) {
+            throw new Error(`Option cannot have more then 1 value. Property "field_a" or class "StructExampleE"`);
+        }
+        if (this.field_a.Option_a !== undefined) {
+            const err: Error | undefined = this._field_a.set(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(this.field_a.Option_a)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_a.Option_b !== undefined) {
+            const err: Error | undefined = this._field_a.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.field_a.Option_b)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        this._field_b = new EnumExampleB();
+        fsfds
+        this._field_c = new Primitives.Enum([
+            Protocol.Primitives.ArrayStrUTF8.getSignature(),
+            Protocol.Primitives.ArrayU8.getSignature(),
+            Protocol.Primitives.ArrayU16.getSignature(),
+            Protocol.Primitives.ArrayU32.getSignature(),
+            Protocol.Primitives.ArrayU64.getSignature(),
+            Protocol.Primitives.ArrayI8.getSignature(),
+            Protocol.Primitives.ArrayI16.getSignature(),
+            Protocol.Primitives.ArrayI32.getSignature(),
+            Protocol.Primitives.ArrayI64.getSignature(),
+            Protocol.Primitives.ArrayF32.getSignature(),
+            Protocol.Primitives.ArrayF64.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 0: return new Protocol.Primitives.ArrayStrUTF8(['']);
+                case 1: return new Protocol.Primitives.ArrayU8([0]);
+                case 2: return new Protocol.Primitives.ArrayU16([0]);
+                case 3: return new Protocol.Primitives.ArrayU32([0]);
+                case 4: return new Protocol.Primitives.ArrayU64([BigInt(0)]);
+                case 5: return new Protocol.Primitives.ArrayI8([0]);
+                case 6: return new Protocol.Primitives.ArrayI16([0]);
+                case 7: return new Protocol.Primitives.ArrayI32([0]);
+                case 8: return new Protocol.Primitives.ArrayI64([BigInt(0)]);
+                case 9: return new Protocol.Primitives.ArrayF32([0]);
+                case 10: return new Protocol.Primitives.ArrayF64([0]);
+            }
+        });
+        if (Object.keys(this.field_c).length > 1) {
+            throw new Error(`Option cannot have more then 1 value. Property "field_c" or class "StructExampleE"`);
+        }
+        if (this.field_c.Option_str !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<string>>(0, new Protocol.Primitives.ArrayStrUTF8(this.field_c.Option_str)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_u8 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(1, new Protocol.Primitives.ArrayU8(this.field_c.Option_u8)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_u16 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(2, new Protocol.Primitives.ArrayU16(this.field_c.Option_u16)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_u32 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(3, new Protocol.Primitives.ArrayU32(this.field_c.Option_u32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_u64 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<bigint>>(4, new Protocol.Primitives.ArrayU64(this.field_c.Option_u64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_i8 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(5, new Protocol.Primitives.ArrayI8(this.field_c.Option_i8)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_i16 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(6, new Protocol.Primitives.ArrayI16(this.field_c.Option_i16)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_i32 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(7, new Protocol.Primitives.ArrayI32(this.field_c.Option_i32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_i64 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<bigint>>(8, new Protocol.Primitives.ArrayI64(this.field_c.Option_i64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_f32 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(9, new Protocol.Primitives.ArrayF32(this.field_c.Option_f32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c.Option_f64 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(10, new Protocol.Primitives.ArrayF64(this.field_c.Option_f64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
     }
 
     public signature(): number { return 0; }
@@ -3893,7 +3871,10 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             if (field_aErr instanceof Error) {
                 return field_aErr;
             } else {
-                this.field_a = this._field_a.get();
+                switch (this._field_a.getValueIndex()) {
+                    case 0: this.field_a.Option_a = this._field_a.get<string>(); break;
+                    case 1: this.field_a.Option_b = this._field_a.get<string>(); break;
+                }
             }
         }
         this.field_b = {};
@@ -3906,7 +3887,19 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             if (field_bErr instanceof Error) {
                 return field_bErr;
             } else {
-                this.field_b = this._field_b.get();
+                switch (this._field_b.getValueIndex()) {
+                    case 0: this.field_b.Option_str = this._field_b.get<string>(); break;
+                    case 1: this.field_b.Option_u8 = this._field_b.get<number>(); break;
+                    case 2: this.field_b.Option_u16 = this._field_b.get<number>(); break;
+                    case 3: this.field_b.Option_u32 = this._field_b.get<number>(); break;
+                    case 4: this.field_b.Option_u64 = this._field_b.get<bigint>(); break;
+                    case 5: this.field_b.Option_i8 = this._field_b.get<number>(); break;
+                    case 6: this.field_b.Option_i16 = this._field_b.get<number>(); break;
+                    case 7: this.field_b.Option_i32 = this._field_b.get<number>(); break;
+                    case 8: this.field_b.Option_i64 = this._field_b.get<bigint>(); break;
+                    case 9: this.field_b.Option_f32 = this._field_b.get<number>(); break;
+                    case 10: this.field_b.Option_f64 = this._field_b.get<number>(); break;
+                }
             }
         }
         this.field_c = {};
@@ -3919,7 +3912,19 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             if (field_cErr instanceof Error) {
                 return field_cErr;
             } else {
-                this.field_c = this._field_c.get();
+                switch (this._field_c.getValueIndex()) {
+                    case 0: this.field_c.Option_str = this._field_c.get<Array<string>>(); break;
+                    case 1: this.field_c.Option_u8 = this._field_c.get<Array<number>>(); break;
+                    case 2: this.field_c.Option_u16 = this._field_c.get<Array<number>>(); break;
+                    case 3: this.field_c.Option_u32 = this._field_c.get<Array<number>>(); break;
+                    case 4: this.field_c.Option_u64 = this._field_c.get<Array<bigint>>(); break;
+                    case 5: this.field_c.Option_i8 = this._field_c.get<Array<number>>(); break;
+                    case 6: this.field_c.Option_i16 = this._field_c.get<Array<number>>(); break;
+                    case 7: this.field_c.Option_i32 = this._field_c.get<Array<number>>(); break;
+                    case 8: this.field_c.Option_i64 = this._field_c.get<Array<bigint>>(); break;
+                    case 9: this.field_c.Option_f32 = this._field_c.get<Array<number>>(); break;
+                    case 10: this.field_c.Option_f64 = this._field_c.get<Array<number>>(); break;
+                }
             }
         }
     }
@@ -3932,7 +3937,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
 export interface IStructExampleF {
     field_a: IEnumExampleA | undefined;
     field_b: IEnumExampleB | undefined;
-    field_c: IEnumExampleC | undefined;
+    field_c: EnumExampleC | undefined;
 }
 export class StructExampleF extends Protocol.Convertor implements IStructExampleF {
 
@@ -4017,7 +4022,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
 
     public field_a: IEnumExampleA | undefined;
     public field_b: IEnumExampleB | undefined;
-    public field_c: IEnumExampleC | undefined;
+    public field_c: EnumExampleC | undefined;
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
@@ -4027,12 +4032,222 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         Object.keys(params).forEach((key: string) => {
             this[key] = params[key];
         });
-        this._field_a = new EnumExampleA()
-        this.field_a !== undefined && this._field_a.set(this.field_a);
-        this._field_b = new EnumExampleB()
-        this.field_b !== undefined && this._field_b.set(this.field_b);
-        this._field_c = new EnumExampleC()
-        this.field_c !== undefined && this._field_c.set(this.field_c);
+        this._field_a = new Primitives.Enum([
+            Protocol.Primitives.StrUTF8.getSignature(),
+            Protocol.Primitives.StrUTF8.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 0: return new Protocol.Primitives.StrUTF8('');
+                case 1: return new Protocol.Primitives.StrUTF8('');
+            }
+        });
+        if (this.field_a !== undefined && Object.keys(this.field_a).length > 1) {
+            throw new Error(`Option cannot have more then 1 value. Property "field_a" or class "StructExampleF"`);
+        }
+        if (this.field_a !== undefined && this.field_a.Option_a !== undefined) {
+            const err: Error | undefined = this._field_a.set(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(this.field_a.Option_a)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_a !== undefined && this.field_a.Option_b !== undefined) {
+            const err: Error | undefined = this._field_a.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.field_a.Option_b)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        this._field_b = new Primitives.Enum([
+            Protocol.Primitives.StrUTF8.getSignature(),
+            Protocol.Primitives.u8.getSignature(),
+            Protocol.Primitives.u16.getSignature(),
+            Protocol.Primitives.u32.getSignature(),
+            Protocol.Primitives.u64.getSignature(),
+            Protocol.Primitives.i8.getSignature(),
+            Protocol.Primitives.i16.getSignature(),
+            Protocol.Primitives.i32.getSignature(),
+            Protocol.Primitives.i64.getSignature(),
+            Protocol.Primitives.f32.getSignature(),
+            Protocol.Primitives.f64.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 0: return new Protocol.Primitives.StrUTF8('');
+                case 1: return new Protocol.Primitives.u8(0);
+                case 2: return new Protocol.Primitives.u16(0);
+                case 3: return new Protocol.Primitives.u32(0);
+                case 4: return new Protocol.Primitives.u64(BigInt(0));
+                case 5: return new Protocol.Primitives.i8(0);
+                case 6: return new Protocol.Primitives.i16(0);
+                case 7: return new Protocol.Primitives.i32(0);
+                case 8: return new Protocol.Primitives.i64(BigInt(0));
+                case 9: return new Protocol.Primitives.f32(0);
+                case 10: return new Protocol.Primitives.f64(0);
+            }
+        });
+        if (this.field_b !== undefined && Object.keys(this.field_b).length > 1) {
+            throw new Error(`Option cannot have more then 1 value. Property "field_b" or class "StructExampleF"`);
+        }
+        if (this.field_b !== undefined && this.field_b.Option_str !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(this.field_b.Option_str)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_u8 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(1, new Protocol.Primitives.u8(this.field_b.Option_u8)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_u16 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(2, new Protocol.Primitives.u16(this.field_b.Option_u16)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_u32 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(3, new Protocol.Primitives.u32(this.field_b.Option_u32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_u64 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<bigint>(4, new Protocol.Primitives.u64(this.field_b.Option_u64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_i8 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(5, new Protocol.Primitives.i8(this.field_b.Option_i8)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_i16 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(6, new Protocol.Primitives.i16(this.field_b.Option_i16)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_i32 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(7, new Protocol.Primitives.i32(this.field_b.Option_i32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_i64 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<bigint>(8, new Protocol.Primitives.i64(this.field_b.Option_i64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_f32 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(9, new Protocol.Primitives.f32(this.field_b.Option_f32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_b !== undefined && this.field_b.Option_f64 !== undefined) {
+            const err: Error | undefined = this._field_b.set(new Protocol.Primitives.Option<number>(10, new Protocol.Primitives.f64(this.field_b.Option_f64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        this._field_c = new Primitives.Enum([
+            Protocol.Primitives.ArrayStrUTF8.getSignature(),
+            Protocol.Primitives.ArrayU8.getSignature(),
+            Protocol.Primitives.ArrayU16.getSignature(),
+            Protocol.Primitives.ArrayU32.getSignature(),
+            Protocol.Primitives.ArrayU64.getSignature(),
+            Protocol.Primitives.ArrayI8.getSignature(),
+            Protocol.Primitives.ArrayI16.getSignature(),
+            Protocol.Primitives.ArrayI32.getSignature(),
+            Protocol.Primitives.ArrayI64.getSignature(),
+            Protocol.Primitives.ArrayF32.getSignature(),
+            Protocol.Primitives.ArrayF64.getSignature(),
+        ], (id: number): ISigned<any> | undefined => {
+            switch (id) {
+                case 0: return new Protocol.Primitives.ArrayStrUTF8(['']);
+                case 1: return new Protocol.Primitives.ArrayU8([0]);
+                case 2: return new Protocol.Primitives.ArrayU16([0]);
+                case 3: return new Protocol.Primitives.ArrayU32([0]);
+                case 4: return new Protocol.Primitives.ArrayU64([BigInt(0)]);
+                case 5: return new Protocol.Primitives.ArrayI8([0]);
+                case 6: return new Protocol.Primitives.ArrayI16([0]);
+                case 7: return new Protocol.Primitives.ArrayI32([0]);
+                case 8: return new Protocol.Primitives.ArrayI64([BigInt(0)]);
+                case 9: return new Protocol.Primitives.ArrayF32([0]);
+                case 10: return new Protocol.Primitives.ArrayF64([0]);
+            }
+        });
+        if (this.field_c !== undefined && Object.keys(this.field_c).length > 1) {
+            throw new Error(`Option cannot have more then 1 value. Property "field_c" or class "StructExampleF"`);
+        }
+        if (this.field_c !== undefined && this.field_c.Option_str !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<string>>(0, new Protocol.Primitives.ArrayStrUTF8(this.field_c.Option_str)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_u8 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(1, new Protocol.Primitives.ArrayU8(this.field_c.Option_u8)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_u16 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(2, new Protocol.Primitives.ArrayU16(this.field_c.Option_u16)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_u32 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(3, new Protocol.Primitives.ArrayU32(this.field_c.Option_u32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_u64 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<bigint>>(4, new Protocol.Primitives.ArrayU64(this.field_c.Option_u64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_i8 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(5, new Protocol.Primitives.ArrayI8(this.field_c.Option_i8)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_i16 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(6, new Protocol.Primitives.ArrayI16(this.field_c.Option_i16)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_i32 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(7, new Protocol.Primitives.ArrayI32(this.field_c.Option_i32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_i64 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<bigint>>(8, new Protocol.Primitives.ArrayI64(this.field_c.Option_i64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_f32 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(9, new Protocol.Primitives.ArrayF32(this.field_c.Option_f32)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
+        if (this.field_c !== undefined && this.field_c.Option_f64 !== undefined) {
+            const err: Error | undefined = this._field_c.set(new Protocol.Primitives.Option<Array<number>>(10, new Protocol.Primitives.ArrayF64(this.field_c.Option_f64)));
+            if (err instanceof Error) {
+                throw err;
+            }
+        }
     }
 
     public signature(): number { return 0; }
@@ -4071,7 +4286,10 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                 if (field_aErr instanceof Error) {
                     return field_aErr;
                 } else {
-                    this.field_a = this._field_a.get();
+                    switch (this._field_a.getValueIndex()) {
+                        case 0: this.field_a.Option_a = this._field_a.get<string>(); break;
+                        case 1: this.field_a.Option_b = this._field_a.get<string>(); break;
+                    }
                 }
             }
         }
@@ -4092,7 +4310,19 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                 if (field_bErr instanceof Error) {
                     return field_bErr;
                 } else {
-                    this.field_b = this._field_b.get();
+                    switch (this._field_b.getValueIndex()) {
+                        case 0: this.field_b.Option_str = this._field_b.get<string>(); break;
+                        case 1: this.field_b.Option_u8 = this._field_b.get<number>(); break;
+                        case 2: this.field_b.Option_u16 = this._field_b.get<number>(); break;
+                        case 3: this.field_b.Option_u32 = this._field_b.get<number>(); break;
+                        case 4: this.field_b.Option_u64 = this._field_b.get<bigint>(); break;
+                        case 5: this.field_b.Option_i8 = this._field_b.get<number>(); break;
+                        case 6: this.field_b.Option_i16 = this._field_b.get<number>(); break;
+                        case 7: this.field_b.Option_i32 = this._field_b.get<number>(); break;
+                        case 8: this.field_b.Option_i64 = this._field_b.get<bigint>(); break;
+                        case 9: this.field_b.Option_f32 = this._field_b.get<number>(); break;
+                        case 10: this.field_b.Option_f64 = this._field_b.get<number>(); break;
+                    }
                 }
             }
         }
@@ -4113,7 +4343,19 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                 if (field_cErr instanceof Error) {
                     return field_cErr;
                 } else {
-                    this.field_c = this._field_c.get();
+                    switch (this._field_c.getValueIndex()) {
+                        case 0: this.field_c.Option_str = this._field_c.get<Array<string>>(); break;
+                        case 1: this.field_c.Option_u8 = this._field_c.get<Array<number>>(); break;
+                        case 2: this.field_c.Option_u16 = this._field_c.get<Array<number>>(); break;
+                        case 3: this.field_c.Option_u32 = this._field_c.get<Array<number>>(); break;
+                        case 4: this.field_c.Option_u64 = this._field_c.get<Array<bigint>>(); break;
+                        case 5: this.field_c.Option_i8 = this._field_c.get<Array<number>>(); break;
+                        case 6: this.field_c.Option_i16 = this._field_c.get<Array<number>>(); break;
+                        case 7: this.field_c.Option_i32 = this._field_c.get<Array<number>>(); break;
+                        case 8: this.field_c.Option_i64 = this._field_c.get<Array<bigint>>(); break;
+                        case 9: this.field_c.Option_f32 = this._field_c.get<Array<number>>(); break;
+                        case 10: this.field_c.Option_f64 = this._field_c.get<Array<number>>(); break;
+                    }
                 }
             }
         }
@@ -4444,7 +4686,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
 
 export namespace GroupA {
     export interface IAvailableMessages {
-        EnumExampleA?: EnumExampleA,
+        EnumExampleA?: IEnumExampleA,
         StructExampleA?: StructExampleA,
         StructExampleB?: StructExampleB,
     }
@@ -4455,42 +4697,30 @@ export namespace GroupA {
     }
 
     class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+
         public getAllowed(): string[] {
             return [
                 Protocol.Primitives.StrUTF8.getSignature(),
                 Protocol.Primitives.StrUTF8.getSignature(),
             ];
         }
-        public getOptionValue(id: number): ISigned<any> {
+
+        public getValue(id: number): ISigned<any> {
             switch (id) {
                 case 0: return new Protocol.Primitives.StrUTF8('');
                 case 1: return new Protocol.Primitives.StrUTF8('');
             }
         }
-        public get(): IEnumExampleA {
-            const target: IEnumExampleA = {};
+
+        public assign(target: IEnumExampleA): Error | undefined {
+            if (typeof target !== 'object' || target === null) {
+                return new Error(`Target can be only object`);
+            }
             switch (this.getValueIndex()) {
-                case 0: target.Option_a = this.getValue<string>(); break;
-                case 1: target.Option_b = this.getValue<string>(); break;
+                case 0: target.Option_a = this.get<string>(); return undefined;
+                case 1: target.Option_b = this.get<string>(); return undefined;
             }
-            return target;
-        }
-        public set(src: IEnumExampleA): Error | undefined{
-            if (Object.keys(src).length > 1) {
-                return new Error(`Option cannot have more then 1 value.`);
-            }
-            if (src.Option_a !== undefined) {
-                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(src.Option_a)));
-                if (err instanceof Error) {
-                    return err;
-                }
-            }
-            if (src.Option_b !== undefined) {
-                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(src.Option_b)));
-                if (err instanceof Error) {
-                    return err;
-                }
-            }
+            return new Error(`Fail to assing value index=${this.getValueIndex()} with target`);
         }
     }
 
@@ -4566,8 +4796,30 @@ export namespace GroupA {
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
             });
-            this._opt = new EnumExampleA()
-            this._opt.set(this.opt);
+            this._opt = new Primitives.Enum([
+                Protocol.Primitives.StrUTF8.getSignature(),
+                Protocol.Primitives.StrUTF8.getSignature(),
+            ], (id: number): ISigned<any> | undefined => {
+                switch (id) {
+                    case 0: return new Protocol.Primitives.StrUTF8('');
+                    case 1: return new Protocol.Primitives.StrUTF8('');
+                }
+            });
+            if (Object.keys(this.opt).length > 1) {
+                throw new Error(`Option cannot have more then 1 value. Property "opt" or class "StructExampleA"`);
+            }
+            if (this.opt.Option_a !== undefined) {
+                const err: Error | undefined = this._opt.set(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(this.opt.Option_a)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
+            if (this.opt.Option_b !== undefined) {
+                const err: Error | undefined = this._opt.set(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(this.opt.Option_b)));
+                if (err instanceof Error) {
+                    throw err;
+                }
+            }
         }
 
         public signature(): number { return 0; }
@@ -4611,7 +4863,10 @@ export namespace GroupA {
                 if (optErr instanceof Error) {
                     return optErr;
                 } else {
-                    this.opt = this._opt.get();
+                    switch (this._opt.getValueIndex()) {
+                        case 0: this.opt.Option_a = this._opt.get<string>(); break;
+                        case 1: this.opt.Option_b = this._opt.get<string>(); break;
+                    }
                 }
             }
         }
@@ -5099,31 +5354,133 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
     public signature(): number { return 0; }
     public getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): IAvailableMessage<IAvailableMessages> | Error {
         let instance: any;
-        let enum_instance: any = {};
+        const enum_instance: any = {};
         let err: Error | undefined;
         switch (header.id) {
             case 1:
-                instance = new EnumExampleA();
-                if (instance.decode(buffer) instanceof Error) { return err; }
-                enum_instance = instance.get();
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.StrUTF8('');
+                        case 1: return new Protocol.Primitives.StrUTF8('');
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_a = (instance as Enum).get<string>(); break;
+                    case 1: enum_instance.Option_b = (instance as Enum).get<string>(); break;
+                }
                 instance = enum_instance;
                 return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleA: instance } };
             case 2:
-                instance = new EnumExampleB();
-                if (instance.decode(buffer) instanceof Error) { return err; }
-                enum_instance = instance.get();
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.u8.getSignature(),
+                    Protocol.Primitives.u16.getSignature(),
+                    Protocol.Primitives.u32.getSignature(),
+                    Protocol.Primitives.u64.getSignature(),
+                    Protocol.Primitives.i8.getSignature(),
+                    Protocol.Primitives.i16.getSignature(),
+                    Protocol.Primitives.i32.getSignature(),
+                    Protocol.Primitives.i64.getSignature(),
+                    Protocol.Primitives.f32.getSignature(),
+                    Protocol.Primitives.f64.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.StrUTF8('');
+                        case 1: return new Protocol.Primitives.u8(0);
+                        case 2: return new Protocol.Primitives.u16(0);
+                        case 3: return new Protocol.Primitives.u32(0);
+                        case 4: return new Protocol.Primitives.u64(BigInt(0));
+                        case 5: return new Protocol.Primitives.i8(0);
+                        case 6: return new Protocol.Primitives.i16(0);
+                        case 7: return new Protocol.Primitives.i32(0);
+                        case 8: return new Protocol.Primitives.i64(BigInt(0));
+                        case 9: return new Protocol.Primitives.f32(0);
+                        case 10: return new Protocol.Primitives.f64(0);
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_str = (instance as Enum).get<string>(); break;
+                    case 1: enum_instance.Option_u8 = (instance as Enum).get<number>(); break;
+                    case 2: enum_instance.Option_u16 = (instance as Enum).get<number>(); break;
+                    case 3: enum_instance.Option_u32 = (instance as Enum).get<number>(); break;
+                    case 4: enum_instance.Option_u64 = (instance as Enum).get<bigint>(); break;
+                    case 5: enum_instance.Option_i8 = (instance as Enum).get<number>(); break;
+                    case 6: enum_instance.Option_i16 = (instance as Enum).get<number>(); break;
+                    case 7: enum_instance.Option_i32 = (instance as Enum).get<number>(); break;
+                    case 8: enum_instance.Option_i64 = (instance as Enum).get<bigint>(); break;
+                    case 9: enum_instance.Option_f32 = (instance as Enum).get<number>(); break;
+                    case 10: enum_instance.Option_f64 = (instance as Enum).get<number>(); break;
+                }
                 instance = enum_instance;
                 return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleB: instance } };
             case 3:
-                instance = new EnumExampleC();
-                if (instance.decode(buffer) instanceof Error) { return err; }
-                enum_instance = instance.get();
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.ArrayStrUTF8.getSignature(),
+                    Protocol.Primitives.ArrayU8.getSignature(),
+                    Protocol.Primitives.ArrayU16.getSignature(),
+                    Protocol.Primitives.ArrayU32.getSignature(),
+                    Protocol.Primitives.ArrayU64.getSignature(),
+                    Protocol.Primitives.ArrayI8.getSignature(),
+                    Protocol.Primitives.ArrayI16.getSignature(),
+                    Protocol.Primitives.ArrayI32.getSignature(),
+                    Protocol.Primitives.ArrayI64.getSignature(),
+                    Protocol.Primitives.ArrayF32.getSignature(),
+                    Protocol.Primitives.ArrayF64.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.ArrayStrUTF8(['']);
+                        case 1: return new Protocol.Primitives.ArrayU8([0]);
+                        case 2: return new Protocol.Primitives.ArrayU16([0]);
+                        case 3: return new Protocol.Primitives.ArrayU32([0]);
+                        case 4: return new Protocol.Primitives.ArrayU64([BigInt(0)]);
+                        case 5: return new Protocol.Primitives.ArrayI8([0]);
+                        case 6: return new Protocol.Primitives.ArrayI16([0]);
+                        case 7: return new Protocol.Primitives.ArrayI32([0]);
+                        case 8: return new Protocol.Primitives.ArrayI64([BigInt(0)]);
+                        case 9: return new Protocol.Primitives.ArrayF32([0]);
+                        case 10: return new Protocol.Primitives.ArrayF64([0]);
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_str = (instance as Enum).get<Array<string>>(); break;
+                    case 1: enum_instance.Option_u8 = (instance as Enum).get<Array<number>>(); break;
+                    case 2: enum_instance.Option_u16 = (instance as Enum).get<Array<number>>(); break;
+                    case 3: enum_instance.Option_u32 = (instance as Enum).get<Array<number>>(); break;
+                    case 4: enum_instance.Option_u64 = (instance as Enum).get<Array<bigint>>(); break;
+                    case 5: enum_instance.Option_i8 = (instance as Enum).get<Array<number>>(); break;
+                    case 6: enum_instance.Option_i16 = (instance as Enum).get<Array<number>>(); break;
+                    case 7: enum_instance.Option_i32 = (instance as Enum).get<Array<number>>(); break;
+                    case 8: enum_instance.Option_i64 = (instance as Enum).get<Array<bigint>>(); break;
+                    case 9: enum_instance.Option_f32 = (instance as Enum).get<Array<number>>(); break;
+                    case 10: enum_instance.Option_f64 = (instance as Enum).get<Array<number>>(); break;
+                }
                 instance = enum_instance;
                 return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleC: instance } };
             case 71:
-                instance = new EnumExampleA();
-                if (instance.decode(buffer) instanceof Error) { return err; }
-                enum_instance = instance.get();
+                instance = new Primitives.Enum([
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                    Protocol.Primitives.StrUTF8.getSignature(),
+                ], (id: number): ISigned<any> | undefined => {
+                    switch (id) {
+                        case 0: return new Protocol.Primitives.StrUTF8('');
+                        case 1: return new Protocol.Primitives.StrUTF8('');
+                    }
+                });
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
+                switch (instance.getValueIndex()) {
+                    case 0: enum_instance.Option_a = (instance as Enum).get<string>(); break;
+                    case 1: enum_instance.Option_b = (instance as Enum).get<string>(); break;
+                }
                 instance = enum_instance;
                 return { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } } };
             case 4:
