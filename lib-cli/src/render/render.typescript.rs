@@ -1353,7 +1353,7 @@ impl TypescriptRender {
             for enum_id in &group.enums {
                 if let Some(enums) = store.get_enum(*enum_id) {
                     body = format!(
-                        "{}{}{}?: {},\n",
+                        "{}{}{}?: I{},\n",
                         body,
                         self.spaces(level + 1),
                         enums.name,
@@ -1394,7 +1394,7 @@ impl TypescriptRender {
             for enums in &store.enums {
                 if enums.parent == 0 {
                     body = format!(
-                        "{}{}{}?: {},\n",
+                        "{}{}{}?: I{},\n",
                         body,
                         self.spaces(level + 1),
                         enums.name,

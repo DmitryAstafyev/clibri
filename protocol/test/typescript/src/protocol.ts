@@ -2349,9 +2349,9 @@ namespace Protocol {
 
 
 export interface IAvailableMessages {
-    EnumExampleA?: EnumExampleA,
-    EnumExampleB?: EnumExampleB,
-    EnumExampleC?: EnumExampleC,
+    EnumExampleA?: IEnumExampleA,
+    EnumExampleB?: IEnumExampleB,
+    EnumExampleC?: IEnumExampleC,
     StructExampleA?: StructExampleA,
     StructExampleB?: StructExampleB,
     StructExampleC?: StructExampleC,
@@ -4444,7 +4444,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
 
 export namespace GroupA {
     export interface IAvailableMessages {
-        EnumExampleA?: EnumExampleA,
+        EnumExampleA?: IEnumExampleA,
         StructExampleA?: StructExampleA,
         StructExampleB?: StructExampleB,
     }
