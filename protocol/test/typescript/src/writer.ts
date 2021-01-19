@@ -2,6 +2,8 @@ import * as Protocol from './protocol';
 import * as fs from 'fs';
 import * as path from 'path';
 
+export const usecases: Array<{ name: string, entity: Protocol.Convertor | Protocol.Enum }> = [];
+
 function EnumExampleAFactory(): Protocol.Primitives.Enum {
     return new Protocol.Primitives.Enum([
         Protocol.Primitives.StrUTF8.getSignature(),
@@ -43,8 +45,6 @@ function EnumExampleBFactory(): Protocol.Primitives.Enum {
         }
     });
 }
-
-export const usecases: Array<{ name: string, entity: Protocol.Convertor | Protocol.Enum }> = [];
 
 usecases.push({ name: 'EnumExampleA.a', entity: (() => {
     const EnumExampleA = EnumExampleAFactory();
@@ -111,7 +111,6 @@ usecases.push({ name: 'EnumExampleB.f64', entity: (() => {
     EnumExampleB.set(new Protocol.Primitives.Option<number>(10, new Protocol.Primitives.f64(0.02)));
     return EnumExampleB;
 })()});
-
 
 usecases.push(...[
     { name: 'StructExampleA' , entity: new Protocol.StructExampleA({

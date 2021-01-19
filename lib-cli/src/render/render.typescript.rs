@@ -1204,7 +1204,7 @@ impl TypescriptRender {
             let size_ref = self.get_size_ref(field);
             let primitive = self.get_primitive_ref(field);
             if field.repeated {
-                body = format!("this.getBufferFromBuf<Array<{}>>({}, {}, Protocol.Primitives.{}.encode, this.{})", type_str, field.id, size_ref, primitive, field.name);
+                body = format!("this.getBufferFromBuf<Array<{}>>({}, Protocol.ESize.u64, Protocol.Primitives.{}.encode, this.{})", type_str, field.id, primitive, field.name);
             } else {
                 body = if field.kind == "str" {
                     format!("this.getBufferFromBuf<string>({}, {}, Protocol.Primitives.{}.encode, this.{})", field.id, size_ref, primitive, field.name)

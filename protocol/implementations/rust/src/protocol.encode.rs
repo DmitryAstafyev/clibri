@@ -8,19 +8,19 @@ fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<
         buffer.append(&mut id.to_le_bytes().to_vec());
         match size {
             ESize::U8(size) => {
-                buffer.append(&mut 8_u8.to_le_bytes().to_vec());
+                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
             ESize::U16(size) => {
-                buffer.append(&mut 16_u8.to_le_bytes().to_vec());
+                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
             ESize::U32(size) => {
-                buffer.append(&mut 32_u8.to_le_bytes().to_vec());
+                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
             ESize::U64(size) => {
-                buffer.append(&mut 64_u8.to_le_bytes().to_vec());
+                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
             },
         };

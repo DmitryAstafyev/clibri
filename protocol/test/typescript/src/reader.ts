@@ -4,6 +4,19 @@ import * as Protocol from './protocol';
 import { usecases as samples } from './writer';
 
 const usecases: Array<{ name: string, entity: any }> = [
+    { name: 'EnumExampleA.a' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleA.b' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.str' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.u8' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.u16' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.u32' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.u64' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.i8' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.i16' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.i32' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.i64' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.f32' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleB.f64' , entity: Protocol.Primitives.Enum },
     { name: 'StructExampleA' , entity: Protocol.StructExampleA },
     { name: 'StructExampleB' , entity: Protocol.StructExampleB },
     { name: 'StructExampleC' , entity: Protocol.StructExampleC },

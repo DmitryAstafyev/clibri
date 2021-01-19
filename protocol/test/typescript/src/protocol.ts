@@ -2741,17 +2741,17 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.getBufferFromBuf<Array<string>>(18, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str),
-            () => this.getBufferFromBuf<Array<number>>(19, Protocol.ESize.u8, Protocol.Primitives.ArrayU8.encode, this.field_u8),
-            () => this.getBufferFromBuf<Array<number>>(20, Protocol.ESize.u8, Protocol.Primitives.ArrayU16.encode, this.field_u16),
-            () => this.getBufferFromBuf<Array<number>>(21, Protocol.ESize.u8, Protocol.Primitives.ArrayU32.encode, this.field_u32),
-            () => this.getBufferFromBuf<Array<bigint>>(22, Protocol.ESize.u8, Protocol.Primitives.ArrayU64.encode, this.field_u64),
-            () => this.getBufferFromBuf<Array<number>>(23, Protocol.ESize.u8, Protocol.Primitives.ArrayI8.encode, this.field_i8),
-            () => this.getBufferFromBuf<Array<number>>(24, Protocol.ESize.u8, Protocol.Primitives.ArrayI16.encode, this.field_i16),
-            () => this.getBufferFromBuf<Array<number>>(25, Protocol.ESize.u8, Protocol.Primitives.ArrayI32.encode, this.field_i32),
-            () => this.getBufferFromBuf<Array<bigint>>(26, Protocol.ESize.u8, Protocol.Primitives.ArrayI64.encode, this.field_i64),
-            () => this.getBufferFromBuf<Array<number>>(27, Protocol.ESize.u8, Protocol.Primitives.ArrayF32.encode, this.field_f32),
-            () => this.getBufferFromBuf<Array<number>>(28, Protocol.ESize.u8, Protocol.Primitives.ArrayF64.encode, this.field_f64),
-            () => this.getBufferFromBuf<Array<boolean>>(29, Protocol.ESize.u8, Protocol.Primitives.ArrayBool.encode, this.field_bool),
+            () => this.getBufferFromBuf<Array<number>>(19, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8),
+            () => this.getBufferFromBuf<Array<number>>(20, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16),
+            () => this.getBufferFromBuf<Array<number>>(21, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32),
+            () => this.getBufferFromBuf<Array<bigint>>(22, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64),
+            () => this.getBufferFromBuf<Array<number>>(23, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8),
+            () => this.getBufferFromBuf<Array<number>>(24, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16),
+            () => this.getBufferFromBuf<Array<number>>(25, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32),
+            () => this.getBufferFromBuf<Array<bigint>>(26, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64),
+            () => this.getBufferFromBuf<Array<number>>(27, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32),
+            () => this.getBufferFromBuf<Array<number>>(28, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64),
+            () => this.getBufferFromBuf<Array<boolean>>(29, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool),
         ]);
     }
 
@@ -3281,17 +3281,17 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.field_str === undefined ? this.getBuffer(44, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<string>>(44, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str),
-            () => this.field_u8 === undefined ? this.getBuffer(45, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(45, Protocol.ESize.u8, Protocol.Primitives.ArrayU8.encode, this.field_u8),
-            () => this.field_u16 === undefined ? this.getBuffer(46, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(46, Protocol.ESize.u8, Protocol.Primitives.ArrayU16.encode, this.field_u16),
-            () => this.field_u32 === undefined ? this.getBuffer(47, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(47, Protocol.ESize.u8, Protocol.Primitives.ArrayU32.encode, this.field_u32),
-            () => this.field_u64 === undefined ? this.getBuffer(48, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(48, Protocol.ESize.u8, Protocol.Primitives.ArrayU64.encode, this.field_u64),
-            () => this.field_i8 === undefined ? this.getBuffer(49, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(49, Protocol.ESize.u8, Protocol.Primitives.ArrayI8.encode, this.field_i8),
-            () => this.field_i16 === undefined ? this.getBuffer(50, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(50, Protocol.ESize.u8, Protocol.Primitives.ArrayI16.encode, this.field_i16),
-            () => this.field_i32 === undefined ? this.getBuffer(51, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(51, Protocol.ESize.u8, Protocol.Primitives.ArrayI32.encode, this.field_i32),
-            () => this.field_i64 === undefined ? this.getBuffer(52, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(52, Protocol.ESize.u8, Protocol.Primitives.ArrayI64.encode, this.field_i64),
-            () => this.field_f32 === undefined ? this.getBuffer(53, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(53, Protocol.ESize.u8, Protocol.Primitives.ArrayF32.encode, this.field_f32),
-            () => this.field_f64 === undefined ? this.getBuffer(54, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(54, Protocol.ESize.u8, Protocol.Primitives.ArrayF64.encode, this.field_f64),
-            () => this.field_bool === undefined ? this.getBuffer(55, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<boolean>>(55, Protocol.ESize.u8, Protocol.Primitives.ArrayBool.encode, this.field_bool),
+            () => this.field_u8 === undefined ? this.getBuffer(45, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(45, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8),
+            () => this.field_u16 === undefined ? this.getBuffer(46, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(46, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16),
+            () => this.field_u32 === undefined ? this.getBuffer(47, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(47, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32),
+            () => this.field_u64 === undefined ? this.getBuffer(48, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(48, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64),
+            () => this.field_i8 === undefined ? this.getBuffer(49, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(49, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8),
+            () => this.field_i16 === undefined ? this.getBuffer(50, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(50, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16),
+            () => this.field_i32 === undefined ? this.getBuffer(51, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(51, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32),
+            () => this.field_i64 === undefined ? this.getBuffer(52, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(52, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64),
+            () => this.field_f32 === undefined ? this.getBuffer(53, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(53, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32),
+            () => this.field_f64 === undefined ? this.getBuffer(54, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(54, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64),
+            () => this.field_bool === undefined ? this.getBuffer(55, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<boolean>>(55, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool),
         ]);
     }
 
