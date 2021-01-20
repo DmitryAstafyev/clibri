@@ -48,6 +48,216 @@ pub fn read() -> Result<(), String> {
         Ok(root) => root,
         Err(e) => panic!(e),
     };
+    match read_file(ts_bin.join("./EnumExampleA.a.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleA::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleA::Option_a(String::from("Option_a"));
+                    if entity != src {
+                        panic!("EnumExampleA.a: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.a.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleA.b.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleA::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleA::Option_b(String::from("Option_b"));
+                    if entity != src {
+                        panic!("EnumExampleA.b: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.b.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.str.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_str(String::from("Option_str"));
+                    if entity != src {
+                        panic!("EnumExampleB.str: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.str.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.u8.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_u8(8);
+                    if entity != src {
+                        panic!("EnumExampleB.u8: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u8.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.u16.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_u16(16);
+                    if entity != src {
+                        panic!("EnumExampleB.u16: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u16.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.u32.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_u32(32);
+                    if entity != src {
+                        panic!("EnumExampleB.u32: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u32.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.u64.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_u64(64);
+                    if entity != src {
+                        panic!("EnumExampleB.u64: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u64.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.i8.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_i8(-8);
+                    if entity != src {
+                        panic!("EnumExampleB.i8: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i8.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.i16.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_i16(-16);
+                    if entity != src {
+                        panic!("EnumExampleB.i16: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i16.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.i32.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_i32(-32);
+                    if entity != src {
+                        panic!("EnumExampleB.i32: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i32.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.i64.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_i64(-64);
+                    if entity != src {
+                        panic!("EnumExampleB.i64: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i64.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.f32.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_f32(0.02);
+                    if entity != src {
+                        panic!("EnumExampleB.f32: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f32.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./EnumExampleB.f64.prot.bin")) {
+        Ok(buf) => {
+            match EnumExampleB::decode(&buf) {
+                Ok(entity) => {
+                    let src = EnumExampleB::Option_f64(0.02);
+                    if entity != src {
+                        panic!("EnumExampleB.f64: failed: \n\t{:?}\n\t{:?})", entity, src)
+                    }
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f64.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+
+
     match read_file(ts_bin.join("./StructExampleA.prot.bin")) {
         Ok(buf) => {
             match StructExampleA::decode(&buf) {

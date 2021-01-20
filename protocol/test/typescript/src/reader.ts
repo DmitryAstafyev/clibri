@@ -4,19 +4,19 @@ import * as Protocol from './protocol';
 import { usecases as samples } from './writer';
 
 const usecases: Array<{ name: string, entity: any }> = [
-    { name: 'EnumExampleA.a' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleA.b' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.str' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.u8' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.u16' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.u32' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.u64' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.i8' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.i16' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.i32' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.i64' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.f32' , entity: Protocol.Primitives.Enum },
-    { name: 'EnumExampleB.f64' , entity: Protocol.Primitives.Enum },
+    { name: 'EnumExampleA.a' , entity: Protocol.EnumExampleA },
+    { name: 'EnumExampleA.b' , entity: Protocol.EnumExampleA},
+    { name: 'EnumExampleB.str' , entity: Protocol.EnumExampleB },
+    { name: 'EnumExampleB.u8' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.u16' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.u32' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.u64' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.i8' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.i16' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.i32' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.i64' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.f32' , entity: Protocol.EnumExampleB},
+    { name: 'EnumExampleB.f64' , entity: Protocol.EnumExampleB},
     { name: 'StructExampleA' , entity: Protocol.StructExampleA },
     { name: 'StructExampleB' , entity: Protocol.StructExampleB },
     { name: 'StructExampleC' , entity: Protocol.StructExampleC },
@@ -122,7 +122,7 @@ export function read(): Promise<void> {
                         if (inst instanceof Error) {
                             return rej(new Error(`Fail to parse usecase "${usecase.name}": ${inst.message}`));
                         }
-                        const sample = samples[index].entity;
+                        const sample = samples[index].entity instanceof Protocol.Enum ? (samples[index].entity as Protocol.Enum<any>).get() : samples[index].entity;
                         if (!isEqual(sample, inst)) {
                             return rej(new Error(`Parsed object from ${target} isn't equal to sample.`));
                         }
