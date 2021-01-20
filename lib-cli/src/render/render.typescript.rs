@@ -574,7 +574,20 @@ impl TypescriptRender {
         }
         body = format!("{}{}}}\n", body, self.spaces(level));
         body = format!("{}\n", body);
-        body = format!("{}{}class {} extends Protocol.Primitives.Enum<I{}> {{\n", body, self.spaces(level), enums.name, enums.name);
+        body = format!("{}{}export class {} extends Protocol.Primitives.Enum<I{}> {{\n", body, self.spaces(level), enums.name, enums.name);
+        body = format!("{}{}public static from(obj: any): I{} | Error {{\n", body, self.spaces(level + 1), enums.name);
+        body = format!("{}{}const inst = new {}();\n", body, self.spaces(level + 2), enums.name);
+        body = format!("{}{}let err: Error | undefined;\n", body, self.spaces(level + 2));
+        body = format!("{}{}if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {{\n", body, self.spaces(level + 2));
+        body = format!("{}{}err = inst.decode(obj);\n", body, self.spaces(level + 3));
+        body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
+        body = format!("{}{}err = inst.set(obj);\n", body, self.spaces(level + 3));
+        body = format!("{}{}}}\n", body, self.spaces(level + 2));
+        body = format!("{}{}return err instanceof Error ? err : inst.get();\n", body, self.spaces(level + 2));
+        body = format!("{}{}}}\n", body, self.spaces(level + 1));
+        body = format!("{}{}public from(obj: any): I{} | Error {{\n", body, self.spaces(level + 1), enums.name);
+        body = format!("{}{}return {}.from(obj);\n", body, self.spaces(level + 2), enums.name);
+        body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}public getAllowed(): string[] {{\n", body, self.spaces(level + 1));
         body = format!("{}{}return {};\n", body, self.spaces(level + 2), self.enum_declaration(enums, store, level + 3));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));

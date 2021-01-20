@@ -2368,7 +2368,20 @@ export interface IEnumExampleA {
     Option_b?: string;
 }
 
-class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+export class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+    public static from(obj: any): IEnumExampleA | Error {
+        const inst = new EnumExampleA();
+        let err: Error | undefined;
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            err = inst.decode(obj);
+        } else {
+            err = inst.set(obj);
+        }
+        return err instanceof Error ? err : inst.get();
+    }
+    public from(obj: any): IEnumExampleA | Error {
+        return EnumExampleA.from(obj);
+    }
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.StrUTF8.getSignature(),
@@ -2422,7 +2435,20 @@ export interface IEnumExampleB {
     Option_f64?: number;
 }
 
-class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
+export class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
+    public static from(obj: any): IEnumExampleB | Error {
+        const inst = new EnumExampleB();
+        let err: Error | undefined;
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            err = inst.decode(obj);
+        } else {
+            err = inst.set(obj);
+        }
+        return err instanceof Error ? err : inst.get();
+    }
+    public from(obj: any): IEnumExampleB | Error {
+        return EnumExampleB.from(obj);
+    }
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.StrUTF8.getSignature(),
@@ -2557,7 +2583,20 @@ export interface IEnumExampleC {
     Option_f64?: Array<number>;
 }
 
-class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
+export class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
+    public static from(obj: any): IEnumExampleC | Error {
+        const inst = new EnumExampleC();
+        let err: Error | undefined;
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            err = inst.decode(obj);
+        } else {
+            err = inst.set(obj);
+        }
+        return err instanceof Error ? err : inst.get();
+    }
+    public from(obj: any): IEnumExampleC | Error {
+        return EnumExampleC.from(obj);
+    }
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.ArrayStrUTF8.getSignature(),
@@ -4454,7 +4493,20 @@ export namespace GroupA {
         Option_b?: string;
     }
 
-    class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+    export class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
+        public static from(obj: any): IEnumExampleA | Error {
+            const inst = new EnumExampleA();
+            let err: Error | undefined;
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                err = inst.decode(obj);
+            } else {
+                err = inst.set(obj);
+            }
+            return err instanceof Error ? err : inst.get();
+        }
+        public from(obj: any): IEnumExampleA | Error {
+            return EnumExampleA.from(obj);
+        }
         public getAllowed(): string[] {
             return [
                 Protocol.Primitives.StrUTF8.getSignature(),
