@@ -32,6 +32,10 @@ const usecases: Array<{ name: string, entity: any }> = [
     { name: 'GroupCStructExampleB' , entity: Protocol.GroupB.GroupC.StructExampleB },
 ];
 
+function getSampleByName(name: string): Protocol.Convertor | Protocol.Enum<any> {
+    return samples.find(sample => sample.name === name).entity;
+}
+
 function isFloat(n){
     return Number(n) === n && n % 1 !== 0;
 }
@@ -147,15 +151,155 @@ export function read(): Promise<void> {
                         return reject(new Error(errors.map(e => e.message).join('\n')));
                     }
                     let count: number = 0;
+                    let done: number = 0;
                     do {
-                        const msg: Protocol.IAvailableMessage<Protocol.IAvailableMessages> | undefined = reader.next();
-                        if (msg !== undefined) {
-                            count += 1;
-                        } else {
+                        const pack: Protocol.IAvailableMessage<Protocol.IAvailableMessages> | undefined = reader.next();
+                        if (pack === undefined) {
                             break;
                         }
+                        count += 1;
+                        if (pack.msg.EnumExampleA !== undefined) {
+                            if (pack.msg.EnumExampleA.Option_a !== undefined && pack.msg.EnumExampleA.Option_a !== 'Option_a') {
+                                return reject(new Error(`EnumExampleA.Option_a incorrect: ${pack.msg.EnumExampleA.Option_a}`));
+                            } else if (pack.msg.EnumExampleA.Option_a !== undefined && pack.msg.EnumExampleA.Option_a === 'Option_a') {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleA.Option_b !== undefined && pack.msg.EnumExampleA.Option_b !== 'Option_b') {
+                                return reject(new Error(`EnumExampleA.Option_a incorrect: ${pack.msg.EnumExampleA.Option_a}`));
+                            } else if (pack.msg.EnumExampleA.Option_b !== undefined && pack.msg.EnumExampleA.Option_b === 'Option_b') {
+                                done += 1;
+                            }
+                        }
+                        if (pack.msg.EnumExampleB !== undefined) {
+                            if (pack.msg.EnumExampleB.Option_str !== undefined && pack.msg.EnumExampleB.Option_str !== 'Option_str') {
+                                return reject(new Error(`EnumExampleB.Option_str incorrect: ${pack.msg.EnumExampleB.Option_str}`));
+                            } else if (pack.msg.EnumExampleB.Option_str !== undefined && pack.msg.EnumExampleB.Option_str === 'Option_str') {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_u8 !== undefined && pack.msg.EnumExampleB.Option_u8 !== 8) {
+                                return reject(new Error(`EnumExampleB.Option_u8 incorrect: ${pack.msg.EnumExampleB.Option_u8}`));
+                            } else if (pack.msg.EnumExampleB.Option_u8 !== undefined && pack.msg.EnumExampleB.Option_u8 === 8) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_u16 !== undefined && pack.msg.EnumExampleB.Option_u16 !== 16) {
+                                return reject(new Error(`EnumExampleB.Option_u16 incorrect: ${pack.msg.EnumExampleB.Option_u16}`));
+                            } else if (pack.msg.EnumExampleB.Option_u16 !== undefined && pack.msg.EnumExampleB.Option_u16 === 16) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_u32 !== undefined && pack.msg.EnumExampleB.Option_u32 !== 32) {
+                                return reject(new Error(`EnumExampleB.Option_u32 incorrect: ${pack.msg.EnumExampleB.Option_u32}`));
+                            } else if (pack.msg.EnumExampleB.Option_u32 !== undefined && pack.msg.EnumExampleB.Option_u32 === 32) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_u64 !== undefined && pack.msg.EnumExampleB.Option_u64 !== BigInt(64)) {
+                                return reject(new Error(`EnumExampleB.Option_u32 incorrect: ${pack.msg.EnumExampleB.Option_u64}`));
+                            } else if (pack.msg.EnumExampleB.Option_u64 !== undefined && pack.msg.EnumExampleB.Option_u64 === BigInt(64)) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_i8 !== undefined && pack.msg.EnumExampleB.Option_i8 !== -8) {
+                                return reject(new Error(`EnumExampleB.Option_i8 incorrect: ${pack.msg.EnumExampleB.Option_i8}`));
+                            } else if (pack.msg.EnumExampleB.Option_i8 !== undefined && pack.msg.EnumExampleB.Option_i8 === -8) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_i16 !== undefined && pack.msg.EnumExampleB.Option_i16 !== -16) {
+                                return reject(new Error(`EnumExampleB.Option_i16 incorrect: ${pack.msg.EnumExampleB.Option_i16}`));
+                            } else if (pack.msg.EnumExampleB.Option_i16 !== undefined && pack.msg.EnumExampleB.Option_i16 === -16) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_i32 !== undefined && pack.msg.EnumExampleB.Option_i32 !== -32) {
+                                return reject(new Error(`EnumExampleB.Option_i32 incorrect: ${pack.msg.EnumExampleB.Option_i32}`));
+                            } else if (pack.msg.EnumExampleB.Option_i32 !== undefined && pack.msg.EnumExampleB.Option_i32 === -32) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_i64 !== undefined && pack.msg.EnumExampleB.Option_i64 !== -BigInt(64)) {
+                                return reject(new Error(`EnumExampleB.Option_i64 incorrect: ${pack.msg.EnumExampleB.Option_i64}`));
+                            } else if (pack.msg.EnumExampleB.Option_i64 !== undefined && pack.msg.EnumExampleB.Option_i64 === -BigInt(64)) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_f32 !== undefined && (Math.round(pack.msg.EnumExampleB.Option_f32 * 100) / 100) !== 0.02) {
+                                return reject(new Error(`EnumExampleB.Option_f32 incorrect: ${pack.msg.EnumExampleB.Option_f32}`));
+                            } else if (pack.msg.EnumExampleB.Option_f32 !== undefined && (Math.round(pack.msg.EnumExampleB.Option_f32 * 100) / 100) === 0.02) {
+                                done += 1;
+                            }
+                            if (pack.msg.EnumExampleB.Option_f64 !== undefined && (Math.round(pack.msg.EnumExampleB.Option_f64 * 100) / 100) !== 0.02) {
+                                return reject(new Error(`EnumExampleB.Option_f64 incorrect: ${pack.msg.EnumExampleB.Option_f64}`));
+                            } else if (pack.msg.EnumExampleB.Option_f64 !== undefined && (Math.round(pack.msg.EnumExampleB.Option_f64 * 100) / 100) === 0.02) {
+                                done += 1;
+                            }
+                        }
+                        if (pack.msg.StructExampleA !== undefined && !isEqual(pack.msg.StructExampleA, getSampleByName('StructExampleA'))) {
+                            return reject(new Error(`StructExampleA incorrect: ${pack.msg.StructExampleA}`));
+                        } else if (pack.msg.StructExampleA !== undefined && isEqual(pack.msg.StructExampleA, getSampleByName('StructExampleA'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleB !== undefined && !isEqual(pack.msg.StructExampleB, getSampleByName('StructExampleB'))) {
+                            return reject(new Error(`StructExampleB incorrect: ${pack.msg.StructExampleB}`));
+                        } else if (pack.msg.StructExampleB !== undefined && isEqual(pack.msg.StructExampleB, getSampleByName('StructExampleB'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleC !== undefined && !isEqual(pack.msg.StructExampleC, getSampleByName('StructExampleC'))) {
+                            return reject(new Error(`StructExampleC incorrect: ${pack.msg.StructExampleC}`));
+                        } else if (pack.msg.StructExampleC !== undefined && isEqual(pack.msg.StructExampleC, getSampleByName('StructExampleC'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleD !== undefined && !isEqual(pack.msg.StructExampleD, getSampleByName('StructExampleD'))) {
+                            return reject(new Error(`StructExampleD incorrect: ${pack.msg.StructExampleD}`));
+                        } else if (pack.msg.StructExampleD !== undefined && isEqual(pack.msg.StructExampleD, getSampleByName('StructExampleD'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleE !== undefined && !isEqual(pack.msg.StructExampleE, getSampleByName('StructExampleE'))) {
+                            return reject(new Error(`StructExampleE incorrect: ${pack.msg.StructExampleE}`));
+                        } else if (pack.msg.StructExampleE !== undefined && isEqual(pack.msg.StructExampleE, getSampleByName('StructExampleE'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleF !== undefined && !isEqual(pack.msg.StructExampleF, getSampleByName('StructExampleF'))) {
+                            return reject(new Error(`StructExampleF incorrect: ${pack.msg.StructExampleF}`));
+                        } else if (pack.msg.StructExampleF !== undefined && isEqual(pack.msg.StructExampleF, getSampleByName('StructExampleF'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleG !== undefined && !isEqual(pack.msg.StructExampleG, getSampleByName('StructExampleG'))) {
+                            return reject(new Error(`StructExampleG incorrect: ${pack.msg.StructExampleG}`));
+                        } else if (pack.msg.StructExampleG !== undefined && isEqual(pack.msg.StructExampleG, getSampleByName('StructExampleG'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.StructExampleJ !== undefined && !isEqual(pack.msg.StructExampleJ, getSampleByName('StructExampleJ'))) {
+                            return reject(new Error(`StructExampleJ incorrect: ${pack.msg.StructExampleJ}`));
+                        } else if (pack.msg.StructExampleJ !== undefined && isEqual(pack.msg.StructExampleJ, getSampleByName('StructExampleJ'))) {
+                            done += 1;
+                        }
+                        if (pack.msg.GroupA !== undefined) {
+                            if (pack.msg.GroupA.StructExampleA !== undefined && !isEqual(pack.msg.GroupA.StructExampleA, getSampleByName('GroupAStructExampleA'))) {
+                                return reject(new Error(`GroupA.StructExampleA incorrect: ${pack.msg.GroupA.StructExampleA}`));
+                            } else if ((pack.msg.GroupA.StructExampleA !== undefined && isEqual(pack.msg.GroupA.StructExampleA, getSampleByName('GroupAStructExampleA')))) {
+                                done += 1;
+                            }
+                            if (pack.msg.GroupA.StructExampleB !== undefined && !isEqual(pack.msg.GroupA.StructExampleB, getSampleByName('GroupAStructExampleB'))) {
+                                return reject(new Error(`GroupA.StructExampleB incorrect: ${pack.msg.GroupA.StructExampleB}`));
+                            } else if ((pack.msg.GroupA.StructExampleB !== undefined && isEqual(pack.msg.GroupA.StructExampleB, getSampleByName('GroupAStructExampleB')))) {
+                                done += 1;
+                            }
+                        }
+                        if (pack.msg.GroupB !== undefined) {
+                            if (pack.msg.GroupB.StructExampleA !== undefined && !isEqual(pack.msg.GroupB.StructExampleA, getSampleByName('GroupBStructExampleA'))) {
+                                return reject(new Error(`GroupA.StructExampleA incorrect: ${pack.msg.GroupB.StructExampleA}`));
+                            } else if ((pack.msg.GroupB.StructExampleA !== undefined && isEqual(pack.msg.GroupB.StructExampleA, getSampleByName('GroupBStructExampleA')))) {
+                                done += 1;
+                            }
+                            if (pack.msg.GroupB.GroupC !== undefined) {
+                                if (pack.msg.GroupB.GroupC.StructExampleA !== undefined && !isEqual(pack.msg.GroupB.GroupC.StructExampleA, getSampleByName('GroupCStructExampleA'))) {
+                                    return reject(new Error(`GroupB.GroupC.StructExampleA incorrect: ${pack.msg.GroupB.GroupC.StructExampleA}`));
+                                } else if ((pack.msg.GroupB.GroupC.StructExampleA !== undefined && isEqual(pack.msg.GroupB.GroupC.StructExampleA, getSampleByName('GroupCStructExampleA')))) {
+                                    done += 1;
+                                }
+                                if (pack.msg.GroupB.GroupC.StructExampleB !== undefined && !isEqual(pack.msg.GroupB.GroupC.StructExampleB, getSampleByName('GroupCStructExampleB'))) {
+                                    return reject(new Error(`GroupB.GroupC.StructExampleB incorrect: ${pack.msg.GroupB.GroupC.StructExampleB}`));
+                                } else if ((pack.msg.GroupB.GroupC.StructExampleB !== undefined && isEqual(pack.msg.GroupB.GroupC.StructExampleB, getSampleByName('GroupCStructExampleB')))) {
+                                    done += 1;
+                                }
+                            }
+                        }
                     } while (true);
-                    if (count !== 26 || reader.pending() > 0 || reader.len() > 0) {
+                    if (count !== 26 || done !== count || reader.pending() > 0 || reader.len() > 0) {
                         return reject(new Error(`Fail to correctly read buffer file:\n\tcount = ${count};\n\tpending=${reader.pending()};\n\tlen=${reader.len()}\n\tbuffer=${buffer.byteLength}`));
                     }
                     console.log(`[TS] File: ${target} has beed read.`);
