@@ -1,3 +1,4 @@
+import { Buffer } from 'buffer';
 import { MessageHeader } from './packing.header';
 
 // injectable
@@ -26,26 +27,24 @@ export abstract class BufferReader<T> {
             if (!MessageHeader.enow(this._buffer)) {
                 break;
             }
-            const headerBuf: Buffer = Buffer.alloc(MessageHeader.SIZE);
-            this._buffer.copy(headerBuf, 0, 0, MessageHeader.SIZE);
-            const header: MessageHeader = new MessageHeader(headerBuf);
+            const header: MessageHeader = new MessageHeader(this._buffer.slice(0, MessageHeader.SIZE));
             if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
                 break;
             }
-            const messageBuf: Buffer = Buffer.alloc(header.len);
-            this._buffer.copy(messageBuf, 0, MessageHeader.SIZE, MessageHeader.SIZE + header.len);
-            const _buffer: Buffer = Buffer.alloc(0);
-            this._buffer.copy(_buffer, 0, MessageHeader.SIZE + header.len, this._buffer.byteLength - (MessageHeader.SIZE + header.len));
-            this._buffer = _buffer;
+            if (header.len === 0) {
+                errors.push(new Error(`Header length is 0`));
+                break;
+            }
             if (header.signature !== this.signature()) {
                 errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
             } else {
-                const msg = this.getMessage(header, messageBuf);
+                const msg = this.getMessage(header, this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len));
                 if (msg instanceof Error) {
                     errors.push(msg);
                 } else {
                     this._queue.push(msg);
                 }
+                this._buffer = this._buffer.slice(MessageHeader.SIZE + header.len);
             }
         } while (true);
         return errors.length > 0 ? errors : undefined;
@@ -61,7 +60,7 @@ export abstract class BufferReader<T> {
         return this._queue.length;
     }
 
-    public let(): number {
+    public len(): number {
         return this._buffer.byteLength;
     }
 

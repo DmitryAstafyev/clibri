@@ -256,8 +256,6 @@ pub fn read() -> Result<(), String> {
         },
         Err(e) => panic!(e),
     }
-
-
     match read_file(ts_bin.join("./StructExampleA.prot.bin")) {
         Ok(buf) => {
             match StructExampleA::decode(&buf) {
@@ -593,6 +591,28 @@ pub fn read() -> Result<(), String> {
                 Err(e) => panic!(e)
             }
             
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./buffer.prot.bin")) {
+        Ok(buf) => {
+            let mut buffer = Buffer::new();
+            if let Err(e) = buffer.chunk(&buf) {
+                panic!("Fail to write data into buffer due error: {:?}", e);
+            }
+            let mut count = 0;
+            loop {
+                let msg = buffer.next();
+                if let Some(msg) = msg {
+                    count += 1;
+                } else {
+                    break;
+                }
+            }
+            println!("[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
+            if buffer.pending() != 0 || buffer.len() != 0 || count != 26 {
+                panic!("Fail to read buffer correctly");
+            }
         },
         Err(e) => panic!(e),
     }

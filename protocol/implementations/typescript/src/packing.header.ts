@@ -3,7 +3,7 @@ export class MessageHeader {
     public static readonly ID_LENGTH = 4;
     public static readonly SIGN_LENGTH = 2;
     public static readonly TS_LENGTH = 8;
-    public static readonly LEN_LENGTH = 4;
+    public static readonly LEN_LENGTH = 8;
     public static readonly SIZE =
         MessageHeader.ID_LENGTH +
         MessageHeader.SIGN_LENGTH +
@@ -24,7 +24,7 @@ export class MessageHeader {
             this.id = buffer.readUInt32LE(0);
             this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
             this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
-            this.len = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH);
+            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH));
         }
     }
 

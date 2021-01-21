@@ -1834,13 +1834,34 @@ export abstract class Enum<T> {
         }
     }
 
+    public pack(): ArrayBufferLike {
+        const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
+        const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const ts = BigInt((new Date()).getTime());
+        const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
+        if (id instanceof Error) {
+            throw new Error(`Fail to encode id (${this.getId()}) due error: ${id.message}`);
+        }
+        if (signature instanceof Error) {
+            throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (timestamp instanceof Error) {
+            throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
+        }
+        const buffer: ArrayBufferLike = this.encode();
+        const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
+        if (len instanceof Error) {
+            throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
+        }
+        return Tools.append([id, signature, timestamp, len, buffer]);
+    }
+
     public abstract getAllowed(): string[];
-
     public abstract getOptionValue(id: number): ISigned<any>;
-
     public abstract get(): T;
-
     public abstract set(src: T): Error | undefined;
+    public abstract signature(): number;
+    public abstract getId(): number;
 
 }
 
@@ -2213,7 +2234,7 @@ export abstract class Convertor {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
         }
         const buffer: ArrayBufferLike = this.encode();
-        const len: ArrayBufferLike | Error = Primitives.u32.encode(buffer.byteLength);
+        const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }
@@ -2233,7 +2254,7 @@ export class MessageHeader {
     public static readonly ID_LENGTH = 4;
     public static readonly SIGN_LENGTH = 2;
     public static readonly TS_LENGTH = 8;
-    public static readonly LEN_LENGTH = 4;
+    public static readonly LEN_LENGTH = 8;
     public static readonly SIZE =
         MessageHeader.ID_LENGTH +
         MessageHeader.SIGN_LENGTH +
@@ -2254,7 +2275,7 @@ export class MessageHeader {
             this.id = buffer.readUInt32LE(0);
             this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
             this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
-            this.len = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH);
+            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH));
         }
     }
 
@@ -2289,26 +2310,24 @@ export abstract class BufferReader<T> {
             if (!MessageHeader.enow(this._buffer)) {
                 break;
             }
-            const headerBuf: Buffer = Buffer.alloc(MessageHeader.SIZE);
-            this._buffer.copy(headerBuf, 0, 0, MessageHeader.SIZE);
-            const header: MessageHeader = new MessageHeader(headerBuf);
+            const header: MessageHeader = new MessageHeader(this._buffer.slice(0, MessageHeader.SIZE));
             if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
                 break;
             }
-            const messageBuf: Buffer = Buffer.alloc(header.len);
-            this._buffer.copy(messageBuf, 0, MessageHeader.SIZE, MessageHeader.SIZE + header.len);
-            const _buffer: Buffer = Buffer.alloc(0);
-            this._buffer.copy(_buffer, 0, MessageHeader.SIZE + header.len, this._buffer.byteLength - (MessageHeader.SIZE + header.len));
-            this._buffer = _buffer;
+            if (header.len === 0) {
+                errors.push(new Error(`Header length is 0`));
+                break;
+            }
             if (header.signature !== this.signature()) {
                 errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
             } else {
-                const msg = this.getMessage(header, messageBuf);
+                const msg = this.getMessage(header, this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len));
                 if (msg instanceof Error) {
                     errors.push(msg);
                 } else {
                     this._queue.push(msg);
                 }
+                this._buffer = this._buffer.slice(MessageHeader.SIZE + header.len);
             }
         } while (true);
         return errors.length > 0 ? errors : undefined;
@@ -2324,7 +2343,7 @@ export abstract class BufferReader<T> {
         return this._queue.length;
     }
 
-    public let(): number {
+    public len(): number {
         return this._buffer.byteLength;
     }
 
@@ -2382,6 +2401,8 @@ export class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
     public from(obj: any): IEnumExampleA | Error {
         return EnumExampleA.from(obj);
     }
+    public signature(): number { return 0; }
+    public getId(): number { return 1; }
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.StrUTF8.getSignature(),
@@ -2449,6 +2470,8 @@ export class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
     public from(obj: any): IEnumExampleB | Error {
         return EnumExampleB.from(obj);
     }
+    public signature(): number { return 0; }
+    public getId(): number { return 2; }
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.StrUTF8.getSignature(),
@@ -2597,6 +2620,8 @@ export class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
     public from(obj: any): IEnumExampleC | Error {
         return EnumExampleC.from(obj);
     }
+    public signature(): number { return 0; }
+    public getId(): number { return 3; }
     public getAllowed(): string[] {
         return [
             Protocol.Primitives.ArrayStrUTF8.getSignature(),
@@ -4507,6 +4532,8 @@ export namespace GroupA {
         public from(obj: any): IEnumExampleA | Error {
             return EnumExampleA.from(obj);
         }
+        public signature(): number { return 0; }
+        public getId(): number { return 71; }
         public getAllowed(): string[] {
             return [
                 Protocol.Primitives.StrUTF8.getSignature(),

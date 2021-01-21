@@ -236,11 +236,7 @@ impl TypescriptRender {
                 }
             }
         }
-        body = format!(
-            "{}\n{}]",
-            body,
-            self.spaces(level - 1)
-        );
+        body = format!("{}\n{}]", body, self.spaces(level - 1));
         body
     }
 
@@ -278,11 +274,12 @@ impl TypescriptRender {
     }
 
     fn enum_setter(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
-        let mut body = format!(
-            "{}if (Object.keys(src).length > 1) {{",
-            self.spaces(level),
+        let mut body = format!("{}if (Object.keys(src).length > 1) {{", self.spaces(level),);
+        body = format!(
+            "{}\n{}return new Error(`Option cannot have more then 1 value.`);",
+            body,
+            self.spaces(level + 1)
         );
-        body = format!("{}\n{}return new Error(`Option cannot have more then 1 value.`);", body, self.spaces(level + 1));
         body = format!("{}\n{}}}", body, self.spaces(level));
         for (pos, variant) in enums.variants.iter().enumerate() {
             let value = if let Some(prim_type_ref) = variant.types.clone() {
@@ -334,10 +331,7 @@ impl TypescriptRender {
     }
 
     fn get_enum_decode(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
-        let mut body = format!(
-            "{}switch (this.getValueIndex()) {{",
-            self.spaces(level),
-        );
+        let mut body = format!("{}switch (this.getValueIndex()) {{", self.spaces(level),);
         for (pos, variant) in enums.variants.iter().enumerate() {
             let types = if let Some(prim_type_ref) = variant.types.clone() {
                 self.etype_ts(prim_type_ref, variant.repeated)
@@ -545,7 +539,11 @@ impl TypescriptRender {
     }
 
     fn enums(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
-        let mut body = format!("{}export interface I{} {{\n", self.spaces(level), enums.name);
+        let mut body = format!(
+            "{}export interface I{} {{\n",
+            self.spaces(level),
+            enums.name
+        );
         for variant in &enums.variants {
             let variant_type = if let Some(prim_type_ref) = variant.types.clone() {
                 self.etype_ts(prim_type_ref.clone(), variant.repeated)
@@ -574,32 +572,114 @@ impl TypescriptRender {
         }
         body = format!("{}{}}}\n", body, self.spaces(level));
         body = format!("{}\n", body);
-        body = format!("{}{}export class {} extends Protocol.Primitives.Enum<I{}> {{\n", body, self.spaces(level), enums.name, enums.name);
-        body = format!("{}{}public static from(obj: any): I{} | Error {{\n", body, self.spaces(level + 1), enums.name);
-        body = format!("{}{}const inst = new {}();\n", body, self.spaces(level + 2), enums.name);
-        body = format!("{}{}let err: Error | undefined;\n", body, self.spaces(level + 2));
+        body = format!(
+            "{}{}export class {} extends Protocol.Primitives.Enum<I{}> {{\n",
+            body,
+            self.spaces(level),
+            enums.name,
+            enums.name
+        );
+        body = format!(
+            "{}{}public static from(obj: any): I{} | Error {{\n",
+            body,
+            self.spaces(level + 1),
+            enums.name
+        );
+        body = format!(
+            "{}{}const inst = new {}();\n",
+            body,
+            self.spaces(level + 2),
+            enums.name
+        );
+        body = format!(
+            "{}{}let err: Error | undefined;\n",
+            body,
+            self.spaces(level + 2)
+        );
         body = format!("{}{}if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {{\n", body, self.spaces(level + 2));
-        body = format!("{}{}err = inst.decode(obj);\n", body, self.spaces(level + 3));
+        body = format!(
+            "{}{}err = inst.decode(obj);\n",
+            body,
+            self.spaces(level + 3)
+        );
         body = format!("{}{}}} else {{\n", body, self.spaces(level + 2));
         body = format!("{}{}err = inst.set(obj);\n", body, self.spaces(level + 3));
         body = format!("{}{}}}\n", body, self.spaces(level + 2));
-        body = format!("{}{}return err instanceof Error ? err : inst.get();\n", body, self.spaces(level + 2));
+        body = format!(
+            "{}{}return err instanceof Error ? err : inst.get();\n",
+            body,
+            self.spaces(level + 2)
+        );
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-        body = format!("{}{}public from(obj: any): I{} | Error {{\n", body, self.spaces(level + 1), enums.name);
-        body = format!("{}{}return {}.from(obj);\n", body, self.spaces(level + 2), enums.name);
+        body = format!(
+            "{}{}public from(obj: any): I{} | Error {{\n",
+            body,
+            self.spaces(level + 1),
+            enums.name
+        );
+        body = format!(
+            "{}{}return {}.from(obj);\n",
+            body,
+            self.spaces(level + 2),
+            enums.name
+        );
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-        body = format!("{}{}public getAllowed(): string[] {{\n", body, self.spaces(level + 1));
-        body = format!("{}{}return {};\n", body, self.spaces(level + 2), self.enum_declaration(enums, store, level + 3));
+        body = format!(
+            "{}{}public signature(): number {{ return {}; }}\n",
+            body,
+            self.spaces(level + 1),
+            self.signature
+        );
+        body = format!(
+            "{}{}public getId(): number {{ return {}; }}\n",
+            body,
+            self.spaces(level + 1),
+            enums.id
+        );
+        body = format!(
+            "{}{}public getAllowed(): string[] {{\n",
+            body,
+            self.spaces(level + 1)
+        );
+        body = format!(
+            "{}{}return {};\n",
+            body,
+            self.spaces(level + 2),
+            self.enum_declaration(enums, store, level + 3)
+        );
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-        body = format!("{}{}public getOptionValue(id: number): ISigned<any> {{\n", body, self.spaces(level + 1));
+        body = format!(
+            "{}{}public getOptionValue(id: number): ISigned<any> {{\n",
+            body,
+            self.spaces(level + 1)
+        );
         body = format!("{}{}\n", body, self.enum_getter(enums, store, level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-        body = format!("{}{}public get(): I{} {{\n", body, self.spaces(level + 1), enums.name);
-        body = format!("{}{}const target: I{} = {{}};\n", body, self.spaces(level + 2), enums.name);
-        body = format!("{}{}\n", body, self.get_enum_decode(enums, store, level + 2));
+        body = format!(
+            "{}{}public get(): I{} {{\n",
+            body,
+            self.spaces(level + 1),
+            enums.name
+        );
+        body = format!(
+            "{}{}const target: I{} = {{}};\n",
+            body,
+            self.spaces(level + 2),
+            enums.name
+        );
+        body = format!(
+            "{}{}\n",
+            body,
+            self.get_enum_decode(enums, store, level + 2)
+        );
         body = format!("{}{}return target;\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
-        body = format!("{}{}public set(src: I{}): Error | undefined{{\n", body, self.spaces(level + 1), enums.name);
+        body = format!(
+            "{}{}public set(src: I{}): Error | undefined{{\n",
+            body,
+            self.spaces(level + 1),
+            enums.name
+        );
         body = format!("{}{}\n", body, self.enum_setter(enums, store, level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
@@ -1159,7 +1239,13 @@ impl TypescriptRender {
                     field.name
                 );
                 body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
-                body = format!("{}\n{}this.{} = this._{}.get();", body, self.spaces(level + 2), field.name, field.name);
+                body = format!(
+                    "{}\n{}this.{} = this._{}.get();",
+                    body,
+                    self.spaces(level + 2),
+                    field.name,
+                    field.name
+                );
                 body = format!("{}\n{}}}", body, self.spaces(level + 1));
                 body = format!("{}\n{}}}", body, self.spaces(level));
             } else {

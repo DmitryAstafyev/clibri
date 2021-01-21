@@ -1,6 +1,7 @@
 // tslint:disable: class-name
 // tslint:disable: max-classes-per-file
 import * as Tools from './tools/index';
+import * as Primitives from './protocol.primitives';
 
 import { ISigned } from './protocol.primitives.interface';
 import { u16 } from './protocol.primitives.u16';
@@ -83,12 +84,33 @@ export abstract class Enum<T> {
         }
     }
 
+    public pack(): ArrayBufferLike {
+        const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
+        const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const ts = BigInt((new Date()).getTime());
+        const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
+        if (id instanceof Error) {
+            throw new Error(`Fail to encode id (${this.getId()}) due error: ${id.message}`);
+        }
+        if (signature instanceof Error) {
+            throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (timestamp instanceof Error) {
+            throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
+        }
+        const buffer: ArrayBufferLike = this.encode();
+        const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
+        if (len instanceof Error) {
+            throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
+        }
+        return Tools.append([id, signature, timestamp, len, buffer]);
+    }
+
     public abstract getAllowed(): string[];
-
     public abstract getOptionValue(id: number): ISigned<any>;
-
     public abstract get(): T;
-
     public abstract set(src: T): Error | undefined;
+    public abstract signature(): number;
+    public abstract getId(): number;
 
 }

@@ -157,7 +157,7 @@ export abstract class Convertor {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
         }
         const buffer: ArrayBufferLike = this.encode();
-        const len: ArrayBufferLike | Error = Primitives.u32.encode(buffer.byteLength);
+        const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }

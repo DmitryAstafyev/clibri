@@ -239,7 +239,9 @@ export function write(): Promise<void> {
                     return reject(errOpen);
                 }
                 const buf = entity instanceof Buffer ? entity : Buffer.from(entity.encode());
-                buffers.push(buf);
+                if (entity instanceof Protocol.Convertor || entity instanceof Protocol.Enum) {
+                    buffers.push(Buffer.from(entity.pack()));
+                }
                 fs.writeFile(file, buf, (errWrite: Error | undefined) => {
                     if (errWrite) {
                         return reject(errWrite);

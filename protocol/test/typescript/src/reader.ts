@@ -132,7 +132,36 @@ export function read(): Promise<void> {
                 });
             });
         })).then(() => {
-            return resolve();
+            const target = path.resolve(dest, `buffer.prot.bin`);
+            fs.open(target, 'r', (errOpen, file) => {
+                if (errOpen) {
+                    return reject(new Error(`Fail to open file ${target} due error: ${errOpen.message}`));
+                }
+                fs.readFile(file, (errWrite: Error | undefined, buffer: Buffer) => {
+                    if (errWrite) {
+                        return reject(new Error(`Fail to read file ${target} due error: ${errWrite.message}`));
+                    }
+                    const reader: Protocol.BufferReaderMessages = new Protocol.BufferReaderMessages();
+                    const errors: Error[] | undefined = reader.chunk(buffer);
+                    if (errors !== undefined) {
+                        return reject(new Error(errors.map(e => e.message).join('\n')));
+                    }
+                    let count: number = 0;
+                    do {
+                        const msg: Protocol.IAvailableMessage<Protocol.IAvailableMessages> | undefined = reader.next();
+                        if (msg !== undefined) {
+                            count += 1;
+                        } else {
+                            break;
+                        }
+                    } while (true);
+                    if (count !== 26 || reader.pending() > 0 || reader.len() > 0) {
+                        return reject(new Error(`Fail to correctly read buffer file:\n\tcount = ${count};\n\tpending=${reader.pending()};\n\tlen=${reader.len()}\n\tbuffer=${buffer.byteLength}`));
+                    }
+                    console.log(`[TS] File: ${target} has beed read.`);
+                    resolve(undefined);
+                });
+            });
         }).catch(reject);
     });
 }
