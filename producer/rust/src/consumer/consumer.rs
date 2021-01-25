@@ -7,17 +7,20 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-pub struct Cx<T>
+pub struct Cx<CX, UCX>
 where
-    T: ConnectionContext + Send + Sync,
+    CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
-    own: Arc<RwLock<T>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<T>>>>,
+    own: Arc<RwLock<CX>>,
+    ucx: Arc<RwLock<UCX>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
 }
 
-impl<T> Context for Cx<T>
+impl<CX, UCX> Context for Cx<CX, UCX>
 where
-    T: ConnectionContext + Send + Sync,
+    CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
     fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         match self.own.write() {
@@ -53,31 +56,35 @@ where
     }
 }
 
-pub struct Consumer<T>
+pub struct Consumer<CX, UCX>
 where
-    T: ConnectionContext + Send + Sync,
+    CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
     uuid: Uuid,
     buffer: Buffer<Protocol>,
-    own: Arc<RwLock<T>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<T>>>>,
+    own: Arc<RwLock<CX>>,
+    ucx: Arc<RwLock<UCX>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
     identification: Identification,
-    cx: Cx<T>,
+    cx: Cx<CX, UCX>,
 }
 
-impl<T> Consumer<T>
+impl<CX, UCX> Consumer<CX, UCX>
 where
-    T: ConnectionContext + Send + Sync,
+    CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
-    pub fn new(own: Arc<RwLock<T>>, consumers: Arc<RwLock<HashMap<Uuid, Consumer<T>>>>) -> Self {
+    pub fn new(own: Arc<RwLock<CX>>, ucx: Arc<RwLock<UCX>>, consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>) -> Self {
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,
             buffer: Buffer::new(uuid),
             own: own.clone(),
+            ucx: ucx.clone(),
             consumers: consumers.clone(),
             identification: Identification::new(),
-            cx: Cx { own, consumers },
+            cx: Cx { own, ucx, consumers },
         }
     }
 

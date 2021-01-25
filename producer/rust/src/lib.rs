@@ -101,25 +101,29 @@ pub enum Broadcasting {
 }
 
 #[allow(non_snake_case)]
-pub struct Producer<S, CX>
+pub struct Producer<S, CX, UCX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
     server: S,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+    ucx: Arc<RwLock<UCX>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
     pub UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
     pub UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
 }
 
-impl<S, CX: 'static> Producer<S, CX>
+impl<S, CX: 'static, UCX: 'static> Producer<S, CX, UCX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
-    pub fn new(server: S) -> Self {
+    pub fn new(server: S, context: UCX) -> Self {
         Producer {
             server,
+            ucx: Arc::new(RwLock::new(context)),
             consumers: Arc::new(RwLock::new(HashMap::new())),
             UserSingIn: Arc::new(RwLock::new(ImplUserSingInRequest::ObserverRequest::new())),
             UserJoin: Arc::new(RwLock::new(ImplUserJoinRequest::ObserverRequest::new())),
@@ -131,6 +135,7 @@ where
         let (tx_channel, rx_channel): (Sender<ServerEvents<CX>>, Receiver<ServerEvents<CX>>) =
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
+        let ucx = self.ucx.clone();
         let UserSingIn = self.UserSingIn.clone();
         let UserJoin = self.UserJoin.clone();
         spawn(move || {
@@ -142,7 +147,7 @@ where
                             Ok(mut storage) => {
                                 let consumer = storage
                                     .entry(uuid)
-                                    .or_insert(Consumer::new(cx, consumers_ref.clone()));
+                                    .or_insert(Consumer::new(cx, ucx.clone(), consumers_ref.clone()));
                             }
                             Err(e) => {}
                         },
@@ -247,7 +252,7 @@ where
     }
 
     fn Broadcast(
-        consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+        consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
         filter: HashMap<String, String>,
         condition: EFilterMatchCondition,
         broadcast: Broadcasting,
@@ -281,9 +286,12 @@ where
     }
 }
 
+struct UserCustomContext {}
+
 fn test() {
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
-    let mut producer: Producer<Server, ServerConnectionContext> = Producer::new(server);
+    let ucx: UserCustomContext = UserCustomContext {};
+    let mut producer: Producer<Server, ServerConnectionContext, UserCustomContext> = Producer::new(server, ucx);
     producer.listen();
 }
 
