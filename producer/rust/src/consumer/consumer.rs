@@ -7,20 +7,17 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-pub struct Cx<CX, UCX>
+pub struct Cx<CX>
 where
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
     own: Arc<RwLock<CX>>,
-    ucx: Arc<RwLock<UCX>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
 }
 
-impl<CX, UCX> Context for Cx<CX, UCX>
+impl<CX> Context for Cx<CX>
 where
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
     fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         match self.own.write() {
@@ -56,35 +53,31 @@ where
     }
 }
 
-pub struct Consumer<CX, UCX>
+pub struct Consumer<CX>
 where
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
     uuid: Uuid,
     buffer: Buffer<Protocol>,
     own: Arc<RwLock<CX>>,
-    ucx: Arc<RwLock<UCX>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     identification: Identification,
-    cx: Cx<CX, UCX>,
+    cx: Cx<CX>,
 }
 
-impl<CX, UCX> Consumer<CX, UCX>
+impl<CX> Consumer<CX>
 where
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
-    pub fn new(own: Arc<RwLock<CX>>, ucx: Arc<RwLock<UCX>>, consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>) -> Self {
+    pub fn new(own: Arc<RwLock<CX>>, consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>) -> Self {
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,
             buffer: Buffer::new(uuid),
             own: own.clone(),
-            ucx: ucx.clone(),
             consumers: consumers.clone(),
             identification: Identification::new(),
-            cx: Cx { own, ucx, consumers },
+            cx: Cx { own, consumers },
         }
     }
 

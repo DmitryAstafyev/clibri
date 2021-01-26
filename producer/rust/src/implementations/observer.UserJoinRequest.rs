@@ -4,6 +4,7 @@ use super::DeclUserJoinRequest::{ UserJoinObserver, UserJoinConclusion };
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting };
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
 pub struct UserJoinRequest {
@@ -35,12 +36,13 @@ impl ObserverRequest {
 
 }
 
-impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for ObserverRequest {
+impl<UCX> ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UCX> for ObserverRequest where UCX: Send + Sync {
 
     fn conclusion(
         &mut self,
         request: UserJoinRequest,
         cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
     ) -> Result<UserJoinConclusion, String> {
         Ok(UserJoinConclusion::Accept)
     }
@@ -49,17 +51,19 @@ impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclus
         &mut self,
         request: UserJoinRequest,
         cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
         conclusion: UserJoinConclusion,
     ) -> Result<UserJoinResponse, String> {
         Ok(UserJoinResponse { error: None })
     }
 }
 
-impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for ObserverRequest {
+impl<UCX> UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UCX> for ObserverRequest where UCX: Send + Sync {
 
     fn accept(
         &mut self,
         cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -68,6 +72,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for
     fn broadcast(
         &mut self,
         cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
         request: UserJoinRequest,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -77,6 +82,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion> for
     fn deny(
         &mut self,
         cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())

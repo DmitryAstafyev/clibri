@@ -31,7 +31,7 @@ pub mod ImplUserSingInRequest;
 #[path = "./implementations/observer.UserJoinRequest.rs"]
 pub mod ImplUserJoinRequest;
 
-use consumer::Consumer;
+use consumer::{Consumer, Cx};
 use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
 use DeclUserJoinRequest::UserJoinObserver;
@@ -109,7 +109,7 @@ where
 {
     server: S,
     ucx: Arc<RwLock<UCX>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     pub UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
     pub UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
 }
@@ -147,7 +147,7 @@ where
                             Ok(mut storage) => {
                                 let consumer = storage
                                     .entry(uuid)
-                                    .or_insert(Consumer::new(cx, ucx.clone(), consumers_ref.clone()));
+                                    .or_insert(Consumer::new(cx, consumers_ref.clone()));
                             }
                             Err(e) => {}
                         },
@@ -170,6 +170,7 @@ where
                                                     Ok(mut UserSingIn) => {
                                                         if let Err(e) = UserSingIn.emit(
                                                             consumer.get_cx(),
+                                                            ucx.clone(),
                                                             request,
                                                             &broadcast,
                                                         ) {
@@ -185,6 +186,7 @@ where
                                                     Ok(mut UserJoin) => {
                                                         if let Err(e) = UserJoin.emit(
                                                             consumer.get_cx(),
+                                                            ucx.clone(),
                                                             request,
                                                             &broadcast,
                                                         ) {
@@ -252,7 +254,7 @@ where
     }
 
     fn Broadcast(
-        consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX, UCX>>>>,
+        consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
         filter: HashMap<String, String>,
         condition: EFilterMatchCondition,
         broadcast: Broadcasting,
@@ -286,7 +288,7 @@ where
     }
 }
 
-struct UserCustomContext {}
+pub struct UserCustomContext {}
 
 fn test() {
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
