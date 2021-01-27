@@ -34,9 +34,9 @@ pub mod ImplUserJoinRequest;
 use consumer::{Consumer, Cx};
 use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
-use DeclUserJoinRequest::UserJoinObserver;
+use DeclUserJoinRequest::{UserJoinObserver, UserJoinConclusion};
 use DeclUserSingInRequest::UserSingInObserver;
-use ImplUserJoinRequest::UserJoinRequest;
+use ImplUserJoinRequest::{UserJoinRequest};
 use ImplUserSingInRequest::UserSingInRequest;
 
 use fiber::server::context::ConnectionContext;
@@ -286,10 +286,24 @@ where
 
 pub struct UserCustomContext {}
 
+mod UserJoin {
+    use super::{UserJoinRequest, UserCustomContext, UserJoinConclusion, Context};
+    use std::sync::{Arc, RwLock};
+
+    pub fn conclusion(request: UserJoinRequest, cx: &dyn Context, ucx: Arc<RwLock<UserCustomContext>>) -> Result<UserJoinConclusion, String> {
+        Ok(UserJoinConclusion::Accept)
+    }
+
+}
+
 fn test() {
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
     let ucx: UserCustomContext = UserCustomContext {};
     let mut producer: Producer<Server, ServerConnectionContext> = Producer::new(server);
+    match producer.UserJoin.write() {
+        Ok(mut UserJoin) => UserJoin.conclusion(&UserJoin::conclusion),
+        Err(e) => {},
+    };
     producer.listen(ucx);
 }
 

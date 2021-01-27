@@ -23,58 +23,116 @@ impl Encodable for UserSingInResponse {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ObserverRequest {
+type TEventHandler = &'static (dyn (Fn(
+    UserSingInRequest,
+    &dyn Context,
+    Arc<RwLock<UserCustomContext>>,
+    &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+) -> Result<(), String>)
+              + Send
+              + Sync);
+type TResponseHandler = &'static (dyn (Fn(
+    UserSingInRequest,
+    &dyn Context,
+    Arc<RwLock<UserCustomContext>>,
+) -> Result<(UserSingInResponse, UserSingInConclusion), String>)
+                + Send
+                + Sync);
 
+#[derive(Clone)]
+pub struct ObserverRequest {
+    response: Option<TResponseHandler>,
+    accept: Option<TEventHandler>,
+    broadcast: Option<TEventHandler>,
+    deny: Option<TEventHandler>,
 }
 
 impl ObserverRequest {
 
     pub fn new() -> Self {
-        ObserverRequest {}
+        ObserverRequest {
+            response: None,
+            accept: None,
+            broadcast: None,
+            deny: None,
+        }
+    }
+
+    pub fn response(&mut self, handler: TResponseHandler) {
+        self.response = Some(handler);
+    }
+
+    pub fn accept(&mut self, handler: TEventHandler) {
+        self.accept = Some(handler);
+    }
+
+    pub fn broadcast(&mut self, handler: TEventHandler) {
+        self.broadcast = Some(handler);
+    }
+
+    pub fn deny(&mut self, handler: TEventHandler) {
+        self.deny = Some(handler);
     }
 
 }
 
 impl RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
-    fn response(
+    fn _response(
         &mut self,
         request: UserSingInRequest,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
     ) -> Result<(UserSingInResponse, UserSingInConclusion), String> {
-        Ok((UserSingInResponse { error: None }, UserSingInConclusion::Accept))
+        if let Some(handler) = self.response {
+            handler(request, cx, ucx)
+        } else {
+            panic!("UserSingInRequest: no handler for [response]")
+        }
     }
 }
 
 impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
-    fn accept(
-        &mut self,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserSingInRequest,
-    ) -> Result<(), String> {
-        Ok(())
-    }
-
-    fn broadcast(
+    fn _accept(
         &mut self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
-        Ok(())
+        if let Some(handler) = self.accept {
+            handler(request, cx, ucx, broadcast)
+        } else {
+            panic!("UserSingInRequest: no handler for [accept]")
+        }
     }
 
-    fn deny(
+    fn _broadcast(
         &mut self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
-        Ok(())
+        if let Some(handler) = self.broadcast {
+            handler(request, cx, ucx, broadcast)
+        } else {
+            panic!("UserSingInRequest: no handler for [broadcast]")
+        }
+    }
+
+    fn _deny(
+        &mut self,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UserCustomContext>>,
+        request: UserSingInRequest,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+    ) -> Result<(), String> {
+        if let Some(handler) = self.deny {
+            handler(request, cx, ucx, broadcast)
+        } else {
+            panic!("UserSingInRequest: no handler for [deny]")
+        }
     }
 }

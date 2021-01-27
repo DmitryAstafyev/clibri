@@ -20,14 +20,7 @@ pub trait UserSingInObserver<
     UCX: Send + Sync,
 >: RequestObserver<Request, Response, UserSingInConclusion, UCX>
 {
-    fn accept(
-        &mut self,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
-        request: Request,
-    ) -> Result<(), String>;
-
-    fn broadcast(
+    fn _accept(
         &mut self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
@@ -35,11 +28,20 @@ pub trait UserSingInObserver<
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String>;
 
-    fn deny(
+    fn _broadcast(
         &mut self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         request: Request,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+    ) -> Result<(), String>;
+
+    fn _deny(
+        &mut self,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
+        request: Request,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String>;
 
     fn emit(
@@ -49,7 +51,7 @@ pub trait UserSingInObserver<
         request: Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        match self.response(request.clone(), cx, ucx.clone()) {
+        match self._response(request.clone(), cx, ucx.clone()) {
             Ok((mut response, conclusion)) => match response.abduct() {
                 Ok(buffer) => {
                     if let Err(e) = cx.send(buffer) {
@@ -57,15 +59,15 @@ pub trait UserSingInObserver<
                     } else {
                         match conclusion {
                             UserSingInConclusion::Accept => {
-                                if let Err(e) = self.accept(cx, ucx.clone(), request.clone()) {
+                                if let Err(e) = self._accept(cx, ucx.clone(), request.clone(), broadcast) {
                                     return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                 }
-                                if let Err(e) = self.broadcast(cx, ucx.clone(), request, broadcast) {
+                                if let Err(e) = self._broadcast(cx, ucx.clone(), request, broadcast) {
                                     return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                 }
                             }
                             UserSingInConclusion::Deny => {
-                                if let Err(e) = self.deny(cx, ucx.clone(), request) {
+                                if let Err(e) = self._deny(cx, ucx.clone(), request, broadcast) {
                                     return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                 }
                             }

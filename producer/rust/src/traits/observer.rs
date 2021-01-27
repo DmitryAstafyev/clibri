@@ -20,7 +20,7 @@ pub trait RequestObserver<
     UCX: Send + Sync,
 >
 {
-    fn response(
+    fn _response(
         &mut self,
         request: Request,
         cx: &dyn Context,
@@ -43,14 +43,14 @@ pub trait ConfirmedRequestObserver<
 >
 {
 
-    fn conclusion(
+    fn _conclusion(
         &mut self,
         request: Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
     ) -> Result<Conclusion, String>;
 
-    fn response(
+    fn _response(
         &mut self,
         request: Request,
         cx: &dyn Context,

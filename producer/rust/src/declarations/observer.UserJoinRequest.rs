@@ -20,14 +20,7 @@ pub trait UserJoinObserver<
     UCX: Send + Sync,
 >: ConfirmedRequestObserver<Request, Response, UserJoinConclusion, UCX>
 {
-    fn accept(
-        &mut self,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
-        request: Request,
-    ) -> Result<(), String>;
-
-    fn broadcast(
+    fn _accept(
         &mut self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
@@ -35,11 +28,20 @@ pub trait UserJoinObserver<
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String>;
 
-    fn deny(
+    fn _broadcast(
         &mut self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         request: Request,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+    ) -> Result<(), String>;
+
+    fn _deny(
+        &mut self,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UCX>>,
+        request: Request,
+        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String>;
 
     fn emit(
@@ -49,8 +51,8 @@ pub trait UserJoinObserver<
         request: Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        match self.conclusion(request.clone(), cx, ucx.clone()) {
-            Ok(conclusion) => match self.response(request.clone(), cx, ucx.clone(), conclusion.clone()) {
+        match self._conclusion(request.clone(), cx, ucx.clone()) {
+            Ok(conclusion) => match self._response(request.clone(), cx, ucx.clone(), conclusion.clone()) {
                 Ok(mut response) => match response.abduct() {
                     Ok(buffer) => {
                         if let Err(e) = cx.send(buffer) {
@@ -58,15 +60,15 @@ pub trait UserJoinObserver<
                         } else {
                             match conclusion {
                                 UserJoinConclusion::Accept => {
-                                    if let Err(e) = self.accept(cx, ucx.clone(), request.clone()) {
+                                    if let Err(e) = self._accept(cx, ucx.clone(), request.clone(), broadcast) {
                                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                     }
-                                    if let Err(e) = self.broadcast(cx, ucx.clone(), request, broadcast) {
+                                    if let Err(e) = self._broadcast(cx, ucx.clone(), request, broadcast) {
                                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                     }
                                 },
                                 UserJoinConclusion::Deny => {
-                                    if let Err(e) = self.deny(cx, ucx, request) {
+                                    if let Err(e) = self._deny(cx, ucx, request, broadcast) {
                                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                                     }
                                 },
