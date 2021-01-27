@@ -101,29 +101,25 @@ pub enum Broadcasting {
 }
 
 #[allow(non_snake_case)]
-pub struct Producer<S, CX, UCX>
+pub struct Producer<S, CX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
     server: S,
-    ucx: Arc<RwLock<UCX>>,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     pub UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
     pub UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
 }
 
-impl<S, CX: 'static, UCX: 'static> Producer<S, CX, UCX>
+impl<S, CX: 'static> Producer<S, CX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
-    pub fn new(server: S, context: UCX) -> Self {
+    pub fn new(server: S) -> Self {
         Producer {
             server,
-            ucx: Arc::new(RwLock::new(context)),
             consumers: Arc::new(RwLock::new(HashMap::new())),
             UserSingIn: Arc::new(RwLock::new(ImplUserSingInRequest::ObserverRequest::new())),
             UserJoin: Arc::new(RwLock::new(ImplUserJoinRequest::ObserverRequest::new())),
@@ -131,11 +127,11 @@ where
     }
 
     #[allow(non_snake_case)]
-    pub fn listen(&mut self) -> Result<(), String> {
+    pub fn listen(&mut self, ucx: UserCustomContext) -> Result<(), String> {
         let (tx_channel, rx_channel): (Sender<ServerEvents<CX>>, Receiver<ServerEvents<CX>>) =
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
-        let ucx = self.ucx.clone();
+        let ucx = Arc::new(RwLock::new(ucx));
         let UserSingIn = self.UserSingIn.clone();
         let UserJoin = self.UserJoin.clone();
         spawn(move || {
@@ -293,8 +289,8 @@ pub struct UserCustomContext {}
 fn test() {
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
     let ucx: UserCustomContext = UserCustomContext {};
-    let mut producer: Producer<Server, ServerConnectionContext, UserCustomContext> = Producer::new(server, ucx);
-    producer.listen();
+    let mut producer: Producer<Server, ServerConnectionContext> = Producer::new(server);
+    producer.listen(ucx);
 }
 
 #[cfg(test)]

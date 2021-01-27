@@ -2,7 +2,7 @@ use super::consumer_context::{Context, Encodable};
 use super::observer::{ RequestObserver };
 use super::DeclUserSingInRequest::{ UserSingInObserver, UserSingInConclusion };
 use super::consumer_identification::EFilterMatchCondition;
-use super::{ Broadcasting };
+use super::{ Broadcasting, UserCustomContext };
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -36,24 +36,24 @@ impl ObserverRequest {
 
 }
 
-impl<UCX> RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UCX> for ObserverRequest where UCX: Send + Sync {
+impl RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
     fn response(
         &mut self,
         request: UserSingInRequest,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
     ) -> Result<(UserSingInResponse, UserSingInConclusion), String> {
         Ok((UserSingInResponse { error: None }, UserSingInConclusion::Accept))
     }
 }
 
-impl<UCX> UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UCX> for ObserverRequest where UCX: Send + Sync {
+impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
     fn accept(
         &mut self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -62,7 +62,7 @@ impl<UCX> UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInCo
     fn broadcast(
         &mut self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -72,7 +72,7 @@ impl<UCX> UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInCo
     fn deny(
         &mut self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
     ) -> Result<(), String> {
         Ok(())

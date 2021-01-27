@@ -2,7 +2,7 @@ use super::consumer_context::{Context, Encodable};
 use super::observer::{ ConfirmedRequestObserver };
 use super::DeclUserJoinRequest::{ UserJoinObserver, UserJoinConclusion };
 use super::consumer_identification::EFilterMatchCondition;
-use super::{ Broadcasting };
+use super::{ Broadcasting, UserCustomContext };
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -36,13 +36,13 @@ impl ObserverRequest {
 
 }
 
-impl<UCX> ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UCX> for ObserverRequest where UCX: Send + Sync {
+impl ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UserCustomContext> for ObserverRequest {
 
     fn conclusion(
         &mut self,
         request: UserJoinRequest,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
     ) -> Result<UserJoinConclusion, String> {
         Ok(UserJoinConclusion::Accept)
     }
@@ -51,19 +51,19 @@ impl<UCX> ConfirmedRequestObserver<UserJoinRequest, UserJoinResponse, UserJoinCo
         &mut self,
         request: UserJoinRequest,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         conclusion: UserJoinConclusion,
     ) -> Result<UserJoinResponse, String> {
         Ok(UserJoinResponse { error: None })
     }
 }
 
-impl<UCX> UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UCX> for ObserverRequest where UCX: Send + Sync {
+impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UserCustomContext> for ObserverRequest {
 
     fn accept(
         &mut self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
@@ -72,7 +72,7 @@ impl<UCX> UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion
     fn broadcast(
         &mut self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         request: UserJoinRequest,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -82,7 +82,7 @@ impl<UCX> UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion
     fn deny(
         &mut self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: Arc<RwLock<UserCustomContext>>,
         request: UserJoinRequest,
     ) -> Result<(), String> {
         Ok(())
