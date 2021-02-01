@@ -151,88 +151,97 @@ where
             loop {
                 // TODO: here we can use recv as well instread try_recv
                 match rx_channel.try_recv() {
-                    Ok(event) => match event {
-                        ServerEvents::Connected(uuid, cx) => match consumers_ref.write() {
-                            Ok(mut storage) => {
-                                let consumer = storage
-                                    .entry(uuid)
-                                    .or_insert(Consumer::new(cx, consumers_ref.clone()));
-                                if let Err(e) = events.send(ProducerEvents::Connected(ucx.clone())) {
-                                    println!("{}", e);
-                                }
-                            }
-                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
-                                println!("{}", e);
-                            }
-                        },
-                        ServerEvents::Disconnected(uuid, _cx) => match consumers_ref.write() {
-                            Ok(mut consumers) => {
-                                consumers.remove(&uuid);
-                                if let Err(e) = events.send(ProducerEvents::Disconnected) {
-                                    println!("{}", e);
-                                }
-                            }
-                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
-                                println!("{}", e);
-                            }
-                        },
-                        ServerEvents::Received(uuid, _cx, buffer) => match consumers_ref.write() {
-                            Ok(mut consumers) => {
-                                if let Some(consumer) = consumers.get_mut(&uuid) {
-                                    let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {
-                                        Self::Broadcast(consumers_ref.clone(), filter, condition, broadcast)
-                                    };
-                                    match consumer.read(buffer) {
-                                        Ok(message) => match message {
-                                            Messages::UserSingInRequest(request) => {
-                                                match UserSingIn.write() {
-                                                    Ok(mut UserSingIn) => {
-                                                        if let Err(e) = UserSingIn.emit(
-                                                            consumer.get_cx(),
-                                                            ucx.clone(),
-                                                            request,
-                                                            &broadcast,
-                                                        ) {
-                                                            if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
-                                                                println!("{}", e);
-                                                            };
-                                                        }
-                                                    }
-                                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
-                                                        println!("{}", e);
-                                                    }
-                                                }
-                                            }
-                                            Messages::UserJoinRequest(request) => {
-                                                match UserJoin.write() {
-                                                    Ok(mut UserJoin) => {
-                                                        if let Err(e) = UserJoin.emit(
-                                                            consumer.get_cx(),
-                                                            ucx.clone(),
-                                                            request,
-                                                            &broadcast,
-                                                        ) {
-                                                            // TODO: error channel
-                                                            println!("{:?}", e);
-                                                        }
-                                                    }
-                                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
-                                                        println!("{}", e);
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        Err(e) => {}
+                    Ok(event) => {
+                        let consumers_ref = consumers_ref.clone();
+                        let ucx = ucx.clone();
+                        let UserSingIn = UserSingIn.clone();
+                        let UserJoin = UserJoin.clone();
+                        let events = events.clone();
+                        spawn(move || {
+                            match event {
+                                ServerEvents::Connected(uuid, cx) => match consumers_ref.write() {
+                                    Ok(mut storage) => {
+                                        let consumer = storage
+                                            .entry(uuid)
+                                            .or_insert(Consumer::new(cx, consumers_ref.clone()));
+                                        if let Err(e) = events.send(ProducerEvents::Connected(ucx.clone())) {
+                                            println!("{}", e);
+                                        }
                                     }
+                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
+                                        println!("{}", e);
+                                    }
+                                },
+                                ServerEvents::Disconnected(uuid, _cx) => match consumers_ref.write() {
+                                    Ok(mut consumers) => {
+                                        consumers.remove(&uuid);
+                                        if let Err(e) = events.send(ProducerEvents::Disconnected) {
+                                            println!("{}", e);
+                                        }
+                                    }
+                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
+                                        println!("{}", e);
+                                    }
+                                },
+                                ServerEvents::Received(uuid, _cx, buffer) => match consumers_ref.write() {
+                                    Ok(mut consumers) => {
+                                        if let Some(consumer) = consumers.get_mut(&uuid) {
+                                            let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {
+                                                Self::Broadcast(consumers_ref.clone(), filter, condition, broadcast)
+                                            };
+                                            match consumer.read(buffer) {
+                                                Ok(message) => match message {
+                                                    Messages::UserSingInRequest(request) => {
+                                                        match UserSingIn.write() {
+                                                            Ok(mut UserSingIn) => {
+                                                                if let Err(e) = UserSingIn.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
+                                                                        println!("{}", e);
+                                                                    };
+                                                                }
+                                                            }
+                                                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
+                                                                println!("{}", e);
+                                                            }
+                                                        }
+                                                    }
+                                                    Messages::UserJoinRequest(request) => {
+                                                        match UserJoin.write() {
+                                                            Ok(mut UserJoin) => {
+                                                                if let Err(e) = UserJoin.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    // TODO: error channel
+                                                                    println!("{:?}", e);
+                                                                }
+                                                            }
+                                                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
+                                                                println!("{}", e);
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                Err(e) => {}
+                                            }
+                                        }
+                                    }
+                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
+                                        println!("{}", e);
+                                    }
+                                },
+                                ServerEvents::Error(uuid, e) => if let Err(e) = events.send(ProducerEvents::ServerError(format!("Connection {:?}: {}", uuid, e).to_owned())) {
+                                    println!("{}", e);
                                 }
                             }
-                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
-                                println!("{}", e);
-                            }
-                        },
-                        ServerEvents::Error(uuid, e) => if let Err(e) = events.send(ProducerEvents::ServerError(format!("Connection {:?}: {}", uuid, e).to_owned())) {
-                            println!("{}", e);
-                        }
+                        });
                     },
                     Err(_) => {
                         // No needs logs here;
