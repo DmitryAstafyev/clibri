@@ -14,7 +14,7 @@ pub struct UserJoinRequest {
 
 #[derive(Debug, Clone)]
 pub struct UserJoinResponse {
-    error: Option<String>,
+    pub error: Option<String>,
 }
 
 impl Encodable for UserJoinResponse {
@@ -36,8 +36,8 @@ type TResponseHandler = &'static (dyn (Fn(
     Arc<RwLock<UserCustomContext>>,
     UserJoinConclusion,
 ) -> Result<UserJoinResponse, String>)
-                + Send
-                + Sync);
+              + Send
+              + Sync);
 type TEventHandler = &'static (dyn (Fn(
     UserJoinRequest,
     &dyn Context,
@@ -55,7 +55,10 @@ pub struct ObserverRequest {
     broadcast: Option<TEventHandler>,
     deny: Option<TEventHandler>,
 }
-
+enum MessageExample {
+    MessageA(String),
+    MessageB(u32),
+}
 impl ObserverRequest {
     pub fn new() -> Self {
         ObserverRequest {

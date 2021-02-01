@@ -34,9 +34,9 @@ pub mod ImplUserJoinRequest;
 use consumer::{Consumer, Cx};
 use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
-use DeclUserJoinRequest::{UserJoinObserver, UserJoinConclusion};
+use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
 use DeclUserSingInRequest::UserSingInObserver;
-use ImplUserJoinRequest::{UserJoinRequest};
+use ImplUserJoinRequest::{UserJoinRequest, UserJoinResponse};
 use ImplUserSingInRequest::UserSingInRequest;
 
 use fiber::server::context::ConnectionContext;
@@ -100,6 +100,14 @@ pub enum Broadcasting {
     UserDisconnected(UserDisconnected),
 }
 
+pub enum ProducerEvents {
+    InternalError(String),
+    EmitError(String),
+    ServerError(String),
+    Connected(Arc<RwLock<UserCustomContext>>),
+    Disconnected,
+}
+
 #[allow(non_snake_case)]
 pub struct Producer<S, CX>
 where
@@ -108,8 +116,9 @@ where
 {
     server: S,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
-    pub UserSingIn: Arc<RwLock<ImplUserSingInRequest::ObserverRequest>>,
-    pub UserJoin: Arc<RwLock<ImplUserJoinRequest::ObserverRequest>>,
+    events: Sender<ProducerEvents>,
+    pub UserSingIn: ImplUserSingInRequest::ObserverRequest,
+    pub UserJoin: ImplUserJoinRequest::ObserverRequest,
 }
 
 impl<S, CX: 'static> Producer<S, CX>
@@ -117,13 +126,15 @@ where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
 {
-    pub fn new(server: S) -> Self {
-        Producer {
+    pub fn new(server: S) -> (Self, Receiver<ProducerEvents>) {
+        let (sender, receiver) = mpsc::channel();
+        (Producer {
             server,
             consumers: Arc::new(RwLock::new(HashMap::new())),
-            UserSingIn: Arc::new(RwLock::new(ImplUserSingInRequest::ObserverRequest::new())),
-            UserJoin: Arc::new(RwLock::new(ImplUserJoinRequest::ObserverRequest::new())),
-        }
+            events: sender,
+            UserSingIn: ImplUserSingInRequest::ObserverRequest::new(),
+            UserJoin: ImplUserJoinRequest::ObserverRequest::new(),
+        }, receiver)
     }
 
     #[allow(non_snake_case)]
@@ -132,11 +143,13 @@ where
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
         let ucx = Arc::new(RwLock::new(ucx));
-        let UserSingIn = self.UserSingIn.clone();
-        let UserJoin = self.UserJoin.clone();
+        let UserSingIn = Arc::new(RwLock::new(self.UserSingIn.clone()));
+        let UserJoin = Arc::new(RwLock::new(self.UserJoin.clone()));
+        let events = self.events.clone();
         spawn(move || {
             let timeout = Duration::from_millis(50);
             loop {
+                // TODO: here we can use recv as well instread try_recv
                 match rx_channel.try_recv() {
                     Ok(event) => match event {
                         ServerEvents::Connected(uuid, cx) => match consumers_ref.write() {
@@ -144,14 +157,24 @@ where
                                 let consumer = storage
                                     .entry(uuid)
                                     .or_insert(Consumer::new(cx, consumers_ref.clone()));
+                                if let Err(e) = events.send(ProducerEvents::Connected(ucx.clone())) {
+                                    println!("{}", e);
+                                }
                             }
-                            Err(e) => {}
+                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
+                                println!("{}", e);
+                            }
                         },
                         ServerEvents::Disconnected(uuid, _cx) => match consumers_ref.write() {
                             Ok(mut consumers) => {
                                 consumers.remove(&uuid);
+                                if let Err(e) = events.send(ProducerEvents::Disconnected) {
+                                    println!("{}", e);
+                                }
                             }
-                            Err(e) => {}
+                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
+                                println!("{}", e);
+                            }
                         },
                         ServerEvents::Received(uuid, _cx, buffer) => match consumers_ref.write() {
                             Ok(mut consumers) => {
@@ -170,11 +193,14 @@ where
                                                             request,
                                                             &broadcast,
                                                         ) {
-                                                            // TODO: error channel
-                                                            println!("{:?}", e);
+                                                            if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
+                                                                println!("{}", e);
+                                                            };
                                                         }
                                                     }
-                                                    Err(e) => {}
+                                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
+                                                        println!("{}", e);
+                                                    }
                                                 }
                                             }
                                             Messages::UserJoinRequest(request) => {
@@ -190,7 +216,9 @@ where
                                                             println!("{:?}", e);
                                                         }
                                                     }
-                                                    Err(e) => {}
+                                                    Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
+                                                        println!("{}", e);
+                                                    }
                                                 }
                                             }
                                         },
@@ -198,9 +226,13 @@ where
                                     }
                                 }
                             }
-                            Err(e) => {}
+                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
+                                println!("{}", e);
+                            }
                         },
-                        ServerEvents::Error(uuid, e) => {}
+                        ServerEvents::Error(uuid, e) => if let Err(e) = events.send(ProducerEvents::ServerError(format!("Connection {:?}: {}", uuid, e).to_owned())) {
+                            println!("{}", e);
+                        }
                     },
                     Err(_) => {
                         // No needs logs here;
@@ -287,24 +319,82 @@ where
 pub struct UserCustomContext {}
 
 mod UserJoin {
-    use super::{UserJoinRequest, UserCustomContext, UserJoinConclusion, Context};
+    use super::{
+        Broadcasting, Context, EFilterMatchCondition, UserCustomContext, UserJoinConclusion,
+        UserJoinRequest, UserJoinResponse,
+    };
+    use std::collections::HashMap;
     use std::sync::{Arc, RwLock};
 
-    pub fn conclusion(request: UserJoinRequest, cx: &dyn Context, ucx: Arc<RwLock<UserCustomContext>>) -> Result<UserJoinConclusion, String> {
+    pub fn conclusion(
+        request: UserJoinRequest,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UserCustomContext>>,
+    ) -> Result<UserJoinConclusion, String> {
         Ok(UserJoinConclusion::Accept)
     }
 
+    pub fn response(
+        request: UserJoinRequest,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UserCustomContext>>,
+        conclusion: UserJoinConclusion,
+    ) -> Result<UserJoinResponse, String> {
+        Ok(UserJoinResponse { error: None })
+    }
+
+    pub fn accept(
+        request: UserJoinRequest,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UserCustomContext>>,
+        broadcast: &dyn Fn(
+            HashMap<String, String>,
+            EFilterMatchCondition,
+            Broadcasting,
+        ) -> Result<(), String>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn deny(
+        request: UserJoinRequest,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UserCustomContext>>,
+        broadcast: &dyn Fn(
+            HashMap<String, String>,
+            EFilterMatchCondition,
+            Broadcasting,
+        ) -> Result<(), String>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn broadcast(
+        request: UserJoinRequest,
+        cx: &dyn Context,
+        ucx: Arc<RwLock<UserCustomContext>>,
+        broadcast: &dyn Fn(
+            HashMap<String, String>,
+            EFilterMatchCondition,
+            Broadcasting,
+        ) -> Result<(), String>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 fn test() {
-    let server: Server = Server::new(String::from("127.0.0.1:8080"));
-    let ucx: UserCustomContext = UserCustomContext {};
-    let mut producer: Producer<Server, ServerConnectionContext> = Producer::new(server);
-    match producer.UserJoin.write() {
-        Ok(mut UserJoin) => UserJoin.conclusion(&UserJoin::conclusion),
-        Err(e) => {},
-    };
-    producer.listen(ucx);
+    spawn(move || {
+        let server: Server = Server::new(String::from("127.0.0.1:8080"));
+        let ucx: UserCustomContext = UserCustomContext {};
+        let (mut producer, receiver): (Producer<Server, ServerConnectionContext>, Receiver<ProducerEvents>) = Producer::new(server);
+        producer.UserJoin.conclusion(&UserJoin::conclusion);
+        producer.UserJoin.broadcast(&UserJoin::broadcast);
+        producer.UserJoin.accept(&UserJoin::accept);
+        producer.UserJoin.deny(&UserJoin::deny);
+        producer.UserJoin.response(&UserJoin::response);
+        producer.listen(ucx);
+    });
 }
 
 #[cfg(test)]
