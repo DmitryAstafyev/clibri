@@ -1,6 +1,9 @@
 #[path = "./traits/observer.rs"]
 pub mod observer;
 
+#[path = "./traits/logger.rs"]
+pub mod logger;
+
 #[path = "./buffer.rs"]
 pub mod buffer;
 
@@ -38,6 +41,7 @@ use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
 use DeclUserSingInRequest::UserSingInObserver;
 use ImplUserJoinRequest::{UserJoinRequest, UserJoinResponse};
 use ImplUserSingInRequest::UserSingInRequest;
+use logger::{Logger};
 
 use fiber::server::context::ConnectionContext;
 use fiber::server::events::ServerEvents;
@@ -104,9 +108,16 @@ pub enum ProducerEvents {
     InternalError(String),
     EmitError(String),
     ServerError(String),
+    Reading(String),
     Connected(Arc<RwLock<UserCustomContext>>),
     Disconnected,
 }
+
+pub struct DefaultLogger {
+
+}
+
+impl Logger for DefaultLogger {}
 
 #[allow(non_snake_case)]
 pub struct Producer<S, CX>
@@ -117,6 +128,7 @@ where
     server: S,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     events: Sender<ProducerEvents>,
+    logger: &'static (dyn Logger + Send + Sync),
     pub UserSingIn: ImplUserSingInRequest::ObserverRequest,
     pub UserJoin: ImplUserJoinRequest::ObserverRequest,
 }
@@ -126,12 +138,18 @@ where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
 {
-    pub fn new(server: S) -> (Self, Receiver<ProducerEvents>) {
+    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents>) {
         let (sender, receiver) = mpsc::channel();
+        let logs = if let Some(logger) = logger {
+            logger
+        } else {
+            &(DefaultLogger {})
+        };
         (Producer {
             server,
             consumers: Arc::new(RwLock::new(HashMap::new())),
             events: sender,
+            logger: logs,
             UserSingIn: ImplUserSingInRequest::ObserverRequest::new(),
             UserJoin: ImplUserJoinRequest::ObserverRequest::new(),
         }, receiver)
@@ -146,6 +164,7 @@ where
         let UserSingIn = Arc::new(RwLock::new(self.UserSingIn.clone()));
         let UserJoin = Arc::new(RwLock::new(self.UserJoin.clone()));
         let events = self.events.clone();
+        let logger = self.logger;
         spawn(move || {
             let timeout = Duration::from_millis(50);
             loop {
@@ -161,26 +180,26 @@ where
                             match event {
                                 ServerEvents::Connected(uuid, cx) => match consumers_ref.write() {
                                     Ok(mut storage) => {
-                                        let consumer = storage
+                                        let _consumer = storage
                                             .entry(uuid)
                                             .or_insert(Consumer::new(cx, consumers_ref.clone()));
                                         if let Err(e) = events.send(ProducerEvents::Connected(ucx.clone())) {
-                                            println!("{}", e);
+                                            logger.err(&format!("{}", e));
                                         }
                                     }
                                     Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
-                                        println!("{}", e);
+                                        logger.err(&format!("{}", e));
                                     }
                                 },
                                 ServerEvents::Disconnected(uuid, _cx) => match consumers_ref.write() {
                                     Ok(mut consumers) => {
                                         consumers.remove(&uuid);
                                         if let Err(e) = events.send(ProducerEvents::Disconnected) {
-                                            println!("{}", e);
+                                            logger.err(&format!("{}", e));
                                         }
                                     }
                                     Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
-                                        println!("{}", e);
+                                        logger.err(&format!("{}", e));
                                     }
                                 },
                                 ServerEvents::Received(uuid, _cx, buffer) => match consumers_ref.write() {
@@ -201,12 +220,12 @@ where
                                                                     &broadcast,
                                                                 ) {
                                                                     if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
-                                                                        println!("{}", e);
-                                                                    };
+                                                                        logger.err(&format!("{}", e));
+                                                                    }
                                                                 }
                                                             }
                                                             Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
-                                                                println!("{}", e);
+                                                                logger.err(&format!("{}", e));
                                                             }
                                                         }
                                                     }
@@ -219,26 +238,29 @@ where
                                                                     request,
                                                                     &broadcast,
                                                                 ) {
-                                                                    // TODO: error channel
-                                                                    println!("{:?}", e);
+                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserJoinRequest due error: {:?}", e).to_owned())) {
+                                                                        logger.err(&format!("{}", e));
+                                                                    }
                                                                 }
                                                             }
                                                             Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
-                                                                println!("{}", e);
+                                                                logger.err(&format!("{}", e));
                                                             }
                                                         }
                                                     }
                                                 },
-                                                Err(e) => {}
+                                                Err(e) => if let Err(e) = events.send(ProducerEvents::Reading(format!("Fail to read connection buffer due error: {}", e).to_owned())) {
+                                                    logger.err(&format!("{}", e));
+                                                }
                                             }
                                         }
                                     }
                                     Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to consumers due error: {}", e).to_owned())) {
-                                        println!("{}", e);
+                                        logger.err(&format!("{}", e));
                                     }
                                 },
                                 ServerEvents::Error(uuid, e) => if let Err(e) = events.send(ProducerEvents::ServerError(format!("Connection {:?}: {}", uuid, e).to_owned())) {
-                                    println!("{}", e);
+                                    logger.err(&format!("{}", e));
                                 }
                             }
                         });
@@ -396,7 +418,7 @@ fn test() {
     spawn(move || {
         let server: Server = Server::new(String::from("127.0.0.1:8080"));
         let ucx: UserCustomContext = UserCustomContext {};
-        let (mut producer, receiver): (Producer<Server, ServerConnectionContext>, Receiver<ProducerEvents>) = Producer::new(server);
+        let (mut producer, receiver): (Producer<Server, ServerConnectionContext>, Receiver<ProducerEvents>) = Producer::new(server, None);
         producer.UserJoin.conclusion(&UserJoin::conclusion);
         producer.UserJoin.broadcast(&UserJoin::broadcast);
         producer.UserJoin.accept(&UserJoin::accept);
