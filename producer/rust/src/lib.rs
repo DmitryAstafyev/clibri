@@ -28,11 +28,17 @@ pub mod DeclUserSingInRequest;
 #[path = "./declarations/observer.UserJoinRequest.rs"]
 pub mod DeclUserJoinRequest;
 
+#[path = "./declarations/observer.event.UserConnected.rs"]
+pub mod DeclEventUserConnected;
+
 #[path = "./implementations/observer.UserSingInRequest.rs"]
 pub mod ImplUserSingInRequest;
 
 #[path = "./implementations/observer.UserJoinRequest.rs"]
 pub mod ImplUserJoinRequest;
+
+#[path = "./implementations/observer.event.UserConnected.rs"]
+pub mod ImplEventUserConnected;
 
 use consumer::{Consumer, Cx};
 use consumer_context::*;

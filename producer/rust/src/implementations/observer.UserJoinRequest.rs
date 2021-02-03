@@ -55,10 +55,7 @@ pub struct ObserverRequest {
     broadcast: Option<TEventHandler>,
     deny: Option<TEventHandler>,
 }
-enum MessageExample {
-    MessageA(String),
-    MessageB(u32),
-}
+
 impl ObserverRequest {
     pub fn new() -> Self {
         ObserverRequest {

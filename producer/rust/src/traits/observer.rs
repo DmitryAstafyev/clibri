@@ -27,12 +27,6 @@ pub trait RequestObserver<
         ucx: Arc<RwLock<UCX>>,
     ) -> Result<(Response, Conclusion), String>;
 
-    fn emit(
-        &mut self,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
-        request: Request,
-    ) -> Result<(), RequestObserverErrors> { Ok(()) }
 }
 
 pub trait ConfirmedRequestObserver<
@@ -58,10 +52,14 @@ pub trait ConfirmedRequestObserver<
         conclusion: Conclusion,
     ) -> Result<Response, String>;
 
-    fn emit(
-        &mut self,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
-        request: Request,
-    ) -> Result<(), RequestObserverErrors> { Ok(()) }
+}
+
+#[derive(Debug)]
+pub enum EventObserverErrors {
+    ResponsingError(String),
+    GettingResponseError(String),
+    EncodingResponseError(String),
+    BeforeResponseActionFail(String),
+    ErrorOnEventsEmit(String),
+    GettingConclusionError(String),
 }
