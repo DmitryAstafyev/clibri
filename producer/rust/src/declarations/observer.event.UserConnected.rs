@@ -1,18 +1,18 @@
 use super::consumer_identification::EFilterMatchCondition;
-use super::observer::{EventObserverErrors};
-use super::{Broadcasting};
+use super::consumer::{Consumer};
+use super::Broadcasting;
+use fiber::server::context::ConnectionContext;
 use std::collections::HashMap;
+use std::sync::mpsc::Sender;
 use std::sync::{Arc, RwLock};
+use uuid::Uuid;
 
-//TODO: add event type
-pub trait EventUserConnected<UCX: Send + Sync> {
-    fn emit(
-        &mut self,
-        ucx: Arc<RwLock<UCX>>,
-        broadcast: &dyn Fn(
-            HashMap<String, String>,
-            EFilterMatchCondition,
-            Broadcasting,
-        ) -> Result<(), String>,
-    ) -> Result<(), EventObserverErrors>;
+pub type TBroadcastHandler = &'static (dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>
+              + Send
+              + Sync);
+
+pub trait EventUserConnected<UCX: Send + Sync, E, CX> where CX: ConnectionContext + Send + Sync, {
+    fn emitter(&self) -> Option<Sender<E>>;
+
+    fn listen(&mut self, ucx: Arc<RwLock<UCX>>, consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>);
 }

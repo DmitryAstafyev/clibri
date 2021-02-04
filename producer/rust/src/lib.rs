@@ -45,6 +45,7 @@ use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
 use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
 use DeclUserSingInRequest::UserSingInObserver;
+use DeclEventUserConnected::EventUserConnected;
 use ImplUserJoinRequest::{UserJoinRequest, UserJoinResponse};
 use ImplUserSingInRequest::UserSingInRequest;
 use logger::{Logger};
@@ -125,6 +126,40 @@ pub struct DefaultLogger {
 
 impl Logger for DefaultLogger {}
 
+pub fn broadcasting<CX: ConnectionContext + Send + Sync,>(
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+    filter: HashMap<String, String>,
+    condition: EFilterMatchCondition,
+    broadcast: Broadcasting,
+) -> Result<(), String> {
+    match consumers.write() {
+        Ok(consumers) => match broadcast {
+            Broadcasting::UserDisconnected(mut msg) => match msg.abduct() {
+                Ok(buffer) => {
+                    let mut errors: Vec<String> = vec![];
+                    for (uuid, consumer) in consumers.iter() {
+                        if let Err(e) =
+                            consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
+                        {
+                            errors.push(format!(
+                                "Fail to send data to {}, due error: {}",
+                                uuid, e
+                            ));
+                        }
+                    }
+                    if errors.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(errors.join("\n"))
+                    }
+                }
+                Err(e) => Err(e),
+            },
+        },
+        Err(e) => Err(format!("{}", e)),
+    }
+}
+
 #[allow(non_snake_case)]
 pub struct Producer<S, CX>
 where
@@ -137,6 +172,7 @@ where
     logger: &'static (dyn Logger + Send + Sync),
     pub UserSingIn: ImplUserSingInRequest::ObserverRequest,
     pub UserJoin: ImplUserJoinRequest::ObserverRequest,
+    pub EventUserConnected: ImplEventUserConnected::EventObserver,
 }
 
 impl<S, CX: 'static> Producer<S, CX>
@@ -158,6 +194,7 @@ where
             logger: logs,
             UserSingIn: ImplUserSingInRequest::ObserverRequest::new(),
             UserJoin: ImplUserJoinRequest::ObserverRequest::new(),
+            EventUserConnected: ImplEventUserConnected::EventObserver::new(),
         }, receiver)
     }
 
@@ -167,6 +204,7 @@ where
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
         let ucx = Arc::new(RwLock::new(ucx));
+        self.EventUserConnected.listen(ucx.clone(), consumers_ref.clone());
         let UserSingIn = Arc::new(RwLock::new(self.UserSingIn.clone()));
         let UserJoin = Arc::new(RwLock::new(self.UserJoin.clone()));
         let events = self.events.clone();
@@ -212,7 +250,7 @@ where
                                     Ok(mut consumers) => {
                                         if let Some(consumer) = consumers.get_mut(&uuid) {
                                             let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {
-                                                Self::Broadcast(consumers_ref.clone(), filter, condition, broadcast)
+                                                broadcasting(consumers_ref.clone(), filter, condition, broadcast)
                                             };
                                             match consumer.read(buffer) {
                                                 Ok(message) => match message {
@@ -290,67 +328,9 @@ where
         condition: EFilterMatchCondition,
         broadcast: Broadcasting,
     ) -> Result<(), String> {
-        match self.consumers.write() {
-            Ok(consumers) => match broadcast {
-                Broadcasting::UserDisconnected(mut msg) => match msg.abduct() {
-                    Ok(buffer) => {
-                        let mut errors: Vec<String> = vec![];
-                        for (uuid, consumer) in consumers.iter() {
-                            if let Err(e) =
-                                consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
-                            {
-                                errors.push(format!(
-                                    "Fail to send data to {}, due error: {}",
-                                    uuid, e
-                                ));
-                            }
-                        }
-                        if errors.is_empty() {
-                            Ok(())
-                        } else {
-                            Err(errors.join("\n"))
-                        }
-                    }
-                    Err(e) => Err(e),
-                },
-            },
-            Err(e) => Err(format!("{}", e)),
-        }
+        broadcasting(self.consumers.clone(), filter, condition, broadcast)
     }
 
-    fn Broadcast(
-        consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
-        filter: HashMap<String, String>,
-        condition: EFilterMatchCondition,
-        broadcast: Broadcasting,
-    ) -> Result<(), String> {
-        match consumers.write() {
-            Ok(consumers) => match broadcast {
-                Broadcasting::UserDisconnected(mut msg) => match msg.abduct() {
-                    Ok(buffer) => {
-                        let mut errors: Vec<String> = vec![];
-                        for (uuid, consumer) in consumers.iter() {
-                            if let Err(e) =
-                                consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
-                            {
-                                errors.push(format!(
-                                    "Fail to send data to {}, due error: {}",
-                                    uuid, e
-                                ));
-                            }
-                        }
-                        if errors.is_empty() {
-                            Ok(())
-                        } else {
-                            Err(errors.join("\n"))
-                        }
-                    }
-                    Err(e) => Err(e),
-                },
-            },
-            Err(e) => Err(format!("{}", e)),
-        }
-    }
 }
 
 pub struct UserCustomContext {}
