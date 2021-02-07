@@ -97,7 +97,7 @@ impl
     > for ObserverRequest
 {
     fn _conclusion(
-        &mut self,
+        &self,
         request: UserJoinRequest,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
@@ -110,7 +110,7 @@ impl
     }
 
     fn _response(
-        &mut self,
+        &self,
         request: UserJoinRequest,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
@@ -128,7 +128,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
     for ObserverRequest
 {
     fn _accept(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserJoinRequest,
@@ -146,7 +146,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
     }
 
     fn _broadcast(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserJoinRequest,
@@ -164,7 +164,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
     }
 
     fn _deny(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserJoinRequest,

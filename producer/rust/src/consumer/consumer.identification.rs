@@ -27,7 +27,7 @@ impl Identification {
     }
 
     pub fn remove(&mut self, key: String) {
-        self.remove(key);
+        self.fp.remove(&key);
     }
 
     pub fn filter(&self, request: HashMap<String, String>, condition: EFilterMatchCondition) -> bool {

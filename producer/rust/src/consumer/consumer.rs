@@ -58,9 +58,9 @@ where
     CX: ConnectionContext + Send + Sync,
 {
     uuid: Uuid,
-    buffer: Buffer<Protocol>,
-    own: Arc<RwLock<CX>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+    _buffer: Buffer<Protocol>,
+    _own: Arc<RwLock<CX>>,
+    _consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     identification: Identification,
     cx: Cx<CX>,
 }
@@ -73,15 +73,15 @@ where
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,
-            buffer: Buffer::new(uuid),
-            own: own.clone(),
-            consumers: consumers.clone(),
+            _buffer: Buffer::new(uuid),
+            _own: own.clone(),
+            _consumers: consumers.clone(),
             identification: Identification::new(),
             cx: Cx { own, consumers },
         }
     }
 
-    pub fn read(&mut self, buffer: Vec<u8>) -> Result<Messages, String> {
+    pub fn read(&mut self, _buffer: Vec<u8>) -> Result<Messages, String> {
         Err("".to_owned())
     }
 
@@ -108,5 +108,9 @@ where
 
     pub fn get_cx(&mut self) -> &impl Context {
         &self.cx
+    }
+
+    pub fn get_uuid(&self) -> Uuid {
+        self.uuid.clone()
     }
 }

@@ -21,7 +21,7 @@ pub trait UserSingInObserver<
 >: RequestObserver<Request, Response, UserSingInConclusion, UCX>
 {
     fn _accept(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         request: Request,
@@ -29,7 +29,7 @@ pub trait UserSingInObserver<
     ) -> Result<(), String>;
 
     fn _broadcast(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         request: Request,
@@ -37,7 +37,7 @@ pub trait UserSingInObserver<
     ) -> Result<(), String>;
 
     fn _deny(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         request: Request,
@@ -45,7 +45,7 @@ pub trait UserSingInObserver<
     ) -> Result<(), String>;
 
     fn emit(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         request: Request,

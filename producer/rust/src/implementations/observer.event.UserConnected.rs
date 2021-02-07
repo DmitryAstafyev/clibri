@@ -1,6 +1,5 @@
 use super::consumer_identification::EFilterMatchCondition;
-use super::observer::{EventObserverErrors};
-use super::DeclEventUserConnected::{EventUserConnected, TBroadcastHandler};
+use super::DeclEventUserConnected::{EventUserConnected};
 use super::{Broadcasting, UserCustomContext, broadcasting};
 use super::consumer::{Consumer};
 use fiber::server::context::ConnectionContext;

@@ -79,7 +79,7 @@ impl ObserverRequest {
 impl RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
     fn _response(
-        &mut self,
+        &self,
         request: UserSingInRequest,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
@@ -95,7 +95,7 @@ impl RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion
 impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
     fn _accept(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
@@ -109,7 +109,7 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
     }
 
     fn _broadcast(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,
@@ -123,7 +123,7 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
     }
 
     fn _deny(
-        &mut self,
+        &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         request: UserSingInRequest,

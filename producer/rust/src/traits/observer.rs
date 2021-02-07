@@ -21,7 +21,7 @@ pub trait RequestObserver<
 >
 {
     fn _response(
-        &mut self,
+        &self,
         request: Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
@@ -38,14 +38,14 @@ pub trait ConfirmedRequestObserver<
 {
 
     fn _conclusion(
-        &mut self,
+        &self,
         request: Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
     ) -> Result<Conclusion, String>;
 
     fn _response(
-        &mut self,
+        &self,
         request: Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,

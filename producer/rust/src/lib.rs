@@ -22,25 +22,32 @@ pub mod consumer_identification;
 #[path = "./consumer/consumer.context.rs"]
 pub mod consumer_context;
 
+#[allow(non_snake_case)]
 #[path = "./declarations/observer.UserSingInRequest.rs"]
 pub mod DeclUserSingInRequest;
 
+#[allow(non_snake_case)]
 #[path = "./declarations/observer.UserJoinRequest.rs"]
 pub mod DeclUserJoinRequest;
 
+#[allow(non_snake_case)]
+#[allow(non_snake_case)]
 #[path = "./declarations/observer.event.UserConnected.rs"]
 pub mod DeclEventUserConnected;
 
+#[allow(non_snake_case)]
 #[path = "./implementations/observer.UserSingInRequest.rs"]
 pub mod ImplUserSingInRequest;
 
+#[allow(non_snake_case)]
 #[path = "./implementations/observer.UserJoinRequest.rs"]
 pub mod ImplUserJoinRequest;
 
+#[allow(non_snake_case)]
 #[path = "./implementations/observer.event.UserConnected.rs"]
 pub mod ImplEventUserConnected;
 
-use consumer::{Consumer, Cx};
+use consumer::{Consumer};
 use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
 use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
@@ -77,7 +84,7 @@ pub enum Messages {
 pub struct Protocol {}
 
 impl protocol::Protocol<Messages> for Protocol {
-    fn get_msg(&self, id: u32, buffer: &[u8]) -> Result<Messages, String> {
+    fn get_msg(&self, _id: u32, _buffer: &[u8]) -> Result<Messages, String> {
         Ok(Messages::UserSingInRequest(UserSingInRequest {
             login: String::from("login"),
             email: String::from("email"),
@@ -256,7 +263,7 @@ where
                                                 Ok(message) => match message {
                                                     Messages::UserSingInRequest(request) => {
                                                         match UserSingIn.write() {
-                                                            Ok(mut UserSingIn) => {
+                                                            Ok(UserSingIn) => {
                                                                 if let Err(e) = UserSingIn.emit(
                                                                     consumer.get_cx(),
                                                                     ucx.clone(),
@@ -275,7 +282,7 @@ where
                                                     }
                                                     Messages::UserJoinRequest(request) => {
                                                         match UserJoin.write() {
-                                                            Ok(mut UserJoin) => {
+                                                            Ok(UserJoin) => {
                                                                 if let Err(e) = UserJoin.emit(
                                                                     consumer.get_cx(),
                                                                     ucx.clone(),
@@ -335,6 +342,7 @@ where
 
 pub struct UserCustomContext {}
 
+#[allow(non_snake_case)]
 mod UserJoin {
     use super::{
         Broadcasting, Context, EFilterMatchCondition, UserCustomContext, UserJoinConclusion,
@@ -342,7 +350,8 @@ mod UserJoin {
     };
     use std::collections::HashMap;
     use std::sync::{Arc, RwLock};
-
+    
+    #[allow(unused)]
     pub fn conclusion(
         request: UserJoinRequest,
         cx: &dyn Context,
@@ -351,6 +360,7 @@ mod UserJoin {
         Ok(UserJoinConclusion::Accept)
     }
 
+    #[allow(unused)]
     pub fn response(
         request: UserJoinRequest,
         cx: &dyn Context,
@@ -360,6 +370,7 @@ mod UserJoin {
         Ok(UserJoinResponse { error: None })
     }
 
+    #[allow(unused)]
     pub fn accept(
         request: UserJoinRequest,
         cx: &dyn Context,
@@ -373,6 +384,7 @@ mod UserJoin {
         Ok(())
     }
 
+    #[allow(unused)]
     pub fn deny(
         request: UserJoinRequest,
         cx: &dyn Context,
@@ -386,6 +398,7 @@ mod UserJoin {
         Ok(())
     }
 
+    #[allow(unused)]
     pub fn broadcast(
         request: UserJoinRequest,
         cx: &dyn Context,
@@ -400,25 +413,19 @@ mod UserJoin {
     }
 }
 
+#[cfg(test)]
 fn test() {
     spawn(move || {
         let server: Server = Server::new(String::from("127.0.0.1:8080"));
         let ucx: UserCustomContext = UserCustomContext {};
-        let (mut producer, receiver): (Producer<Server, ServerConnectionContext>, Receiver<ProducerEvents>) = Producer::new(server, None);
+        let (mut producer, _receiver): (Producer<Server, ServerConnectionContext>, Receiver<ProducerEvents>) = Producer::new(server, None);
         producer.UserJoin.conclusion(&UserJoin::conclusion);
         producer.UserJoin.broadcast(&UserJoin::broadcast);
         producer.UserJoin.accept(&UserJoin::accept);
         producer.UserJoin.deny(&UserJoin::deny);
         producer.UserJoin.response(&UserJoin::response);
-        producer.listen(ucx);
+        if let Err(e) = producer.listen(ucx) {
+            println!("{}", e);
+        }
     });
-}
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn it_works() {
-        assert_eq!(true, false);
-    }
 }
