@@ -1,4 +1,4 @@
-use super::{ PrimitiveTypes };
+use super::{ PrimitiveTypes, stop };
 
 #[derive(Debug, Clone)]
 pub enum EReferenceToType {
@@ -41,7 +41,7 @@ impl Field {
         if let Some(primitive) = PrimitiveTypes::get_entity_as_string(kind) {
             self.kind = primitive;
         } else {
-            panic!("Unknown type");
+            stop!("Unknown type");
         }
     }
 

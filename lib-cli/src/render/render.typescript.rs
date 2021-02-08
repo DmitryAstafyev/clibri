@@ -4,7 +4,7 @@ use super::parser::groups::Group;
 use super::parser::store::Store;
 use super::parser::structs::Struct;
 use super::parser::types::PrimitiveTypes;
-use super::Render;
+use super::{ Render, stop };
 use regex::Regex;
 use std::include_str;
 
@@ -229,7 +229,7 @@ impl TypescriptRender {
                         strct.name
                     );
                 } else {
-                    panic!(
+                    stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {} ",
                         enums.name, variant.name, ref_type_id
                     );
@@ -262,7 +262,7 @@ impl TypescriptRender {
                         strct.name
                     );
                 } else {
-                    panic!(
+                    stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {} ",
                         enums.name, variant.name, ref_type_id
                     );
@@ -291,7 +291,7 @@ impl TypescriptRender {
             } else if variant.ref_type_id.is_some() {
                 format!("src.{}", variant.name)
             } else {
-                panic!(
+                stop!(
                     "Unknown type of data in scope of enum {} / {}",
                     enums.name, variant.name
                 );
@@ -303,10 +303,10 @@ impl TypescriptRender {
                 if let Some(strct) = store.get_struct(ref_type_id) {
                     strct.name
                 } else {
-                    panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
+                    stop!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
                 }
             } else {
-                panic!(
+                stop!(
                     "Unknown type of data in scope of enum {} / {}",
                     enums.name, variant.name
                 );
@@ -339,10 +339,10 @@ impl TypescriptRender {
                 if let Some(strct) = store.get_struct(ref_type_id) {
                     strct.name
                 } else {
-                    panic!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
+                    stop!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
                 }
             } else {
-                panic!(
+                stop!(
                     "Unknown type of data in scope of enum {} / {}",
                     enums.name, variant.name
                 );
@@ -551,13 +551,13 @@ impl TypescriptRender {
                 if let Some(strct) = store.get_struct(ref_type_id) {
                     strct.name
                 } else {
-                    panic!(
+                    stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {}",
                         enums.name, variant.name, ref_type_id
                     );
                 }
             } else {
-                panic!(
+                stop!(
                     "Unknown type of data in scope of enum {} / {} ",
                     enums.name, variant.name
                 );
@@ -773,7 +773,7 @@ impl TypescriptRender {
                 }
             }
             _ => {
-                panic!("Unknown type ref {:?}", etype);
+                stop!("Unknown type ref {:?}", etype);
             }
         }
         .to_string()
@@ -866,7 +866,7 @@ impl TypescriptRender {
                 }
             }
             _ => {
-                panic!("Unknown type ref {:?}", etype);
+                stop!("Unknown type ref {:?}", etype);
             }
         }
         .to_string()
@@ -959,7 +959,7 @@ impl TypescriptRender {
                 }
             }
             _ => {
-                panic!("Unknown type ref {:?}", etype);
+                stop!("Unknown type ref {:?}", etype);
             }
         }
         .to_string()
@@ -980,7 +980,7 @@ impl TypescriptRender {
         } else if store.get_enum(entity_id).is_some() {
             "{}".to_string()
         } else {
-            panic!(format!("Fail to find a struct/enum id: {}", entity_id));
+            stop!("Fail to find a struct/enum id: {}", entity_id);
         }
     }
 
@@ -1028,12 +1028,12 @@ impl TypescriptRender {
                         if let Some(strct) = store.get_struct(struct_id) {
                             body = format!("{}\n{}{{ prop: '{}', types: {}.getValidator({}), optional: false }},", body, self.spaces(level + 1), variant.name, strct.name, if variant.repeated { "true" } else { "false" });
                         } else {
-                            panic!("Nested enums aren't supported.");
+                            stop!("Nested enums aren't supported.");
                         }
                     } else if let Some(etype) = variant.types.clone() {
                         body = format!("{}\n{}{{ prop: '{}', types: Protocol.Primitives.{}, optional: false, }},", body, self.spaces(level + 1), variant.name, self.etype(etype, variant.repeated));
                     } else {
-                        panic!("Incorrect option definition for enum {}", enums.name);
+                        stop!("Incorrect option definition for enum {}", enums.name);
                     }
                 }
                 body = format!("{}\n{}] }},", body, self.spaces(level));
@@ -1190,7 +1190,7 @@ impl TypescriptRender {
                     );
                     body = format!("{}\n{}}}", body, self.spaces(level));
                 }
-            } else if let Some(enums) = store.get_enum(entity_id) {
+            } else if let Some(_enums) = store.get_enum(entity_id) {
                 body = format!("{}this.{} = {{}};", self.spaces(level), field.name);
                 body = format!(
                     "{}\n{}const {}Buf: ArrayBufferLike = storage.get({});",
@@ -1249,7 +1249,7 @@ impl TypescriptRender {
                 body = format!("{}\n{}}}", body, self.spaces(level + 1));
                 body = format!("{}\n{}}}", body, self.spaces(level));
             } else {
-                panic!(
+                stop!(
                     "Fail to find a type by ref {} for field {}",
                     entity_id, field.name
                 );
@@ -1298,7 +1298,7 @@ impl TypescriptRender {
             } else if store.get_enum(entity_id).is_some() {
                 body = format!("() => {{{} const buffer = this._{}.encode(); return this.getBuffer({}, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); }}", optional, field.name, field.id);
             } else {
-                panic!(
+                stop!(
                     "Fail to find a type by ref {} for field {}",
                     entity_id, field.name
                 );
@@ -1375,13 +1375,13 @@ impl TypescriptRender {
                     } else if let Some(enums) = store.get_enum(ref_type_id) {
                         format!("I{}", enums.name)
                     } else {
-                        panic!(format!(
+                        stop!(
                             "Fail to find a struct/enum id: {} for field {}",
                             ref_type_id, field.name
-                        ));
+                        );
                     }
                 } else {
-                    panic!("Invalid type definition for field {}", field.name);
+                    stop!("Invalid type definition for field {}", field.name);
                 }
             }
         }
@@ -1420,7 +1420,7 @@ impl TypescriptRender {
                 "f32" => String::from("f32"),
                 "f64" => String::from("f64"),
                 "str" => String::from("StrUTF8"),
-                _ => panic!("{} type isn't recognized", field.kind),
+                _ => stop!("{} type isn't recognized", field.kind),
             }
         } else {
             match field.kind.clone().as_str() {
@@ -1436,7 +1436,7 @@ impl TypescriptRender {
                 "f32" => String::from("ArrayF32"),
                 "f64" => String::from("ArrayF64"),
                 "str" => String::from("ArrayStrUTF8"),
-                _ => panic!("{} type isn't recognized", field.kind),
+                _ => stop!("{} type isn't recognized", field.kind),
             }
         }
     }

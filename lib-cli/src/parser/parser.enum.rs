@@ -1,5 +1,5 @@
 
-use super::{ PrimitiveTypes };
+use super::{ PrimitiveTypes, stop };
 
 #[derive(Debug, Clone)]
 pub struct EnumItem {
@@ -36,13 +36,13 @@ impl Enum {
             self.variants.push(current);
             self.current = None;
         } else {
-            panic!("Cannot set name of enum item, because enum item wasn't opened");
+            stop!("Cannot set name of enum item, because enum item wasn't opened");
         }
     }
 
     pub fn set_type(&mut self, types: PrimitiveTypes::ETypes) {
         if self.current.is_some() {
-            panic!("Attempt to add new enum item, while previous isn't closed");
+            stop!("Attempt to add new enum item, while previous isn't closed");
         }
         self.current = Some(EnumItem{
             types: Some(types),
@@ -54,7 +54,7 @@ impl Enum {
 
     pub fn set_type_ref(&mut self, ref_type_id: usize) {
         if self.current.is_some() {
-            panic!("Attempt to add new enum item, while previous isn't closed");
+            stop!("Attempt to add new enum item, while previous isn't closed");
         }
         self.current = Some(EnumItem{
             types: None,
@@ -69,7 +69,7 @@ impl Enum {
             current.repeated = true;
             self.current = Some(current);
         } else {
-            panic!("Cannot set repeated flag of enum item, because enum item wasn't opened");
+            stop!("Cannot set repeated flag of enum item, because enum item wasn't opened");
         }
     }
 

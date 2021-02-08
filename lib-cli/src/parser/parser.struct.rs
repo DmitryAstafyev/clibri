@@ -1,4 +1,4 @@
-use super::{ Field };
+use super::{ Field, stop };
 
 #[derive(Debug, Clone)]
 pub struct Struct {
@@ -21,7 +21,7 @@ impl Struct {
 
     pub fn add_field(&mut self, mut field: Field) {
         if self.fields.iter().any(|f| f.name == field.name) {
-            panic!("Fail to add field \"{}\" into \"{}\" because field with same name already exist", field.name, self.name);
+            stop!("Fail to add field \"{}\" into \"{}\" because field with same name already exist", field.name, self.name);
         }
         field.parent = self.id;
         self.fields.push(field);

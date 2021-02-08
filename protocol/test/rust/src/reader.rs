@@ -736,7 +736,6 @@ pub fn read() -> Result<(), String> {
                 let msg = buffer.next();
                 if let Some(msg) = msg {
                     count += 1;
-                    // let av: AvailableMessages = msg.msg;
                     match msg.msg {
                         AvailableMessages::EnumExampleA(entity) => match entity {
                             EnumExampleA::Option_a(entity) => {

@@ -19,7 +19,13 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": [
+                "--s",
+                "/Users/dmitryastafyev/projects/private/fiber/producer/protocol/src/protocol.prot",
+                "-rs",
+                "/Users/dmitryastafyev/projects/private/fiber/producer/protocol/protocol.rs",
+                "-o"
+            ],
             "cwd": "${workspaceFolder}"
         },
         {

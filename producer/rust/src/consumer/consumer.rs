@@ -59,8 +59,6 @@ where
 {
     uuid: Uuid,
     _buffer: Buffer<Protocol>,
-    _own: Arc<RwLock<CX>>,
-    _consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     identification: Identification,
     cx: Cx<CX>,
 }
@@ -74,8 +72,6 @@ where
         Consumer {
             uuid,
             _buffer: Buffer::new(uuid),
-            _own: own.clone(),
-            _consumers: consumers.clone(),
             identification: Identification::new(),
             cx: Cx { own, consumers },
         }

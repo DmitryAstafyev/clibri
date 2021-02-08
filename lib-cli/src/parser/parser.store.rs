@@ -1,4 +1,4 @@
-use super::{ Field, Enum, Struct, Group, PrimitiveTypes, EReferenceToType };
+use super::{ Field, Enum, Struct, Group, PrimitiveTypes, EReferenceToType, stop };
 
 #[derive(Debug, Clone)]
 pub struct Store {
@@ -66,10 +66,10 @@ impl Store {
 
     pub fn open_struct(&mut self, name: String) {
         if self.c_struct.is_some() {
-            panic!("Struct cannot be defined inside struct");
+            stop!("Struct cannot be defined inside struct");
         }
         if self.c_enum.is_some() {
-            panic!("Struct cannot be defined inside enum");
+            stop!("Struct cannot be defined inside enum");
         }
         self.sequence += 1;
         self.bind_struct_with_group(self.sequence);
@@ -78,10 +78,10 @@ impl Store {
 
     pub fn open_enum(&mut self, name: String) {
         if self.c_struct.is_some() {
-            panic!("Enum cannot be defined inside struct");
+            stop!("Enum cannot be defined inside struct");
         }
         if self.c_enum.is_some() {
-            panic!("Enum cannot be defined inside enum");
+            stop!("Enum cannot be defined inside enum");
         }
         self.sequence += 1;
         self.bind_enum_with_group(self.sequence);
@@ -90,10 +90,10 @@ impl Store {
 
     pub fn open_group(&mut self, name: String) {
         if self.c_struct.is_some() {
-            panic!("Group cannot be defined inside struct");
+            stop!("Group cannot be defined inside struct");
         }
         if self.c_enum.is_some() {
-            panic!("Group cannot be defined inside enum");
+            stop!("Group cannot be defined inside enum");
         }
         let parent: usize = self.get_group_id();
         self.sequence += 1;
@@ -104,10 +104,10 @@ impl Store {
 
     pub fn set_field_type(&mut self, type_str: &str) {
         if self.c_field.is_some() {
-            panic!("Fail to create new field, while previous isn't closed.");
+            stop!("Fail to create new field, while previous isn't closed.");
         }
         if self.c_struct.is_none() {
-            panic!("Fail to create new field, because no open struct.");
+            stop!("Fail to create new field, because no open struct.");
         }
         self.sequence += 1;
         if PrimitiveTypes::get_entity(type_str).is_some() {
@@ -120,7 +120,7 @@ impl Store {
             } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str && i.parent == group_id) {
                 c_field.set_type_ref(EReferenceToType::Struct, struct_ref.id);
             } else {
-                panic!("Expecting type definition but has been gotten value {}", type_str)
+                stop!("Expecting type definition but has been gotten value {}", type_str)
             }
             self.c_field = Some(c_field);
         }
@@ -134,7 +134,7 @@ impl Store {
             c_field.set_as_repeated();
             self.c_field = Some(c_field);
         } else {
-            panic!("Fail to set field as repeated, because it wasn't opened.");
+            stop!("Fail to set field as repeated, because it wasn't opened.");
         }
     }
 
@@ -143,19 +143,19 @@ impl Store {
             c_field.set_as_optional();
             self.c_field = Some(c_field);
         } else {
-            panic!("Fail to set field as optional, because it wasn't opened.");
+            stop!("Fail to set field as optional, because it wasn't opened.");
         }
     }
 
     pub fn set_field_name(&mut self, name_str: &str) {
         if self.c_struct.is_none() {
-            panic!("Fail to set name of field, because no open struct.");
+            stop!("Fail to set name of field, because no open struct.");
         }
         if let Some(mut c_field) = self.c_field.take() {
             c_field.set_name(name_str.to_string());
             self.c_field = Some(c_field);
         } else {
-            panic!("Fail to set name of field, while it wasn't opened.");
+            stop!("Fail to set name of field, while it wasn't opened.");
         }
     }
 
@@ -166,10 +166,10 @@ impl Store {
                 self.c_struct = Some(c_struct);
                 self.c_field = None;
             } else {
-                panic!("Fail to close field, while it wasn't opened.");
+                stop!("Fail to close field, while it wasn't opened.");
             }
         } else {
-            panic!("Fail to close new field, because no open struct.");
+            stop!("Fail to close new field, because no open struct.");
         }
     }
 
@@ -181,11 +181,11 @@ impl Store {
             } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str && i.parent == group_id) {
                 c_enum.set_type_ref(struct_ref.id);
             } else {
-                panic!("Expecting type definition but has been gotten value {}", type_str)
+                stop!("Expecting type definition but has been gotten value {}", type_str)
             }
             self.c_enum = Some(c_enum);
         } else {
-            panic!("Fail to create new enum item, because no open enum.");
+            stop!("Fail to create new enum item, because no open enum.");
         }
     }
 
@@ -194,7 +194,7 @@ impl Store {
             c_enum.set_simple(word);
             self.c_enum = Some(c_enum);
         } else {
-            panic!("Fail to create new enum item, because no open enum.");
+            stop!("Fail to create new enum item, because no open enum.");
         }
     }
 
@@ -203,7 +203,7 @@ impl Store {
             c_enum.set_name(name.to_string());
             self.c_enum = Some(c_enum);
         } else {
-            panic!("Fail to set enum item name, because no open enum.");
+            stop!("Fail to set enum item name, because no open enum.");
         }
     }
 
@@ -213,13 +213,13 @@ impl Store {
 
     pub fn open(&mut self) {
         if self.c_group.is_none() && self.c_struct.is_none() && self.c_enum.is_none() {
-            panic!("No created struct or enum");
+            stop!("No created struct or enum");
         }
     }
 
     pub fn close(&mut self) {
         if self.c_group.is_none() && self.c_struct.is_none() && self.c_enum.is_none() {
-            panic!("No opened group or struct or enum");
+            stop!("No opened group or struct or enum");
         }
         if let Some(c_enum) = self.c_enum.take() {
             self.enums.push(c_enum);
@@ -235,7 +235,7 @@ impl Store {
             } else if let Some(pos) = self.groups.iter().position(|s| s.id == self.path[self.path.len() - 1]) {
                 self.c_group = Some(self.groups.remove(pos));
             } else {
-                panic!("Cannot find group from path");
+                stop!("Cannot find group from path");
             }
         }
     }

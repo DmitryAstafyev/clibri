@@ -1,3 +1,5 @@
+use super::{ stop };
+
 use entities::Entities;
 use enums::Enum;
 use fields::{EReferenceToType, Field};
@@ -114,7 +116,7 @@ impl Parser {
                                         if is_in(&expectation, &EExpectation::GroupDef) {
                                             expectation = vec![EExpectation::GroupName];
                                         } else {
-                                            panic!(
+                                            stop!(
                                                 "Has been gotten Group Def, but expections is {:?}",
                                                 expectation
                                             );
@@ -124,21 +126,21 @@ impl Parser {
                                         if is_in(&expectation, &EExpectation::StructDef) {
                                             expectation = vec![EExpectation::StructName];
                                         } else {
-                                            panic!("Has been gotten Struct Def, but expections is {:?}", expectation);
+                                            stop!("Has been gotten Struct Def, but expections is {:?}", expectation);
                                         }
                                     }
                                     Some(Entities::EEntities::EEnum) => {
                                         if is_in(&expectation, &EExpectation::EnumDef) {
                                             expectation = vec![EExpectation::EnumName];
                                         } else {
-                                            panic!(
+                                            stop!(
                                                 "Has been gotten Enum Def, but expections is {:?}",
                                                 expectation
                                             );
                                         }
                                     }
                                     None => {
-                                        panic!(
+                                        stop!(
                                             "Has been gotten unkonwn definition {:?}",
                                             Entities::get_entity(&word)
                                         );

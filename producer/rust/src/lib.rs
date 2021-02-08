@@ -220,7 +220,7 @@ where
             let timeout = Duration::from_millis(50);
             loop {
                 // TODO: here we can use recv as well instread try_recv
-                match rx_channel.try_recv() {
+                match rx_channel.recv() {
                     Ok(event) => {
                         let consumers_ref = consumers_ref.clone();
                         let ucx = ucx.clone();
@@ -316,8 +316,8 @@ where
                             }
                         });
                     },
-                    Err(_) => {
-                        // No needs logs here;
+                    Err(e) => {
+                        logger.err(&format!("{}", e));
                         thread::sleep(timeout);
                     }
                 }

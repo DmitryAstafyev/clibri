@@ -1,7 +1,7 @@
 use std::env;
 use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
-use super:: { helpers };
+use super:: { helpers, stop };
 
 #[path = "./parser/parser.rs"]
 pub mod parser;
