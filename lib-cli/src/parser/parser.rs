@@ -215,6 +215,7 @@ impl Parser {
                                 EExpectation::StructDef,
                                 EExpectation::EnumDef,
                                 EExpectation::EnumValue,
+                                EExpectation::EntityClose,
                             ];
                             store.open();
                             offset

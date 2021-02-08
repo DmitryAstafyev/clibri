@@ -190,6 +190,10 @@ usecases.push(...[
             field_bool: true,
         }),
         field_b: undefined,
+        field_c: new Protocol.StructExampleEmpty({}),
+    }) },
+    { name: 'StructExampleEmpty' , entity: new Protocol.StructExampleEmpty({
+        
     }) },
     { name: 'GroupAStructExampleA' , entity: new Protocol.GroupA.StructExampleA({
         field_u8: 1,

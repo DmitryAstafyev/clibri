@@ -31,10 +31,6 @@ export abstract class BufferReader<T> {
             if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
                 break;
             }
-            if (header.len === 0) {
-                errors.push(new Error(`Header length is 0`));
-                break;
-            }
             if (header.signature !== this.signature()) {
                 errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
             } else {

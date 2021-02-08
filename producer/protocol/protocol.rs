@@ -170,7 +170,7 @@ pub mod UserLogout {
     #[derive(Debug, Clone)]
     pub enum AvailableMessages {
         Request(Request),
-        Response(Response),
+        Response123(Response123),
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -209,39 +209,29 @@ pub mod UserLogout {
     impl PackingStruct for Request { }
 
     #[derive(Debug, Clone, PartialEq)]
-    pub struct Response {
-        pub error: Option<String>,
+    pub struct Response123 {
     }
-    impl StructDecode for Response {
+    impl StructDecode for Response123 {
         fn get_id() -> u32 {
             12
         }
-        fn defaults() -> Response {
-            Response {
-                error: None,
+        fn defaults() -> Response123 {
+            Response123 {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(13)) {
-                Ok(val) => val,
-                Err(e) => { return Err(e) },
-            };
             Ok(())
         }
     }
-    impl StructEncode for Response {
+    impl StructEncode for Response123 {
         fn get_id(&self) -> u32 { 12 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(13)) {
-                Ok(mut buf) => { buffer.append(&mut buf); }
-                Err(e) => { return Err(e) },
-            };
             Ok(buffer)
         }
     }
-    impl PackingStruct for Response { }
+    impl PackingStruct for Response123 { }
 
 }
 
@@ -264,8 +254,8 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::UserLogout(UserLogout::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            12 => match UserLogout::Response::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::UserLogout(UserLogout::AvailableMessages::Response(m))),
+            12 => match UserLogout::Response123::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::UserLogout(UserLogout::AvailableMessages::Response123(m))),
                 Err(e) => Err(e),
             },
             _ => Err(String::from("No message has been found"))

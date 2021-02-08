@@ -316,6 +316,7 @@ pub fn write() -> Result<(), String> {
             field_bool: true,
         }),
         field_b: None,
+        field_c: StructExampleEmpty {},
     };
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./StructExampleJ.prot.bin"), &buf) {
@@ -324,6 +325,17 @@ pub fn write() -> Result<(), String> {
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleJ.prot.bin"));
     }
     buffer.append(&mut usecase.pack().unwrap());
+
+    let mut usecase = StructExampleEmpty {
+    };
+    if let Ok(buf) = usecase.encode() {
+        if let Err(e) = write_file(root.join("./StructExampleEmpty.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./StructExampleEmpty.prot.bin"));
+    }
+    buffer.append(&mut usecase.pack().unwrap());
+
     let mut usecase = GroupA::StructExampleA {
         field_u8: 1,
         field_u16: 2,

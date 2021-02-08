@@ -108,9 +108,13 @@ struct StructExampleG {
     StructExampleB field_b;
 }
 
+struct StructExampleEmpty {
+}
+
 struct StructExampleJ {
     StructExampleA field_a?;
     StructExampleB field_b?;
+    StructExampleEmpty field_c;
 }
 
 group GroupA {

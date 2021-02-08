@@ -629,10 +629,38 @@ mod tests {
     impl PackingStruct for Target {
     }
 
+    #[derive(Debug, Clone, std::cmp::PartialEq)]
+    struct Empty {
+
+    }
+
+    impl StructDecode for Empty {
+        fn get_id() -> u32 {
+            666
+        }
+        fn defaults() -> Empty {
+            Empty {
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            Ok(())
+        }
+    }
+    impl StructEncode for Empty {
+        fn get_id(&self) -> u32 { 666 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for Empty { }
+
     #[derive(Debug, Clone)]
     enum Messages {
         Nested(Nested),
         Target(Target),
+        Empty(Empty),
         TargetEnum(TargetEnum),
     }
 
@@ -646,6 +674,10 @@ mod tests {
                 },
                 2 => match Target::extract(buf.to_vec()) {
                     Ok(structs) => Ok(Messages::Target(structs)),
+                    Err(e) => Err(e),
+                },
+                666 => match Empty::extract(buf.to_vec()) {
+                    Ok(structs) => Ok(Messages::Empty(structs)),
                     Err(e) => Err(e),
                 },
                 1001 => match TargetEnum::extract(buf.to_vec()) {
@@ -662,6 +694,37 @@ mod tests {
 
     #[test]
     fn encode_decode() {
+        let mut empty_a: Empty = Empty {};
+        let empty_buf = match StructEncode::abduct(&mut empty_a) {
+            Ok(buf) => buf,
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        };
+        println!("{:?}", empty_buf);
+        let mut empty_b: Empty = Empty::defaults();
+        let s = match Storage::new(empty_buf) {
+            Ok(s) => s,
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        };
+        println!("{:?}", s);
+        match empty_b.extract_from_storage(s) {
+            Ok(_) => {},
+            Err(e) => {
+                println!("{}", e);
+                assert_eq!(true, false);
+                return;
+            }
+        }
+        println!("{:?}", empty_b);
+        assert_eq!(empty_a, empty_b);
+
         let mut a: Target = Target {
             prop_u8: 1,
             prop_u16: 2,
@@ -848,6 +911,7 @@ mod tests {
             field_optional: Some(2),
         };
         buf.append(&mut a.pack().unwrap());
+        buf.append(&mut empty_a.pack().unwrap());
         buf.append(&mut c.pack().unwrap());
         for item in enums.iter() {
             let mut item = item.clone();
@@ -857,7 +921,7 @@ mod tests {
             println!("{:?}", e);
             assert_eq!(true, false);
         }
-        let mut count = 10 + 20 + enums.len();
+        let mut count = 10 + 20 + 30 + enums.len();
         loop {
             if let Some(msg) = buffer.next() {
                 match msg.msg {
@@ -896,6 +960,9 @@ mod tests {
                         assert_eq!(a.prop_optional_strct, b.prop_optional_strct);
                         assert_eq!(a.prop_optional_enum, b.prop_optional_enum);
                         assert_eq!(a.prop_optional_enum_vec, b.prop_optional_enum_vec);
+                    },
+                    Messages::Empty(b) => {
+                        count -= 30;
                     },
                     Messages::TargetEnum(pack) => {
                         count -= 1;

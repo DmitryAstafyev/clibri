@@ -24,17 +24,19 @@ impl Storage {
         */
         let mut position: usize = 0;
         let mut map: HashMap<u16, Vec<u8>> = HashMap::new();
-        loop {
-            match Storage::next(&buf, position) {
-                Ok((id, body, pos)) => {
-                    position = pos;
-                    map.insert(id, body);
-                    if pos == buf.len() {
-                        break;
+        if buf.len() > 0 {
+            loop {
+                match Storage::next(&buf, position) {
+                    Ok((id, body, pos)) => {
+                        position = pos;
+                        map.insert(id, body);
+                        if pos == buf.len() {
+                            break;
+                        }
+                    },
+                    Err(e) => {
+                        return Err(e);
                     }
-                },
-                Err(e) => {
-                    return Err(e);
                 }
             }
         }

@@ -206,11 +206,22 @@ fn check_StructExampleJ(entity: StructExampleJ) {
             field_bool: true,
         }),
         field_b: None,
+        field_c: StructExampleEmpty {},
     };
     if entity != src {
         panic!("StructExampleJ: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
+
+#[allow(non_snake_case)]
+fn check_StructExampleEmpty(entity: StructExampleEmpty) {
+    let src = StructExampleEmpty {
+    };
+    if entity != src {
+        panic!("StructExampleEmpty: failed: \n\t{:?}\n\t{:?})", entity, src)
+    }
+}
+
 
 #[allow(non_snake_case)]
 fn check_GroupAStructExampleA(entity: GroupA::StructExampleA) {
@@ -659,6 +670,20 @@ pub fn read() -> Result<(), String> {
         },
         Err(e) => panic!(e),
     }
+    match read_file(ts_bin.join("./StructExampleEmpty.prot.bin")) {
+        Ok(buf) => {
+            match StructExampleEmpty::decode(&buf) {
+                Ok(entity) => {
+                    check_StructExampleEmpty(entity);
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleEmpty.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    //
     match read_file(ts_bin.join("./GroupAStructExampleA.prot.bin")) {
         Ok(buf) => {
             match GroupA::StructExampleA::decode(&buf) {
@@ -848,6 +873,11 @@ pub fn read() -> Result<(), String> {
                             println!("Package AvailableMessages::StructExampleJ is OK");
                             done += 1;
                         },
+                        AvailableMessages::StructExampleEmpty(entity) => {
+                            check_StructExampleEmpty(entity);
+                            println!("Package AvailableMessages::StructExampleEmpty is OK");
+                            done += 1;
+                        },
                         AvailableMessages::GroupA(entity) => match entity {
                             GroupA::AvailableMessages::StructExampleA(entity) => {
                                 check_GroupAStructExampleA(entity);
@@ -887,7 +917,7 @@ pub fn read() -> Result<(), String> {
                 }
             }
             println!("[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
-            if buffer.pending() != 0 || buffer.len() != 0 || count != 26 || count != done {
+            if buffer.pending() != 0 || buffer.len() != 0 || count != 27 || count != done {
                 panic!("Fail to read buffer correctly");
             }
             println!("Packages: {}; done: {}", count, done);

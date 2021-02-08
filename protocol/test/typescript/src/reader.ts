@@ -25,6 +25,7 @@ const usecases: Array<{ name: string, entity: any }> = [
     { name: 'StructExampleF' , entity: Protocol.StructExampleF },
     { name: 'StructExampleG' , entity: Protocol.StructExampleG },
     { name: 'StructExampleJ' , entity: Protocol.StructExampleJ },
+    { name: 'StructExampleEmpty' , entity: Protocol.StructExampleEmpty },
     { name: 'GroupAStructExampleA' , entity: Protocol.GroupA.StructExampleA },
     { name: 'GroupAStructExampleB' , entity: Protocol.GroupA.StructExampleB },
     { name: 'GroupBStructExampleA' , entity: Protocol.GroupB.StructExampleA },
@@ -288,6 +289,12 @@ export function read(): Promise<void> {
                             console.log(`Package StructExampleJ is OK`);
                             done += 1;
                         }
+                        if (pack.msg.StructExampleEmpty !== undefined && !isEqual(pack.msg.StructExampleEmpty, getSampleByName('StructExampleEmpty'))) {
+                            return reject(new Error(`StructExampleEmpty incorrect: ${pack.msg.StructExampleEmpty}`));
+                        } else if (pack.msg.StructExampleEmpty !== undefined && isEqual(pack.msg.StructExampleEmpty, getSampleByName('StructExampleEmpty'))) {
+                            console.log(`Package StructExampleEmpty is OK`);
+                            done += 1;
+                        }
                         if (pack.msg.GroupA !== undefined) {
                             if (pack.msg.GroupA.StructExampleA !== undefined && !isEqual(pack.msg.GroupA.StructExampleA, getSampleByName('GroupAStructExampleA'))) {
                                 return reject(new Error(`GroupA.StructExampleA incorrect: ${pack.msg.GroupA.StructExampleA}`));
@@ -325,7 +332,7 @@ export function read(): Promise<void> {
                             }
                         }
                     } while (true);
-                    if (count !== 26 || done !== count || reader.pending() > 0 || reader.len() > 0) {
+                    if (count !== 27 || done !== count || reader.pending() > 0 || reader.len() > 0) {
                         return reject(new Error(`Fail to correctly read buffer file:\n\tcount = ${count};\n\tpending=${reader.pending()};\n\tlen=${reader.len()}\n\tbuffer=${buffer.byteLength}`));
                     }
                     console.log(`[TS] File: ${target} has beed read.`);
