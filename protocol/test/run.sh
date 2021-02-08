@@ -1,31 +1,49 @@
 cd ../../lib-cli
 cargo build
 cd ../protocol/test
-../../lib-cli/target/debug/fiber-cli --src ./prot/protocol.prot -rs ./rust/src/protocol.rs -ts ./typescript/src/protocol.ts -o --em
+
+
+if ! ../../lib-cli/target/debug/fiber-cli --src ./prot/protocol.prot -rs ./rust/src/protocol.rs -ts ./typescript/src/protocol.ts -o --em; then
+    exit 1
+fi
 
 echo "Builds"
 cd ./typescript
-npm run build
+if ! npm run build; then
+    exit 1
+fi
+
 cd ..
 
 cd ./rust
-cargo build
+if ! cargo build; then
+    exit 1
+fi
+
 cd ..
 
 echo "Writes"
 cd ./typescript
-node ./dist/index.js write
+if ! node ./dist/index.js write; then
+    exit 1
+fi
 cd ..
 
 cd ./rust
-./target/debug/fiber_protocol_rust_test write
+if ! ./target/debug/fiber_protocol_rust_test write; then
+    exit 1
+fi
 cd ..
 
 echo "Reads"
 cd ./typescript
-node ./dist/index.js read
+if ! node ./dist/index.js read; then
+    exit 1
+fi
 cd ..
 
 cd ./rust
-./target/debug/fiber_protocol_rust_test read
+if ! ./target/debug/fiber_protocol_rust_test read; then
+    exit 1
+fi
 cd ..
