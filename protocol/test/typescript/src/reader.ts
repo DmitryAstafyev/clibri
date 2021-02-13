@@ -31,6 +31,8 @@ const usecases: Array<{ name: string, entity: any }> = [
     { name: 'GroupBStructExampleA' , entity: Protocol.GroupB.StructExampleA },
     { name: 'GroupCStructExampleA' , entity: Protocol.GroupB.GroupC.StructExampleA },
     { name: 'GroupCStructExampleB' , entity: Protocol.GroupB.GroupC.StructExampleB },
+    { name: 'GroupDStructExampleP' , entity: Protocol.GroupD.StructExampleP },
+
 ];
 
 function getSampleByName(name: string): Protocol.Convertor | Protocol.Enum<any> {
@@ -129,6 +131,12 @@ export function read(): Promise<void> {
                         }
                         const sample = samples[index].entity instanceof Protocol.Enum ? (samples[index].entity as Protocol.Enum<any>).get() : samples[index].entity;
                         if (!isEqual(sample, inst)) {
+                            console.log(`\n[TS] File: ${target} has a problems.\n`);
+                            console.log(`Sample:\n${'='.repeat(30)}`);
+                            console.log(sample);
+                            console.log(`Instance:\n${'='.repeat(30)}`);
+                            console.log(inst);
+                            console.log(`${'='.repeat(30)}`);
                             return rej(new Error(`Parsed object from ${target} isn't equal to sample.`));
                         }
                         console.log(`[TS] File: ${target} has beed read.`);
@@ -331,8 +339,16 @@ export function read(): Promise<void> {
                                 }
                             }
                         }
+                        if (pack.msg.GroupD !== undefined) {
+                            if (pack.msg.GroupD.StructExampleP !== undefined && !isEqual(pack.msg.GroupD.StructExampleP, getSampleByName('GroupDStructExampleP'))) {
+                                return reject(new Error(`GroupD.StructExampleP incorrect: ${pack.msg.GroupD.StructExampleP}`));
+                            } else if ((pack.msg.GroupD.StructExampleP !== undefined && isEqual(pack.msg.GroupD.StructExampleP, getSampleByName('GroupDStructExampleP')))) {
+                                console.log(`Package GroupD.StructExampleP is OK`);
+                                done += 1;
+                            }
+                        }
                     } while (true);
-                    if (count !== 27 || done !== count || reader.pending() > 0 || reader.len() > 0) {
+                    if (count !== 28 || done !== count || reader.pending() > 0 || reader.len() > 0) {
                         return reject(new Error(`Fail to correctly read buffer file:\n\tcount = ${count};\n\tpending=${reader.pending()};\n\tlen=${reader.len()}\n\tbuffer=${buffer.byteLength}`));
                     }
                     console.log(`[TS] File: ${target} has beed read.`);

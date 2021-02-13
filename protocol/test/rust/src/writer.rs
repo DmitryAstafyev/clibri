@@ -401,6 +401,37 @@ pub fn write() -> Result<(), String> {
         println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleB.prot.bin"));
     }
     buffer.append(&mut usecase.pack().unwrap());
+    let mut usecase = GroupD::StructExampleP {
+        field_a: StructExampleA {
+            field_str: String::from("test"),
+            field_u8: 1,
+            field_u16: 2,
+            field_u32: 3,
+            field_u64: 4,
+            field_i8: -1,
+            field_i16: -2,
+            field_i32: -3,
+            field_i64: -4,
+            field_f32: 0.1,
+            field_f64: 0.2,
+            field_bool: true,
+        },
+        field_b: GroupB::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        },
+        field_c: GroupB::GroupC::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        }
+    };
+    if let Ok(buf) = usecase.encode() {
+        if let Err(e) = write_file(root.join("./GroupDStructExampleP.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupDStructExampleP.prot.bin"));
+    }
+    buffer.append(&mut usecase.pack().unwrap());
     if let Err(e) = write_file(root.join("./buffer.prot.bin"), &buffer) {
         panic!(e);
     }

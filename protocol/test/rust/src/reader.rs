@@ -288,6 +288,36 @@ fn check_GroupCStructExampleB(entity: GroupB::GroupC::StructExampleB) {
     }
 }
 
+fn check_GroupDStructExampleP(entity: GroupD::StructExampleP) {
+    let src = GroupD::StructExampleP {
+        field_a: StructExampleA {
+            field_str: String::from("test"),
+            field_u8: 1,
+            field_u16: 2,
+            field_u32: 3,
+            field_u64: 4,
+            field_i8: -1,
+            field_i16: -2,
+            field_i32: -3,
+            field_i64: -4,
+            field_f32: 0.1,
+            field_f64: 0.2,
+            field_bool: true,
+        },
+        field_b: GroupB::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        },
+        field_c: GroupB::GroupC::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        }
+    };
+    if entity != src {
+        panic!("GroupD::StructExampleP: failed: \n\t{:?}\n\t{:?})", entity, src)
+    }
+}
+
 #[allow(non_snake_case)]
 fn check_EnumExampleA_a(entity: EnumExampleA) {
     let src = EnumExampleA::Option_a(String::from("Option_a"));
@@ -749,6 +779,19 @@ pub fn read() -> Result<(), String> {
         },
         Err(e) => panic!(e),
     }
+    match read_file(ts_bin.join("./GroupDStructExampleP.prot.bin")) {
+        Ok(buf) => {
+            match GroupD::StructExampleP::decode(&buf) {
+                Ok(entity) => {
+                    check_GroupDStructExampleP(entity);
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDStructExampleP.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
     match read_file(ts_bin.join("./buffer.prot.bin")) {
         Ok(buf) => {
             let mut buffer = Buffer::new();
@@ -909,6 +952,14 @@ pub fn read() -> Result<(), String> {
                                     done += 1;
                                 }
                             },
+                        },
+                        AvailableMessages::GroupD(entity) => match entity {
+                            GroupD::AvailableMessages::StructExampleP(entity) => {
+                                check_GroupDStructExampleP(entity);
+                                println!("Package GroupD::AvailableMessages::StructExampleP is OK");
+                                done += 1;
+                            },
+                            GroupD::AvailableMessages::EnumExampleP(entuty) => {}
                         }
                         _ => {}
                     }
@@ -917,7 +968,7 @@ pub fn read() -> Result<(), String> {
                 }
             }
             println!("[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
-            if buffer.pending() != 0 || buffer.len() != 0 || count != 27 || count != done {
+            if buffer.pending() != 0 || buffer.len() != 0 || count != 28 || count != done {
                 panic!("Fail to read buffer correctly");
             }
             println!("Packages: {}; done: {}", count, done);
