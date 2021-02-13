@@ -2381,6 +2381,7 @@ export interface IAvailableMessages {
     StructExampleJ?: StructExampleJ,
     GroupA?: GroupA.IAvailableMessages,
     GroupB?: GroupB.IAvailableMessages,
+    GroupD?: GroupD.IAvailableMessages,
 }
 export interface IEnumExampleA {
     Option_a?: string;
@@ -2756,7 +2757,7 @@ export interface IStructExampleA {
     field_f64: number;
     field_bool: boolean;
 }
-export class StructExampleA extends Protocol.Convertor implements IStructExampleA {
+export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.StrUTF8, optional: false, },
@@ -2849,6 +2850,8 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     public field_f32: number;
     public field_f64: number;
     public field_bool: boolean;
+    public static getSignature(): string { return 'StructExampleA'; }
+
 
     constructor(params: IStructExampleA)  {
         super();
@@ -2860,6 +2863,8 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleA'; }
+
+    public get(): StructExampleA { return this; }
 
     public getId(): number { return 4; }
 
@@ -2978,7 +2983,7 @@ export interface IStructExampleB {
     field_f64: Array<number>;
     field_bool: Array<boolean>;
 }
-export class StructExampleB extends Protocol.Convertor implements IStructExampleB {
+export class StructExampleB extends Protocol.Convertor implements IStructExampleB, ISigned<StructExampleB> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
@@ -3071,6 +3076,8 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
     public field_f32: Array<number>;
     public field_f64: Array<number>;
     public field_bool: Array<boolean>;
+    public static getSignature(): string { return 'StructExampleB'; }
+
 
     constructor(params: IStructExampleB)  {
         super();
@@ -3082,6 +3089,8 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleB'; }
+
+    public get(): StructExampleB { return this; }
 
     public getId(): number { return 17; }
 
@@ -3200,7 +3209,7 @@ export interface IStructExampleC {
     field_f64: number | undefined;
     field_bool: boolean | undefined;
 }
-export class StructExampleC extends Protocol.Convertor implements IStructExampleC {
+export class StructExampleC extends Protocol.Convertor implements IStructExampleC, ISigned<StructExampleC> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.StrUTF8, optional: true, },
@@ -3293,6 +3302,8 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
     public field_f32: number | undefined;
     public field_f64: number | undefined;
     public field_bool: boolean | undefined;
+    public static getSignature(): string { return 'StructExampleC'; }
+
 
     constructor(params: IStructExampleC)  {
         super();
@@ -3304,6 +3315,8 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleC'; }
+
+    public get(): StructExampleC { return this; }
 
     public getId(): number { return 30; }
 
@@ -3518,7 +3531,7 @@ export interface IStructExampleD {
     field_f64: Array<number | undefined>;
     field_bool: Array<boolean | undefined>;
 }
-export class StructExampleD extends Protocol.Convertor implements IStructExampleD {
+export class StructExampleD extends Protocol.Convertor implements IStructExampleD, ISigned<StructExampleD> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.ArrayStrUTF8, optional: true, },
@@ -3611,6 +3624,8 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
     public field_f32: Array<number | undefined>;
     public field_f64: Array<number | undefined>;
     public field_bool: Array<boolean | undefined>;
+    public static getSignature(): string { return 'StructExampleD'; }
+
 
     constructor(params: IStructExampleD)  {
         super();
@@ -3622,6 +3637,8 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleD'; }
+
+    public get(): StructExampleD { return this; }
 
     public getId(): number { return 43; }
 
@@ -3827,7 +3844,7 @@ export interface IStructExampleE {
     field_b: IEnumExampleB;
     field_c: IEnumExampleC;
 }
-export class StructExampleE extends Protocol.Convertor implements IStructExampleE {
+export class StructExampleE extends Protocol.Convertor implements IStructExampleE, ISigned<StructExampleE> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', optional: false, options: [
@@ -3914,6 +3931,8 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
+    public static getSignature(): string { return 'StructExampleE'; }
+
 
     constructor(params: IStructExampleE)  {
         super();
@@ -3931,6 +3950,8 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleE'; }
+
+    public get(): StructExampleE { return this; }
 
     public getId(): number { return 56; }
 
@@ -3998,7 +4019,7 @@ export interface IStructExampleF {
     field_b: IEnumExampleB | undefined;
     field_c: IEnumExampleC | undefined;
 }
-export class StructExampleF extends Protocol.Convertor implements IStructExampleF {
+export class StructExampleF extends Protocol.Convertor implements IStructExampleF, ISigned<StructExampleF> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', optional: true, options: [
@@ -4085,6 +4106,8 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
+    public static getSignature(): string { return 'StructExampleF'; }
+
 
     constructor(params: IStructExampleF)  {
         super();
@@ -4102,6 +4125,8 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleF'; }
+
+    public get(): StructExampleF { return this; }
 
     public getId(): number { return 60; }
 
@@ -4192,7 +4217,7 @@ export interface IStructExampleG {
     field_a: StructExampleA;
     field_b: StructExampleB;
 }
-export class StructExampleG extends Protocol.Convertor implements IStructExampleG {
+export class StructExampleG extends Protocol.Convertor implements IStructExampleG, ISigned<StructExampleG> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', types: StructExampleA.getValidator(false), optional: false },
@@ -4271,6 +4296,8 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
 
     public field_a: StructExampleA;
     public field_b: StructExampleB;
+    public static getSignature(): string { return 'StructExampleG'; }
+
 
     constructor(params: IStructExampleG)  {
         super();
@@ -4282,6 +4309,8 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleG'; }
+
+    public get(): StructExampleG { return this; }
 
     public getId(): number { return 64; }
 
@@ -4354,7 +4383,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
 
 export interface IStructExampleEmpty {
 }
-export class StructExampleEmpty extends Protocol.Convertor implements IStructExampleEmpty {
+export class StructExampleEmpty extends Protocol.Convertor implements IStructExampleEmpty, ISigned<StructExampleEmpty> {
 
     public static scheme: Protocol.IPropScheme[] = [
     ];
@@ -4399,6 +4428,8 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
         }
     }
 
+    public static getSignature(): string { return 'StructExampleEmpty'; }
+
 
     constructor(params: IStructExampleEmpty)  {
         super();
@@ -4410,6 +4441,8 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleEmpty'; }
+
+    public get(): StructExampleEmpty { return this; }
 
     public getId(): number { return 67; }
 
@@ -4435,7 +4468,7 @@ export interface IStructExampleJ {
     field_b: StructExampleB | undefined;
     field_c: StructExampleEmpty;
 }
-export class StructExampleJ extends Protocol.Convertor implements IStructExampleJ {
+export class StructExampleJ extends Protocol.Convertor implements IStructExampleJ, ISigned<StructExampleJ> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', types: StructExampleA.getValidator(false), optional: true },
@@ -4493,6 +4526,8 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
     public field_a: StructExampleA | undefined;
     public field_b: StructExampleB | undefined;
     public field_c: StructExampleEmpty;
+    public static getSignature(): string { return 'StructExampleJ'; }
+
 
     constructor(params: IStructExampleJ)  {
         super();
@@ -4504,6 +4539,8 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
     public signature(): number { return 0; }
 
     public getSignature(): string { return 'StructExampleJ'; }
+
+    public get(): StructExampleJ { return this; }
 
     public getId(): number { return 68; }
 
@@ -4675,7 +4712,7 @@ export namespace GroupA {
         field_u16: number;
         opt: IEnumExampleA;
     }
-    export class StructExampleA extends Protocol.Convertor implements IStructExampleA {
+    export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -4687,7 +4724,7 @@ export namespace GroupA {
         ];
 
         public static defaults(): StructExampleA {
-            return new StructExampleA({
+            return new GroupA.StructExampleA({
                 field_u8: 0,
                 field_u16: 0,
                 opt: {},
@@ -4736,6 +4773,8 @@ export namespace GroupA {
         public field_u16: number;
         public opt: IEnumExampleA;
         private _opt: Primitives.Enum;
+        public static getSignature(): string { return 'StructExampleA'; }
+
 
         constructor(params: IStructExampleA)  {
             super();
@@ -4749,6 +4788,8 @@ export namespace GroupA {
         public signature(): number { return 0; }
 
         public getSignature(): string { return 'StructExampleA'; }
+
+        public get(): StructExampleA { return this; }
 
         public getId(): number { return 74; }
 
@@ -4800,21 +4841,21 @@ export namespace GroupA {
     export interface IStructExampleB {
         field_u8: number;
         field_u16: number;
-        strct: StructExampleA;
+        strct: GroupA.StructExampleA;
     }
-    export class StructExampleB extends Protocol.Convertor implements IStructExampleB {
+    export class StructExampleB extends Protocol.Convertor implements IStructExampleB, ISigned<StructExampleB> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
             { prop: 'field_u16', types: Protocol.Primitives.u16, optional: false, },
-            { prop: 'strct', types: StructExampleA.getValidator(false), optional: false },
+            { prop: 'strct', types: GroupA.StructExampleA.getValidator(false), optional: false },
         ];
 
         public static defaults(): StructExampleB {
-            return new StructExampleB({
+            return new GroupA.StructExampleB({
                 field_u8: 0,
                 field_u16: 0,
-                strct: new StructExampleA({
+                strct: new GroupA.StructExampleA({
                     field_u8: 0,
                     field_u16: 0,
                     opt: {},
@@ -4862,7 +4903,9 @@ export namespace GroupA {
 
         public field_u8: number;
         public field_u16: number;
-        public strct: StructExampleA;
+        public strct: GroupA.StructExampleA;
+        public static getSignature(): string { return 'StructExampleB'; }
+
 
         constructor(params: IStructExampleB)  {
             super();
@@ -4874,6 +4917,8 @@ export namespace GroupA {
         public signature(): number { return 0; }
 
         public getSignature(): string { return 'StructExampleB'; }
+
+        public get(): StructExampleB { return this; }
 
         public getId(): number { return 78; }
 
@@ -4902,7 +4947,7 @@ export namespace GroupA {
             } else {
                 this.field_u16 = field_u16;
             }
-            const strct: StructExampleA = new StructExampleA({
+            const strct: StructExampleA = new GroupA.StructExampleA({
                 field_u8: 0,
                 field_u16: 0,
                 opt: {},
@@ -4936,7 +4981,7 @@ export namespace GroupB {
         field_u8: number;
         field_u16: number;
     }
-    export class StructExampleA extends Protocol.Convertor implements IStructExampleA {
+    export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -4944,7 +4989,7 @@ export namespace GroupB {
         ];
 
         public static defaults(): StructExampleA {
-            return new StructExampleA({
+            return new GroupB.StructExampleA({
                 field_u8: 0,
                 field_u16: 0,
             });
@@ -4989,6 +5034,8 @@ export namespace GroupB {
 
         public field_u8: number;
         public field_u16: number;
+        public static getSignature(): string { return 'StructExampleA'; }
+
 
         constructor(params: IStructExampleA)  {
             super();
@@ -5000,6 +5047,8 @@ export namespace GroupB {
         public signature(): number { return 0; }
 
         public getSignature(): string { return 'StructExampleA'; }
+
+        public get(): StructExampleA { return this; }
 
         public getId(): number { return 83; }
 
@@ -5044,7 +5093,7 @@ export namespace GroupB {
             field_u8: number;
             field_u16: number;
         }
-        export class StructExampleA extends Protocol.Convertor implements IStructExampleA {
+        export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
 
             public static scheme: Protocol.IPropScheme[] = [
                 { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -5052,7 +5101,7 @@ export namespace GroupB {
             ];
 
             public static defaults(): StructExampleA {
-                return new StructExampleA({
+                return new GroupB.GroupC.StructExampleA({
                     field_u8: 0,
                     field_u16: 0,
                 });
@@ -5097,6 +5146,8 @@ export namespace GroupB {
 
             public field_u8: number;
             public field_u16: number;
+            public static getSignature(): string { return 'StructExampleA'; }
+
 
             constructor(params: IStructExampleA)  {
                 super();
@@ -5108,6 +5159,8 @@ export namespace GroupB {
             public signature(): number { return 0; }
 
             public getSignature(): string { return 'StructExampleA'; }
+
+            public get(): StructExampleA { return this; }
 
             public getId(): number { return 87; }
 
@@ -5145,21 +5198,21 @@ export namespace GroupB {
         export interface IStructExampleB {
             field_u8: number;
             field_u16: number;
-            strct: StructExampleA;
+            strct: GroupB.GroupC.StructExampleA;
         }
-        export class StructExampleB extends Protocol.Convertor implements IStructExampleB {
+        export class StructExampleB extends Protocol.Convertor implements IStructExampleB, ISigned<StructExampleB> {
 
             public static scheme: Protocol.IPropScheme[] = [
                 { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
                 { prop: 'field_u16', types: Protocol.Primitives.u16, optional: false, },
-                { prop: 'strct', types: StructExampleA.getValidator(false), optional: false },
+                { prop: 'strct', types: GroupB.GroupC.StructExampleA.getValidator(false), optional: false },
             ];
 
             public static defaults(): StructExampleB {
-                return new StructExampleB({
+                return new GroupB.GroupC.StructExampleB({
                     field_u8: 0,
                     field_u16: 0,
-                    strct: new StructExampleA({
+                    strct: new GroupB.GroupC.StructExampleA({
                         field_u8: 0,
                         field_u16: 0,
                     }),
@@ -5206,7 +5259,9 @@ export namespace GroupB {
 
             public field_u8: number;
             public field_u16: number;
-            public strct: StructExampleA;
+            public strct: GroupB.GroupC.StructExampleA;
+            public static getSignature(): string { return 'StructExampleB'; }
+
 
             constructor(params: IStructExampleB)  {
                 super();
@@ -5218,6 +5273,8 @@ export namespace GroupB {
             public signature(): number { return 0; }
 
             public getSignature(): string { return 'StructExampleB'; }
+
+            public get(): StructExampleB { return this; }
 
             public getId(): number { return 90; }
 
@@ -5246,7 +5303,7 @@ export namespace GroupB {
                 } else {
                     this.field_u16 = field_u16;
                 }
-                const strct: StructExampleA = new StructExampleA({
+                const strct: StructExampleA = new GroupB.GroupC.StructExampleA({
                     field_u8: 0,
                     field_u16: 0,
                 });
@@ -5267,6 +5324,255 @@ export namespace GroupB {
             }
         }
 
+    }
+
+}
+
+export namespace GroupD {
+    export interface IAvailableMessages {
+        EnumExampleP?: IEnumExampleP,
+        StructExampleP?: StructExampleP,
+    }
+
+    export interface IEnumExampleP {
+        Option_a?: StructExampleA;
+        Option_b?: GroupB.StructExampleA;
+        Option_c?: GroupB.GroupC.StructExampleA;
+    }
+
+    export class EnumExampleP extends Protocol.Primitives.Enum<IEnumExampleP> {
+        public static from(obj: any): IEnumExampleP | Error {
+            const inst = new EnumExampleP();
+            let err: Error | undefined;
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                err = inst.decode(obj);
+            } else {
+                err = inst.set(obj);
+            }
+            return err instanceof Error ? err : inst.get();
+        }
+        public from(obj: any): IEnumExampleP | Error {
+            return EnumExampleP.from(obj);
+        }
+        public signature(): number { return 0; }
+        public getId(): number { return 99; }
+        public getAllowed(): string[] {
+            return [
+                StructExampleA.getSignature(),
+                GroupB.StructExampleA.getSignature(),
+                GroupB.GroupC.StructExampleA.getSignature(),
+            ];
+        }
+        public getOptionValue(id: number): ISigned<any> {
+            switch (id) {
+                case 0: return StructExampleA.defaults();
+                case 1: return GroupB.StructExampleA.defaults();
+                case 2: return GroupB.GroupC.StructExampleA.defaults();
+            }
+        }
+        public get(): IEnumExampleP {
+            const target: IEnumExampleP = {};
+            switch (this.getValueIndex()) {
+                case 0: target.Option_a = this.getValue<StructExampleA>(); break;
+                case 1: target.Option_b = this.getValue<GroupB.StructExampleA>(); break;
+                case 2: target.Option_c = this.getValue<GroupB.GroupC.StructExampleA>(); break;
+            }
+            return target;
+        }
+        public set(src: IEnumExampleP): Error | undefined{
+            if (Object.keys(src).length > 1) {
+                return new Error(`Option cannot have more then 1 value.`);
+            }
+            if (src.Option_a !== undefined) {
+                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<StructExampleA>(0, src.Option_a));
+                if (err instanceof Error) {
+                    return err;
+                }
+            }
+            if (src.Option_b !== undefined) {
+                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupB.StructExampleA>(1, src.Option_b));
+                if (err instanceof Error) {
+                    return err;
+                }
+            }
+            if (src.Option_c !== undefined) {
+                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupB.GroupC.StructExampleA>(2, src.Option_c));
+                if (err instanceof Error) {
+                    return err;
+                }
+            }
+        }
+    }
+
+    export interface IStructExampleP {
+        field_a: StructExampleA;
+        field_b: GroupB.StructExampleA;
+        field_c: GroupB.GroupC.StructExampleA;
+    }
+    export class StructExampleP extends Protocol.Convertor implements IStructExampleP, ISigned<StructExampleP> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'field_a', types: StructExampleA.getValidator(false), optional: false },
+            { prop: 'field_b', types: GroupB.StructExampleA.getValidator(false), optional: false },
+            { prop: 'field_c', types: GroupB.GroupC.StructExampleA.getValidator(false), optional: false },
+        ];
+
+        public static defaults(): StructExampleP {
+            return new GroupD.StructExampleP({
+                field_a: new StructExampleA({
+                    field_str: '',
+                    field_u8: 0,
+                    field_u16: 0,
+                    field_u32: 0,
+                    field_u64: BigInt(0),
+                    field_i8: 0,
+                    field_i16: 0,
+                    field_i32: 0,
+                    field_i64: BigInt(0),
+                    field_f32: 0,
+                    field_f64: 0,
+                    field_bool: true,
+                }),
+                field_b: new GroupB.StructExampleA({
+                    field_u8: 0,
+                    field_u16: 0,
+                }),
+                field_c: new GroupB.GroupC.StructExampleA({
+                    field_u8: 0,
+                    field_u16: 0,
+                }),
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<StructExampleP>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof StructExampleP)) {
+                                throw new Error(`Expecting instance of StructExampleP on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof StructExampleP ? undefined : new Error(`Expecting instance of StructExampleP`);
+                }};
+            }
+        }
+
+        public static from(obj: any): StructExampleP | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = StructExampleP.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, StructExampleP.scheme);
+                return error instanceof Error ? error : new StructExampleP({
+                    field_a: obj.field_a,
+                    field_b: obj.field_b,
+                    field_c: obj.field_c,
+                });
+            }
+        }
+
+        public field_a: StructExampleA;
+        public field_b: GroupB.StructExampleA;
+        public field_c: GroupB.GroupC.StructExampleA;
+        public static getSignature(): string { return 'StructExampleP'; }
+
+
+        constructor(params: IStructExampleP)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                this[key] = params[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'StructExampleP'; }
+
+        public get(): StructExampleP { return this; }
+
+        public getId(): number { return 95; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+                () => { const buffer = this.field_a.encode(); return this.getBuffer(96, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_b.encode(); return this.getBuffer(97, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_c.encode(); return this.getBuffer(98, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | undefined {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            const field_a: StructExampleA = new StructExampleA({
+                field_str: '',
+                field_u8: 0,
+                field_u16: 0,
+                field_u32: 0,
+                field_u64: BigInt(0),
+                field_i8: 0,
+                field_i16: 0,
+                field_i32: 0,
+                field_i64: BigInt(0),
+                field_f32: 0,
+                field_f64: 0,
+                field_bool: true,
+            });
+            const field_aBuf: ArrayBufferLike = storage.get(96);
+            if (field_aBuf instanceof Error) {
+                return field_aBuf;
+            }
+            const field_aErr: Error | undefined = field_a.decode(field_aBuf);
+            if (field_aErr instanceof Error) {
+                return field_aErr;
+            } else {
+                this.field_a = field_a;
+            }
+            const field_b: GroupB.StructExampleA = new GroupB.StructExampleA({
+                field_u8: 0,
+                field_u16: 0,
+            });
+            const field_bBuf: ArrayBufferLike = storage.get(97);
+            if (field_bBuf instanceof Error) {
+                return field_bBuf;
+            }
+            const field_bErr: Error | undefined = field_b.decode(field_bBuf);
+            if (field_bErr instanceof Error) {
+                return field_bErr;
+            } else {
+                this.field_b = field_b;
+            }
+            const field_c: GroupB.GroupC.StructExampleA = new GroupB.GroupC.StructExampleA({
+                field_u8: 0,
+                field_u16: 0,
+            });
+            const field_cBuf: ArrayBufferLike = storage.get(98);
+            if (field_cBuf instanceof Error) {
+                return field_cBuf;
+            }
+            const field_cErr: Error | undefined = field_c.decode(field_cBuf);
+            if (field_cErr instanceof Error) {
+                return field_cErr;
+            } else {
+                this.field_c = field_c;
+            }
+        }
+
+        public defaults(): StructExampleP {
+            return StructExampleP.defaults();
+        }
     }
 
 }
@@ -5297,11 +5603,17 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 instance = enum_instance;
                 return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleC: instance } };
             case 73:
-                instance = new EnumExampleA();
+                instance = new GroupA.EnumExampleA();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } } };
+            case 99:
+                instance = new GroupD.EnumExampleP();
+                if (instance.decode(buffer) instanceof Error) { return err; }
+                enum_instance = instance.get();
+                instance = enum_instance;
+                return { header: { id: header.id, timestamp: header.ts }, msg: { GroupD: { EnumExampleP: instance } } };
             case 4:
                 instance = StructExampleA.defaults();
                 err = instance.decode(buffer);
@@ -5358,6 +5670,10 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 instance = GroupB.GroupC.StructExampleB.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } } };
+            case 95:
+                instance = GroupD.StructExampleP.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } } };
         }
     }
 }

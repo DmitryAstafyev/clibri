@@ -41,6 +41,7 @@ enum ENext {
     Space(usize),
     Repeated(usize),
     Optional(usize),
+    PathSpliter(usize),
     End(),
 }
 
@@ -68,6 +69,7 @@ enum EExpectation {
     EntityOpen,
     EntityClose,
     Semicolon,
+    PathSpliter,
 }
 
 pub struct Parser {
@@ -99,6 +101,7 @@ impl Parser {
             EExpectation::EnumDef,
         ];
         let mut store: Store = Store::new();
+        let mut field_type_path: Vec<usize> = vec![];
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
@@ -183,6 +186,7 @@ impl Parser {
                                         expectation = vec![
                                             EExpectation::FieldName,
                                             EExpectation::FieldRepeatedMark,
+                                            EExpectation::PathSpliter,
                                         ];
                                     }
                                 } else {
@@ -190,6 +194,7 @@ impl Parser {
                                     expectation = vec![
                                         EExpectation::FieldName,
                                         EExpectation::FieldRepeatedMark,
+                                        EExpectation::PathSpliter,
                                     ];
                                 }
                             } else {
@@ -283,6 +288,20 @@ impl Parser {
                             store.set_field_type_as_optional();
                             offset
                         }
+                        ENext::PathSpliter(offset) => {
+                            if !is_in(&expectation, &EExpectation::PathSpliter) {
+                                errs.push(format!(
+                                    "Unexpecting next step: {:?}. Value: PathSpliter",
+                                    expectation
+                                ));
+                                break;
+                            }
+                            if !store.is_field_opened() && !store.is_enum_opened() {
+                                errs.push("Unexpecting : as soon as no open field or enum".to_owned());
+                            }
+                            expectation = vec![EExpectation::FieldType];
+                            offset
+                        },
                         ENext::End() => {
                             break;
                         }
@@ -315,7 +334,7 @@ impl Parser {
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
         let mut str: String = String::new();
         let mut pass: usize = 0;
-        let break_chars: Vec<char> = vec![';', '{', '}', '?'];
+        let break_chars: Vec<char> = vec![';', '{', '}', '?', ':'];
         let special_chars: Vec<char> = vec!['[', ']'];
         let allowed_chars: Vec<char> = vec!['_'];
         for char in content.chars() {
@@ -342,6 +361,7 @@ impl Parser {
                     '{' => return Ok(ENext::OpenStruct(pass)),
                     '}' => return Ok(ENext::CloseStruct(pass)),
                     '?' => return Ok(ENext::Optional(pass)),
+                    ':' => return Ok(ENext::PathSpliter(pass)),
                     _ => {}
                 };
             }

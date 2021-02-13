@@ -470,10 +470,8 @@ impl RustRender {
                 }
             }
             .to_string();
-        } else if let Some(ref_type_id) = item.ref_type_id {
-            if let Some(strct) = store.get_struct(ref_type_id) {
-                return strct.name;
-            }
+        } else {
+            return item.get_full_name();
         }
         panic!("Fail to find a type ref for {}", item.name);
     }
@@ -489,7 +487,7 @@ impl RustRender {
                     self.field_default(field, &mut store.clone(), level)
                 );
             }
-            format!("{}{}}}\n", body, self.spaces(level - 1))
+            format!("{}{}}}", body, self.spaces(level - 1))
         } else if let Some(enums) = store.get_enum(entity_id) {
             format!("{}::Defaults", enums.name)
         } else {
@@ -498,7 +496,8 @@ impl RustRender {
     }
 
     fn field_default(&self, field: &Field, store: &mut Store, level: u8) -> String {
-        let mut body = format!("{}: ", field.name);
+        let path: String = if field.get_path().is_empty() { String::from("") } else { format!("{}::", field.get_path().join("::")) };
+        let mut body = format!("{}: {}", field.name, path);
         if field.repeated && !field.optional {
             body = format!("{}vec![],", body);
         } else if field.optional {
@@ -570,17 +569,8 @@ impl RustRender {
             "f64" => String::from("f64"),
             "str" => String::from("String"),
             _ => {
-                if let Some(ref_type_id) = field.ref_type_id {
-                    if let Some(strct) = store.get_struct(ref_type_id) {
-                        strct.name
-                    } else if let Some(enums) = store.get_enum(ref_type_id) {
-                        enums.name
-                    } else {
-                        panic!(format!(
-                            "Fail to find a struct/enum id: {} for field {}",
-                            ref_type_id, field.name
-                        ));
-                    }
+                if let Some(_ref_type_id) = field.ref_type_id {
+                    field.get_full_name().join("::")
                 } else {
                     panic!("Invalid type definition for field {}", field.name);
                 }

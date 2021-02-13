@@ -66,11 +66,12 @@ impl TypescriptRender {
         }
         body = format!("{}\n{}}}\n", body, self.spaces(level));
         body = format!(
-            "{}{}export class {} extends Protocol.Convertor implements I{} {{\n",
+            "{}{}export class {} extends Protocol.Convertor implements I{}, ISigned<{}> {{\n",
             body,
             self.spaces(level),
             strct.name,
-            strct.name
+            strct.name,
+            strct.name,
         );
         body = format!(
             "{}\n{}",
@@ -123,6 +124,13 @@ impl TypescriptRender {
         }
         body = format!("{}\n", body);
         body = format!(
+            "{}{}public static getSignature(): string {{ return '{}'; }}\n",
+            body,
+            self.spaces(level + 1),
+            strct.name
+        );
+        body = format!("{}\n", body);
+        body = format!(
             "{}\n{}",
             body,
             self.struct_constructor(&strct, &mut store.clone(), level + 1)
@@ -137,6 +145,13 @@ impl TypescriptRender {
         body = format!("{}\n", body);
         body = format!(
             "{}{}public getSignature(): string {{ return '{}'; }}\n",
+            body,
+            self.spaces(level + 1),
+            strct.name
+        );
+        body = format!("{}\n", body);
+        body = format!(
+            "{}{}public get(): {} {{ return this; }}\n",
             body,
             self.spaces(level + 1),
             strct.name
@@ -226,7 +241,7 @@ impl TypescriptRender {
                         "{}\n{}{}.getSignature(),",
                         body,
                         self.spaces(level),
-                        strct.name
+                        store.get_struct_path(strct.id).join(".")
                     );
                 } else {
                     stop!(
@@ -259,7 +274,7 @@ impl TypescriptRender {
                         body,
                         self.spaces(level + 1),
                         pos,
-                        strct.name
+                        store.get_struct_path(strct.id).join(".")
                     );
                 } else {
                     stop!(
@@ -301,7 +316,7 @@ impl TypescriptRender {
                 self.etype_ts(prim_type_ref, variant.repeated)
             } else if let Some(ref_type_id) = variant.ref_type_id {
                 if let Some(strct) = store.get_struct(ref_type_id) {
-                    strct.name
+                    store.get_struct_path(strct.id).join(".")
                 } else {
                     stop!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
                 }
@@ -337,7 +352,7 @@ impl TypescriptRender {
                 self.etype_ts(prim_type_ref, variant.repeated)
             } else if let Some(ref_type_id) = variant.ref_type_id {
                 if let Some(strct) = store.get_struct(ref_type_id) {
-                    strct.name
+                    store.get_struct_path(strct.id).join(".")
                 } else {
                     stop!("Unknown type of data in scope of enum {} / {}, ref_type_id: {}. Failed to find a struct. ", enums.name, variant.name, ref_type_id);
                 }
@@ -549,7 +564,7 @@ impl TypescriptRender {
                 self.etype_ts(prim_type_ref.clone(), variant.repeated)
             } else if let Some(ref_type_id) = variant.ref_type_id {
                 if let Some(strct) = store.get_struct(ref_type_id) {
-                    strct.name
+                    store.get_struct_path(strct.id).join(".")
                 } else {
                     stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {}",
@@ -967,7 +982,7 @@ impl TypescriptRender {
 
     fn entity_default(&self, entity_id: usize, store: &mut Store, level: u8) -> String {
         if let Some(strct) = store.get_struct(entity_id) {
-            let mut body = format!("new {}({{", strct.name);
+            let mut body = format!("new {}({{", store.get_struct_path(entity_id).join("."));
             for field in &strct.fields {
                 body = format!(
                     "{}\n{}{},",
@@ -1011,7 +1026,7 @@ impl TypescriptRender {
                     body,
                     self.spaces(level),
                     field.name,
-                    strct.name,
+                    store.get_struct_path(strct.id).join("."),
                     if field.repeated { "true" } else { "false" },
                     if field.optional { "true" } else { "false" }
                 );
@@ -1106,8 +1121,8 @@ impl TypescriptRender {
                         "{}const arr{}Inst: {} = {}.defaults();",
                         self.spaces(level),
                         strct.name,
-                        strct.name,
-                        strct.name
+                        store.get_struct_path(strct.id).join("."),
+                        store.get_struct_path(strct.id).join(".")
                     );
                     body = format!("{}\n{}const arr{}: Array<any> | Error = this.getValue<{}[]>(storage, {}, arr{}Inst.decodeSelfArray.bind(arr{}Inst));", body, self.spaces(level), strct.name, strct.name, field.id, strct.name, strct.name);
                     body = format!(
@@ -1129,7 +1144,7 @@ impl TypescriptRender {
                         self.spaces(level + 1),
                         field.name,
                         strct.name,
-                        strct.name
+                        store.get_struct_path(strct.id).join(".")
                     );
                     body = format!("{}\n{}}}", body, self.spaces(level));
                 } else {
@@ -1137,7 +1152,7 @@ impl TypescriptRender {
                         "{}const {}: {} = {};",
                         self.spaces(level),
                         field.name,
-                        field.kind,
+                        field.get_full_name().join("."),
                         self.entity_default(entity_id, &mut store.clone(), level)
                     );
                     body = format!(
@@ -1370,8 +1385,8 @@ impl TypescriptRender {
             "str" => String::from("string"),
             _ => {
                 if let Some(ref_type_id) = field.ref_type_id {
-                    if let Some(strct) = store.get_struct(ref_type_id) {
-                        strct.name
+                    if let Some(_) = store.get_struct(ref_type_id) {
+                        store.get_struct_path(ref_type_id).join(".")
                     } else if let Some(enums) = store.get_enum(ref_type_id) {
                         format!("I{}", enums.name)
                     } else {
@@ -1609,7 +1624,7 @@ impl TypescriptRender {
                 "{}{}instance = new {}();\n",
                 body,
                 self.spaces(4),
-                enums.name
+                store.get_enum_path(enums.id).join(".")
             );
             body = format!(
                 "{}{}if (instance.decode(buffer) instanceof Error) {{ return err; }}\n",
@@ -1630,7 +1645,7 @@ impl TypescriptRender {
                 "{}{}instance = {}.defaults();\n",
                 body,
                 self.spaces(4),
-                self.get_full_name(structs.name.clone(), structs.parent, &mut store.clone())
+                store.get_struct_path(structs.id).join(".")
             );
             body = format!("{}{}err = instance.decode(buffer);\n", body, self.spaces(4));
             body = format!("{}{}return err instanceof Error ? err : {{ header: {{ id: header.id, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(structs.parent, &structs.name, &mut store.clone()));

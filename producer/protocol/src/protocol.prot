@@ -18,13 +18,28 @@ group UserSingIn {
 
 }
 
+group UserJoin {
+
+    struct Request {
+        str email;
+        str name;
+        UserRole role;
+    }
+
+    struct Response {
+        str error?;
+        str uuid;
+    }
+
+}
+
 group UserLogout {
 
     struct Request {
         str uuid;
     }
 
-    struct Response123 {
+    struct Response {
     }
 
 }

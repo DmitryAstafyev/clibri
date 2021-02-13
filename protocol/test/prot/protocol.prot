@@ -161,3 +161,19 @@ group GroupB {
     }
 
 }
+
+group GroupD {
+
+    struct StructExampleP {
+        StructExampleA field_a;
+        GroupB:StructExampleA field_b;
+        GroupB:GroupC:StructExampleA field_c;
+    }
+
+    enum EnumExampleP {
+        StructExampleA Option_a;
+        GroupB:StructExampleA Option_b;
+        GroupB:GroupC:StructExampleA Option_c;
+    }
+
+}

@@ -30,7 +30,7 @@ impl Store {
         }
     }
 
-    pub fn get_struct(&mut self, id: usize) -> Option<Struct> {
+    pub fn get_struct(&self, id: usize) -> Option<Struct> {
         if let Some(strct) = self.structs.iter().find(|s| s.id == id) {
             Some(strct.clone())
         } else {
@@ -38,7 +38,7 @@ impl Store {
         }
     }
 
-    pub fn get_enum(&mut self, id: usize) -> Option<Enum> {
+    pub fn get_enum(&self, id: usize) -> Option<Enum> {
         if let Some(enums) = self.enums.iter().find(|s| s.id == id) {
             Some(enums.clone())
         } else {
@@ -46,7 +46,7 @@ impl Store {
         }
     }
 
-    pub fn get_group(&mut self, id: usize) -> Option<Group> {
+    pub fn get_group(&self, id: usize) -> Option<Group> {
         if let Some(group) = self.groups.iter().find(|s| s.id == id) {
             Some(group.clone())
         } else {
@@ -103,27 +103,44 @@ impl Store {
     }
 
     pub fn set_field_type(&mut self, type_str: &str) {
-        if self.c_field.is_some() {
-            stop!("Fail to create new field, while previous isn't closed.");
-        }
         if self.c_struct.is_none() {
             stop!("Fail to create new field, because no open struct.");
         }
-        self.sequence += 1;
-        if PrimitiveTypes::get_entity(type_str).is_some() {
-            self.c_field = Some(Field::new(self.sequence, 0, type_str.to_string()));
+        let mut c_field = if let Some(field) = self.c_field.take() {
+            field
         } else {
-            let mut c_field = Field::new(self.sequence, 0, type_str.to_string());
-            let group_id = if let Some(group) = self.c_group.clone() { group.id } else { 0 };
-            if let Some(enum_ref) = self.enums.iter().find(|i| i.name == type_str && i.parent == group_id) {
-                c_field.set_type_ref(EReferenceToType::Enum, enum_ref.id);
-            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str && i.parent == group_id) {
-                c_field.set_type_ref(EReferenceToType::Struct, struct_ref.id);
+            self.sequence += 1;
+            Field::new(self.sequence, 0, type_str.to_string())
+        };
+        c_field.add_type_path(type_str);
+        self.c_field = Some(c_field);
+    }
+
+    pub fn find_by_path(&self, from: usize, path: &Vec<String>) -> Option<Vec<(String, usize)>> {
+        let mut results: Vec<(String, usize)> = vec![];
+        let last = path.len() - 1;
+        let mut parent: usize = from;
+        for (pos, type_str) in path.iter().enumerate() {
+            if pos == last {
+                if let Some(enum_ref) = self.enums.iter().find(|i| i.name == String::from(type_str) && i.parent == parent) {
+                    // Check enum in own group
+                    results.push((String::from(type_str), enum_ref.id));
+                } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == String::from(type_str) && i.parent == parent) {
+                    // Check struct in own group
+                    results.push((String::from(type_str), struct_ref.id));
+                } else {
+                    return None;
+                }
             } else {
-                stop!("Expecting type definition but has been gotten value {}", type_str)
+                if let Some(group_ref) = self.groups.iter().find(|i| i.name == String::from(type_str) && i.parent == parent) {
+                    results.push((String::from(type_str), group_ref.id));
+                    parent = group_ref.id;
+                } else {
+                    return None;
+                }
             }
-            self.c_field = Some(c_field);
         }
+        Some(results)
     }
 
     pub fn set_field_type_as_repeated(&mut self) {
@@ -153,6 +170,7 @@ impl Store {
         }
         if let Some(mut c_field) = self.c_field.take() {
             c_field.set_name(name_str.to_string());
+            c_field.accept_type(&self, if let Some(group) = self.c_group.clone() { group.id } else { 0 });
             self.c_field = Some(c_field);
         } else {
             stop!("Fail to set name of field, while it wasn't opened.");
@@ -175,14 +193,7 @@ impl Store {
 
     pub fn set_enum_type(&mut self, type_str: &str) {
         if let Some(mut c_enum) = self.c_enum.take() {
-            let group_id = if let Some(group) = self.c_group.clone() { group.id } else { 0 };
-            if let Some(types) = PrimitiveTypes::get_entity(type_str) {
-                c_enum.set_type(types);
-            } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == type_str && i.parent == group_id) {
-                c_enum.set_type_ref(struct_ref.id);
-            } else {
-                stop!("Expecting type definition but has been gotten value {}", type_str)
-            }
+            c_enum.add_type_path(type_str);
             self.c_enum = Some(c_enum);
         } else {
             stop!("Fail to create new enum item, because no open enum.");
@@ -200,6 +211,7 @@ impl Store {
 
     pub fn set_enum_name(&mut self, name: &str) {
         if let Some(mut c_enum) = self.c_enum.take() {
+            c_enum.accept_type(&self, if let Some(group) = self.c_group.clone() { group.id } else { 0 });
             c_enum.set_name(name.to_string());
             self.c_enum = Some(c_enum);
         } else {
@@ -209,6 +221,10 @@ impl Store {
 
     pub fn is_enum_opened(&mut self) -> bool {
         self.c_enum.is_some()
+    }
+
+    pub fn is_field_opened(&mut self) -> bool {
+        self.c_field.is_some()
     }
 
     pub fn open(&mut self) {
@@ -248,6 +264,50 @@ impl Store {
             }
         }
         Ok(())
+    }
+
+    pub fn get_struct_path(&self, id: usize) -> Vec<String> {
+        if let Some(strct) = self.structs.iter().find(|s| s.id == id) {
+            let mut path: Vec<String> = vec![strct.name.clone()];
+            let mut parent = strct.parent;
+            loop {
+                if parent == 0 {
+                    break;
+                }
+                if let Some(group) = self.groups.iter().find(|s| s.id == parent) {
+                    path.push(group.name.clone());
+                    parent = group.parent;
+                } else {
+                    stop!("Fail to find a group id: {} for struct {}", strct.parent, strct.name);
+                }
+            }
+            path.reverse();
+            path
+        } else {
+            stop!("Fail to find a struct {}", id);
+        }
+    }
+
+    pub fn get_enum_path(&self, id: usize) -> Vec<String> {
+        if let Some(strct) = self.enums.iter().find(|s| s.id == id) {
+            let mut path: Vec<String> = vec![strct.name.clone()];
+            let mut parent = strct.parent;
+            loop {
+                if parent == 0 {
+                    break;
+                }
+                if let Some(group) = self.groups.iter().find(|s| s.id == parent) {
+                    path.push(group.name.clone());
+                    parent = group.parent;
+                } else {
+                    stop!("Fail to find a group id: {} for struct {}", strct.parent, strct.name);
+                }
+            }
+            path.reverse();
+            path
+        } else {
+            stop!("Fail to find a struct {}", id);
+        }
     }
 
     fn get_group_id(&mut self) -> usize {
