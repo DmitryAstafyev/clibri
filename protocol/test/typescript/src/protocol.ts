@@ -5336,8 +5336,9 @@ export namespace GroupD {
 
     export interface IEnumExampleP {
         Option_a?: StructExampleA;
-        Option_b?: GroupB.StructExampleA;
-        Option_c?: GroupB.GroupC.StructExampleA;
+        Option_b?: GroupD.StructExampleP;
+        Option_c?: GroupB.StructExampleA;
+        Option_d?: GroupB.GroupC.StructExampleA;
     }
 
     export class EnumExampleP extends Protocol.Primitives.Enum<IEnumExampleP> {
@@ -5359,6 +5360,7 @@ export namespace GroupD {
         public getAllowed(): string[] {
             return [
                 StructExampleA.getSignature(),
+                GroupD.StructExampleP.getSignature(),
                 GroupB.StructExampleA.getSignature(),
                 GroupB.GroupC.StructExampleA.getSignature(),
             ];
@@ -5366,16 +5368,18 @@ export namespace GroupD {
         public getOptionValue(id: number): ISigned<any> {
             switch (id) {
                 case 0: return StructExampleA.defaults();
-                case 1: return GroupB.StructExampleA.defaults();
-                case 2: return GroupB.GroupC.StructExampleA.defaults();
+                case 1: return GroupD.StructExampleP.defaults();
+                case 2: return GroupB.StructExampleA.defaults();
+                case 3: return GroupB.GroupC.StructExampleA.defaults();
             }
         }
         public get(): IEnumExampleP {
             const target: IEnumExampleP = {};
             switch (this.getValueIndex()) {
                 case 0: target.Option_a = this.getValue<StructExampleA>(); break;
-                case 1: target.Option_b = this.getValue<GroupB.StructExampleA>(); break;
-                case 2: target.Option_c = this.getValue<GroupB.GroupC.StructExampleA>(); break;
+                case 1: target.Option_b = this.getValue<GroupD.StructExampleP>(); break;
+                case 2: target.Option_c = this.getValue<GroupB.StructExampleA>(); break;
+                case 3: target.Option_d = this.getValue<GroupB.GroupC.StructExampleA>(); break;
             }
             return target;
         }
@@ -5390,13 +5394,19 @@ export namespace GroupD {
                 }
             }
             if (src.Option_b !== undefined) {
-                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupB.StructExampleA>(1, src.Option_b));
+                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupD.StructExampleP>(1, src.Option_b));
                 if (err instanceof Error) {
                     return err;
                 }
             }
             if (src.Option_c !== undefined) {
-                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupB.GroupC.StructExampleA>(2, src.Option_c));
+                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupB.StructExampleA>(2, src.Option_c));
+                if (err instanceof Error) {
+                    return err;
+                }
+            }
+            if (src.Option_d !== undefined) {
+                const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<GroupB.GroupC.StructExampleA>(3, src.Option_d));
                 if (err instanceof Error) {
                     return err;
                 }

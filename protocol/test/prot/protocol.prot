@@ -172,8 +172,9 @@ group GroupD {
 
     enum EnumExampleP {
         StructExampleA Option_a;
-        GroupB:StructExampleA Option_b;
-        GroupB:GroupC:StructExampleA Option_c;
+        StructExampleP Option_b;
+        GroupB:StructExampleA Option_c;
+        GroupB:GroupC:StructExampleA Option_d;
     }
 
 }

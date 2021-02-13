@@ -2844,8 +2844,9 @@ pub mod GroupD {
     #[derive(Debug, Clone, PartialEq)]
     pub enum EnumExampleP {
         Option_a(StructExampleA),
-        Option_b(GroupB::StructExampleA),
-        Option_c(GroupB::GroupC::StructExampleA),
+        Option_b(StructExampleP),
+        Option_c(GroupB::StructExampleA),
+        Option_d(GroupB::GroupC::StructExampleA),
         Defaults,
     }
     impl EnumDecode for EnumExampleP {
@@ -2863,12 +2864,16 @@ pub mod GroupD {
                     Ok(v) => Ok(EnumExampleP::Option_a(v)),
                     Err(e) => Err(e)
                 },
-                1 => match GroupB::StructExampleA::decode(&body_buf) {
+                1 => match StructExampleP::decode(&body_buf) {
                     Ok(v) => Ok(EnumExampleP::Option_b(v)),
                     Err(e) => Err(e)
                 },
-                2 => match GroupB::GroupC::StructExampleA::decode(&body_buf) {
+                2 => match GroupB::StructExampleA::decode(&body_buf) {
                     Ok(v) => Ok(EnumExampleP::Option_c(v)),
+                    Err(e) => Err(e)
+                },
+                3 => match GroupB::GroupC::StructExampleA::decode(&body_buf) {
+                    Ok(v) => Ok(EnumExampleP::Option_d(v)),
                     Err(e) => Err(e)
                 },
                 _ => Err(String::from("Fail to find relevant value for EnumExampleP")),
@@ -2883,6 +2888,7 @@ pub mod GroupD {
                 Self::Option_a(v) => (v.encode(), 0),
                 Self::Option_b(v) => (v.encode(), 1),
                 Self::Option_c(v) => (v.encode(), 2),
+                Self::Option_d(v) => (v.encode(), 3),
                 _ => { return Err(String::from("Not supportable option")); },
             };
             let mut buf = match buf {
