@@ -17,6 +17,10 @@ const usecases: Array<{ name: string, entity: any }> = [
     { name: 'EnumExampleB.i64' , entity: Protocol.EnumExampleB},
     { name: 'EnumExampleB.f32' , entity: Protocol.EnumExampleB},
     { name: 'EnumExampleB.f64' , entity: Protocol.EnumExampleB},
+    { name: 'GroupD.EnumExampleP.Option_a' , entity: Protocol.GroupD.EnumExampleP },
+    { name: 'GroupD.EnumExampleP.Option_b' , entity: Protocol.GroupD.EnumExampleP },
+    { name: 'GroupD.EnumExampleP.Option_c' , entity: Protocol.GroupD.EnumExampleP },
+    { name: 'GroupD.EnumExampleP.Option_d' , entity: Protocol.GroupD.EnumExampleP },
     { name: 'StructExampleA' , entity: Protocol.StructExampleA },
     { name: 'StructExampleB' , entity: Protocol.StructExampleB },
     { name: 'StructExampleC' , entity: Protocol.StructExampleC },
@@ -32,7 +36,6 @@ const usecases: Array<{ name: string, entity: any }> = [
     { name: 'GroupCStructExampleA' , entity: Protocol.GroupB.GroupC.StructExampleA },
     { name: 'GroupCStructExampleB' , entity: Protocol.GroupB.GroupC.StructExampleB },
     { name: 'GroupDStructExampleP' , entity: Protocol.GroupD.StructExampleP },
-
 ];
 
 function getSampleByName(name: string): Protocol.Convertor | Protocol.Enum<any> {
@@ -346,9 +349,33 @@ export function read(): Promise<void> {
                                 console.log(`Package GroupD.StructExampleP is OK`);
                                 done += 1;
                             }
+                            if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_a !== undefined && !isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_a') as any).get())) {
+                                return reject(new Error(`GroupD.EnumExampleP.Option_a incorrect: ${pack.msg.GroupD.EnumExampleP.Option_a}`));
+                            } else if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_a !== undefined && isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_a') as any).get())) {
+                                console.log(`Package GroupD.EnumExampleP.Option_a is OK`);
+                                done += 1;
+                            }
+                            if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_b !== undefined && !isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_b') as any).get())) {
+                                return reject(new Error(`GroupD.EnumExampleP.Option_b incorrect: ${pack.msg.GroupD.EnumExampleP.Option_b}`));
+                            } else if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_b !== undefined && isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_b') as any).get())) {
+                                console.log(`Package GroupD.EnumExampleP.Option_b is OK`);
+                                done += 1;
+                            }
+                            if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_c !== undefined && !isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_c') as any).get())) {
+                                return reject(new Error(`GroupD.EnumExampleP.Option_c incorrect: ${pack.msg.GroupD.EnumExampleP.Option_c}`));
+                            } else if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_c !== undefined && isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_c') as any).get())) {
+                                console.log(`Package GroupD.EnumExampleP.Option_c is OK`);
+                                done += 1;
+                            }
+                            if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_d !== undefined && !isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_d') as any).get())) {
+                                return reject(new Error(`GroupD.EnumExampleP.Option_d incorrect: ${pack.msg.GroupD.EnumExampleP.Option_d}`));
+                            } else if (pack.msg.GroupD.EnumExampleP !== undefined && pack.msg.GroupD.EnumExampleP.Option_d !== undefined && isEqual(pack.msg.GroupD.EnumExampleP, (getSampleByName('GroupD.EnumExampleP.Option_d') as any).get())) {
+                                console.log(`Package GroupD.EnumExampleP.Option_d is OK`);
+                                done += 1;
+                            }
                         }
                     } while (true);
-                    if (count !== 28 || done !== count || reader.pending() > 0 || reader.len() > 0) {
+                    if (count !== 32 || done !== count || reader.pending() > 0 || reader.len() > 0) {
                         return reject(new Error(`Fail to correctly read buffer file:\n\tcount = ${count};\n\tpending=${reader.pending()};\n\tlen=${reader.len()}\n\tbuffer=${buffer.byteLength}`));
                     }
                     console.log(`[TS] File: ${target} has beed read.`);

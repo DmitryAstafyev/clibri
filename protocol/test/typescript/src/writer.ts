@@ -69,6 +69,72 @@ usecases.push({ name: 'EnumExampleB.f64', entity: (() => {
     return EnumExampleB;
 })()});
 
+usecases.push({ name: 'GroupD.EnumExampleP.Option_a', entity: (() => {
+    const EnumInts = new Protocol.GroupD.EnumExampleP();
+    EnumInts.set({ Option_a: new Protocol.StructExampleA({
+        field_str: 'test',
+        field_u8: 1,
+        field_u16: 2,
+        field_u32: 3,
+        field_u64: BigInt(4),
+        field_i8: -1,
+        field_i16: -2,
+        field_i32: -3,
+        field_i64: -BigInt(4),
+        field_f32: 0.1,
+        field_f64: 0.2,
+        field_bool: true,
+    }) });
+    return EnumInts;
+})()});
+
+usecases.push({ name: 'GroupD.EnumExampleP.Option_b', entity: (() => {
+    const EnumInts = new Protocol.GroupD.EnumExampleP();
+    EnumInts.set({ Option_b: new Protocol.GroupD.StructExampleP({
+        field_a: new Protocol.StructExampleA({
+            field_str: 'test',
+            field_u8: 1,
+            field_u16: 2,
+            field_u32: 3,
+            field_u64: BigInt(4),
+            field_i8: -1,
+            field_i16: -2,
+            field_i32: -3,
+            field_i64: -BigInt(4),
+            field_f32: 0.1,
+            field_f64: 0.2,
+            field_bool: true,
+        }),
+        field_b: new Protocol.GroupB.StructExampleA({
+            field_u8: 1,
+            field_u16: 2,
+        }),
+        field_c: new Protocol.GroupB.GroupC.StructExampleA({
+            field_u8: 1,
+            field_u16: 2,
+        })
+    }) });
+    return EnumInts;
+})()});
+
+usecases.push({ name: 'GroupD.EnumExampleP.Option_c', entity: (() => {
+    const EnumInts = new Protocol.GroupD.EnumExampleP();
+    EnumInts.set({ Option_c: new Protocol.GroupB.StructExampleA({
+        field_u8: 1,
+        field_u16: 2,
+    }) });
+    return EnumInts;
+})()});
+
+usecases.push({ name: 'GroupD.EnumExampleP.Option_d', entity: (() => {
+    const EnumInts = new Protocol.GroupD.EnumExampleP();
+    EnumInts.set({ Option_d: new Protocol.GroupB.GroupC.StructExampleA({
+        field_u8: 1,
+        field_u16: 2,
+    })});
+    return EnumInts;
+})()});
+
 usecases.push(...[
     { name: 'StructExampleA' , entity: new Protocol.StructExampleA({
         field_str: 'test',

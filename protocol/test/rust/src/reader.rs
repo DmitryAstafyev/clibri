@@ -319,6 +319,80 @@ fn check_GroupDStructExampleP(entity: GroupD::StructExampleP) {
 }
 
 #[allow(non_snake_case)]
+fn check_GroupDEnumExamplePOption_a(entity: GroupD::EnumExampleP) {
+    let src = GroupD::EnumExampleP::Option_a(StructExampleA {
+        field_str: String::from("test"),
+        field_u8: 1,
+        field_u16: 2,
+        field_u32: 3,
+        field_u64: 4,
+        field_i8: -1,
+        field_i16: -2,
+        field_i32: -3,
+        field_i64: -4,
+        field_f32: 0.1,
+        field_f64: 0.2,
+        field_bool: true,
+    });
+    if entity != src {
+        panic!("GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})", entity, src)
+    }
+}
+
+#[allow(non_snake_case)]
+fn check_GroupDEnumExamplePOption_b(entity: GroupD::EnumExampleP) {
+    let src = GroupD::EnumExampleP::Option_b(GroupD::StructExampleP {
+        field_a: StructExampleA {
+            field_str: String::from("test"),
+            field_u8: 1,
+            field_u16: 2,
+            field_u32: 3,
+            field_u64: 4,
+            field_i8: -1,
+            field_i16: -2,
+            field_i32: -3,
+            field_i64: -4,
+            field_f32: 0.1,
+            field_f64: 0.2,
+            field_bool: true,
+        },
+        field_b: GroupB::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        },
+        field_c: GroupB::GroupC::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        }
+    });
+    if entity != src {
+        panic!("GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})", entity, src)
+    }
+}
+
+#[allow(non_snake_case)]
+fn check_GroupDEnumExamplePOption_c(entity: GroupD::EnumExampleP) {
+    let src = GroupD::EnumExampleP::Option_c(GroupB::StructExampleA {
+        field_u8: 1,
+        field_u16: 2,
+    });
+    if entity != src {
+        panic!("GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})", entity, src)
+    }
+}
+
+#[allow(non_snake_case)]
+fn check_GroupDEnumExamplePOption_d(entity: GroupD::EnumExampleP) {
+    let src = GroupD::EnumExampleP::Option_d(GroupB::GroupC::StructExampleA {
+        field_u8: 1,
+        field_u16: 2,
+    });
+    if entity != src {
+        panic!("GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})", entity, src)
+    }
+}
+
+#[allow(non_snake_case)]
 fn check_EnumExampleA_a(entity: EnumExampleA) {
     let src = EnumExampleA::Option_a(String::from("Option_a"));
     if entity != src {
@@ -792,6 +866,59 @@ pub fn read() -> Result<(), String> {
         },
         Err(e) => panic!(e),
     }
+    match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_a.prot.bin")) {
+        Ok(buf) => {
+            match GroupD::EnumExampleP::decode(&buf) {
+                Ok(entity) => {
+                    check_GroupDEnumExamplePOption_a(entity);
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_a.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_b.prot.bin")) {
+        Ok(buf) => {
+            match GroupD::EnumExampleP::decode(&buf) {
+                Ok(entity) => {
+                    check_GroupDEnumExamplePOption_b(entity);
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_b.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_c.prot.bin")) {
+        Ok(buf) => {
+            match GroupD::EnumExampleP::decode(&buf) {
+                Ok(entity) => {
+                    check_GroupDEnumExamplePOption_c(entity);
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_c.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+    match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_d.prot.bin")) {
+        Ok(buf) => {
+            match GroupD::EnumExampleP::decode(&buf) {
+                Ok(entity) => {
+                    check_GroupDEnumExamplePOption_d(entity);
+                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_d.prot.bin"));
+                },
+                Err(e) => panic!(e)
+            }
+            
+        },
+        Err(e) => panic!(e),
+    }
+
     match read_file(ts_bin.join("./buffer.prot.bin")) {
         Ok(buf) => {
             let mut buffer = Buffer::new();
@@ -959,7 +1086,29 @@ pub fn read() -> Result<(), String> {
                                 println!("Package GroupD::AvailableMessages::StructExampleP is OK");
                                 done += 1;
                             },
-                            GroupD::AvailableMessages::EnumExampleP(entuty) => {}
+                            GroupD::AvailableMessages::EnumExampleP(entity) => match entity {
+                                GroupD::EnumExampleP::Option_a(entity) => {
+                                    check_GroupDEnumExamplePOption_a(GroupD::EnumExampleP::Option_a(entity));
+                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_a is OK");
+                                    done += 1;
+                                },
+                                GroupD::EnumExampleP::Option_b(entity) => {
+                                    check_GroupDEnumExamplePOption_b(GroupD::EnumExampleP::Option_b(entity));
+                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_b is OK");
+                                    done += 1;
+                                },
+                                GroupD::EnumExampleP::Option_c(entity) => {
+                                    check_GroupDEnumExamplePOption_c(GroupD::EnumExampleP::Option_c(entity));
+                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_c is OK");
+                                    done += 1;
+                                },
+                                GroupD::EnumExampleP::Option_d(entity) => {
+                                    check_GroupDEnumExamplePOption_d(GroupD::EnumExampleP::Option_d(entity));
+                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_d is OK");
+                                    done += 1;
+                                },
+                                _ => {},
+                            }
                         }
                         _ => {}
                     }
@@ -968,7 +1117,7 @@ pub fn read() -> Result<(), String> {
                 }
             }
             println!("[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
-            if buffer.pending() != 0 || buffer.len() != 0 || count != 28 || count != done {
+            if buffer.pending() != 0 || buffer.len() != 0 || count != 32 || count != done {
                 panic!("Fail to read buffer correctly");
             }
             println!("Packages: {}; done: {}", count, done);

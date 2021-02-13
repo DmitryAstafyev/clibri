@@ -155,6 +155,81 @@ pub fn write() -> Result<(), String> {
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.f64.prot.bin"));
     }
     buffer.append(&mut usecase.pack().unwrap());
+    let mut usecase = GroupD::EnumExampleP::Option_a(StructExampleA {
+        field_str: String::from("test"),
+        field_u8: 1,
+        field_u16: 2,
+        field_u32: 3,
+        field_u64: 4,
+        field_i8: -1,
+        field_i16: -2,
+        field_i32: -3,
+        field_i64: -4,
+        field_f32: 0.1,
+        field_f64: 0.2,
+        field_bool: true,
+    });
+    if let Ok(buf) = usecase.encode() {
+        if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_a.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_a.prot.bin"));
+    }
+    buffer.append(&mut usecase.pack().unwrap());
+    let mut usecase = GroupD::EnumExampleP::Option_b(GroupD::StructExampleP {
+        field_a: StructExampleA {
+            field_str: String::from("test"),
+            field_u8: 1,
+            field_u16: 2,
+            field_u32: 3,
+            field_u64: 4,
+            field_i8: -1,
+            field_i16: -2,
+            field_i32: -3,
+            field_i64: -4,
+            field_f32: 0.1,
+            field_f64: 0.2,
+            field_bool: true,
+        },
+        field_b: GroupB::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        },
+        field_c: GroupB::GroupC::StructExampleA {
+            field_u8: 1,
+            field_u16: 2,
+        }
+    });
+    if let Ok(buf) = usecase.encode() {
+        if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_b.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_b.prot.bin"));
+    }
+    buffer.append(&mut usecase.pack().unwrap());
+    let mut usecase = GroupD::EnumExampleP::Option_c(GroupB::StructExampleA {
+        field_u8: 1,
+        field_u16: 2,
+    });
+    if let Ok(buf) = usecase.encode() {
+        if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_c.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_c.prot.bin"));
+    }
+    buffer.append(&mut usecase.pack().unwrap());
+    let mut usecase = GroupD::EnumExampleP::Option_d(GroupB::GroupC::StructExampleA {
+        field_u8: 1,
+        field_u16: 2,
+    });
+    if let Ok(buf) = usecase.encode() {
+        if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_d.prot.bin"), &buf) {
+            panic!(e);
+        }
+        println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_d.prot.bin"));
+    }
+    buffer.append(&mut usecase.pack().unwrap());
+
     let mut usecase = StructExampleA {
         field_str: String::from("test"),
         field_u8: 1,
