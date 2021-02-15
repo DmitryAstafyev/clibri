@@ -1,4 +1,5 @@
-use super::consumer_context::{Context, Encodable};
+use super::consumer_context::{ Context };
+use super::protocol::{ StructEncode };
 use std::cmp::Eq;
 use std::hash::Hash;
 use std::sync::{Arc, RwLock};
@@ -15,7 +16,7 @@ pub enum RequestObserverErrors {
 
 pub trait RequestObserver<
     Request: Clone,
-    Response: Encodable,
+    Response: StructEncode,
     Conclusion: Eq + Hash,
     UCX: Send + Sync,
 >
@@ -31,7 +32,7 @@ pub trait RequestObserver<
 
 pub trait ConfirmedRequestObserver<
     Request: Clone,
-    Response: Encodable,
+    Response: StructEncode,
     Conclusion: Eq + Hash,
     UCX: Send + Sync,
 >

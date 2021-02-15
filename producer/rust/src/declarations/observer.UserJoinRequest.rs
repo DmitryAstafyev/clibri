@@ -1,4 +1,5 @@
-use super::consumer_context::{Context, Encodable};
+use super::consumer_context::{ Context };
+use super::protocol::{ StructEncode };
 use super::observer::{ConfirmedRequestObserver, RequestObserverErrors};
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting };
@@ -15,7 +16,7 @@ pub enum UserJoinConclusion {
 
 pub trait UserJoinObserver<
     Request: Clone,
-    Response: Encodable,
+    Response: StructEncode,
     Conclusion: Eq + Hash,
     UCX: Send + Sync,
 >: ConfirmedRequestObserver<Request, Response, UserJoinConclusion, UCX>

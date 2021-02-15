@@ -1,7 +1,6 @@
-use super::buffer::Buffer;
 use super::consumer_context::Context;
 use super::consumer_identification::{EFilterMatchCondition, Identification};
-use super::{Messages, Protocol};
+use super::Protocol;
 use fiber::server::context::ConnectionContext;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -58,7 +57,7 @@ where
     CX: ConnectionContext + Send + Sync,
 {
     uuid: Uuid,
-    _buffer: Buffer<Protocol>,
+    _buffer: Protocol::Buffer<Protocol::AvailableMessages>,
     identification: Identification,
     cx: Cx<CX>,
 }
@@ -71,13 +70,13 @@ where
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,
-            _buffer: Buffer::new(uuid),
+            _buffer: Protocol::Buffer::new(),
             identification: Identification::new(),
             cx: Cx { own, consumers },
         }
     }
 
-    pub fn read(&mut self, _buffer: Vec<u8>) -> Result<Messages, String> {
+    pub fn read(&mut self, _buffer: Vec<u8>) -> Result<Protocol::AvailableMessages, String> {
         Err("".to_owned())
     }
 

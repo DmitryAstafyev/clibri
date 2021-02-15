@@ -1,45 +1,29 @@
-use super::consumer_context::{Context, Encodable};
+use super::consumer_context::{ Context };
 use super::consumer_identification::EFilterMatchCondition;
 use super::observer::ConfirmedRequestObserver;
 use super::DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
 use super::{Broadcasting, UserCustomContext};
+use super::Protocol;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-#[derive(Debug, Clone)]
-pub struct UserJoinRequest {
-    pub login: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct UserJoinResponse {
-    pub error: Option<String>,
-}
-
-impl Encodable for UserJoinResponse {
-    fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        Ok(vec![])
-    }
-}
-
 type TConclusionHandler = &'static (dyn (Fn(
-    UserJoinRequest,
+    Protocol::UserJoin::Request,
     &dyn Context,
     Arc<RwLock<UserCustomContext>>,
 ) -> Result<UserJoinConclusion, String>)
               + Send
               + Sync);
 type TResponseHandler = &'static (dyn (Fn(
-    UserJoinRequest,
+    Protocol::UserJoin::Request,
     &dyn Context,
     Arc<RwLock<UserCustomContext>>,
     UserJoinConclusion,
-) -> Result<UserJoinResponse, String>)
+) -> Result<Protocol::UserJoin::Response, String>)
               + Send
               + Sync);
 type TEventHandler = &'static (dyn (Fn(
-    UserJoinRequest,
+    Protocol::UserJoin::Request,
     &dyn Context,
     Arc<RwLock<UserCustomContext>>,
     &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
@@ -90,48 +74,48 @@ impl ObserverRequest {
 
 impl
     ConfirmedRequestObserver<
-        UserJoinRequest,
-        UserJoinResponse,
+        Protocol::UserJoin::Request,
+        Protocol::UserJoin::Response,
         UserJoinConclusion,
         UserCustomContext,
     > for ObserverRequest
 {
     fn _conclusion(
         &self,
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
     ) -> Result<UserJoinConclusion, String> {
         if let Some(handler) = self.conclusion {
             handler(request, cx, ucx)
         } else {
-            panic!("UserJoinRequest: no handler for [conclution]")
+            panic!("Protocol::UserJoin::Request: no handler for [conclution]")
         }
     }
 
     fn _response(
         &self,
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         conclusion: UserJoinConclusion,
-    ) -> Result<UserJoinResponse, String> {
+    ) -> Result<Protocol::UserJoin::Response, String> {
         if let Some(handler) = self.response {
             handler(request, cx, ucx, conclusion)
         } else {
-            panic!("UserJoinRequest: no handler for [conclution]")
+            panic!("Protocol::UserJoin::Request: no handler for [conclution]")
         }
     }
 }
 
-impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, UserCustomContext>
+impl UserJoinObserver<Protocol::UserJoin::Request, Protocol::UserJoin::Response, UserJoinConclusion, UserCustomContext>
     for ObserverRequest
 {
     fn _accept(
         &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(
             HashMap<String, String>,
             EFilterMatchCondition,
@@ -141,7 +125,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
         if let Some(handler) = self.accept {
             handler(request, cx, ucx, broadcast)
         } else {
-            panic!("UserJoinRequest: no handler for [accept]")
+            panic!("Protocol::UserJoin::Request: no handler for [accept]")
         }
     }
 
@@ -149,7 +133,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
         &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(
             HashMap<String, String>,
             EFilterMatchCondition,
@@ -159,7 +143,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
         if let Some(handler) = self.broadcast {
             handler(request, cx, ucx, broadcast)
         } else {
-            panic!("UserJoinRequest: no handler for [broadcast]")
+            panic!("Protocol::UserJoin::Request: no handler for [broadcast]")
         }
     }
 
@@ -167,7 +151,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
         &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(
             HashMap<String, String>,
             EFilterMatchCondition,
@@ -177,7 +161,7 @@ impl UserJoinObserver<UserJoinRequest, UserJoinResponse, UserJoinConclusion, Use
         if let Some(handler) = self.deny {
             handler(request, cx, ucx, broadcast)
         } else {
-            panic!("UserJoinRequest: no handler for [deny]")
+            panic!("Protocol::UserJoin::Request: no handler for [deny]")
         }
     }
 }

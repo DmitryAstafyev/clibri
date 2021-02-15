@@ -4,13 +4,7 @@ pub mod observer;
 #[path = "./traits/logger.rs"]
 pub mod logger;
 
-#[path = "./buffer.rs"]
-pub mod buffer;
-
-#[path = "./package.rs"]
-pub mod package;
-
-#[path = "./protocol.rs"]
+#[path = "./protocol/protocol.rs"]
 pub mod protocol;
 
 #[path = "./consumer/consumer.rs"]
@@ -50,11 +44,11 @@ pub mod ImplEventUserConnected;
 use consumer::{Consumer};
 use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
+use protocol as Protocol;
+use Protocol::{ StructDecode, StructEncode };
 use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
 use DeclUserSingInRequest::UserSingInObserver;
 use DeclEventUserConnected::EventUserConnected;
-use ImplUserJoinRequest::{UserJoinRequest, UserJoinResponse};
-use ImplUserSingInRequest::UserSingInRequest;
 use logger::{Logger};
 
 use fiber::server::context::ConnectionContext;
@@ -70,52 +64,9 @@ use std::thread;
 use std::thread::spawn;
 use std::time::Duration;
 use uuid::Uuid;
-/*
-use std::collections::{ HashMap };
-use uuid::Uuid;
-*/
-
-pub enum Messages {
-    UserSingInRequest(UserSingInRequest),
-    UserJoinRequest(UserJoinRequest),
-}
-
-#[derive(Debug, Clone)]
-pub struct Protocol {}
-
-impl protocol::Protocol<Messages> for Protocol {
-    fn get_msg(&self, _id: u32, _buffer: &[u8]) -> Result<Messages, String> {
-        Ok(Messages::UserSingInRequest(UserSingInRequest {
-            login: String::from("login"),
-            email: String::from("email"),
-        }))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct UserSingInBroadcast {
-    login: String,
-}
-
-impl Encodable for UserSingInBroadcast {
-    fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        Ok(vec![])
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct UserDisconnected {
-    login: String,
-}
-
-impl Encodable for UserDisconnected {
-    fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        Ok(vec![])
-    }
-}
 
 pub enum Broadcasting {
-    UserDisconnected(UserDisconnected),
+    UserDisconnected(Protocol::UserDisconnected),
 }
 
 pub enum ProducerEvents {
@@ -261,7 +212,7 @@ where
                                             };
                                             match consumer.read(buffer) {
                                                 Ok(message) => match message {
-                                                    Messages::UserSingInRequest(request) => {
+                                                    Protocol::AvailableMessages::UserSingIn(Protocol::UserSingIn::AvailableMessages::Request(request)) => {
                                                         match UserSingIn.write() {
                                                             Ok(UserSingIn) => {
                                                                 if let Err(e) = UserSingIn.emit(
@@ -279,8 +230,8 @@ where
                                                                 logger.err(&format!("{}", e));
                                                             }
                                                         }
-                                                    }
-                                                    Messages::UserJoinRequest(request) => {
+                                                    },
+                                                    Protocol::AvailableMessages::UserJoin(Protocol::UserJoin::AvailableMessages::Request(request)) => {
                                                         match UserJoin.write() {
                                                             Ok(UserJoin) => {
                                                                 if let Err(e) = UserJoin.emit(
@@ -289,7 +240,7 @@ where
                                                                     request,
                                                                     &broadcast,
                                                                 ) {
-                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserJoinRequest due error: {:?}", e).to_owned())) {
+                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserJoin::Request due error: {:?}", e).to_owned())) {
                                                                         logger.err(&format!("{}", e));
                                                                     }
                                                                 }
@@ -298,7 +249,8 @@ where
                                                                 logger.err(&format!("{}", e));
                                                             }
                                                         }
-                                                    }
+                                                    },
+                                                    _ => {},
                                                 },
                                                 Err(e) => if let Err(e) = events.send(ProducerEvents::Reading(format!("Fail to read connection buffer due error: {}", e).to_owned())) {
                                                     logger.err(&format!("{}", e));
@@ -346,14 +298,14 @@ pub struct UserCustomContext {}
 mod UserJoin {
     use super::{
         Broadcasting, Context, EFilterMatchCondition, UserCustomContext, UserJoinConclusion,
-        UserJoinRequest, UserJoinResponse,
     };
+    use super::Protocol;
     use std::collections::HashMap;
     use std::sync::{Arc, RwLock};
     
     #[allow(unused)]
     pub fn conclusion(
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
     ) -> Result<UserJoinConclusion, String> {
@@ -362,17 +314,17 @@ mod UserJoin {
 
     #[allow(unused)]
     pub fn response(
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         conclusion: UserJoinConclusion,
-    ) -> Result<UserJoinResponse, String> {
-        Ok(UserJoinResponse { error: None })
+    ) -> Result<Protocol::UserJoin::Response, String> {
+        Ok(Protocol::UserJoin::Response { error: None, uuid: String::from("") })
     }
 
     #[allow(unused)]
     pub fn accept(
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         broadcast: &dyn Fn(
@@ -386,7 +338,7 @@ mod UserJoin {
 
     #[allow(unused)]
     pub fn deny(
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         broadcast: &dyn Fn(
@@ -400,7 +352,7 @@ mod UserJoin {
 
     #[allow(unused)]
     pub fn broadcast(
-        request: UserJoinRequest,
+        request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
         broadcast: &dyn Fn(

@@ -1,4 +1,5 @@
-use super::consumer_context::{Context, Encodable};
+use super::consumer_context::{ Context };
+use super::protocol::{ StructEncode };
 use super::observer::{RequestObserver, RequestObserverErrors};
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting };
@@ -15,7 +16,7 @@ pub enum UserSingInConclusion {
 
 pub trait UserSingInObserver<
     Request: Clone,
-    Response: Encodable,
+    Response: StructEncode,
     Conclusion: Eq + Hash,
     UCX: Send + Sync,
 >: RequestObserver<Request, Response, UserSingInConclusion, UCX>

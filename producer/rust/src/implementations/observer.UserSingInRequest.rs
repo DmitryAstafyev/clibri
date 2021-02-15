@@ -1,30 +1,14 @@
-use super::consumer_context::{Context, Encodable};
+use super::consumer_context::{ Context };
 use super::observer::{ RequestObserver };
 use super::DeclUserSingInRequest::{ UserSingInObserver, UserSingInConclusion };
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting, UserCustomContext };
+use super::Protocol;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
-#[derive(Debug, Clone)]
-pub struct UserSingInRequest {
-    pub login: String,
-    pub email: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct UserSingInResponse {
-    error: Option<String>,
-}
-
-impl Encodable for UserSingInResponse {
-    fn abduct(&mut self) -> Result<Vec<u8>, String> {
-        Ok(vec![])
-    }
-}
-
 type TEventHandler = &'static (dyn (Fn(
-    UserSingInRequest,
+    Protocol::UserSingIn::Request,
     &dyn Context,
     Arc<RwLock<UserCustomContext>>,
     &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
@@ -32,10 +16,10 @@ type TEventHandler = &'static (dyn (Fn(
               + Send
               + Sync);
 type TResponseHandler = &'static (dyn (Fn(
-    UserSingInRequest,
+    Protocol::UserSingIn::Request,
     &dyn Context,
     Arc<RwLock<UserCustomContext>>,
-) -> Result<(UserSingInResponse, UserSingInConclusion), String>)
+) -> Result<(Protocol::UserSingIn::Response, UserSingInConclusion), String>)
                 + Send
                 + Sync);
 
@@ -76,35 +60,35 @@ impl ObserverRequest {
 
 }
 
-impl RequestObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
+impl RequestObserver<Protocol::UserSingIn::Request, Protocol::UserSingIn::Response, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
     fn _response(
         &self,
-        request: UserSingInRequest,
+        request: Protocol::UserSingIn::Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-    ) -> Result<(UserSingInResponse, UserSingInConclusion), String> {
+    ) -> Result<(Protocol::UserSingIn::Response, UserSingInConclusion), String> {
         if let Some(handler) = self.response {
             handler(request, cx, ucx)
         } else {
-            panic!("UserSingInRequest: no handler for [response]")
+            panic!("Protocol::UserSingIn::Request: no handler for [response]")
         }
     }
 }
 
-impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclusion, UserCustomContext> for ObserverRequest {
+impl UserSingInObserver<Protocol::UserSingIn::Request, Protocol::UserSingIn::Response, UserSingInConclusion, UserCustomContext> for ObserverRequest {
 
     fn _accept(
         &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserSingInRequest,
+        request: Protocol::UserSingIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         if let Some(handler) = self.accept {
             handler(request, cx, ucx, broadcast)
         } else {
-            panic!("UserSingInRequest: no handler for [accept]")
+            panic!("Protocol::UserSingIn::Request: no handler for [accept]")
         }
     }
 
@@ -112,13 +96,13 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
         &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserSingInRequest,
+        request: Protocol::UserSingIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         if let Some(handler) = self.broadcast {
             handler(request, cx, ucx, broadcast)
         } else {
-            panic!("UserSingInRequest: no handler for [broadcast]")
+            panic!("Protocol::UserSingIn::Request: no handler for [broadcast]")
         }
     }
 
@@ -126,13 +110,13 @@ impl UserSingInObserver<UserSingInRequest, UserSingInResponse, UserSingInConclus
         &self,
         cx: &dyn Context,
         ucx: Arc<RwLock<UserCustomContext>>,
-        request: UserSingInRequest,
+        request: Protocol::UserSingIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         if let Some(handler) = self.deny {
             handler(request, cx, ucx, broadcast)
         } else {
-            panic!("UserSingInRequest: no handler for [deny]")
+            panic!("Protocol::UserSingIn::Request: no handler for [deny]")
         }
     }
 }

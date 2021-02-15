@@ -4,6 +4,16 @@ enum UserRole {
     Manager;
 }
 
+struct UserConnected {
+    str username;
+    str uuid;
+}
+
+struct UserDisconnected {
+    str username;
+    str uuid;
+}
+
 group UserSingIn {
 
     struct Request {
@@ -22,7 +32,7 @@ group UserJoin {
 
     struct Request {
         str email;
-        str name;
+        str username;
         UserRole role;
     }
 
