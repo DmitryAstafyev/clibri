@@ -76,8 +76,20 @@ where
         }
     }
 
-    pub fn read(&mut self, _buffer: Vec<u8>) -> Result<Protocol::AvailableMessages, String> {
-        Err("".to_owned())
+    pub fn chunk(&mut self, buffer: &Vec<u8>) -> Result<(), String> {
+        if let Err(e) = self._buffer.chunk(buffer) {
+            Err(format!("{:?}", e))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn next(&mut self) -> Option<Protocol::AvailableMessages> {
+        if let Some(msg) = self._buffer.next() {
+            Some(msg.msg)
+        } else {
+            None
+        }
     }
 
     pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {

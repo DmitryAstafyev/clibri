@@ -210,50 +210,56 @@ where
                                             let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {
                                                 broadcasting(consumers_ref.clone(), filter, condition, broadcast)
                                             };
-                                            match consumer.read(buffer) {
-                                                Ok(message) => match message {
-                                                    Protocol::AvailableMessages::UserSingIn(Protocol::UserSingIn::AvailableMessages::Request(request)) => {
-                                                        match UserSingIn.write() {
-                                                            Ok(UserSingIn) => {
-                                                                if let Err(e) = UserSingIn.emit(
-                                                                    consumer.get_cx(),
-                                                                    ucx.clone(),
-                                                                    request,
-                                                                    &broadcast,
-                                                                ) {
-                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
-                                                                        logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
-                                                                logger.err(&format!("{}", e));
-                                                            }
-                                                        }
-                                                    },
-                                                    Protocol::AvailableMessages::UserJoin(Protocol::UserJoin::AvailableMessages::Request(request)) => {
-                                                        match UserJoin.write() {
-                                                            Ok(UserJoin) => {
-                                                                if let Err(e) = UserJoin.emit(
-                                                                    consumer.get_cx(),
-                                                                    ucx.clone(),
-                                                                    request,
-                                                                    &broadcast,
-                                                                ) {
-                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserJoin::Request due error: {:?}", e).to_owned())) {
-                                                                        logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
-                                                                logger.err(&format!("{}", e));
-                                                            }
-                                                        }
-                                                    },
-                                                    _ => {},
-                                                },
-                                                Err(e) => if let Err(e) = events.send(ProducerEvents::Reading(format!("Fail to read connection buffer due error: {}", e).to_owned())) {
+                                            if let Err(e) = consumer.chunk(&buffer) {
+                                                if let Err(e) = events.send(ProducerEvents::Reading(format!("Fail to read connection buffer due error: {}", e).to_owned())) {
                                                     logger.err(&format!("{}", e));
+                                                }
+                                            }
+                                            loop {
+                                                if let Some(message) = consumer.next() {
+                                                    match message {
+                                                        Protocol::AvailableMessages::UserSingIn(Protocol::UserSingIn::AvailableMessages::Request(request)) => {
+                                                            match UserSingIn.write() {
+                                                                Ok(UserSingIn) => {
+                                                                    if let Err(e) = UserSingIn.emit(
+                                                                        consumer.get_cx(),
+                                                                        ucx.clone(),
+                                                                        request,
+                                                                        &broadcast,
+                                                                    ) {
+                                                                        if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
+                                                                            logger.err(&format!("{}", e));
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
+                                                                    logger.err(&format!("{}", e));
+                                                                }
+                                                            }
+                                                        },
+                                                        Protocol::AvailableMessages::UserJoin(Protocol::UserJoin::AvailableMessages::Request(request)) => {
+                                                            match UserJoin.write() {
+                                                                Ok(UserJoin) => {
+                                                                    if let Err(e) = UserJoin.emit(
+                                                                        consumer.get_cx(),
+                                                                        ucx.clone(),
+                                                                        request,
+                                                                        &broadcast,
+                                                                    ) {
+                                                                        if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserJoin::Request due error: {:?}", e).to_owned())) {
+                                                                            logger.err(&format!("{}", e));
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
+                                                                    logger.err(&format!("{}", e));
+                                                                }
+                                                            }
+                                                        },
+                                                        _ => {},
+                                                    };
+                                                } else {
+                                                    break;
                                                 }
                                             }
                                         }
