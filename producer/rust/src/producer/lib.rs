@@ -42,14 +42,13 @@ pub mod ImplUserJoinRequest;
 pub mod ImplEventUserConnected;
 
 use consumer::{Consumer};
-use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
 use protocol as Protocol;
 use Protocol::{ StructEncode };
-use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
+use DeclUserJoinRequest::{ UserJoinObserver };
 use DeclUserSingInRequest::UserSingInObserver;
 use DeclEventUserConnected::EventUserConnected;
-use logger::{Logger};
+use logger::{ Logger };
 
 use fiber::server::context::ConnectionContext;
 use fiber::server::events::ServerEvents;
@@ -67,12 +66,12 @@ pub enum Broadcasting {
     UserDisconnected(Protocol::UserDisconnected),
 }
 
-pub enum ProducerEvents {
+pub enum ProducerEvents<UCX: Send + Sync> {
     InternalError(String),
     EmitError(String),
     ServerError(String),
     Reading(String),
-    Connected(Arc<RwLock<UserCustomContext>>),
+    Connected(Arc<RwLock<UCX>>),
     Disconnected,
 }
 
@@ -117,26 +116,28 @@ pub fn broadcasting<CX: ConnectionContext + Send + Sync,>(
 }
 
 #[allow(non_snake_case)]
-pub struct Producer<S, CX>
+pub struct Producer<S, CX, UCX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
+    UCX: 'static + Send + Sync
 {
     server: S,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
-    events: Sender<ProducerEvents>,
+    events: Sender<ProducerEvents<UCX>>,
     logger: &'static (dyn Logger + Send + Sync),
-    pub UserSingIn: ImplUserSingInRequest::ObserverRequest,
-    pub UserJoin: ImplUserJoinRequest::ObserverRequest,
-    pub EventUserConnected: ImplEventUserConnected::EventObserver,
+    pub UserSingIn: Option<ImplUserSingInRequest::ObserverRequest<UCX>>,
+    pub UserJoin: Option<ImplUserJoinRequest::ObserverRequest<UCX>>,
+    pub EventUserConnected: ImplEventUserConnected::EventObserver<UCX>,
 }
 
-impl<S, CX: 'static> Producer<S, CX>
+impl<S, CX: 'static, UCX: 'static> Producer<S, CX, UCX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
+    UCX: Send + Sync,
 {
-    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents>) {
+    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents<UCX>>) {
         let (sender, receiver) = mpsc::channel();
         let logs = if let Some(logger) = logger {
             logger
@@ -148,21 +149,25 @@ where
             consumers: Arc::new(RwLock::new(HashMap::new())),
             events: sender,
             logger: logs,
-            UserSingIn: ImplUserSingInRequest::ObserverRequest::new(),
-            UserJoin: ImplUserJoinRequest::ObserverRequest::new(),
+            UserSingIn: Some(ImplUserSingInRequest::ObserverRequest::new()),
+            UserJoin: Some(ImplUserJoinRequest::ObserverRequest::new()),
             EventUserConnected: ImplEventUserConnected::EventObserver::new(),
         }, receiver)
     }
 
     #[allow(non_snake_case)]
-    pub fn listen(&mut self, ucx: UserCustomContext) -> Result<(), String> {
+    pub fn listen(&mut self, ucx: UCX) -> Result<(), String> {
         let (tx_channel, rx_channel): (Sender<ServerEvents<CX>>, Receiver<ServerEvents<CX>>) =
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
         let ucx = Arc::new(RwLock::new(ucx));
         self.EventUserConnected.listen(ucx.clone(), consumers_ref.clone());
-        let UserSingIn = Arc::new(RwLock::new(self.UserSingIn.clone()));
-        let UserJoin = Arc::new(RwLock::new(self.UserJoin.clone()));
+        let UserSingIn = Arc::new(RwLock::new(if let Some(v) = self.UserSingIn.take() { v } else {
+            return Err(String::from("Cannot get instance of UserSingIn"))
+        }));
+        let UserJoin = Arc::new(RwLock::new(if let Some(v) = self.UserJoin.take() { v } else {
+            return Err(String::from("Cannot get instance of UserJoin"))
+        }));
         let events = self.events.clone();
         let logger = self.logger;
         spawn(move || {
@@ -294,96 +299,4 @@ where
         broadcasting(self.consumers.clone(), filter, condition, broadcast)
     }
 
-}
-
-pub struct UserCustomContext {}
-
-#[allow(non_snake_case)]
-mod UserJoin {
-    use super::{
-        Broadcasting, Context, EFilterMatchCondition, UserCustomContext, UserJoinConclusion,
-    };
-    use super::Protocol;
-    use std::collections::HashMap;
-    use std::sync::{Arc, RwLock};
-    
-    #[allow(unused)]
-    pub fn conclusion(
-        request: Protocol::UserJoin::Request,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UserCustomContext>>,
-    ) -> Result<UserJoinConclusion, String> {
-        Ok(UserJoinConclusion::Accept)
-    }
-
-    #[allow(unused)]
-    pub fn response(
-        request: Protocol::UserJoin::Request,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UserCustomContext>>,
-        conclusion: UserJoinConclusion,
-    ) -> Result<Protocol::UserJoin::Response, String> {
-        Ok(Protocol::UserJoin::Response { error: None, uuid: String::from("") })
-    }
-
-    #[allow(unused)]
-    pub fn accept(
-        request: Protocol::UserJoin::Request,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UserCustomContext>>,
-        broadcast: &dyn Fn(
-            HashMap<String, String>,
-            EFilterMatchCondition,
-            Broadcasting,
-        ) -> Result<(), String>,
-    ) -> Result<(), String> {
-        Ok(())
-    }
-
-    #[allow(unused)]
-    pub fn deny(
-        request: Protocol::UserJoin::Request,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UserCustomContext>>,
-        broadcast: &dyn Fn(
-            HashMap<String, String>,
-            EFilterMatchCondition,
-            Broadcasting,
-        ) -> Result<(), String>,
-    ) -> Result<(), String> {
-        Ok(())
-    }
-
-    #[allow(unused)]
-    pub fn broadcast(
-        request: Protocol::UserJoin::Request,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UserCustomContext>>,
-        broadcast: &dyn Fn(
-            HashMap<String, String>,
-            EFilterMatchCondition,
-            Broadcasting,
-        ) -> Result<(), String>,
-    ) -> Result<(), String> {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-fn test() {
-    use fiber_transport_server::connection_context::ConnectionContext as ServerConnectionContext;
-    use fiber_transport_server::server::Server;
-    spawn(move || {
-        let server: Server = Server::new(String::from("127.0.0.1:8080"));
-        let ucx: UserCustomContext = UserCustomContext {};
-        let (mut producer, _receiver): (Producer<Server, ServerConnectionContext>, Receiver<ProducerEvents>) = Producer::new(server, None);
-        producer.UserJoin.conclusion(&UserJoin::conclusion);
-        producer.UserJoin.broadcast(&UserJoin::broadcast);
-        producer.UserJoin.accept(&UserJoin::accept);
-        producer.UserJoin.deny(&UserJoin::deny);
-        producer.UserJoin.response(&UserJoin::response);
-        if let Err(e) = producer.listen(ucx) {
-            println!("{}", e);
-        }
-    });
 }
