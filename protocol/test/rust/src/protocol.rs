@@ -1610,6 +1610,8 @@ pub struct StructExampleA {
     pub field_f64: f64,
     pub field_bool: bool,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleA {
     fn get_id() -> u32 {
         4
@@ -1682,6 +1684,8 @@ impl StructDecode for StructExampleA {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleA {
     fn get_id(&self) -> u32 { 4 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1755,6 +1759,8 @@ pub struct StructExampleB {
     pub field_f64: Vec<f64>,
     pub field_bool: Vec<bool>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleB {
     fn get_id() -> u32 {
         17
@@ -1827,6 +1833,8 @@ impl StructDecode for StructExampleB {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleB {
     fn get_id(&self) -> u32 { 17 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1900,6 +1908,8 @@ pub struct StructExampleC {
     pub field_f64: Option<f64>,
     pub field_bool: Option<bool>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleC {
     fn get_id() -> u32 {
         30
@@ -1972,6 +1982,8 @@ impl StructDecode for StructExampleC {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleC {
     fn get_id(&self) -> u32 { 30 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2045,6 +2057,8 @@ pub struct StructExampleD {
     pub field_f64: Option<Vec<f64>>,
     pub field_bool: Option<Vec<bool>>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleD {
     fn get_id() -> u32 {
         43
@@ -2117,6 +2131,8 @@ impl StructDecode for StructExampleD {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleD {
     fn get_id(&self) -> u32 { 43 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2181,6 +2197,8 @@ pub struct StructExampleE {
     pub field_b: EnumExampleB,
     pub field_c: EnumExampleC,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleE {
     fn get_id() -> u32 {
         56
@@ -2208,6 +2226,8 @@ impl StructDecode for StructExampleE {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleE {
     fn get_id(&self) -> u32 { 56 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2236,6 +2256,8 @@ pub struct StructExampleF {
     pub field_b: Option<EnumExampleB>,
     pub field_c: Option<EnumExampleC>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleF {
     fn get_id() -> u32 {
         60
@@ -2287,6 +2309,8 @@ impl StructDecode for StructExampleF {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleF {
     fn get_id(&self) -> u32 { 60 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2335,6 +2359,8 @@ pub struct StructExampleG {
     pub field_a: StructExampleA,
     pub field_b: StructExampleB,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleG {
     fn get_id() -> u32 {
         64
@@ -2383,6 +2409,8 @@ impl StructDecode for StructExampleG {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleG {
     fn get_id(&self) -> u32 { 64 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2404,6 +2432,8 @@ impl PackingStruct for StructExampleG { }
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleEmpty {
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleEmpty {
     fn get_id() -> u32 {
         67
@@ -2416,6 +2446,8 @@ impl StructDecode for StructExampleEmpty {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleEmpty {
     fn get_id(&self) -> u32 { 67 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2432,6 +2464,8 @@ pub struct StructExampleJ {
     pub field_b: Option<StructExampleB>,
     pub field_c: StructExampleEmpty,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleJ {
     fn get_id() -> u32 {
         68
@@ -2460,6 +2494,8 @@ impl StructDecode for StructExampleJ {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleJ {
     fn get_id(&self) -> u32 { 68 }
     fn get_signature(&self) -> u16 { 0 }
@@ -2549,6 +2585,8 @@ pub mod GroupA {
         pub field_u16: u16,
         pub opt: EnumExampleA,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleA {
         fn get_id() -> u32 {
             74
@@ -2576,6 +2614,8 @@ pub mod GroupA {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleA {
         fn get_id(&self) -> u32 { 74 }
         fn get_signature(&self) -> u16 { 0 }
@@ -2604,6 +2644,8 @@ pub mod GroupA {
         pub field_u16: u16,
         pub strct: StructExampleA,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleB {
         fn get_id() -> u32 {
             78
@@ -2635,6 +2677,8 @@ pub mod GroupA {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleB {
         fn get_id(&self) -> u32 { 78 }
         fn get_signature(&self) -> u16 { 0 }
@@ -2674,6 +2718,8 @@ pub mod GroupB {
         pub field_u8: u8,
         pub field_u16: u16,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleA {
         fn get_id() -> u32 {
             83
@@ -2696,6 +2742,8 @@ pub mod GroupB {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleA {
         fn get_id(&self) -> u32 { 83 }
         fn get_signature(&self) -> u16 { 0 }
@@ -2729,6 +2777,8 @@ pub mod GroupB {
             pub field_u8: u8,
             pub field_u16: u16,
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructDecode for StructExampleA {
             fn get_id() -> u32 {
                 87
@@ -2751,6 +2801,8 @@ pub mod GroupB {
                 Ok(())
             }
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructEncode for StructExampleA {
             fn get_id(&self) -> u32 { 87 }
             fn get_signature(&self) -> u16 { 0 }
@@ -2775,6 +2827,8 @@ pub mod GroupB {
             pub field_u16: u16,
             pub strct: StructExampleA,
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructDecode for StructExampleB {
             fn get_id() -> u32 {
                 90
@@ -2805,6 +2859,8 @@ pub mod GroupB {
                 Ok(())
             }
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructEncode for StructExampleB {
             fn get_id(&self) -> u32 { 90 }
             fn get_signature(&self) -> u16 { 0 }
@@ -2909,6 +2965,8 @@ pub mod GroupD {
         pub field_b: GroupB::StructExampleA,
         pub field_c: GroupB::GroupC::StructExampleA,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleP {
         fn get_id() -> u32 {
             95
@@ -2955,6 +3013,8 @@ pub mod GroupD {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleP {
         fn get_id(&self) -> u32 { 95 }
         fn get_signature(&self) -> u16 { 0 }

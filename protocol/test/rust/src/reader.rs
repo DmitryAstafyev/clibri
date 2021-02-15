@@ -288,6 +288,7 @@ fn check_GroupCStructExampleB(entity: GroupB::GroupC::StructExampleB) {
     }
 }
 
+#[allow(non_snake_case)]
 fn check_GroupDStructExampleP(entity: GroupD::StructExampleP) {
     let src = GroupD::StructExampleP {
         field_a: StructExampleA {

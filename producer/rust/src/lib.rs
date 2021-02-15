@@ -45,7 +45,7 @@ use consumer::{Consumer};
 use consumer_context::*;
 use consumer_identification::EFilterMatchCondition;
 use protocol as Protocol;
-use Protocol::{ StructDecode, StructEncode };
+use Protocol::{ StructEncode };
 use DeclUserJoinRequest::{UserJoinConclusion, UserJoinObserver};
 use DeclUserSingInRequest::UserSingInObserver;
 use DeclEventUserConnected::EventUserConnected;
@@ -54,8 +54,6 @@ use logger::{Logger};
 use fiber::server::context::ConnectionContext;
 use fiber::server::events::ServerEvents;
 use fiber::server::server::Server as ServerTrait;
-use fiber_transport_server::connection_context::ConnectionContext as ServerConnectionContext;
-use fiber_transport_server::server::Server;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -373,6 +371,8 @@ mod UserJoin {
 
 #[cfg(test)]
 fn test() {
+    use fiber_transport_server::connection_context::ConnectionContext as ServerConnectionContext;
+    use fiber_transport_server::server::Server;
     spawn(move || {
         let server: Server = Server::new(String::from("127.0.0.1:8080"));
         let ucx: UserCustomContext = UserCustomContext {};

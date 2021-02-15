@@ -1543,32 +1543,6 @@ impl TypescriptRender {
         body
     }
 
-    fn get_path(&self, mut parent: usize, store: &mut Store) -> Vec<String> {
-        let mut path: Vec<String> = vec![];
-        loop {
-            if parent == 0 {
-                break;
-            }
-            if let Some(group) = store.get_group(parent) {
-                path.push(group.name.clone());
-                parent = group.parent;
-            } else {
-                break;
-            }
-        }
-        path.reverse();
-        path
-    }
-
-    fn get_full_name(&self, name: String, parent: usize, store: &mut Store) -> String {
-        let path: Vec<String> = self.get_path(parent, store);
-        if path.is_empty() {
-            name
-        } else {
-            format!("{}.{}", path.join("."), name)
-        }
-    }
-
     fn get_entity_path(&self, parent: usize, store: &mut Store) -> Vec<String> {
         let mut path: Vec<String> = vec![];
         let mut parent = parent;

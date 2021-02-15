@@ -4,7 +4,6 @@ use super::{
 };
 use connection::Connection;
 use connection_context::ConnectionContext;
-use fiber::server::context::{ ConnectionContext as ServerConnectionContext };
 use fiber::server::events::{ ServerEvents };
 use fiber::server::server::{ Server as ServerTrait };
 
@@ -58,7 +57,7 @@ impl ServerTrait<ConnectionContext> for Server {
                         if let Err(e) = tx_channel.send(stream) {
                             match events.lock() {
                                 Ok(events) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                                    error!("");
+                                    error!("Fail to send ServerEvents::Error due error: {}", e);
                                 },
                                 Err(e) => error!("{}", e)
                             }
@@ -66,7 +65,7 @@ impl ServerTrait<ConnectionContext> for Server {
                     },
                     Err(e) => match events.lock() {
                         Ok(events) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                            error!("");
+                            error!("Fail to send ServerEvents::Error due error: {}", e);
                         },
                         Err(e) => error!("{}", e)
                     }
@@ -93,14 +92,14 @@ impl ServerTrait<ConnectionContext> for Server {
                     Ok((uuid, cx)) => {
                         match events.lock() {
                             Ok(events) => if let Err(e) = events.send(ServerEvents::Connected(uuid, Arc::new(RwLock::new(cx.clone())))) {
-                                error!("");
+                                error!("Fail to send ServerEvents::Connected due error: {}", e);
                             },
                             Err(e) => error!("Fail get access to received handler due error: {}", e)
                         }
                     },
                     Err(e) => match events.lock() {
                         Ok(events) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                            error!("");
+                            error!("Fail to send ServerEvents::Error due error: {}", e);
                         },
                         Err(e) => error!("{}", e)
                     },
@@ -197,7 +196,7 @@ impl Server {
                             connection_channel::Messages::Binary { uuid, buffer } => {
                                 match events.lock() {
                                     Ok(events) => if let Err(e) = events.send(ServerEvents::Received(uuid, Arc::new(RwLock::new(cx.clone())), buffer)) {
-                                        error!("");
+                                        error!("Fail to send ServerEvents::Received due error: {}", e);
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
                                 }
@@ -205,7 +204,7 @@ impl Server {
                             connection_channel::Messages::Error { uuid, error } => {
                                 match events.lock() {
                                     Ok(events) => if let Err(e) = events.send(ServerEvents::Error(Some(uuid), format!("{:?}", error).to_string())) {
-                                        error!("");
+                                        error!("Fail to send ServerEvents::Error due error: {}", e);
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
                                 }
@@ -213,7 +212,7 @@ impl Server {
                             connection_channel::Messages::Disconnect { uuid, frame: _ } => {
                                 match events.lock() {
                                     Ok(events) => if let Err(e) = events.send(ServerEvents::Disconnected(uuid, Arc::new(RwLock::new(cx.clone())))) {
-                                        error!("");
+                                        error!("Fail to send ServerEvents::Disconnected due error: {}", e);
                                     },
                                     Err(e) => error!("Fail get access to received handler due error: {}", e)
                                 }

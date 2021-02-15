@@ -29,7 +29,7 @@ impl RustRender {
                 body = format!(
                     "{}\n{}",
                     body,
-                    self.enums(&enums, &mut store.clone(), level + 1)
+                    self.enums(&enums, level + 1)
                 );
             }
         }
@@ -64,11 +64,13 @@ impl RustRender {
                 format!(
                     "pub {}: {},",
                     field.name,
-                    self.get_declare_type_ref(field, &mut store.clone())
+                    self.get_declare_type_ref(field)
                 ),
             );
         }
         body = format!("{}\n{}}}\n", body, self.spaces(level));
+        body = format!("{}{}#[allow(unused_variables)]\n", body, self.spaces(level));
+        body = format!("{}{}#[allow(unused_mut)]\n", body, self.spaces(level));
         body = format!(
             "{}{}impl StructDecode for {} {{\n",
             body,
@@ -144,7 +146,7 @@ impl RustRender {
                 body,
                 self.spaces(level + 2),
                 field.name,
-                self.get_decode_type_ref(&field, store),
+                self.get_decode_type_ref(&field),
                 field.id
             );
             body = format!("{}{}Ok(val) => val,\n", body, self.spaces(level + 3));
@@ -158,6 +160,8 @@ impl RustRender {
         body = format!("{}{}Ok(())\n", body, self.spaces(level + 2));
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}{}}}\n", body, self.spaces(level));
+        body = format!("{}{}#[allow(unused_variables)]\n", body, self.spaces(level));
+        body = format!("{}{}#[allow(unused_mut)]\n", body, self.spaces(level));
         body = format!(
             "{}{}impl StructEncode for {} {{\n",
             body,
@@ -267,11 +271,11 @@ impl RustRender {
         body
     }
 
-    fn enums(&self, enums: &Enum, store: &mut Store, level: u8) -> String {
+    fn enums(&self, enums: &Enum, level: u8) -> String {
         let mut body = format!("{}#[derive(Debug, Clone, PartialEq)]\n", self.spaces(level));
         body = format!("{}{}pub enum {} {{\n", body, self.spaces(level), enums.name);
         for item in &enums.variants {
-            let item_type = self.enum_item_type(item.clone(), store);
+            let item_type = self.enum_item_type(item.clone());
             body = format!(
                 "{}{}{},\n",
                 body,
@@ -337,7 +341,7 @@ impl RustRender {
         );
         body = format!("{}{}match index {{\n", body, self.spaces(level + 2));
         for (index, item) in enums.variants.iter().enumerate() {
-            let item_type = self.enum_item_type(item.clone(), store);
+            let item_type = self.enum_item_type(item.clone());
             body = format!(
                 "{}{}{} => match {}::decode(&body_buf) {{\n",
                 body,
@@ -450,7 +454,7 @@ impl RustRender {
         body
     }
 
-    fn enum_item_type(&self, item: EnumItem, store: &mut Store) -> String {
+    fn enum_item_type(&self, item: EnumItem) -> String {
         if let Some(type_ref) = item.types {
             return match type_ref {
                 PrimitiveTypes::ETypes::Ei8 => "i8",
@@ -473,7 +477,6 @@ impl RustRender {
         } else {
             return item.get_full_name();
         }
-        panic!("Fail to find a type ref for {}", item.name);
     }
 
     fn entity_default(&self, entity_id: usize, store: &mut Store, level: u8) -> String {
@@ -532,8 +535,8 @@ impl RustRender {
         }
     }
 
-    fn get_decode_type_ref(&self, field: &Field, store: &mut Store) -> String {
-        let mut type_str = self.get_type_ref(field, &mut store.clone());
+    fn get_decode_type_ref(&self, field: &Field) -> String {
+        let mut type_str = self.get_type_ref(field);
         if field.repeated {
             type_str = format!("Vec::<{}>", type_str);
         }
@@ -543,8 +546,8 @@ impl RustRender {
         type_str
     }
 
-    fn get_declare_type_ref(&self, field: &Field, store: &mut Store) -> String {
-        let mut type_str = self.get_type_ref(field, &mut store.clone());
+    fn get_declare_type_ref(&self, field: &Field) -> String {
+        let mut type_str = self.get_type_ref(field);
         if field.repeated {
             type_str = format!("Vec<{}>", type_str);
         }
@@ -554,7 +557,7 @@ impl RustRender {
         type_str
     }
 
-    fn get_type_ref(&self, field: &Field, store: &mut Store) -> String {
+    fn get_type_ref(&self, field: &Field) -> String {
         match field.kind.clone().as_str() {
             "bool" => String::from("bool"),
             "i8" => String::from("i8"),
@@ -851,7 +854,7 @@ impl Render for RustRender {
         );
         for enums in &store.enums {
             if enums.parent == 0 {
-                body = format!("{}{}\n", body, self.enums(enums, &mut store.clone(), 0));
+                body = format!("{}{}\n", body, self.enums(enums, 0));
             }
         }
         for strct in &store.structs {

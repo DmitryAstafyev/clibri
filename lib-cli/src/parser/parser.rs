@@ -2,7 +2,7 @@ use super::{ stop };
 
 use entities::Entities;
 use enums::Enum;
-use fields::{EReferenceToType, Field};
+use fields::{ Field };
 use groups::Group;
 use std::fs;
 use std::path::PathBuf;
@@ -101,7 +101,6 @@ impl Parser {
             EExpectation::EnumDef,
         ];
         let mut store: Store = Store::new();
-        let mut field_type_path: Vec<usize> = vec![];
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {

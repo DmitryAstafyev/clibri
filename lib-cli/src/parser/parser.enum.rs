@@ -34,7 +34,7 @@ impl EnumItem {
             } else {
                 stop!("Fail to find type: {}", self.type_path.join("."));
             };
-            let (type_name, type_id) = path[path.len() - 1].clone();
+            let (_, type_id) = path[path.len() - 1].clone();
             self.ref_type_id = Some(type_id);
             self.ref_type_path = path[0..path.len() - 1].iter().map(|(_name, id)| id.clone() ).collect();
         }

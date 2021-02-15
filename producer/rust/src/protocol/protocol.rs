@@ -1389,6 +1389,8 @@ pub struct UserConnected {
     pub username: String,
     pub uuid: String,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for UserConnected {
     fn get_id() -> u32 {
         2
@@ -1411,6 +1413,8 @@ impl StructDecode for UserConnected {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for UserConnected {
     fn get_id(&self) -> u32 { 2 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1434,6 +1438,8 @@ pub struct UserDisconnected {
     pub username: String,
     pub uuid: String,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for UserDisconnected {
     fn get_id() -> u32 {
         5
@@ -1456,6 +1462,8 @@ impl StructDecode for UserDisconnected {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for UserDisconnected {
     fn get_id(&self) -> u32 { 5 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1489,6 +1497,8 @@ pub mod UserSingIn {
         pub email: String,
         pub hash: String,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
             9
@@ -1511,6 +1521,8 @@ pub mod UserSingIn {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for Request {
         fn get_id(&self) -> u32 { 9 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1534,6 +1546,8 @@ pub mod UserSingIn {
         pub error: Option<String>,
         pub uuid: String,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for Response {
         fn get_id() -> u32 {
             12
@@ -1556,6 +1570,8 @@ pub mod UserSingIn {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for Response {
         fn get_id(&self) -> u32 { 12 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1592,6 +1608,8 @@ pub mod UserJoin {
         pub username: String,
         pub role: UserRole,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
             16
@@ -1619,6 +1637,8 @@ pub mod UserJoin {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for Request {
         fn get_id(&self) -> u32 { 16 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1646,6 +1666,8 @@ pub mod UserJoin {
         pub error: Option<String>,
         pub uuid: String,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for Response {
         fn get_id() -> u32 {
             20
@@ -1668,6 +1690,8 @@ pub mod UserJoin {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for Response {
         fn get_id(&self) -> u32 { 20 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1702,6 +1726,8 @@ pub mod UserLogout {
     pub struct Request {
         pub uuid: String,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
             24
@@ -1719,6 +1745,8 @@ pub mod UserLogout {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for Request {
         fn get_id(&self) -> u32 { 24 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1736,6 +1764,8 @@ pub mod UserLogout {
     #[derive(Debug, Clone, PartialEq)]
     pub struct Response {
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for Response {
         fn get_id() -> u32 {
             26
@@ -1748,6 +1778,8 @@ pub mod UserLogout {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for Response {
         fn get_id(&self) -> u32 { 26 }
         fn get_signature(&self) -> u16 { 0 }

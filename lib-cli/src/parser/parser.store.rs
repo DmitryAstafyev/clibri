@@ -1,4 +1,4 @@
-use super::{ Field, Enum, Struct, Group, PrimitiveTypes, EReferenceToType, stop };
+use super::{ Field, Enum, Struct, Group, stop };
 
 #[derive(Debug, Clone)]
 pub struct Store {
