@@ -126,11 +126,12 @@ where
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
     events: Sender<ProducerEvents<UCX>>,
     logger: &'static (dyn Logger + Send + Sync),
-    pub UserSingIn: Option<ImplUserSingInRequest::ObserverRequest<UCX>>,
-    pub UserJoin: Option<ImplUserJoinRequest::ObserverRequest<UCX>>,
-    pub EventUserConnected: ImplEventUserConnected::EventObserver<UCX>,
+    UserSingIn: Option<ImplUserSingInRequest::ObserverRequest<UCX>>,
+    UserJoin: Option<ImplUserJoinRequest::ObserverRequest<UCX>>,
+    EventUserConnected: ImplEventUserConnected::EventObserver<UCX>,
 }
 
+#[allow(non_snake_case)]
 impl<S, CX: 'static, UCX: 'static> Producer<S, CX, UCX>
 where
     S: ServerTrait<CX>,
@@ -299,4 +300,24 @@ where
         broadcasting(self.consumers.clone(), filter, condition, broadcast)
     }
 
+    pub fn UserSingIn(&mut self) -> &mut ImplUserSingInRequest::ObserverRequest<UCX> {
+        if let Some(reference) = self.UserSingIn.as_mut() {
+            reference
+        } else {
+            panic!("Cannot return observer for UserSingInRequest as soon as method listen was called");
+        }
+    }
+
+    pub fn UserJoin(&mut self) -> &mut ImplUserJoinRequest::ObserverRequest<UCX> {
+        if let Some(reference) = self.UserJoin.as_mut() {
+            reference
+        } else {
+            panic!("Cannot return observer for UserJoinRequest as soon as method listen was called");
+        }
+    }
+/*
+    UserSingIn: Option<ImplUserSingInRequest::ObserverRequest<UCX>>,
+    UserJoin: Option<ImplUserJoinRequest::ObserverRequest<UCX>>,
+    EventUserConnected: ImplEventUserConnected::EventObserver<UCX>,
+*/
 }

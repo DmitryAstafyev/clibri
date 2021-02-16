@@ -93,13 +93,11 @@ fn main() {
             Producer::Producer<Server, ServerConnectionContext, UserCustomContext>,
             Receiver<Producer::ProducerEvents<UserCustomContext>>,
         ) = Producer::Producer::new(server, None);
-        /*
-        producer.UserJoin.conclusion(&UserJoin::conclusion);
-        producer.UserJoin.broadcast(&UserJoin::broadcast);
-        producer.UserJoin.accept(&UserJoin::accept);
-        producer.UserJoin.deny(&UserJoin::deny);
-        producer.UserJoin.response(&UserJoin::response);
-        */
+        producer.UserJoin().conclusion(&UserJoin::conclusion);
+        producer.UserJoin().broadcast(&UserJoin::broadcast);
+        producer.UserJoin().accept(&UserJoin::accept);
+        producer.UserJoin().deny(&UserJoin::deny);
+        producer.UserJoin().response(&UserJoin::response);
         if let Err(e) = producer.listen(ucx) {
             println!("{}", e);
         }
