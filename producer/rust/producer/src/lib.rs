@@ -25,7 +25,6 @@ pub mod DeclUserSingInRequest;
 pub mod DeclUserJoinRequest;
 
 #[allow(non_snake_case)]
-#[allow(non_snake_case)]
 #[path = "./declarations/observer.event.UserConnected.rs"]
 pub mod DeclEventUserConnected;
 
@@ -62,16 +61,20 @@ use std::thread::spawn;
 use std::time::Duration;
 use uuid::Uuid;
 
+pub struct Context {
+
+}
+
 pub enum Broadcasting {
     UserDisconnected(Protocol::UserDisconnected),
 }
 
-pub enum ProducerEvents<UCX: Send + Sync> {
+pub enum ProducerEvents {
     InternalError(String),
     EmitError(String),
     ServerError(String),
     Reading(String),
-    Connected(Arc<RwLock<UCX>>),
+    Connected(Arc<RwLock<Context>>),
     Disconnected,
 }
 
@@ -116,29 +119,27 @@ pub fn broadcasting<CX: ConnectionContext + Send + Sync,>(
 }
 
 #[allow(non_snake_case)]
-pub struct Producer<S, CX, UCX>
+pub struct Producer<S, CX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
-    UCX: 'static + Send + Sync
 {
     server: S,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
-    events: Sender<ProducerEvents<UCX>>,
+    events: Sender<ProducerEvents>,
     logger: &'static (dyn Logger + Send + Sync),
-    UserSingIn: Option<ImplUserSingInRequest::ObserverRequest<UCX>>,
-    UserJoin: Option<ImplUserJoinRequest::ObserverRequest<UCX>>,
-    EventUserConnected: ImplEventUserConnected::EventObserver<UCX>,
+    UserSingIn: Option<ImplUserSingInRequest::ObserverRequest>,
+    UserJoin: Option<ImplUserJoinRequest::ObserverRequest>,
+    EventUserConnected: ImplEventUserConnected::EventObserver,
 }
 
 #[allow(non_snake_case)]
-impl<S, CX: 'static, UCX: 'static> Producer<S, CX, UCX>
+impl<S, CX: 'static> Producer<S, CX>
 where
     S: ServerTrait<CX>,
     CX: ConnectionContext + Send + Sync,
-    UCX: Send + Sync,
 {
-    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents<UCX>>) {
+    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents>) {
         let (sender, receiver) = mpsc::channel();
         let logs = if let Some(logger) = logger {
             logger
@@ -157,7 +158,7 @@ where
     }
 
     #[allow(non_snake_case)]
-    pub fn listen(&mut self, ucx: UCX) -> Result<(), String> {
+    pub fn listen(&mut self, ucx: Context) -> Result<(), String> {
         let (tx_channel, rx_channel): (Sender<ServerEvents<CX>>, Receiver<ServerEvents<CX>>) =
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
@@ -300,7 +301,7 @@ where
         broadcasting(self.consumers.clone(), filter, condition, broadcast)
     }
 
-    pub fn UserSingIn(&mut self) -> &mut ImplUserSingInRequest::ObserverRequest<UCX> {
+    pub fn UserSingIn(&mut self) -> &mut ImplUserSingInRequest::ObserverRequest {
         if let Some(reference) = self.UserSingIn.as_mut() {
             reference
         } else {
@@ -308,16 +309,12 @@ where
         }
     }
 
-    pub fn UserJoin(&mut self) -> &mut ImplUserJoinRequest::ObserverRequest<UCX> {
+    pub fn UserJoin(&mut self) -> &mut ImplUserJoinRequest::ObserverRequest {
         if let Some(reference) = self.UserJoin.as_mut() {
             reference
         } else {
             panic!("Cannot return observer for UserJoinRequest as soon as method listen was called");
         }
     }
-/*
-    UserSingIn: Option<ImplUserSingInRequest::ObserverRequest<UCX>>,
-    UserJoin: Option<ImplUserJoinRequest::ObserverRequest<UCX>>,
-    EventUserConnected: ImplEventUserConnected::EventObserver<UCX>,
-*/
+
 }

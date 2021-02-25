@@ -17,41 +17,42 @@ pub struct Event {
     pub prop2: u64,
 }
 
-type TEventHandler<UCX> = &'static (dyn (Fn(
-    &Event,
-    Arc<RwLock<UCX>>,
-    &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
-) -> Result<(), String>)
-              + Send
-              + Sync);
+pub trait EventObserverInterface<UCX: Send + Sync> {
+
+    fn connected(
+        &mut self,
+        event: &Event,
+        ucx: Arc<RwLock<UCX>>,
+        broadcasting: &dyn Fn(
+            HashMap<String, String>,
+            EFilterMatchCondition,
+            Broadcasting,
+        ) -> Result<(), String>,
+    ) -> Result<(), String> {
+        Err(String::from("accept method isn't implemented"))
+    }
+
+}
 
 #[derive(Clone)]
-pub struct EventObserver<UCX: 'static + Send + Sync> {
-    subscriptions: HashMap<Uuid, TEventHandler<UCX>>,
+pub struct EventObserver {
     sender: Option<Sender<Event>>,
 }
 
-impl<UCX: Send + Sync> EventObserver<UCX> {
+impl<UCX: Send + Sync> EventObserverInterface<UCX> for EventObserver {}
+
+impl EventObserver {
+
     pub fn new() -> Self {
         EventObserver {
-            subscriptions: HashMap::new(),
             sender: None,
         }
     }
 
-    pub fn subscribe(&mut self, handler: TEventHandler<UCX>) -> Uuid {
-        let uuid: Uuid = Uuid::new_v4();
-        self.subscriptions.insert(uuid.clone(), handler);
-        uuid
-    }
-
-    pub fn unsubscribe(&mut self, uuid: Uuid) {
-        self.subscriptions.remove(&uuid);
-    }
 }
 
 impl<CX: 'static, UCX: Send + Sync> EventUserConnected<UCX, Event, CX>
-    for EventObserver<UCX>
+    for EventObserver
 where
     CX: ConnectionContext + Send + Sync,
     UCX: Send + Sync,
@@ -67,7 +68,7 @@ where
     ) {
         let (sender, receiver): (Sender<Event>, Receiver<Event>) = mpsc::channel();
         self.sender = Some(sender);
-        let subscriptions = self.subscriptions.clone();
+        let wrapped = Arc::new(RwLock::new(self));
         spawn(move || {
             let timeout = Duration::from_millis(50);
             loop {
@@ -79,14 +80,20 @@ where
                              broadcast: Broadcasting| {
                                 broadcasting(consumers.clone(), filter, condition, broadcast)
                             };
-                        for (uuid, handler) in subscriptions.iter() {
-                            if let Err(e) = handler(&event, ucx.clone(), &broadcast) {
-                                println!(
-                                    "Fail to call handler ({}) for event due error: {}",
-                                    uuid, e
-                                );
-                            }
-                        }
+                            /*
+                            match wrapped.write() {
+                                Ok(s) => {
+                                    if let Err(e) = s.connected(&event, ucx.clone(), &broadcast) {
+                                        println!(
+                                            "Fail to call connected handler for event due error: {}",
+                                            e
+                                        );
+                                    }
+                                },
+                                Err(e) => {
+    
+                                },
+                            }*/
                     }
                     Err(_) => {
                         // No needs logs here;
