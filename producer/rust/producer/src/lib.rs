@@ -18,44 +18,28 @@ pub mod consumer_context;
 
 #[allow(non_snake_case)]
 #[path = "./declarations/observer.UserSingInRequest.rs"]
-pub mod DeclUserSingInRequest;
+pub mod UserSingInObserver;
 
 #[allow(non_snake_case)]
 #[path = "./declarations/observer.UserJoinRequest.rs"]
-pub mod DeclUserJoinRequest;
+pub mod UserJoinObserver;
 
 #[allow(non_snake_case)]
 #[path = "./declarations/observer.event.UserConnected.rs"]
-pub mod DeclEventUserConnected;
-
-#[allow(non_snake_case)]
-#[path = "./implementations/observer.UserSingInRequest.rs"]
-pub mod ImplUserSingInRequest;
-
-#[allow(non_snake_case)]
-#[path = "./implementations/observer.UserJoinRequest.rs"]
-pub mod ImplUserJoinRequest;
-
-#[allow(non_snake_case)]
-#[path = "./implementations/observer.event.UserConnected.rs"]
-pub mod ImplEventUserConnected;
+pub mod EventUserConnected;
 
 use consumer::{Consumer};
 use consumer_identification::EFilterMatchCondition;
 use protocol as Protocol;
-use Protocol::{ StructEncode };
-use DeclUserJoinRequest::{ UserJoinObserver };
-use DeclUserSingInRequest::UserSingInObserver;
-use DeclEventUserConnected::EventUserConnected;
-use logger::{ Logger };
+use Protocol::StructEncode;
+use logger::Logger;
 
-use fiber::server::context::ConnectionContext;
 use fiber::server::events::ServerEvents;
 use fiber::server::server::Server as ServerTrait;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Mutex};
 use std::thread;
 use std::thread::spawn;
 use std::time::Duration;
@@ -84,8 +68,8 @@ pub struct DefaultLogger {
 
 impl Logger for DefaultLogger {}
 
-pub fn broadcasting<CX: ConnectionContext + Send + Sync,>(
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+pub fn broadcasting(
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
     filter: HashMap<String, String>,
     condition: EFilterMatchCondition,
     broadcast: Broadcasting,
@@ -119,25 +103,23 @@ pub fn broadcasting<CX: ConnectionContext + Send + Sync,>(
 }
 
 #[allow(non_snake_case)]
-pub struct Producer<S, CX>
+pub struct Producer<S>
 where
-    S: ServerTrait<CX>,
-    CX: ConnectionContext + Send + Sync,
+    S: ServerTrait,
 {
     server: S,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
     events: Sender<ProducerEvents>,
     logger: &'static (dyn Logger + Send + Sync),
-    UserSingIn: Option<ImplUserSingInRequest::ObserverRequest>,
-    UserJoin: Option<ImplUserJoinRequest::ObserverRequest>,
-    EventUserConnected: ImplEventUserConnected::EventObserver,
+    UserSingIn: UserSingInObserver::ObserverRequest,
+    UserJoin: UserJoinObserver::ObserverRequest,
+    EventUserConnected: EventUserConnected::Observer,
 }
 
 #[allow(non_snake_case)]
-impl<S, CX: 'static> Producer<S, CX>
+impl<S> Producer<S>
 where
-    S: ServerTrait<CX>,
-    CX: ConnectionContext + Send + Sync,
+    S: ServerTrait,
 {
     pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents>) {
         let (sender, receiver) = mpsc::channel();
@@ -151,31 +133,30 @@ where
             consumers: Arc::new(RwLock::new(HashMap::new())),
             events: sender,
             logger: logs,
-            UserSingIn: Some(ImplUserSingInRequest::ObserverRequest::new()),
-            UserJoin: Some(ImplUserJoinRequest::ObserverRequest::new()),
-            EventUserConnected: ImplEventUserConnected::EventObserver::new(),
+            UserSingIn: UserSingInObserver::ObserverRequest::new(),
+            UserJoin: UserJoinObserver::ObserverRequest::new(),
+            EventUserConnected: EventUserConnected::Observer::new(),
         }, receiver)
     }
 
     #[allow(non_snake_case)]
     pub fn listen(&mut self, ucx: Context) -> Result<(), String> {
-        let (tx_channel, rx_channel): (Sender<ServerEvents<CX>>, Receiver<ServerEvents<CX>>) =
+        let (tx_channel, rx_channel): (Sender<ServerEvents>, Receiver<ServerEvents>) =
+            mpsc::channel();
+        let (sender_tx_channel, sender_rx_channel): (Sender<(Vec<u8>, Option<Uuid>)>, Receiver<(Vec<u8>, Option<Uuid>)>) =
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
         let ucx = Arc::new(RwLock::new(ucx));
-        self.EventUserConnected.listen(ucx.clone(), consumers_ref.clone());
-        let UserSingIn = Arc::new(RwLock::new(if let Some(v) = self.UserSingIn.take() { v } else {
-            return Err(String::from("Cannot get instance of UserSingIn"))
-        }));
-        let UserJoin = Arc::new(RwLock::new(if let Some(v) = self.UserJoin.take() { v } else {
-            return Err(String::from("Cannot get instance of UserJoin"))
-        }));
+        {
+            use EventUserConnected::EventsController;
+            self.EventUserConnected.listen(ucx.clone(), consumers_ref.clone());
+        }
+        let UserSingIn = Arc::new(RwLock::new(self.UserSingIn.clone()));
+        let UserJoin = Arc::new(RwLock::new(self.UserJoin.clone()));
         let events = self.events.clone();
         let logger = self.logger;
         spawn(move || {
-            let timeout = Duration::from_millis(50);
             loop {
-                // TODO: here we can use recv as well instread try_recv
                 match rx_channel.recv() {
                     Ok(event) => {
                         let consumers_ref = consumers_ref.clone();
@@ -183,13 +164,14 @@ where
                         let UserSingIn = UserSingIn.clone();
                         let UserJoin = UserJoin.clone();
                         let events = events.clone();
+                        let sender_tx_channel_wrapped = Arc::new(Mutex::new(sender_tx_channel.clone()));
                         spawn(move || {
                             match event {
-                                ServerEvents::Connected(uuid, cx) => match consumers_ref.write() {
+                                ServerEvents::Connected(uuid) => match consumers_ref.write() {
                                     Ok(mut storage) => {
                                         let _consumer = storage
                                             .entry(uuid)
-                                            .or_insert(Consumer::new(cx, consumers_ref.clone()));
+                                            .or_insert_with(|| Consumer::new(consumers_ref.clone(), sender_tx_channel_wrapped.clone()));
                                         if let Err(e) = events.send(ProducerEvents::Connected(ucx.clone())) {
                                             logger.err(&format!("{}", e));
                                         }
@@ -198,7 +180,7 @@ where
                                         logger.err(&format!("{}", e));
                                     }
                                 },
-                                ServerEvents::Disconnected(uuid, _cx) => match consumers_ref.write() {
+                                ServerEvents::Disconnected(uuid) => match consumers_ref.write() {
                                     Ok(mut consumers) => {
                                         consumers.remove(&uuid);
                                         if let Err(e) = events.send(ProducerEvents::Disconnected) {
@@ -209,7 +191,7 @@ where
                                         logger.err(&format!("{}", e));
                                     }
                                 },
-                                ServerEvents::Received(uuid, _cx, buffer) => match consumers_ref.write() {
+                                ServerEvents::Received(uuid, buffer) => match consumers_ref.write() {
                                     Ok(mut consumers) => {
                                         if let Some(consumer) = consumers.get_mut(&uuid) {
                                             let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {
@@ -220,52 +202,50 @@ where
                                                     logger.err(&format!("{}", e));
                                                 }
                                             }
-                                            loop {
-                                                if let Some(message) = consumer.next() {
-                                                    match message {
-                                                        Protocol::AvailableMessages::UserSingIn(Protocol::UserSingIn::AvailableMessages::Request(request)) => {
-                                                            match UserSingIn.write() {
-                                                                Ok(UserSingIn) => {
-                                                                    if let Err(e) = UserSingIn.emit(
-                                                                        consumer.get_cx(),
-                                                                        ucx.clone(),
-                                                                        request,
-                                                                        &broadcast,
-                                                                    ) {
-                                                                        if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
-                                                                            logger.err(&format!("{}", e));
-                                                                        }
+                                            while let Some(message) = consumer.next() {
+                                                match message {
+                                                    Protocol::AvailableMessages::UserSingIn(Protocol::UserSingIn::AvailableMessages::Request(request)) => {
+                                                        match UserSingIn.write() {
+                                                            Ok(UserSingIn) => {
+                                                                use UserSingInObserver::Observer;
+                                                                if let Err(e) = UserSingIn.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
+                                                                        logger.err(&format!("{}", e));
                                                                     }
                                                                 }
-                                                                Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
-                                                                    logger.err(&format!("{}", e));
-                                                                }
                                                             }
-                                                        },
-                                                        Protocol::AvailableMessages::UserJoin(Protocol::UserJoin::AvailableMessages::Request(request)) => {
-                                                            match UserJoin.write() {
-                                                                Ok(UserJoin) => {
-                                                                    if let Err(e) = UserJoin.emit(
-                                                                        consumer.get_cx(),
-                                                                        ucx.clone(),
-                                                                        request,
-                                                                        &broadcast,
-                                                                    ) {
-                                                                        if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserJoin::Request due error: {:?}", e).to_owned())) {
-                                                                            logger.err(&format!("{}", e));
-                                                                        }
+                                                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
+                                                                logger.err(&format!("{}", e));
+                                                            }
+                                                        }
+                                                    },
+                                                    Protocol::AvailableMessages::UserJoin(Protocol::UserJoin::AvailableMessages::Request(request)) => {
+                                                        match UserJoin.write() {
+                                                            Ok(UserJoin) => {
+                                                                use UserJoinObserver::Observer;
+                                                                if let Err(e) = UserJoin.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = events.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserJoin::Request due error: {:?}", e).to_owned())) {
+                                                                        logger.err(&format!("{}", e));
                                                                     }
                                                                 }
-                                                                Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
-                                                                    logger.err(&format!("{}", e));
-                                                                }
                                                             }
-                                                        },
-                                                        _ => {},
-                                                    };
-                                                } else {
-                                                    break;
-                                                }
+                                                            Err(e) => if let Err(e) = events.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
+                                                                logger.err(&format!("{}", e));
+                                                            }
+                                                        }
+                                                    },
+                                                    _ => {},
+                                                };
                                             }
                                         }
                                     }
@@ -281,12 +261,11 @@ where
                     },
                     Err(e) => {
                         logger.err(&format!("{}", e));
-                        thread::sleep(timeout);
                     }
                 }
             }
         });
-        match self.server.listen(tx_channel) {
+        match self.server.listen(tx_channel, sender_rx_channel) {
             Ok(()) => Ok(()),
             Err(e) => Err(e),
         }
@@ -299,22 +278,6 @@ where
         broadcast: Broadcasting,
     ) -> Result<(), String> {
         broadcasting(self.consumers.clone(), filter, condition, broadcast)
-    }
-
-    pub fn UserSingIn(&mut self) -> &mut ImplUserSingInRequest::ObserverRequest {
-        if let Some(reference) = self.UserSingIn.as_mut() {
-            reference
-        } else {
-            panic!("Cannot return observer for UserSingInRequest as soon as method listen was called");
-        }
-    }
-
-    pub fn UserJoin(&mut self) -> &mut ImplUserJoinRequest::ObserverRequest {
-        if let Some(reference) = self.UserJoin.as_mut() {
-            reference
-        } else {
-            panic!("Cannot return observer for UserJoinRequest as soon as method listen was called");
-        }
     }
 
 }

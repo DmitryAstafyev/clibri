@@ -1,26 +1,30 @@
 use super::consumer_context::Context;
 use super::consumer_identification::{EFilterMatchCondition, Identification};
 use super::Protocol;
-use fiber::server::context::ConnectionContext;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::mpsc::{Sender};
+use std::sync::{Arc, RwLock, Mutex};
 use uuid::Uuid;
 
-pub struct Cx<CX>
-where
-    CX: ConnectionContext + Send + Sync,
-{
-    own: Arc<RwLock<CX>>,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>,
+pub struct Cx {
+    uuid: Uuid,
+    consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
 }
 
-impl<CX> Context for Cx<CX>
-where
-    CX: ConnectionContext + Send + Sync,
-{
+impl Context for Cx {
     fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
-        match self.own.write() {
-            Ok(mut own) => own.send(buffer),
+        match self.consumers.write() {
+            Ok(mut consumers) => {
+                if let Some(consumer) = consumers.get_mut(&self.uuid) {
+                    if let Err(e) = consumer.send(buffer) {
+                        Err(format!("Fail to send buffer for consumer {} due error {}", self.uuid, e))
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    Err(format!("Fail to find consumer {}", self.uuid))
+                }
+            }
             Err(e) => Err(format!("{}", e)),
         }
     }
@@ -52,32 +56,31 @@ where
     }
 }
 
-pub struct Consumer<CX>
-where
-    CX: ConnectionContext + Send + Sync,
-{
+pub struct Consumer {
     uuid: Uuid,
-    _buffer: Protocol::Buffer<Protocol::AvailableMessages>,
+    buffer: Protocol::Buffer<Protocol::AvailableMessages>,
     identification: Identification,
-    cx: Cx<CX>,
+    cx: Cx,
+    sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>,
 }
 
-impl<CX> Consumer<CX>
-where
-    CX: ConnectionContext + Send + Sync,
-{
-    pub fn new(own: Arc<RwLock<CX>>, consumers: Arc<RwLock<HashMap<Uuid, Consumer<CX>>>>) -> Self {
+impl Consumer {
+    pub fn new(consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>, sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>) -> Self {
         let uuid: Uuid = Uuid::new_v4();
         Consumer {
             uuid,
-            _buffer: Protocol::Buffer::new(),
+            buffer: Protocol::Buffer::new(),
             identification: Identification::new(),
-            cx: Cx { own, consumers },
+            cx: Cx {
+                uuid,
+                consumers,
+            },
+            sender,
         }
     }
 
     pub fn chunk(&mut self, buffer: &Vec<u8>) -> Result<(), String> {
-        if let Err(e) = self._buffer.chunk(buffer) {
+        if let Err(e) = self.buffer.chunk(buffer) {
             Err(format!("{:?}", e))
         } else {
             Ok(())
@@ -85,7 +88,7 @@ where
     }
 
     pub fn next(&mut self) -> Option<Protocol::AvailableMessages> {
-        if let Some(msg) = self._buffer.next() {
+        if let Some(msg) = self.buffer.next() {
             Some(msg.msg)
         } else {
             None
@@ -93,7 +96,14 @@ where
     }
 
     pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
-        self.cx.send(buffer)
+        match self.sender.lock() {
+            Ok(sender) => if let Err(e) = sender.send((buffer, Some(self.uuid))) {
+                    Err(e.to_string())
+                } else {
+                    Ok(())
+            },
+            Err(e) => Err(e.to_string()),
+        }
     }
 
     pub fn send_if(
@@ -118,6 +128,6 @@ where
     }
 
     pub fn get_uuid(&self) -> Uuid {
-        self.uuid.clone()
+        self.uuid
     }
 }

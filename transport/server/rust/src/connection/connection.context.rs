@@ -1,6 +1,5 @@
 use super:: { connection };
 use connection:: { Connection };
-use fiber::server::context::{ ConnectionContext as ServerConnectionContext }; 
 use std::sync::{ Arc, RwLock };
 use std::collections::{ HashMap };
 use uuid::Uuid;
@@ -38,7 +37,7 @@ impl ConnectionContext {
     }
 
 }
-
+/*
 impl ServerConnectionContext for ConnectionContext {
 
     #[allow(dead_code)]
@@ -61,4 +60,4 @@ impl ServerConnectionContext for ConnectionContext {
         }
     }
 
-}
+*/

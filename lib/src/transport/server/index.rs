@@ -1,5 +1,3 @@
-#[path = "./connection.context.rs"]
-pub mod context;
 
 #[path = "./events.rs"]
 pub mod events;

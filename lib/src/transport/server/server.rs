@@ -1,9 +1,9 @@
-use super::context::{ ConnectionContext };
 use super::events::{ ServerEvents };
-use std::sync::mpsc::{ Sender };
+use std::sync::mpsc::{ Sender, Receiver };
+use uuid::Uuid;
 
-pub trait Server<T> where T: ConnectionContext + Send + Sync {
+pub trait Server {
 
-    fn listen(&mut self, channel: Sender<ServerEvents<T>>) -> Result<(), String>;
+    fn listen(&mut self, channel: Sender<ServerEvents>, messages: Receiver<(Vec<u8>, Option<Uuid>)>) -> Result<(), String>;
 
 }

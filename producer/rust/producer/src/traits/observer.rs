@@ -21,37 +21,23 @@ pub trait RequestObserver<
     UCX: Send + Sync,
 >
 {
-    fn _response(
-        &self,
+
+    fn conclusion(
         request: Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
-    ) -> Result<(Response, Conclusion), String>;
+    ) -> Result<Conclusion, String> {
+        Err(String::from("conclusion method isn't implemented"))
+    }
 
-}
-
-pub trait ConfirmedRequestObserver<
-    Request: Clone,
-    Response: StructEncode,
-    Conclusion: Eq + Hash,
-    UCX: Send + Sync,
->
-{
-
-    fn _conclusion(
-        &self,
-        request: Request,
-        cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
-    ) -> Result<Conclusion, String>;
-
-    fn _response(
-        &self,
+    fn response(
         request: Request,
         cx: &dyn Context,
         ucx: Arc<RwLock<UCX>>,
         conclusion: Conclusion,
-    ) -> Result<Response, String>;
+    ) -> Result<Response, String> {
+        Err(String::from("response method isn't implemented"))
+    }
 
 }
 
