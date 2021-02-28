@@ -40,25 +40,19 @@ use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, RwLock, Mutex};
-use std::thread;
 use std::thread::spawn;
-use std::time::Duration;
 use uuid::Uuid;
-
-pub struct Context {
-
-}
 
 pub enum Broadcasting {
     UserDisconnected(Protocol::UserDisconnected),
 }
 
-pub enum ProducerEvents {
+pub enum ProducerEvents<UCX: Sync + Send + Clone> {
     InternalError(String),
     EmitError(String),
     ServerError(String),
     Reading(String),
-    Connected(Arc<RwLock<Context>>),
+    Connected(Arc<RwLock<UCX>>),
     Disconnected,
 }
 
@@ -103,25 +97,24 @@ pub fn broadcasting(
 }
 
 #[allow(non_snake_case)]
-pub struct Producer<S>
+pub struct Producer<S, UCX>
 where
     S: ServerTrait,
+    UCX: Sync + Send + Clone
 {
     server: S,
     consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
-    events: Sender<ProducerEvents>,
+    events: Sender<ProducerEvents<UCX>>,
     logger: &'static (dyn Logger + Send + Sync),
-    UserSingIn: UserSingInObserver::ObserverRequest,
-    UserJoin: UserJoinObserver::ObserverRequest,
-    EventUserConnected: EventUserConnected::Observer,
 }
 
 #[allow(non_snake_case)]
-impl<S> Producer<S>
+impl<S, UCX: 'static> Producer<S, UCX>
 where
     S: ServerTrait,
+    UCX: Sync + Send + Clone,
 {
-    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents>) {
+    pub fn new(server: S, logger: Option<&'static (dyn Logger + Send + Sync)>) -> (Self, Receiver<ProducerEvents<UCX>>) {
         let (sender, receiver) = mpsc::channel();
         let logs = if let Some(logger) = logger {
             logger
@@ -133,29 +126,26 @@ where
             consumers: Arc::new(RwLock::new(HashMap::new())),
             events: sender,
             logger: logs,
-            UserSingIn: UserSingInObserver::ObserverRequest::new(),
-            UserJoin: UserJoinObserver::ObserverRequest::new(),
-            EventUserConnected: EventUserConnected::Observer::new(),
         }, receiver)
     }
 
     #[allow(non_snake_case)]
-    pub fn listen(&mut self, ucx: Context) -> Result<(), String> {
+    pub fn listen(&mut self, ucx: UCX) -> Result<(), String> {
         let (tx_channel, rx_channel): (Sender<ServerEvents>, Receiver<ServerEvents>) =
             mpsc::channel();
         let (sender_tx_channel, sender_rx_channel): (Sender<(Vec<u8>, Option<Uuid>)>, Receiver<(Vec<u8>, Option<Uuid>)>) =
             mpsc::channel();
         let consumers_ref = self.consumers.clone();
         let ucx = Arc::new(RwLock::new(ucx));
-        {
-            use EventUserConnected::EventsController;
-            self.EventUserConnected.listen(ucx.clone(), consumers_ref.clone());
-        }
-        let UserSingIn = Arc::new(RwLock::new(self.UserSingIn.clone()));
-        let UserJoin = Arc::new(RwLock::new(self.UserJoin.clone()));
         let events = self.events.clone();
         let logger = self.logger;
         spawn(move || {
+            {
+                use EventUserConnected::EventsController;
+                (EventUserConnected::Observer::new()).listen(ucx.clone(), consumers_ref.clone());
+            }
+            let UserSingIn = Arc::new(RwLock::new(UserSingInObserver::ObserverRequest::new()));
+            let UserJoin = Arc::new(RwLock::new(UserJoinObserver::ObserverRequest::new()));
             loop {
                 match rx_channel.recv() {
                     Ok(event) => {
