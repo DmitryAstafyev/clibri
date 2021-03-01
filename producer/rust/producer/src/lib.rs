@@ -98,6 +98,7 @@ where
     S: 'static + ServerTrait,
     UCX: 'static + Sync + Send + Clone,
 {
+
     fn listen(
         mut server: S,
         ucx: UCX,
@@ -121,7 +122,6 @@ where
         ) = mpsc::channel();
         let feedback = tx_feedback.clone();
         spawn(move || {
-            // let ucx = Arc::new(RwLock::new(ucx));
             {
                 use EventUserConnected::EventsController;
                 (EventUserConnected::Observer::new()).listen(ucx.clone(), consumers_wp.clone());

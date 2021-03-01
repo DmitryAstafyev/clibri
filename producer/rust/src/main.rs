@@ -17,26 +17,22 @@ struct CustomContext {}
 
 impl CustomContext {}
 
+type WrappedCustomContext = Arc<RwLock<CustomContext>>;
+
 struct ProducerInstance {}
 
-// impl<Server: 'static + ServerTrait, CustomContext: 'static + Clone + Sync + Send> Producer<Server, CustomContext> for ProducerInstance {}
-impl Producer<Server, Arc<RwLock<CustomContext>>> for ProducerInstance {
-
+impl Producer<Server, WrappedCustomContext> for ProducerInstance {
 }
-/*
-impl UserSingInObserver<Arc<RwLock<CustomContext>>>
-    for UserSingInObserverRequest
-{
-}
-*/
 
-impl UserJoinObserver<Arc<RwLock<CustomContext>>>
+//<ProducerInstance as Producer<Server>>::UCX
+
+impl UserJoinObserver
     for UserJoinObserverRequest
 {
-    fn conclusion(
+    fn conclusion<WrappedCustomContext>(
         request: producer::protocol::UserJoin::Request,
         cx: &dyn producer::consumer_context::Context,
-        ucx: Arc<RwLock<CustomContext>>,
+        ucx: WrappedCustomContext,
     ) -> Result<producer::UserJoinObserver::Conclusion, String> {
         Err(String::from("conclusion method isn't implemented"))
     }

@@ -15,10 +15,10 @@ pub enum Conclusion {
     Deny,
 }
 
-pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
+pub trait Observer
 {
 
-    fn conclusion(
+    fn conclusion<UCX: 'static + Sync + Send + Clone>(
         request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: UCX,
@@ -26,7 +26,7 @@ pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
         Err(String::from("conclusion method isn't implemented"))
     }
 
-    fn response(
+    fn response<UCX: 'static + Sync + Send + Clone>(
         request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: UCX,
@@ -35,7 +35,7 @@ pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
         Err(String::from("response method isn't implemented"))
     }
 
-    fn accept(
+    fn accept<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
@@ -44,7 +44,7 @@ pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
         Err(String::from("accept method isn't implemented"))
     }
 
-    fn broadcast(
+    fn broadcast<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
@@ -53,7 +53,7 @@ pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
         Err(String::from("broadcast method isn't implemented"))
     }
 
-    fn deny(
+    fn deny<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
@@ -62,7 +62,7 @@ pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
         Err(String::from("deny method isn't implemented"))
     }
 
-    fn emit(
+    fn emit<UCX: 'static + Sync + Send + Clone>(
         &self,
         cx: &dyn Context,
         ucx: UCX,
@@ -112,4 +112,4 @@ impl ObserverRequest {
     }
 }
 
-// impl<UCX: 'static + Sync + Send + Clone> Observer<UCX> for ObserverRequest { }
+// impl Observer for ObserverRequest { }
