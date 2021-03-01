@@ -1,6 +1,6 @@
 use super::consumer_context::{ Context };
 use super::protocol::{ StructEncode };
-use super::observer::{ RequestObserver, RequestObserverErrors };
+use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting };
 use super::Protocol;
@@ -15,14 +15,29 @@ pub enum Conclusion {
     Deny,
 }
 
-pub trait Observer<
-    UCX: Send + Sync,
->: RequestObserver<Protocol::UserJoin::Request, Protocol::UserJoin::Response, Conclusion, UCX>
+pub trait Observer<UCX> where UCX: 'static + Sync + Send + Clone
 {
+
+    fn conclusion(
+        request: Protocol::UserJoin::Request,
+        cx: &dyn Context,
+        ucx: UCX,
+    ) -> Result<Conclusion, String> {
+        Err(String::from("conclusion method isn't implemented"))
+    }
+
+    fn response(
+        request: Protocol::UserJoin::Request,
+        cx: &dyn Context,
+        ucx: UCX,
+        conclusion: Conclusion,
+    ) -> Result<Protocol::UserJoin::Response, String> {
+        Err(String::from("response method isn't implemented"))
+    }
 
     fn accept(
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -31,7 +46,7 @@ pub trait Observer<
 
     fn broadcast(
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -40,7 +55,7 @@ pub trait Observer<
 
     fn deny(
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -50,7 +65,7 @@ pub trait Observer<
     fn emit(
         &self,
         cx: &dyn Context,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
@@ -97,13 +112,4 @@ impl ObserverRequest {
     }
 }
 
-impl<UCX: Send + Sync>
-    RequestObserver<
-        Protocol::UserJoin::Request,
-        Protocol::UserJoin::Response,
-        Conclusion,
-        UCX,
-    > for ObserverRequest
-{ }
-
-impl<UCX: Send + Sync> Observer<UCX> for ObserverRequest { }
+// impl<UCX: 'static + Sync + Send + Clone> Observer<UCX> for ObserverRequest { }

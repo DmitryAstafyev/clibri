@@ -19,10 +19,10 @@ pub type TBroadcastHandler = &'static (dyn Fn(HashMap<String, String>, EFilterMa
               + Send
               + Sync);
 
-pub trait EventsController<UCX: Send + Sync> {
+pub trait EventsController<UCX: 'static + Sync + Send + Clone> {
     fn connected(
         event: &Event,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         broadcasting: &dyn Fn(
             HashMap<String, String>,
             EFilterMatchCondition,
@@ -36,7 +36,7 @@ pub trait EventsController<UCX: Send + Sync> {
 
     fn listen(
         &mut self,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
     );
 }
@@ -52,14 +52,14 @@ impl Observer {
     }
 }
 
-impl<UCX: Send + Sync> EventsController<UCX> for Observer {
+impl<UCX: 'static + Sync + Send + Clone> EventsController<UCX> for Observer {
     fn emitter(&self) -> Option<Sender<Event>> {
         self.sender.clone()
     }
 
     fn listen(
         &mut self,
-        ucx: Arc<RwLock<UCX>>,
+        ucx: UCX,
         consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
     ) {
         let (sender, receiver): (Sender<Event>, Receiver<Event>) = mpsc::channel();
