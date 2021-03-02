@@ -8,10 +8,14 @@ use producer::UserJoinObserver::{
 use producer::UserSignInObserver::{
     Observer as UserSignInObserver, ObserverRequest as UserSignInObserverRequest,
 };
-
+use producer::EventUserConnected::{
+    Controller as EventUserConnectedController, Observer as EventUserConnectedObserver,
+};
 use producer::*;
+use producer::consumer_identification::EFilterMatchCondition;
 use std::sync::{Arc, RwLock};
 use std::thread::spawn;
+use std::collections::HashMap;
 
 #[derive(Clone)]
 struct CustomContext {}
@@ -45,6 +49,21 @@ impl UserSignInObserver for UserSignInObserverRequest {
     ) -> Result<producer::UserSignInObserver::Conclusion, String> {
         println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))
+    }
+}
+
+#[allow(unused_variables)]
+impl EventUserConnectedController for EventUserConnectedObserver {
+    fn connected<WrappedCustomContext>(
+        event: &producer::EventUserConnected::Event,
+        ucx: WrappedCustomContext,
+        broadcasting: &dyn Fn(
+            HashMap<String, String>,
+            EFilterMatchCondition,
+            Broadcasting,
+        ) -> Result<(), String>,
+    ) -> Result<(), String> {
+        Err(String::from("connected handler isn't implemented"))
     }
 }
 

@@ -50,6 +50,9 @@ pub enum Broadcasting {
 pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     InternalError(String),
     EmitError(String),
+    EventError(String),
+    EventChannelError(String),
+    EventListenError(String),
     ConnectionError(String),
     ServerError(String),
     ServerDown,
@@ -93,6 +96,11 @@ pub fn broadcasting(
     }
 }
 
+pub struct Channel<UCX> where UCX: 'static + Sync + Send + Clone {
+    events: Receiver<ProducerEvents<UCX>>,
+    EventUserConnectedSender: Sender<EventUserConnected::Event>,
+}
+
 #[allow(unused_variables)]
 #[allow(non_snake_case)]
 pub trait Producer<S, UCX>
@@ -100,12 +108,11 @@ where
     S: 'static + ServerTrait,
     UCX: 'static + Sync + Send + Clone,
 {
-
     fn listen(
         mut server: S,
         ucx: UCX,
         logger: Option<&'static (dyn Logger + Send + Sync)>,
-    ) -> Result<Receiver<ProducerEvents<UCX>>, String> {
+    ) -> Result<Channel<UCX>, String> {
         let logger = if let Some(logger) = logger {
             logger
         } else {
@@ -123,11 +130,31 @@ where
             Receiver<ProducerEvents<UCX>>,
         ) = mpsc::channel();
         let feedback = tx_feedback.clone();
-        spawn(move || {
-            {
-                use EventUserConnected::EventsController;
-                (EventUserConnected::Observer::new()).listen(ucx.clone(), consumers_wp.clone());
+        use EventUserConnected::Controller;
+        let EventUserConnectedSender = match EventUserConnected::Observer::new().listen(
+            ucx.clone(),
+            consumers_wp.clone(),
+            logger,
+            feedback.clone(),
+        ) {
+            Ok(sender) => sender,
+            Err(e) => {
+                if let Err(e) =
+                    feedback.send(ProducerEvents::EventListenError(e.to_string()))
+                {
+                    logger.err(&format!(
+                        "Cannot start listen event EventUserConnected due {}",
+                        e
+                    ));
+                }
+                return Err(format!(
+                    "Cannot start listen event EventUserConnected due {}",
+                    e
+                ));
             }
+        };
+        spawn(move || {
+            
             let UserSignIn = Arc::new(RwLock::new(UserSignInObserver::ObserverRequest::new()));
             let UserJoin = Arc::new(RwLock::new(UserJoinObserver::ObserverRequest::new()));
             loop {
@@ -157,8 +184,7 @@ where
                                 }
                                 Err(e) => {
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers due error: {}", e)
-                                            .to_owned(),
+                                        format!("Fail to access to consumers due error: {}", e),
                                     )) {
                                         logger.err(&format!("{}", e));
                                     }
@@ -283,7 +309,9 @@ where
                 }
             };
         });
-        Ok(rx_feedback)
+        Ok(Channel {
+            events: rx_feedback,
+            EventUserConnectedSender: EventUserConnectedSender,
+        })
     }
 }
-
