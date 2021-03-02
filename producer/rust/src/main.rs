@@ -5,8 +5,8 @@ use fiber_transport_server::server::Server;
 use producer::UserJoinObserver::{
     Observer as UserJoinObserver, ObserverRequest as UserJoinObserverRequest,
 };
-use producer::UserSingInObserver::{
-    Observer as UserSingInObserver, ObserverRequest as UserSingInObserverRequest,
+use producer::UserSignInObserver::{
+    Observer as UserSignInObserver, ObserverRequest as UserSignInObserverRequest,
 };
 
 use producer::*;
@@ -37,12 +37,12 @@ impl UserJoinObserver for UserJoinObserverRequest {
 }
 
 #[allow(unused_variables)]
-impl UserSingInObserver for UserSingInObserverRequest {
+impl UserSignInObserver for UserSignInObserverRequest {
     fn conclusion<WrappedCustomContext>(
-        request: producer::protocol::UserSingIn::Request,
+        request: producer::protocol::UserSignIn::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-    ) -> Result<producer::UserSingInObserver::Conclusion, String> {
+    ) -> Result<producer::UserSignInObserver::Conclusion, String> {
         println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))
     }

@@ -19,7 +19,7 @@ pub trait Observer
 {
 
     fn conclusion<UCX: 'static + Sync + Send + Clone>(
-        request: Protocol::UserSingIn::Request,
+        request: Protocol::UserSignIn::Request,
         cx: &dyn Context,
         ucx: UCX,
     ) -> Result<Conclusion, String> {
@@ -27,18 +27,18 @@ pub trait Observer
     }
 
     fn response<UCX: 'static + Sync + Send + Clone>(
-        request: Protocol::UserSingIn::Request,
+        request: Protocol::UserSignIn::Request,
         cx: &dyn Context,
         ucx: UCX,
         conclusion: Conclusion,
-    ) -> Result<Protocol::UserSingIn::Response, String> {
+    ) -> Result<Protocol::UserSignIn::Response, String> {
         Err(String::from("response method isn't implemented"))
     }
 
     fn accept<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSingIn::Request,
+        request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
@@ -47,7 +47,7 @@ pub trait Observer
     fn broadcast<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSingIn::Request,
+        request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
@@ -56,7 +56,7 @@ pub trait Observer
     fn deny<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSingIn::Request,
+        request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
@@ -66,7 +66,7 @@ pub trait Observer
         &self,
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSingIn::Request,
+        request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         match Self::conclusion(request.clone(), cx, ucx.clone()) {

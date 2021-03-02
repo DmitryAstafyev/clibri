@@ -17,8 +17,8 @@ pub mod consumer_identification;
 pub mod consumer_context;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.UserSingInRequest.rs"]
-pub mod UserSingInObserver;
+#[path = "./declarations/observer.UserSignInRequest.rs"]
+pub mod UserSignInObserver;
 
 #[allow(non_snake_case)]
 #[path = "./declarations/observer.UserJoinRequest.rs"]
@@ -128,14 +128,14 @@ where
                 use EventUserConnected::EventsController;
                 (EventUserConnected::Observer::new()).listen(ucx.clone(), consumers_wp.clone());
             }
-            let UserSingIn = Arc::new(RwLock::new(UserSingInObserver::ObserverRequest::new()));
+            let UserSignIn = Arc::new(RwLock::new(UserSignInObserver::ObserverRequest::new()));
             let UserJoin = Arc::new(RwLock::new(UserJoinObserver::ObserverRequest::new()));
             loop {
                 match rx_channel.recv() {
                     Ok(event) => {
                         let consumers_wp = consumers_wp.clone();
                         let ucx = ucx.clone();
-                        let UserSingIn = UserSingIn.clone();
+                        let UserSignIn = UserSignIn.clone();
                         let UserJoin = UserJoin.clone();
                         let feedback = feedback.clone();
                         let sender_tx_channel_wrapped =
@@ -199,22 +199,22 @@ where
                                         }
                                         while let Some(message) = consumer.next() {
                                             match message {
-                                                    Protocol::AvailableMessages::UserSingIn(Protocol::UserSingIn::AvailableMessages::Request(request)) => {
-                                                        match UserSingIn.write() {
-                                                            Ok(UserSingIn) => {
-                                                                use UserSingInObserver::Observer;
-                                                                if let Err(e) = UserSingIn.emit(
+                                                    Protocol::AvailableMessages::UserSignIn(Protocol::UserSignIn::AvailableMessages::Request(request)) => {
+                                                        match UserSignIn.write() {
+                                                            Ok(UserSignIn) => {
+                                                                use UserSignInObserver::Observer;
+                                                                if let Err(e) = UserSignIn.emit(
                                                                     consumer.get_cx(),
                                                                     ucx.clone(),
                                                                     request,
                                                                     &broadcast,
                                                                 ) {
-                                                                    if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit UserSingInRequest due error: {:?}", e).to_owned())) {
+                                                                    if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit UserSignInRequest due error: {:?}", e).to_owned())) {
                                                                         logger.err(&format!("{}", e));
                                                                     }
                                                                 }
                                                             }
-                                                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to UserSingIn due error: {}", e).to_owned())) {
+                                                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to UserSignIn due error: {}", e).to_owned())) {
                                                                 logger.err(&format!("{}", e));
                                                             }
                                                         }

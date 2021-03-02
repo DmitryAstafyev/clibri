@@ -1322,7 +1322,7 @@ where
 #[derive(Debug, Clone)]
 pub enum AvailableMessages {
     UserRole(UserRole),
-    UserSingIn(UserSingIn::AvailableMessages),
+    UserSignIn(UserSignIn::AvailableMessages),
     UserJoin(UserJoin::AvailableMessages),
     UserLogout(UserLogout::AvailableMessages),
 }
@@ -1382,7 +1382,7 @@ impl EnumEncode for UserRole {
 }
 impl PackingEnum for UserRole {}
 
-pub mod UserSingIn {
+pub mod UserSignIn {
     use super::*;
     use std::io::Cursor;
     use bytes::{ Buf };
@@ -1675,12 +1675,12 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::UserRole(m)),
                 Err(e) => Err(e),
             },
-            3 => match UserSingIn::Request::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::UserSingIn(UserSingIn::AvailableMessages::Request(m))),
+            3 => match UserSignIn::Request::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::UserSignIn(UserSignIn::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            6 => match UserSingIn::Response::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::UserSingIn(UserSingIn::AvailableMessages::Response(m))),
+            6 => match UserSignIn::Response::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::UserSignIn(UserSignIn::AvailableMessages::Response(m))),
                 Err(e) => Err(e),
             },
             10 => match UserJoin::Request::extract(buf.to_vec()) {

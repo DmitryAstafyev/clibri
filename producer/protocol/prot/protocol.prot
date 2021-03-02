@@ -14,7 +14,7 @@ struct UserDisconnected {
     str uuid;
 }
 
-group UserSingIn {
+group UserSignIn {
 
     struct Request {
         str email;

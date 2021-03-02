@@ -1324,7 +1324,7 @@ pub enum AvailableMessages {
     UserRole(UserRole),
     UserConnected(UserConnected),
     UserDisconnected(UserDisconnected),
-    UserSingIn(UserSingIn::AvailableMessages),
+    UserSignIn(UserSignIn::AvailableMessages),
     UserJoin(UserJoin::AvailableMessages),
     UserLogout(UserLogout::AvailableMessages),
 }
@@ -1482,7 +1482,7 @@ impl StructEncode for UserDisconnected {
 }
 impl PackingStruct for UserDisconnected { }
 
-pub mod UserSingIn {
+pub mod UserSignIn {
     use super::*;
     use std::io::Cursor;
     use bytes::{ Buf };
@@ -1807,12 +1807,12 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::UserDisconnected(m)),
                 Err(e) => Err(e),
             },
-            9 => match UserSingIn::Request::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::UserSingIn(UserSingIn::AvailableMessages::Request(m))),
+            9 => match UserSignIn::Request::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::UserSignIn(UserSignIn::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            12 => match UserSingIn::Response::extract(buf.to_vec()) {
-                Ok(m) => Ok(AvailableMessages::UserSingIn(UserSingIn::AvailableMessages::Response(m))),
+            12 => match UserSignIn::Response::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::UserSignIn(UserSignIn::AvailableMessages::Response(m))),
                 Err(e) => Err(e),
             },
             16 => match UserJoin::Request::extract(buf.to_vec()) {
