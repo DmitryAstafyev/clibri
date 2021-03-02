@@ -93,6 +93,8 @@ pub fn broadcasting(
     }
 }
 
+#[allow(unused_variables)]
+#[allow(non_snake_case)]
 pub trait Producer<S, UCX>
 where
     S: 'static + ServerTrait,

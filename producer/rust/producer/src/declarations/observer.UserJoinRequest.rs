@@ -7,7 +7,6 @@ use super::Protocol;
 use std::cmp::{Eq, PartialEq};
 use std::hash::Hash;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Conclusion {
@@ -15,6 +14,7 @@ pub enum Conclusion {
     Deny,
 }
 
+#[allow(unused_variables)]
 pub trait Observer
 {
 

@@ -2,15 +2,16 @@
 pub mod producer;
 
 use fiber_transport_server::server::Server;
-use fiber_transport_server::server::*;
-use fiber::server::server::Server as ServerTrait;
-use fiber::server::server::*;
+use producer::UserJoinObserver::{
+    Observer as UserJoinObserver, ObserverRequest as UserJoinObserverRequest,
+};
+use producer::UserSingInObserver::{
+    Observer as UserSingInObserver, ObserverRequest as UserSingInObserverRequest,
+};
+
 use producer::*;
-use std::sync::mpsc::Receiver;
+use std::sync::{Arc, RwLock};
 use std::thread::spawn;
-use std::sync::{Arc, Mutex, RwLock};
-use producer::UserSingInObserver::{Observer as UserSingInObserver, ObserverRequest as UserSingInObserverRequest};
-use producer::UserJoinObserver::{Observer as UserJoinObserver, ObserverRequest as UserJoinObserverRequest};
 
 #[derive(Clone)]
 struct CustomContext {}
@@ -21,29 +22,39 @@ type WrappedCustomContext = Arc<RwLock<CustomContext>>;
 
 struct ProducerInstance {}
 
-impl Producer<Server, WrappedCustomContext> for ProducerInstance {
-}
+impl Producer<Server, WrappedCustomContext> for ProducerInstance {}
 
-//<ProducerInstance as Producer<Server>>::UCX
-
-impl UserJoinObserver
-    for UserJoinObserverRequest
-{
+#[allow(unused_variables)]
+impl UserJoinObserver for UserJoinObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::UserJoin::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
     ) -> Result<producer::UserJoinObserver::Conclusion, String> {
+        println!("GOOOD");
+        Err(String::from("conclusion method isn't implemented"))
+    }
+}
+
+#[allow(unused_variables)]
+impl UserSingInObserver for UserSingInObserverRequest {
+    fn conclusion<WrappedCustomContext>(
+        request: producer::protocol::UserSingIn::Request,
+        cx: &dyn producer::consumer_context::Context,
+        ucx: WrappedCustomContext,
+    ) -> Result<producer::UserSingInObserver::Conclusion, String> {
+        println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))
     }
 }
 
 fn main() {
+
     spawn(move || {
         let server: Server = Server::new(String::from("127.0.0.1:8080"));
         let ucx = CustomContext {};
         // let mut producer: ProducerInstance = ProducerInstance {};
-        let feedback = match ProducerInstance::listen(server, Arc::new(RwLock::new(ucx)), None) {
+        let _feedback = match ProducerInstance::listen(server, Arc::new(RwLock::new(ucx)), None) {
             Ok(feedback) => feedback,
             Err(e) => panic!(e),
         };

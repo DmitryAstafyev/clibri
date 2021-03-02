@@ -10,7 +10,7 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::thread::spawn;
 use std::time::Duration;
@@ -205,7 +205,7 @@ impl Server {
         }
     }
 
-    fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, cx: ConnectionContext) {
+    fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, _cx: ConnectionContext) {
         spawn(move || {
             let timeout = Duration::from_millis(50);
             loop {

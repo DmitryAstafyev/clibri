@@ -1,13 +1,15 @@
 use super::consumer::Consumer;
 use super::consumer_identification::EFilterMatchCondition;
-use super::{broadcasting, Broadcasting};
+use super::{Broadcasting};
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, RwLock};
+/*
 use std::thread;
 use std::thread::spawn;
 use std::time::Duration;
+*/
 use uuid::Uuid;
 
 pub struct Event {
@@ -19,6 +21,7 @@ pub type TBroadcastHandler = &'static (dyn Fn(HashMap<String, String>, EFilterMa
               + Send
               + Sync);
 
+#[allow(unused_variables)]
 pub trait EventsController<UCX: 'static + Sync + Send + Clone> {
     fn connected(
         event: &Event,
@@ -52,6 +55,7 @@ impl Observer {
     }
 }
 
+#[allow(unused_variables)]
 impl<UCX: 'static + Sync + Send + Clone> EventsController<UCX> for Observer {
     fn emitter(&self) -> Option<Sender<Event>> {
         self.sender.clone()
