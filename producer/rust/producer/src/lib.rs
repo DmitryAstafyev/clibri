@@ -96,6 +96,8 @@ pub fn broadcasting(
     }
 }
 
+#[allow(dead_code)]
+#[allow(non_snake_case)]
 pub struct Channel<UCX> where UCX: 'static + Sync + Send + Clone {
     events: Receiver<ProducerEvents<UCX>>,
     EventUserConnectedSender: Sender<EventUserConnected::Event>,
