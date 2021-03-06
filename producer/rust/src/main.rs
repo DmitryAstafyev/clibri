@@ -34,6 +34,7 @@ impl UserJoinObserver for UserJoinObserverRequest {
         request: producer::protocol::UserJoin::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
+        error: &dyn Fn(producer::protocol::UserJoin::Error) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::UserJoinObserver::Conclusion, String> {
         println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))
@@ -46,6 +47,7 @@ impl UserSignInObserver for UserSignInObserverRequest {
         request: producer::protocol::UserSignIn::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
+        error: &dyn Fn(producer::protocol::UserSignIn::Error) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::UserSignInObserver::Conclusion, String> {
         println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))

@@ -57,6 +57,24 @@ struct UserSignOut {
                 str login;
             };
 
+
+For each conclution should be own response
+For any request should be always defined error response
+
+UserSignInRequest[UserSignInError]
+   : (Accept -> UserSignInAccepted) > accept;
+                                    > broadcast: UserSignInBroadcast;
+   : (Deny -> UserSignInDenied)     > deny;
+
+Same example but using groups
+UserSignIn {
+    Request[Error]
+        : (Accept -> Accepted) > accept;
+                               > broadcast: UserSignInBroadcast;
+        : (Deny -> Denied)     > deny;
+}
+
+
 # Broadcast version
 
 @broadcasts {

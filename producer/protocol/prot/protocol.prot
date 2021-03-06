@@ -21,9 +21,16 @@ group UserSignIn {
         str hash;
     }
 
-    struct Response {
-        str error?;
+    struct Accepted {
         str uuid;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Error {
+        str error;
     }
 
 }
@@ -36,9 +43,16 @@ group UserJoin {
         UserRole role;
     }
 
-    struct Response {
-        str error?;
+    struct Accepted {
         str uuid;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Error {
+        str error;
     }
 
 }

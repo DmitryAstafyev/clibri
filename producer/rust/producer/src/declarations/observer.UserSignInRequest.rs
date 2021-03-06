@@ -4,14 +4,12 @@ use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting };
 use super::Protocol;
-use std::cmp::{Eq, PartialEq};
-use std::hash::Hash;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub enum Conclusion {
-    Accept,
-    Deny,
+    Accept(Protocol::UserSignIn::Accepted),
+    Deny(Protocol::UserSignIn::Denied),
 }
 
 #[allow(unused_variables)]
@@ -22,17 +20,9 @@ pub trait Observer
         request: Protocol::UserSignIn::Request,
         cx: &dyn Context,
         ucx: UCX,
+        error: &dyn Fn(Protocol::UserSignIn::Error) -> Result<(), RequestObserverErrors>,
     ) -> Result<Conclusion, String> {
         Err(String::from("conclusion method isn't implemented"))
-    }
-
-    fn response<UCX: 'static + Sync + Send + Clone>(
-        request: Protocol::UserSignIn::Request,
-        cx: &dyn Context,
-        ucx: UCX,
-        conclusion: Conclusion,
-    ) -> Result<Protocol::UserSignIn::Response, String> {
-        Err(String::from("response method isn't implemented"))
     }
 
     fn accept<UCX: 'static + Sync + Send + Clone>(
@@ -40,6 +30,7 @@ pub trait Observer
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(Protocol::UserSignIn::Error) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
     }
@@ -49,6 +40,7 @@ pub trait Observer
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(Protocol::UserSignIn::Error) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
     }
@@ -58,6 +50,7 @@ pub trait Observer
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(Protocol::UserSignIn::Error) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
     }
@@ -69,34 +62,47 @@ pub trait Observer
         request: Protocol::UserSignIn::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        match Self::conclusion(request.clone(), cx, ucx.clone()) {
-            Ok(conclusion) => match Self::response(request.clone(), cx, ucx.clone(), conclusion.clone()) {
-                Ok(mut response) => match response.abduct() {
-                    Ok(buffer) => {
-                        if let Err(e) = cx.send(buffer) {
+        let error = |mut error: Protocol::UserSignIn::Error| {
+            match error.abduct() {
+                Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                    Err(RequestObserverErrors::ResponsingError(e))
+                } else {
+                    Ok(())
+                },
+                Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
+            }
+        };
+        match Self::conclusion(request.clone(), cx, ucx.clone(), &error) {
+            Ok(conclusion) => match conclusion {
+                Conclusion::Accept(mut response) => {
+                    if let Err(e) = Self::accept(cx, ucx.clone(), request.clone(), broadcast, &error) {
+                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
+                    }
+                    if let Err(e) = Self::broadcast(cx, ucx.clone(), request, broadcast, &error) {
+                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
+                    }
+                    match response.abduct() {
+                        Ok(buffer) => if let Err(e) = cx.send(buffer) {
                             Err(RequestObserverErrors::ResponsingError(e))
                         } else {
-                            match conclusion {
-                                Conclusion::Accept => {
-                                    if let Err(e) = Self::accept(cx, ucx.clone(), request.clone(), broadcast) {
-                                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                                    }
-                                    if let Err(e) = Self::broadcast(cx, ucx.clone(), request, broadcast) {
-                                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                                    }
-                                },
-                                Conclusion::Deny => {
-                                    if let Err(e) = Self::deny(cx, ucx, request, broadcast) {
-                                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                                    }
-                                },
-                            }
                             Ok(())
-                        }
+                        },
+                        Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
                     }
-                    Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
                 },
-                Err(e) => Err(RequestObserverErrors::GettingResponseError(e)),
+                Conclusion::Deny(mut response) => {
+                    if let Err(e) = Self::deny(cx, ucx, request, broadcast, &error) {
+                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
+                    }
+                    match response.abduct() {
+                        Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                            Err(RequestObserverErrors::ResponsingError(e))
+                        } else {
+                            Ok(())
+                        },
+                        Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
+                    }
+                },
             },
             Err(e) => Err(RequestObserverErrors::GettingConclusionError(e))
         }
