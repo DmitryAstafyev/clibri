@@ -78,5 +78,3 @@ impl Observer {
     }
 }
 
-//#[allow(unused_variables)]
-// impl<UCX: 'static + Sync + Send + Clone> Controller<UCX> for Observer {}

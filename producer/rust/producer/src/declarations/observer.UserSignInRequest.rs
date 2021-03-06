@@ -111,5 +111,3 @@ impl ObserverRequest {
         ObserverRequest {}
     }
 }
-
-// impl<UCX: 'static + Sync + Send + Clone> Observer<UCX> for ObserverRequest { }

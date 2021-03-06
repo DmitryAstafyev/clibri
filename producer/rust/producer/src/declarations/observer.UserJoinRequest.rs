@@ -111,5 +111,3 @@ impl ObserverRequest {
         ObserverRequest {}
     }
 }
-
-// impl Observer for ObserverRequest { }
