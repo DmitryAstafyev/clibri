@@ -6,6 +6,7 @@ import { MessageHeader } from './packing.header';
 export interface IAvailableMessage<T> {
     header: {
         id: number;
+        sequence: number;
         timestamp: BigInt;
     },
     msg: T

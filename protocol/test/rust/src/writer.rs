@@ -58,7 +58,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleA.a.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleA::Option_b("Option_b".to_owned());
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleA.b.prot.bin"), &buf) {
@@ -66,7 +66,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleA.b.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_str("Option_str".to_owned());
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.str.prot.bin"), &buf) {
@@ -74,7 +74,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.str.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_u8(8);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.u8.prot.bin"), &buf) {
@@ -82,7 +82,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u8.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_u16(16);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.u16.prot.bin"), &buf) {
@@ -90,7 +90,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u16.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_u32(32);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.u32.prot.bin"), &buf) {
@@ -98,7 +98,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u32.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_u64(64);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.u64.prot.bin"), &buf) {
@@ -106,7 +106,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.u64.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_i8(-8);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.i8.prot.bin"), &buf) {
@@ -114,7 +114,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i8.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_i16(-16);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.i16.prot.bin"), &buf) {
@@ -122,7 +122,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i16.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_i32(-32);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.i32.prot.bin"), &buf) {
@@ -130,7 +130,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i32.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_i64(-64);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.i64.prot.bin"), &buf) {
@@ -138,7 +138,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.i64.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_f32(0.02);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.f32.prot.bin"), &buf) {
@@ -146,7 +146,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.f32.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = EnumExampleB::Option_f64(0.02);
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./EnumExampleB.f64.prot.bin"), &buf) {
@@ -154,7 +154,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./EnumExampleB.f64.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupD::EnumExampleP::Option_a(StructExampleA {
         field_str: String::from("test"),
         field_u8: 1,
@@ -175,7 +175,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_a.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupD::EnumExampleP::Option_b(GroupD::StructExampleP {
         field_a: StructExampleA {
             field_str: String::from("test"),
@@ -206,7 +206,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_b.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupD::EnumExampleP::Option_c(GroupB::StructExampleA {
         field_u8: 1,
         field_u16: 2,
@@ -217,7 +217,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_c.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupD::EnumExampleP::Option_d(GroupB::GroupC::StructExampleA {
         field_u8: 1,
         field_u16: 2,
@@ -228,7 +228,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupD.EnumExampleP.Option_d.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
 
     let mut usecase = StructExampleA {
         field_str: String::from("test"),
@@ -250,7 +250,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleA.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleB {
         field_str: vec![String::from("test_a"), String::from("test_b")],
         field_u8: vec![1, 2, 3, 4],
@@ -271,7 +271,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleB.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleC {
         field_str: Some(String::from("test")),
         field_u8: Some(1),
@@ -292,7 +292,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleC.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleD {
         field_str: Some(vec![String::from("test_a"), String::from("test_b")]),
         field_u8: Some(vec![1, 2, 3, 4]),
@@ -313,7 +313,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleD.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleE {
         field_a: EnumExampleA::Option_a(String::from("Option_a")),
         field_b: EnumExampleB::Option_u8(1),
@@ -325,7 +325,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleE.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleF {
         field_a: None,
         field_b: None,
@@ -337,7 +337,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleF.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleG {
         field_a: StructExampleA {
             field_str: String::from("test"),
@@ -374,7 +374,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleG.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = StructExampleJ {
         field_a: Some(StructExampleA {
             field_str: String::from("test"),
@@ -399,7 +399,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleJ.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
 
     let mut usecase = StructExampleEmpty {
     };
@@ -409,7 +409,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./StructExampleEmpty.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
 
     let mut usecase = GroupA::StructExampleA {
         field_u8: 1,
@@ -422,7 +422,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupAStructExampleA.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupA::StructExampleB {
         field_u8: 1,
         field_u16: 2,
@@ -438,7 +438,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupAStructExampleB.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupB::StructExampleA {
         field_u8: 1,
         field_u16: 2,
@@ -449,7 +449,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupBStructExampleA.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupB::GroupC::StructExampleA {
         field_u8: 1,
         field_u16: 2,
@@ -460,7 +460,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleA.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupB::GroupC::StructExampleB {
         field_u8: 1,
         field_u16: 2,
@@ -475,7 +475,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupCStructExampleB.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupD::StructExampleP {
         field_a: StructExampleA {
             field_str: String::from("test"),
@@ -506,7 +506,7 @@ pub fn write() -> Result<(), String> {
         }
         println!("[RS]: File {:?} has beed written.", root.join("./GroupDStructExampleP.prot.bin"));
     }
-    buffer.append(&mut usecase.pack().unwrap());
+    buffer.append(&mut usecase.pack(0).unwrap());
     if let Err(e) = write_file(root.join("./buffer.prot.bin"), &buffer) {
         panic!(e);
     }

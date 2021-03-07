@@ -1837,9 +1837,10 @@ export abstract class Enum<T> {
         }
     }
 
-    public pack(): ArrayBufferLike {
+    public pack(sequence: number): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
         const ts = BigInt((new Date()).getTime());
         const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
         if (id instanceof Error) {
@@ -1847,6 +1848,9 @@ export abstract class Enum<T> {
         }
         if (signature instanceof Error) {
             throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (seq instanceof Error) {
+            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
         }
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
@@ -1856,7 +1860,7 @@ export abstract class Enum<T> {
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }
-        return Tools.append([id, signature, timestamp, len, buffer]);
+        return Tools.append([id, signature, seq, timestamp, len, buffer]);
     }
 
     public abstract getAllowed(): string[];
@@ -2222,9 +2226,10 @@ export abstract class Convertor {
         return selfs;
     }
 
-    public pack(): ArrayBufferLike {
+    public pack(sequence: number): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
         const ts = BigInt((new Date()).getTime());
         const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
         if (id instanceof Error) {
@@ -2232,6 +2237,9 @@ export abstract class Convertor {
         }
         if (signature instanceof Error) {
             throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (seq instanceof Error) {
+            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
         }
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
@@ -2241,7 +2249,7 @@ export abstract class Convertor {
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }
-        return Tools.append([id, signature, timestamp, len, buffer]);
+        return Tools.append([id, signature, seq, timestamp, len, buffer]);
     }
 
     public abstract getSignature(): string;
@@ -2256,16 +2264,19 @@ export abstract class Convertor {
 export class MessageHeader {
     public static readonly ID_LENGTH = 4;
     public static readonly SIGN_LENGTH = 2;
+    public static readonly SEQ_LENGTH = 4;
     public static readonly TS_LENGTH = 8;
     public static readonly LEN_LENGTH = 8;
     public static readonly SIZE =
         MessageHeader.ID_LENGTH +
         MessageHeader.SIGN_LENGTH +
+        MessageHeader.SEQ_LENGTH +
         MessageHeader.TS_LENGTH +
         MessageHeader.LEN_LENGTH;
 
     public readonly id: number;
     public readonly signature: number;
+    public readonly sequence: number;
     public readonly ts: BigInt;
     public readonly len: number;
 
@@ -2277,8 +2288,9 @@ export class MessageHeader {
         } else {
             this.id = buffer.readUInt32LE(0);
             this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
-            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
-            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH));
+            this.sequence = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
+            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
+            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
         }
     }
 
@@ -2292,6 +2304,7 @@ export class MessageHeader {
 export interface IAvailableMessage<T> {
     header: {
         id: number;
+        sequence: number;
         timestamp: BigInt;
     },
     msg: T
@@ -5599,91 +5612,91 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleA: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleA: instance } };
             case 2:
                 instance = new EnumExampleB();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleB: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleB: instance } };
             case 3:
                 instance = new EnumExampleC();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, timestamp: header.ts }, msg: { EnumExampleC: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleC: instance } };
             case 73:
                 instance = new GroupA.EnumExampleA();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } } };
             case 99:
                 instance = new GroupD.EnumExampleP();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, timestamp: header.ts }, msg: { GroupD: { EnumExampleP: instance } } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { EnumExampleP: instance } } };
             case 4:
                 instance = StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleA: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleA: instance } };
             case 17:
                 instance = StructExampleB.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleB: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleB: instance } };
             case 30:
                 instance = StructExampleC.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleC: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleC: instance } };
             case 43:
                 instance = StructExampleD.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleD: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleD: instance } };
             case 56:
                 instance = StructExampleE.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleE: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleE: instance } };
             case 60:
                 instance = StructExampleF.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleF: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleF: instance } };
             case 64:
                 instance = StructExampleG.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleG: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleG: instance } };
             case 67:
                 instance = StructExampleEmpty.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleEmpty: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleEmpty: instance } };
             case 68:
                 instance = StructExampleJ.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { StructExampleJ: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleJ: instance } };
             case 74:
                 instance = GroupA.StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { StructExampleA: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleA: instance } } };
             case 78:
                 instance = GroupA.StructExampleB.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupA: { StructExampleB: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleB: instance } } };
             case 83:
                 instance = GroupB.StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { StructExampleA: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { StructExampleA: instance } } };
             case 87:
                 instance = GroupB.GroupC.StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleA: instance } } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleA: instance } } } };
             case 90:
                 instance = GroupB.GroupC.StructExampleB.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } } };
             case 95:
                 instance = GroupD.StructExampleP.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } } };
         }
     }
 }

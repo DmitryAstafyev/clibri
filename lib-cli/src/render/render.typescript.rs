@@ -1611,7 +1611,7 @@ impl TypescriptRender {
                 self.spaces(4)
             );
             body = format!("{}{}instance = enum_instance;\n", body, self.spaces(4));
-            body = format!("{}{}return {{ header: {{ id: header.id, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(enums.parent, &enums.name, &mut store.clone()));
+            body = format!("{}{}return {{ header: {{ id: header.id, sequence: header.sequence, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(enums.parent, &enums.name, &mut store.clone()));
         }
         for structs in &store.structs {
             body = format!("{}{}case {}:\n", body, self.spaces(3), structs.id);
@@ -1622,7 +1622,7 @@ impl TypescriptRender {
                 store.get_struct_path(structs.id).join(".")
             );
             body = format!("{}{}err = instance.decode(buffer);\n", body, self.spaces(4));
-            body = format!("{}{}return err instanceof Error ? err : {{ header: {{ id: header.id, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(structs.parent, &structs.name, &mut store.clone()));
+            body = format!("{}{}return err instanceof Error ? err : {{ header: {{ id: header.id, sequence: header.sequence, timestamp: header.ts }}, msg: {{ {}}} }};\n", body, self.spaces(4), self.get_available_entity(structs.parent, &structs.name, &mut store.clone()));
         }
         body = format!("{}{}}}\n", body, self.spaces(2));
         body = format!("{}{}}}\n", body, self.spaces(1));

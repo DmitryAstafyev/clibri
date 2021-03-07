@@ -910,12 +910,12 @@ mod tests {
             field_utf8_string: String::from("Hello, from Nested!"),
             field_optional: Some(2),
         };
-        buf.append(&mut a.pack().unwrap());
-        buf.append(&mut empty_a.pack().unwrap());
-        buf.append(&mut c.pack().unwrap());
+        buf.append(&mut a.pack(0).unwrap());
+        buf.append(&mut empty_a.pack(1).unwrap());
+        buf.append(&mut c.pack(2).unwrap());
         for item in enums.iter() {
             let mut item = item.clone();
-            buf.append(&mut item.pack().unwrap());
+            buf.append(&mut item.pack(3).unwrap());
         }
         if let Err(e) = buffer.chunk(&buf) {
             println!("{:?}", e);

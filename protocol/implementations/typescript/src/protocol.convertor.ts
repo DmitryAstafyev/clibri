@@ -142,9 +142,10 @@ export abstract class Convertor {
         return selfs;
     }
 
-    public pack(): ArrayBufferLike {
+    public pack(sequence: number): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
         const ts = BigInt((new Date()).getTime());
         const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
         if (id instanceof Error) {
@@ -152,6 +153,9 @@ export abstract class Convertor {
         }
         if (signature instanceof Error) {
             throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (seq instanceof Error) {
+            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
         }
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
@@ -161,7 +165,7 @@ export abstract class Convertor {
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }
-        return Tools.append([id, signature, timestamp, len, buffer]);
+        return Tools.append([id, signature, seq, timestamp, len, buffer]);
     }
 
     public abstract getSignature(): string;

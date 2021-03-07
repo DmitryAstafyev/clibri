@@ -1119,7 +1119,7 @@ pub fn read() -> Result<(), String> {
             }
             println!("[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
             if buffer.pending() != 0 || buffer.len() != 0 || count != 32 || count != done {
-                panic!("Fail to read buffer correctly");
+                panic!("Fail to read buffer correctly: \n- buffer.pending(): {}\n- buffer.len(): {}\n- count: {}", buffer.pending(), buffer.len(), count);
             }
             println!("Packages: {}; done: {}", count, done);
         },

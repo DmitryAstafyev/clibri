@@ -334,7 +334,7 @@ export function write(): Promise<void> {
                 }
                 const buf = entity instanceof Buffer ? entity : Buffer.from(entity.encode());
                 if (entity instanceof Protocol.Convertor || entity instanceof Protocol.Enum) {
-                    buffers.push(Buffer.from(entity.pack()));
+                    buffers.push(Buffer.from(entity.pack(0)));
                 }
                 fs.writeFile(file, buf, (errWrite: Error | undefined) => {
                     if (errWrite) {
