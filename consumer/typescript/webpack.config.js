@@ -2,7 +2,7 @@ module.exports = {
     entry: "./src/index.ts",
     mode: "production",
     output: {
-        filename: "protocol.js",
+        filename: "consumer.js",
         path: __dirname + "/dist",
         libraryTarget: 'umd',
         library: 'fiber',

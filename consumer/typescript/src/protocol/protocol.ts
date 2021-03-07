@@ -2661,7 +2661,7 @@ export namespace UserSignIn {
         Request?: Request,
         Accepted?: Accepted,
         Denied?: Denied,
-        Error?: Error,
+        Err?: Err,
     }
 
     export interface IRequest {
@@ -2958,17 +2958,17 @@ export namespace UserSignIn {
         }
     }
 
-    export interface IError {
+    export interface IErr {
         error: string;
     }
-    export class Error extends Protocol.Convertor implements IError, ISigned<Error> {
+    export class Err extends Protocol.Convertor implements IErr, ISigned<Err> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
         ];
 
-        public static defaults(): Error {
-            return new UserSignIn.Error({
+        public static defaults(): Err {
+            return new UserSignIn.Err({
                 error: '',
             });
         }
@@ -2977,12 +2977,12 @@ export namespace UserSignIn {
             if (array) {
                 return { validate(obj: any): Error | undefined {
                     if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Error>`);
+                        return new Error(`Expecting Array<Err>`);
                     }
                     try {
                         obj.forEach((o, index: number) => {
-                            if (!(o instanceof Error)) {
-                                throw new Error(`Expecting instance of Error on index #${index}`);
+                            if (!(o instanceof Err)) {
+                                throw new Error(`Expecting instance of Err on index #${index}`);
                             }
                         });
                     } catch (e) {
@@ -2991,29 +2991,29 @@ export namespace UserSignIn {
                 }};
             } else {
                 return { validate(obj: any): Error | undefined {
-                    return obj instanceof Error ? undefined : new Error(`Expecting instance of Error`);
+                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
                 }};
             }
         }
 
-        public static from(obj: any): Error | Error {
+        public static from(obj: any): Err | Error {
             if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Error.defaults();
+                const inst = Err.defaults();
                 const err = inst.decode(obj);
                 return err instanceof Error ? err : inst;
             } else {
-                const error: Error | undefined = Protocol.validate(obj, Error.scheme);
-                return error instanceof Error ? error : new Error({
+                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
+                return error instanceof Error ? error : new Err({
                     error: obj.error,
                 });
             }
         }
 
         public error: string;
-        public static getSignature(): string { return 'Error'; }
+        public static getSignature(): string { return 'Err'; }
 
 
-        constructor(params: IError)  {
+        constructor(params: IErr)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
@@ -3022,9 +3022,9 @@ export namespace UserSignIn {
 
         public signature(): number { return 0; }
 
-        public getSignature(): string { return 'Error'; }
+        public getSignature(): string { return 'Err'; }
 
-        public get(): Error { return this; }
+        public get(): Err { return this; }
 
         public getId(): number { return 16; }
 
@@ -3047,8 +3047,8 @@ export namespace UserSignIn {
             }
         }
 
-        public defaults(): Error {
-            return Error.defaults();
+        public defaults(): Err {
+            return Err.defaults();
         }
     }
 
@@ -3059,7 +3059,7 @@ export namespace UserJoin {
         Request?: Request,
         Accepted?: Accepted,
         Denied?: Denied,
-        Error?: Error,
+        Err?: Err,
     }
 
     export interface IRequest {
@@ -3382,17 +3382,17 @@ export namespace UserJoin {
         }
     }
 
-    export interface IError {
+    export interface IErr {
         error: string;
     }
-    export class Error extends Protocol.Convertor implements IError, ISigned<Error> {
+    export class Err extends Protocol.Convertor implements IErr, ISigned<Err> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
         ];
 
-        public static defaults(): Error {
-            return new UserJoin.Error({
+        public static defaults(): Err {
+            return new UserJoin.Err({
                 error: '',
             });
         }
@@ -3401,12 +3401,12 @@ export namespace UserJoin {
             if (array) {
                 return { validate(obj: any): Error | undefined {
                     if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Error>`);
+                        return new Error(`Expecting Array<Err>`);
                     }
                     try {
                         obj.forEach((o, index: number) => {
-                            if (!(o instanceof Error)) {
-                                throw new Error(`Expecting instance of Error on index #${index}`);
+                            if (!(o instanceof Err)) {
+                                throw new Error(`Expecting instance of Err on index #${index}`);
                             }
                         });
                     } catch (e) {
@@ -3415,29 +3415,29 @@ export namespace UserJoin {
                 }};
             } else {
                 return { validate(obj: any): Error | undefined {
-                    return obj instanceof Error ? undefined : new Error(`Expecting instance of Error`);
+                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
                 }};
             }
         }
 
-        public static from(obj: any): Error | Error {
+        public static from(obj: any): Err | Error {
             if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Error.defaults();
+                const inst = Err.defaults();
                 const err = inst.decode(obj);
                 return err instanceof Error ? err : inst;
             } else {
-                const error: Error | undefined = Protocol.validate(obj, Error.scheme);
-                return error instanceof Error ? error : new Error({
+                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
+                return error instanceof Error ? error : new Err({
                     error: obj.error,
                 });
             }
         }
 
         public error: string;
-        public static getSignature(): string { return 'Error'; }
+        public static getSignature(): string { return 'Err'; }
 
 
-        constructor(params: IError)  {
+        constructor(params: IErr)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
@@ -3446,9 +3446,9 @@ export namespace UserJoin {
 
         public signature(): number { return 0; }
 
-        public getSignature(): string { return 'Error'; }
+        public getSignature(): string { return 'Err'; }
 
-        public get(): Error { return this; }
+        public get(): Err { return this; }
 
         public getId(): number { return 27; }
 
@@ -3471,8 +3471,8 @@ export namespace UserJoin {
             }
         }
 
-        public defaults(): Error {
-            return Error.defaults();
+        public defaults(): Err {
+            return Err.defaults();
         }
     }
 
@@ -3481,7 +3481,8 @@ export namespace UserJoin {
 export namespace UserLogout {
     export interface IAvailableMessages {
         Request?: Request,
-        Response?: Response,
+        Done?: Done,
+        Err?: Err,
     }
 
     export interface IRequest {
@@ -3578,15 +3579,15 @@ export namespace UserLogout {
         }
     }
 
-    export interface IResponse {
+    export interface IDone {
     }
-    export class Response extends Protocol.Convertor implements IResponse, ISigned<Response> {
+    export class Done extends Protocol.Convertor implements IDone, ISigned<Done> {
 
         public static scheme: Protocol.IPropScheme[] = [
         ];
 
-        public static defaults(): Response {
-            return new UserLogout.Response({
+        public static defaults(): Done {
+            return new UserLogout.Done({
             });
         }
 
@@ -3594,12 +3595,12 @@ export namespace UserLogout {
             if (array) {
                 return { validate(obj: any): Error | undefined {
                     if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Response>`);
+                        return new Error(`Expecting Array<Done>`);
                     }
                     try {
                         obj.forEach((o, index: number) => {
-                            if (!(o instanceof Response)) {
-                                throw new Error(`Expecting instance of Response on index #${index}`);
+                            if (!(o instanceof Done)) {
+                                throw new Error(`Expecting instance of Done on index #${index}`);
                             }
                         });
                     } catch (e) {
@@ -3608,27 +3609,27 @@ export namespace UserLogout {
                 }};
             } else {
                 return { validate(obj: any): Error | undefined {
-                    return obj instanceof Response ? undefined : new Error(`Expecting instance of Response`);
+                    return obj instanceof Done ? undefined : new Error(`Expecting instance of Done`);
                 }};
             }
         }
 
-        public static from(obj: any): Response | Error {
+        public static from(obj: any): Done | Error {
             if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Response.defaults();
+                const inst = Done.defaults();
                 const err = inst.decode(obj);
                 return err instanceof Error ? err : inst;
             } else {
-                const error: Error | undefined = Protocol.validate(obj, Response.scheme);
-                return error instanceof Error ? error : new Response({
+                const error: Error | undefined = Protocol.validate(obj, Done.scheme);
+                return error instanceof Error ? error : new Done({
                 });
             }
         }
 
-        public static getSignature(): string { return 'Response'; }
+        public static getSignature(): string { return 'Done'; }
 
 
-        constructor(params: IResponse)  {
+        constructor(params: IDone)  {
             super();
             Object.keys(params).forEach((key: string) => {
                 this[key] = params[key];
@@ -3637,9 +3638,9 @@ export namespace UserLogout {
 
         public signature(): number { return 0; }
 
-        public getSignature(): string { return 'Response'; }
+        public getSignature(): string { return 'Done'; }
 
-        public get(): Response { return this; }
+        public get(): Done { return this; }
 
         public getId(): number { return 32; }
 
@@ -3655,8 +3656,102 @@ export namespace UserLogout {
             }
         }
 
-        public defaults(): Response {
-            return Response.defaults();
+        public defaults(): Done {
+            return Done.defaults();
+        }
+    }
+
+    export interface IErr {
+        error: string;
+    }
+    export class Err extends Protocol.Convertor implements IErr, ISigned<Err> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
+        ];
+
+        public static defaults(): Err {
+            return new UserLogout.Err({
+                error: '',
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<Err>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof Err)) {
+                                throw new Error(`Expecting instance of Err on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
+                }};
+            }
+        }
+
+        public static from(obj: any): Err | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = Err.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
+                return error instanceof Error ? error : new Err({
+                    error: obj.error,
+                });
+            }
+        }
+
+        public error: string;
+        public static getSignature(): string { return 'Err'; }
+
+
+        constructor(params: IErr)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                this[key] = params[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'Err'; }
+
+        public get(): Err { return this; }
+
+        public getId(): number { return 33; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+                () => this.getBufferFromBuf<string>(34, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | undefined {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            const error: string | Error = this.getValue<string>(storage, 34, Protocol.Primitives.StrUTF8.decode);
+            if (error instanceof Error) {
+                return error;
+            } else {
+                this.error = error;
+            }
+        }
+
+        public defaults(): Err {
+            return Err.defaults();
         }
     }
 
@@ -3696,9 +3791,9 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Denied: instance } } };
             case 16:
-                instance = UserSignIn.Error.defaults();
+                instance = UserSignIn.Err.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Error: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Err: instance } } };
             case 19:
                 instance = UserJoin.Request.defaults();
                 err = instance.decode(buffer);
@@ -3712,17 +3807,21 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Denied: instance } } };
             case 27:
-                instance = UserJoin.Error.defaults();
+                instance = UserJoin.Err.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Error: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Err: instance } } };
             case 30:
                 instance = UserLogout.Request.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Request: instance } } };
             case 32:
-                instance = UserLogout.Response.defaults();
+                instance = UserLogout.Done.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Response: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Done: instance } } };
+            case 33:
+                instance = UserLogout.Err.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Err: instance } } };
         }
     }
 }

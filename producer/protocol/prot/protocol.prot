@@ -29,7 +29,7 @@ group UserSignIn {
         str reason;
     }
 
-    struct Error {
+    struct Err {
         str error;
     }
 
@@ -51,7 +51,7 @@ group UserJoin {
         str reason;
     }
 
-    struct Error {
+    struct Err {
         str error;
     }
 
@@ -63,7 +63,11 @@ group UserLogout {
         str uuid;
     }
 
-    struct Response {
+    struct Done {
+    }
+
+    struct Err {
+        str error;
     }
 
 }

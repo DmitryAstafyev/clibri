@@ -20,7 +20,7 @@ pub trait Observer
         request: Protocol::UserJoin::Request,
         cx: &dyn Context,
         ucx: UCX,
-        error: &dyn Fn(Protocol::UserJoin::Error) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<Conclusion, String> {
         Err(String::from("conclusion method isn't implemented"))
     }
@@ -30,7 +30,7 @@ pub trait Observer
         ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::UserJoin::Error) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
     }
@@ -40,7 +40,7 @@ pub trait Observer
         ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::UserJoin::Error) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
     }
@@ -50,7 +50,7 @@ pub trait Observer
         ucx: UCX,
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::UserJoin::Error) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
     }
@@ -62,7 +62,7 @@ pub trait Observer
         request: Protocol::UserJoin::Request,
         broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        let error = |mut error: Protocol::UserJoin::Error| {
+        let error = |mut error: Protocol::UserJoin::Err| {
             match error.abduct() {
                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                     Err(RequestObserverErrors::ResponsingError(e))
