@@ -1837,9 +1837,10 @@ export abstract class Enum<T> {
         }
     }
 
-    public pack(): ArrayBufferLike {
+    public pack(sequence: number): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
         const ts = BigInt((new Date()).getTime());
         const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
         if (id instanceof Error) {
@@ -1847,6 +1848,9 @@ export abstract class Enum<T> {
         }
         if (signature instanceof Error) {
             throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (seq instanceof Error) {
+            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
         }
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
@@ -1856,7 +1860,7 @@ export abstract class Enum<T> {
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }
-        return Tools.append([id, signature, timestamp, len, buffer]);
+        return Tools.append([id, signature, seq, timestamp, len, buffer]);
     }
 
     public abstract getAllowed(): string[];
@@ -2222,9 +2226,10 @@ export abstract class Convertor {
         return selfs;
     }
 
-    public pack(): ArrayBufferLike {
+    public pack(sequence: number): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
+        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
         const ts = BigInt((new Date()).getTime());
         const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
         if (id instanceof Error) {
@@ -2232,6 +2237,9 @@ export abstract class Convertor {
         }
         if (signature instanceof Error) {
             throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
+        }
+        if (seq instanceof Error) {
+            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
         }
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
@@ -2241,7 +2249,7 @@ export abstract class Convertor {
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
         }
-        return Tools.append([id, signature, timestamp, len, buffer]);
+        return Tools.append([id, signature, seq, timestamp, len, buffer]);
     }
 
     public abstract getSignature(): string;
@@ -2256,16 +2264,19 @@ export abstract class Convertor {
 export class MessageHeader {
     public static readonly ID_LENGTH = 4;
     public static readonly SIGN_LENGTH = 2;
+    public static readonly SEQ_LENGTH = 4;
     public static readonly TS_LENGTH = 8;
     public static readonly LEN_LENGTH = 8;
     public static readonly SIZE =
         MessageHeader.ID_LENGTH +
         MessageHeader.SIGN_LENGTH +
+        MessageHeader.SEQ_LENGTH +
         MessageHeader.TS_LENGTH +
         MessageHeader.LEN_LENGTH;
 
     public readonly id: number;
     public readonly signature: number;
+    public readonly sequence: number;
     public readonly ts: BigInt;
     public readonly len: number;
 
@@ -2277,8 +2288,9 @@ export class MessageHeader {
         } else {
             this.id = buffer.readUInt32LE(0);
             this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
-            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
-            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.TS_LENGTH));
+            this.sequence = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
+            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
+            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
         }
     }
 
@@ -2292,6 +2304,7 @@ export class MessageHeader {
 export interface IAvailableMessage<T> {
     header: {
         id: number;
+        sequence: number;
         timestamp: BigInt;
     },
     msg: T
@@ -3769,59 +3782,59 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, timestamp: header.ts }, msg: { UserRole: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserRole: instance } };
             case 2:
                 instance = UserConnected.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserConnected: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserConnected: instance } };
             case 5:
                 instance = UserDisconnected.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserDisconnected: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserDisconnected: instance } };
             case 9:
                 instance = UserSignIn.Request.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Request: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserSignIn: { Request: instance } } };
             case 12:
                 instance = UserSignIn.Accepted.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Accepted: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserSignIn: { Accepted: instance } } };
             case 14:
                 instance = UserSignIn.Denied.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Denied: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserSignIn: { Denied: instance } } };
             case 16:
                 instance = UserSignIn.Err.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserSignIn: { Err: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserSignIn: { Err: instance } } };
             case 19:
                 instance = UserJoin.Request.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Request: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserJoin: { Request: instance } } };
             case 23:
                 instance = UserJoin.Accepted.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Accepted: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserJoin: { Accepted: instance } } };
             case 25:
                 instance = UserJoin.Denied.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Denied: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserJoin: { Denied: instance } } };
             case 27:
                 instance = UserJoin.Err.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserJoin: { Err: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserJoin: { Err: instance } } };
             case 30:
                 instance = UserLogout.Request.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Request: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogout: { Request: instance } } };
             case 32:
                 instance = UserLogout.Done.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Done: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogout: { Done: instance } } };
             case 33:
                 instance = UserLogout.Err.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, timestamp: header.ts }, msg: { UserLogout: { Err: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogout: { Err: instance } } };
         }
     }
 }

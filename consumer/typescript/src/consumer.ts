@@ -1,6 +1,8 @@
 // tslint:disable: max-classes-per-file
 import { Client } from './client';
 
+import * as Protocol from './protocol/protocol';
+
 import Subject from './tools/tools.subject';
 import Subscription from './tools/tools.subscription';
 import guid from './tools/tools.guid';
@@ -22,7 +24,9 @@ export class Consumer {
     }
  
     private readonly _client: Client;
-    private readonly _subscriptions: { [key: string]: Subscription } = {}; 
+    private readonly _subscriptions: { [key: string]: Subscription } = {};
+    private readonly _pending: Map<number, (response: Protocol.IAvailableMessages) => void> = new Map();
+    private readonly _buffer: Protocol.BufferReaderMessages = new Protocol.BufferReaderMessages();
 
     public readonly connected: Subject<void> = new Subject(`connected`);
     public readonly disconnected: Subject<void> = new Subject(`disconnected`);
@@ -42,6 +46,7 @@ export class Consumer {
         if (global[Consumer.GUID] !== undefined) {
             throw new Error(`Attempt to init consumer multiple times`);
         }
+        this._subscriptions.data = this._client.data.subscribe(this._onData.bind(this));
         global[Consumer.GUID] = this;
     }
 
@@ -53,6 +58,43 @@ export class Consumer {
 
     public connect(): Promise<void> {
         return this._client.connect();
+    }
+
+    public request(buffer: ArrayBufferLike, sequence?: number): Promise<Protocol.IAvailableMessages> {
+        if (sequence !== undefined && this._pending.has(sequence)) {
+            return Promise.reject(new Error(`Request with sequence #${sequence} has been already sent and pending for response`));
+        }
+        const error: Error | undefined = this._client.send(buffer);
+        if (error instanceof Error) {
+            return Promise.reject(error);
+        }
+        if (sequence === undefined) {
+            return Promise.resolve({});
+        }
+        return new Promise((resolve) => {
+            this._pending.set(sequence, resolve);
+        });
+    }
+
+    private _onData(buffer: ArrayBufferLike) {
+        const errors: Error[] | undefined = this._buffer.chunk(buffer);
+        if (errors instanceof Array) {
+            // Here is logs messages
+            return;
+        }
+        do {
+            const msg: Protocol.IAvailableMessage<Protocol.IAvailableMessages> | undefined =  this._buffer.next();
+            if (msg === undefined) {
+                return;
+            }
+            const pending = this._pending.get(msg.header.sequence);
+            if (pending !== undefined) {
+                this._pending.delete(msg.header.sequence);
+                pending(msg.msg);
+            } else {
+                // TODO: Broadcasting
+            }
+        } while (true);
     }
 
 }
