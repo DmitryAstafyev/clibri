@@ -3,11 +3,11 @@ import * as Protocol from '../protocol/protocol';
 import { Consumer } from '../consumer';
 import { ERequestState } from '../interfaces/request.states';
 
-export abstract class UserJoin extends Protocol.UserJoin.Request {
+export abstract class UserLogout extends Protocol.UserLogout.Request {
 
     private _state: ERequestState = ERequestState.Ready;
 
-    constructor(request: Protocol.UserJoin.IRequest) {
+    constructor(request: Protocol.UserLogout.IRequest) {
         super(request);
     }
 
@@ -33,22 +33,18 @@ export abstract class UserJoin extends Protocol.UserJoin.Request {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message.UserJoin === undefined) {
-                            return reject(new Error(`Expecting message from "UserJoin" group.`));
-                        } else if (message.UserJoin.Accepted !== undefined) {
-                            this.accept(message.UserJoin.Accepted);
-                        } else if (message.UserJoin.Denied !== undefined) {
-                            this.deny(message.UserJoin.Denied);
-                        } else if (message.UserJoin.Err !== undefined) {
-                            this.error(message.UserJoin.Err);
+                        if (message.UserLogout === undefined) {
+                            return reject(new Error(`Expecting message from "UserLogout" group.`));
+                        } else if (message.UserLogout.Done !== undefined) {
+                            this.done(message.UserLogout.Done);
                         } else {
-                            return reject(new Error(`No message in "UserJoin" group.`));
+                            return reject(new Error(`No message in "UserLogout" group.`));
                         }
                         return resolve();
                     case ERequestState.Destroyed:
-                        return reject(new Error(`Request "UserJoin" has been destroyed. Response would not be processed.`));
+                        return reject(new Error(`Request "UserLogout" has been destroyed. Response would not be processed.`));
                     case ERequestState.Pending:
-                        return reject(new Error(`Unexpected state for request "UserJoin".`));
+                        return reject(new Error(`Unexpected state for request "UserLogout".`));
                 }
             }).catch((err: Error) => {
                 reject(err);
@@ -57,8 +53,7 @@ export abstract class UserJoin extends Protocol.UserJoin.Request {
         
     }
 
-    public abstract accept(response: Protocol.UserJoin.Accepted);
-    public abstract deny(response: Protocol.UserJoin.Denied);
-    public abstract error(response: Protocol.UserJoin.Err);
+    public abstract done(response: Protocol.UserLogout.Done);
+    public abstract error(response: Protocol.UserLogout.Err);
 
 }

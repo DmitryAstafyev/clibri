@@ -36,6 +36,7 @@ export namespace ConsumerError {
 export class Consumer {
 
     public static GUID: string = guid();
+    public static GUID_SUBS: string = guid();
 
     public static get(): Consumer | Error {
         const global = globals();
@@ -47,6 +48,20 @@ export class Consumer {
         }
         return global[Consumer.GUID];
     }
+
+    public static wait(handler: () => void): Error | Subscription {
+        const global = globals();
+        if (global instanceof Error) {
+            return global;
+        }
+        if (global[Consumer.GUID] !== undefined) {
+            return new Error(`Consumer is already created`);
+        }
+        if (global[Consumer.GUID_SUBS] === undefined) {
+            global[Consumer.GUID_SUBS] = new Subject(`ConsumerSubscription`);
+        }
+        return (global[Consumer.GUID_SUBS] as Subject<Consumer>).subscribe(handler);
+    }
  
     private readonly _client: Client;
     private readonly _subscriptions: { [key: string]: Subscription } = {};
@@ -57,10 +72,12 @@ export class Consumer {
     public readonly connected: Subject<void> = new Subject(`connected`);
     public readonly disconnected: Subject<void> = new Subject(`disconnected`);
     public readonly error: Subject<ConsumerError.TError> = new Subject(`error`);
-    public readonly incomes: {
-        
+    public readonly broadcast: {
+        UserConnected: Subject<Protocol.UserConnected>,
+        UserDisconnected: Subject<Protocol.UserDisconnected>,
     } = {
-
+        UserConnected: new Subject<Protocol.UserConnected>(),
+        UserDisconnected: new Subject<Protocol.UserDisconnected>(),
     };
 
     constructor(client: Client) {
@@ -74,6 +91,11 @@ export class Consumer {
         }
         this._subscriptions.data = this._client.data.subscribe(this._onData.bind(this));
         global[Consumer.GUID] = this;
+        ((subject: Subject<Consumer>) => {
+            subject.emit(this);
+            subject.destroy();
+        })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
+        global[Consumer.GUID_SUBS] = undefined;
     }
 
     public destroy(): Promise<void> {
@@ -132,26 +154,18 @@ export class Consumer {
                 this._pending.delete(msg.header.sequence);
                 pending(msg.msg);
             } else {
-                // TODO: Broadcasting
+                switch (msg.getRef<any>().getId()) {
+                    case Protocol.UserConnected.getId():
+                        this.broadcast.UserConnected.emit(msg.getRef<Protocol.UserConnected>());
+                        break;
+                    case Protocol.UserDisconnected.getId():
+                        this.broadcast.UserDisconnected.emit(msg.getRef<Protocol.UserDisconnected>());
+                        break;
+                    default:
+                        // Here is logs messages
+                        break;
+                }
             }
         } while (true);
     }
-
 }
-
-class DummyClient extends Client {
-    public send(buffer: Buffer): Error | undefined {
-        return undefined;
-    }
-    public connect(): Promise<void> {
-        return Promise.resolve();
-    }
-    public disconnect(): Promise<void> {
-        return Promise.resolve();
-    }
-    public destroy(): Promise<void> {
-        return Promise.resolve();
-    }
-}
-
-const consumer: Consumer = new Consumer(new DummyClient());

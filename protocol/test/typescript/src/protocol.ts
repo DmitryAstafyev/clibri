@@ -2307,7 +2307,8 @@ export interface IAvailableMessage<T> {
         sequence: number;
         timestamp: BigInt;
     },
-    msg: T
+    msg: T,
+    getRef: <Z>() => Z,
 }
 
 export abstract class BufferReader<T> {
@@ -2412,6 +2413,7 @@ export class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
         }
         return err instanceof Error ? err : inst.get();
     }
+    public static getId(): number { return 1; }
     public from(obj: any): IEnumExampleA | Error {
         return EnumExampleA.from(obj);
     }
@@ -2481,6 +2483,7 @@ export class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
         }
         return err instanceof Error ? err : inst.get();
     }
+    public static getId(): number { return 2; }
     public from(obj: any): IEnumExampleB | Error {
         return EnumExampleB.from(obj);
     }
@@ -2631,6 +2634,7 @@ export class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
         }
         return err instanceof Error ? err : inst.get();
     }
+    public static getId(): number { return 3; }
     public from(obj: any): IEnumExampleC | Error {
         return EnumExampleC.from(obj);
     }
@@ -2864,6 +2868,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     public field_f64: number;
     public field_bool: boolean;
     public static getSignature(): string { return 'StructExampleA'; }
+    public static getId(): number { return 4; }
 
 
     constructor(params: IStructExampleA)  {
@@ -3090,6 +3095,7 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
     public field_f64: Array<number>;
     public field_bool: Array<boolean>;
     public static getSignature(): string { return 'StructExampleB'; }
+    public static getId(): number { return 17; }
 
 
     constructor(params: IStructExampleB)  {
@@ -3316,6 +3322,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
     public field_f64: number | undefined;
     public field_bool: boolean | undefined;
     public static getSignature(): string { return 'StructExampleC'; }
+    public static getId(): number { return 30; }
 
 
     constructor(params: IStructExampleC)  {
@@ -3638,6 +3645,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
     public field_f64: Array<number | undefined>;
     public field_bool: Array<boolean | undefined>;
     public static getSignature(): string { return 'StructExampleD'; }
+    public static getId(): number { return 43; }
 
 
     constructor(params: IStructExampleD)  {
@@ -3945,6 +3953,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
     public static getSignature(): string { return 'StructExampleE'; }
+    public static getId(): number { return 56; }
 
 
     constructor(params: IStructExampleE)  {
@@ -4120,6 +4129,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
     public static getSignature(): string { return 'StructExampleF'; }
+    public static getId(): number { return 60; }
 
 
     constructor(params: IStructExampleF)  {
@@ -4310,6 +4320,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
     public field_a: StructExampleA;
     public field_b: StructExampleB;
     public static getSignature(): string { return 'StructExampleG'; }
+    public static getId(): number { return 64; }
 
 
     constructor(params: IStructExampleG)  {
@@ -4442,6 +4453,7 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
     }
 
     public static getSignature(): string { return 'StructExampleEmpty'; }
+    public static getId(): number { return 67; }
 
 
     constructor(params: IStructExampleEmpty)  {
@@ -4540,6 +4552,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
     public field_b: StructExampleB | undefined;
     public field_c: StructExampleEmpty;
     public static getSignature(): string { return 'StructExampleJ'; }
+    public static getId(): number { return 68; }
 
 
     constructor(params: IStructExampleJ)  {
@@ -4676,6 +4689,7 @@ export namespace GroupA {
             }
             return err instanceof Error ? err : inst.get();
         }
+        public static getId(): number { return 73; }
         public from(obj: any): IEnumExampleA | Error {
             return EnumExampleA.from(obj);
         }
@@ -4787,6 +4801,7 @@ export namespace GroupA {
         public opt: IEnumExampleA;
         private _opt: Primitives.Enum;
         public static getSignature(): string { return 'StructExampleA'; }
+        public static getId(): number { return 74; }
 
 
         constructor(params: IStructExampleA)  {
@@ -4918,6 +4933,7 @@ export namespace GroupA {
         public field_u16: number;
         public strct: GroupA.StructExampleA;
         public static getSignature(): string { return 'StructExampleB'; }
+        public static getId(): number { return 78; }
 
 
         constructor(params: IStructExampleB)  {
@@ -5048,6 +5064,7 @@ export namespace GroupB {
         public field_u8: number;
         public field_u16: number;
         public static getSignature(): string { return 'StructExampleA'; }
+        public static getId(): number { return 83; }
 
 
         constructor(params: IStructExampleA)  {
@@ -5160,6 +5177,7 @@ export namespace GroupB {
             public field_u8: number;
             public field_u16: number;
             public static getSignature(): string { return 'StructExampleA'; }
+            public static getId(): number { return 87; }
 
 
             constructor(params: IStructExampleA)  {
@@ -5274,6 +5292,7 @@ export namespace GroupB {
             public field_u16: number;
             public strct: GroupB.GroupC.StructExampleA;
             public static getSignature(): string { return 'StructExampleB'; }
+            public static getId(): number { return 90; }
 
 
             constructor(params: IStructExampleB)  {
@@ -5365,6 +5384,7 @@ export namespace GroupD {
             }
             return err instanceof Error ? err : inst.get();
         }
+        public static getId(): number { return 99; }
         public from(obj: any): IEnumExampleP | Error {
             return EnumExampleP.from(obj);
         }
@@ -5509,6 +5529,7 @@ export namespace GroupD {
         public field_b: GroupB.StructExampleA;
         public field_c: GroupB.GroupC.StructExampleA;
         public static getSignature(): string { return 'StructExampleP'; }
+        public static getId(): number { return 95; }
 
 
         constructor(params: IStructExampleP)  {
@@ -5612,91 +5633,91 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleA: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleA: instance }, getRef: () => instance };
             case 2:
                 instance = new EnumExampleB();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleB: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleB: instance }, getRef: () => instance };
             case 3:
                 instance = new EnumExampleC();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleC: instance } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleC: instance }, getRef: () => instance };
             case 73:
                 instance = new GroupA.EnumExampleA();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } }, getRef: () => instance };
             case 99:
                 instance = new GroupD.EnumExampleP();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
-                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { EnumExampleP: instance } } };
+                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { EnumExampleP: instance } }, getRef: () => instance };
             case 4:
                 instance = StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleA: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleA: instance }, getRef: () => instance };
             case 17:
                 instance = StructExampleB.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleB: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleB: instance }, getRef: () => instance };
             case 30:
                 instance = StructExampleC.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleC: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleC: instance }, getRef: () => instance };
             case 43:
                 instance = StructExampleD.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleD: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleD: instance }, getRef: () => instance };
             case 56:
                 instance = StructExampleE.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleE: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleE: instance }, getRef: () => instance };
             case 60:
                 instance = StructExampleF.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleF: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleF: instance }, getRef: () => instance };
             case 64:
                 instance = StructExampleG.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleG: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleG: instance }, getRef: () => instance };
             case 67:
                 instance = StructExampleEmpty.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleEmpty: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleEmpty: instance }, getRef: () => instance };
             case 68:
                 instance = StructExampleJ.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleJ: instance } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleJ: instance }, getRef: () => instance };
             case 74:
                 instance = GroupA.StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleA: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleA: instance } }, getRef: () => instance };
             case 78:
                 instance = GroupA.StructExampleB.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleB: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleB: instance } }, getRef: () => instance };
             case 83:
                 instance = GroupB.StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { StructExampleA: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { StructExampleA: instance } }, getRef: () => instance };
             case 87:
                 instance = GroupB.GroupC.StructExampleA.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleA: instance } } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleA: instance } } }, getRef: () => instance };
             case 90:
                 instance = GroupB.GroupC.StructExampleB.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } }, getRef: () => instance };
             case 95:
                 instance = GroupD.StructExampleP.defaults();
                 err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } } };
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } }, getRef: () => instance };
         }
     }
 }

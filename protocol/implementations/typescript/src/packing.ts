@@ -9,7 +9,8 @@ export interface IAvailableMessage<T> {
         sequence: number;
         timestamp: BigInt;
     },
-    msg: T
+    msg: T,
+    getRef: <Z>() => Z,
 }
 
 export abstract class BufferReader<T> {
