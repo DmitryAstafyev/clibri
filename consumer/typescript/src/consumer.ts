@@ -1,5 +1,6 @@
 // tslint:disable: max-classes-per-file
 import { Client } from './client';
+import { ILogger } from './interfaces/logger.interface';
 
 import * as Protocol from './protocol/protocol';
 
@@ -7,6 +8,30 @@ import Subject from './tools/tools.subject';
 import Subscription from './tools/tools.subscription';
 import guid from './tools/tools.guid';
 import globals from './tools/tools.globals';
+
+export namespace ConsumerError {
+
+    export type TError = Handeling<any>;
+
+    export class Handeling<T> {
+        public request: T;
+        public message: string;
+        constructor(request: T, message: string) {
+            this.request = request;
+            this.message = message;
+        }
+    }
+
+    export class Requesting<T> {
+        public request: T;
+        public message: string;
+        constructor(request: T, message: string) {
+            this.request = request;
+            this.message = message;
+        }
+    }
+
+}
 
 export class Consumer {
 
@@ -27,10 +52,11 @@ export class Consumer {
     private readonly _subscriptions: { [key: string]: Subscription } = {};
     private readonly _pending: Map<number, (response: Protocol.IAvailableMessages) => void> = new Map();
     private readonly _buffer: Protocol.BufferReaderMessages = new Protocol.BufferReaderMessages();
+    private _sequence: number = 0;
 
     public readonly connected: Subject<void> = new Subject(`connected`);
     public readonly disconnected: Subject<void> = new Subject(`disconnected`);
-    public readonly error: Subject<Error> = new Subject(`error`);
+    public readonly error: Subject<ConsumerError.TError> = new Subject(`error`);
     public readonly incomes: {
         
     } = {
@@ -74,6 +100,20 @@ export class Consumer {
         return new Promise((resolve) => {
             this._pending.set(sequence, resolve);
         });
+    }
+
+    public getSequence(): number {
+        return this._sequence ++;
+    }
+
+    public logs(): ILogger {
+        return {
+            warm: (msg: string) => {},
+            err: (msg: string) => {},
+            debug: (msg: string) => {},
+            verb: (msg: string) => {},
+            info: (msg: string) => {},
+        };
     }
 
     private _onData(buffer: ArrayBufferLike) {
