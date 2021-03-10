@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Typescript implementation for Fiber's Protocol",
   "main": "./dist/index.js",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -p ./tsconfig.json & ./node_modules/.bin/webpack",
     "build-ts": "tsc -p ./tsconfig.json",
