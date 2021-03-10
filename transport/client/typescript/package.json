@@ -1,5 +1,5 @@
 {
-  "name": "fiber-protocol-ts",
+  "name": "fiber",
   "version": "0.0.1",
   "description": "Typescript implementation for Fiber's Protocol",
   "main": "./dist/index.js",
@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "build": "^0.1.4",
-    "fiber": "file:../../lib/typescript"
+    "fiber": "file:../../../lib/typescript"
   },
   "repository": {
     "type": "git",

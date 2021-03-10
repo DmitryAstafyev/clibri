@@ -1,5 +1,4 @@
-import Subject from './tools/tools.subject';
-import Subscription from './tools/tools.subscription';
+import Subject from '../tools/tools.subject';
 
 export interface IClient {
     connected: Subject<void>;

@@ -1,8 +1,7 @@
 import * as Protocol from '../protocol/protocol';
 
 import { Consumer } from '../consumer';
-
-import Subscription from '../tools/tools.subscription';
+import { Subscription } from 'fiber';
 
 export abstract class UserDisconnected {
 

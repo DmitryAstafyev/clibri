@@ -1,13 +1,9 @@
 // tslint:disable: max-classes-per-file
-import { Client } from './client';
+import { Client } from 'fiber';
 import { ILogger } from './interfaces/logger.interface';
+import { Subscription, Subject, guid, globals } from 'fiber';
 
 import * as Protocol from './protocol/protocol';
-
-import Subject from './tools/tools.subject';
-import Subscription from './tools/tools.subscription';
-import guid from './tools/tools.guid';
-import globals from './tools/tools.globals';
 
 export namespace ConsumerError {
 
