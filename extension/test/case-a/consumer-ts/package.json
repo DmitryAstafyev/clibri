@@ -1,0 +1,50 @@
+{
+  "name": "fiber",
+  "version": "0.0.1",
+  "description": "Typescript implementation for Fiber's Protocol",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json & ./node_modules/.bin/webpack",
+    "build-ts": "tsc -p ./tsconfig.json",
+    "build:watch": "tsc -p ./tsconfig.json -w",
+    "test": "./node_modules/.bin/jasmine-ts",
+    "tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
+  },
+  "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jasmine": "^3.5.4",
+    "@types/node": "^14.0.26",
+    "chai": "^4.2.0",
+    "jasmine": "^3.5.0",
+    "jasmine-core": "^3.5.0",
+    "jasmine-ts": "^0.3.0",
+    "source-map-loader": "^1.0.1",
+    "ts-loader": "^8.0.1",
+    "ts-node": "^8.6.2",
+    "tslint": "^6.0.0",
+    "typescript": "^3.5.3",
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {
+    "build": "^0.1.4",
+    "fiber": "file:../../../../lib/typescript",
+    "fiber-consumer": "file:../../../consumer/typescript",
+    "fiber-websocket": "file:../../../transport/client/typescript"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "resolutions": {
+    "websocket-extensions": ">=0.1.4",
+    "serialize-javascript": ">=2.1.2",
+    "minimist": ">=0.2.1",
+    "acorn": ">=6.4.1",
+    "kind-of": ">=6.0.3",
+    "mem": ">=4.0.0",
+    "lodash": ">=4.17.19"
+  }
+}
