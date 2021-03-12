@@ -3,6 +3,6 @@ import Subscription from './tools/tools.subscription';
 import guid from './tools/tools.guid';
 import globals from './tools/tools.globals';
 
-export { Client, IClientSubjects } from './interfaces/client,interface';
+export { Client, IClientSubjects } from './interfaces/client.interface';
 
 export { Subject, Subscription, guid, globals };

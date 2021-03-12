@@ -101,13 +101,10 @@ export class Consumer {
     }
 
     public destroy(): Promise<void> {
+        const global = globals();
         Object.keys(this._subscriptions).forEach(k => this._subscriptions[k].destroy());
         global[Consumer.GUID] = undefined;
         return this._client.destroy();
-    }
-
-    public connect(): Promise<void> {
-        return this._client.connect();
     }
 
     public request(buffer: ArrayBufferLike, sequence?: number): Promise<Protocol.IAvailableMessages> {
