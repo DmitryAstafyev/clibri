@@ -340,7 +340,7 @@ export function write(): Promise<void> {
                     if (errWrite) {
                         return reject(errWrite);
                     }
-                    console.log(`[TS] File: ${target} has beed written.`);
+                    console.log(`[OK]\t[TS] File: ${target} has beed written.`);
                     resolve(undefined);
                 });
             });

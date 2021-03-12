@@ -507,7 +507,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleA::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleA_a(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.a.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.a.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -520,7 +520,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleA::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleA_b(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.b.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.b.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -533,7 +533,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_str(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.str.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.str.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -546,7 +546,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_u8(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u8.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u8.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -559,7 +559,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_u16(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u16.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u16.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -572,7 +572,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_u32(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u32.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u32.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -585,7 +585,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_u64(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u64.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u64.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -598,7 +598,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_i8(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i8.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i8.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -611,7 +611,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_i16(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i16.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i16.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -624,7 +624,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_i32(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i32.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i32.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -637,7 +637,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_i64(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i64.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i64.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -650,7 +650,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_f32(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f32.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f32.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -663,7 +663,7 @@ pub fn read() -> Result<(), String> {
             match EnumExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_EnumExampleB_f64(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f64.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f64.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -676,7 +676,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleA::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleA(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleA.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -689,7 +689,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleB(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleB.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleB.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -702,7 +702,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleC::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleC(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleC.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleC.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -715,7 +715,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleD::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleD(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleD.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleD.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -728,7 +728,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleE::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleE(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleE.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleE.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -741,7 +741,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleF::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleF(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleF.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleF.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -754,7 +754,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleG::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleG(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleG.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleG.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -767,7 +767,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleJ::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleJ(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleJ.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleJ.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -780,7 +780,7 @@ pub fn read() -> Result<(), String> {
             match StructExampleEmpty::decode(&buf) {
                 Ok(entity) => {
                     check_StructExampleEmpty(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleEmpty.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleEmpty.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -794,7 +794,7 @@ pub fn read() -> Result<(), String> {
             match GroupA::StructExampleA::decode(&buf) {
                 Ok(entity) => {
                     check_GroupAStructExampleA(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleA.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -807,7 +807,7 @@ pub fn read() -> Result<(), String> {
             match GroupA::StructExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_GroupAStructExampleB(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleB.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleB.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -820,7 +820,7 @@ pub fn read() -> Result<(), String> {
             match GroupB::StructExampleA::decode(&buf) {
                 Ok(entity) => {
                     check_GroupBStructExampleA(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupBStructExampleA.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupBStructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -833,7 +833,7 @@ pub fn read() -> Result<(), String> {
             match GroupB::GroupC::StructExampleA::decode(&buf) {
                 Ok(entity) => {
                     check_GroupCStructExampleA(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleA.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleA.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -846,7 +846,7 @@ pub fn read() -> Result<(), String> {
             match GroupB::GroupC::StructExampleB::decode(&buf) {
                 Ok(entity) => {
                     check_GroupCStructExampleB(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleB.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleB.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -859,7 +859,7 @@ pub fn read() -> Result<(), String> {
             match GroupD::StructExampleP::decode(&buf) {
                 Ok(entity) => {
                     check_GroupDStructExampleP(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDStructExampleP.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDStructExampleP.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -872,7 +872,7 @@ pub fn read() -> Result<(), String> {
             match GroupD::EnumExampleP::decode(&buf) {
                 Ok(entity) => {
                     check_GroupDEnumExamplePOption_a(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_a.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_a.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -885,7 +885,7 @@ pub fn read() -> Result<(), String> {
             match GroupD::EnumExampleP::decode(&buf) {
                 Ok(entity) => {
                     check_GroupDEnumExamplePOption_b(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_b.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_b.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -898,7 +898,7 @@ pub fn read() -> Result<(), String> {
             match GroupD::EnumExampleP::decode(&buf) {
                 Ok(entity) => {
                     check_GroupDEnumExamplePOption_c(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_c.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_c.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -911,7 +911,7 @@ pub fn read() -> Result<(), String> {
             match GroupD::EnumExampleP::decode(&buf) {
                 Ok(entity) => {
                     check_GroupDEnumExamplePOption_d(entity);
-                    println!("[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_d.prot.bin"));
+                    println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_d.prot.bin"));
                 },
                 Err(e) => panic!(e)
             }
@@ -936,12 +936,12 @@ pub fn read() -> Result<(), String> {
                         AvailableMessages::EnumExampleA(entity) => match entity {
                             EnumExampleA::Option_a(entity) => {
                                 check_EnumExampleA_a(EnumExampleA::Option_a(entity));
-                                println!("Package AvailableMessages::EnumExampleA::Option_a is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleA::Option_a is OK");
                                 done += 1;
                             },
                             EnumExampleA::Option_b(entity) => {
                                 check_EnumExampleA_b(EnumExampleA::Option_b(entity));
-                                println!("Package AvailableMessages::EnumExampleA::Option_b is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleA::Option_b is OK");
                                 done += 1;
                             },
                             _ => {},
@@ -949,115 +949,115 @@ pub fn read() -> Result<(), String> {
                         AvailableMessages::EnumExampleB(entity) => match entity {
                             EnumExampleB::Option_str(entity) => {
                                 check_EnumExampleB_str(EnumExampleB::Option_str(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_str is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_str is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_u8(entity) => {
                                 check_EnumExampleB_u8(EnumExampleB::Option_u8(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_u8 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_u8 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_u16(entity) => {
                                 check_EnumExampleB_u16(EnumExampleB::Option_u16(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_u16 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_u16 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_u32(entity) => {
                                 check_EnumExampleB_u32(EnumExampleB::Option_u32(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_u32 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_u32 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_u64(entity) => {
                                 check_EnumExampleB_u64(EnumExampleB::Option_u64(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_u64 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_u64 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_i8(entity) => {
                                 check_EnumExampleB_i8(EnumExampleB::Option_i8(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_i8 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_i8 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_i16(entity) => {
                                 check_EnumExampleB_i16(EnumExampleB::Option_i16(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_i16 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_i16 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_i32(entity) => {
                                 check_EnumExampleB_i32(EnumExampleB::Option_i32(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_i32 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_i32 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_i64(entity) => {
                                 check_EnumExampleB_i64(EnumExampleB::Option_i64(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_i64 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_i64 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_f32(entity) => {
                                 check_EnumExampleB_f32(EnumExampleB::Option_f32(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_f32 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_f32 is OK");
                                 done += 1;
                             },
                             EnumExampleB::Option_f64(entity) => {
                                 check_EnumExampleB_f64(EnumExampleB::Option_f64(entity));
-                                println!("Package AvailableMessages::EnumExampleB::Option_f64 is OK");
+                                println!("[OK]\tPackage AvailableMessages::EnumExampleB::Option_f64 is OK");
                                 done += 1;
                             },
                             _ => {}
                         }
                         AvailableMessages::StructExampleA(entity) => {
                             check_StructExampleA(entity);
-                            println!("Package AvailableMessages::StructExampleA is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleA is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleB(entity) => {
                             check_StructExampleB(entity);
-                            println!("Package AvailableMessages::StructExampleB is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleB is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleC(entity) => {
                             check_StructExampleC(entity);
-                            println!("Package AvailableMessages::StructExampleC is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleC is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleD(entity) => {
                             check_StructExampleD(entity);
-                            println!("Package AvailableMessages::StructExampleD is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleD is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleE(entity) => {
                             check_StructExampleE(entity);
-                            println!("Package AvailableMessages::StructExampleE is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleE is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleF(entity) => {
                             check_StructExampleF(entity);
-                            println!("Package AvailableMessages::StructExampleF is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleF is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleG(entity) => {
                             check_StructExampleG(entity);
-                            println!("Package AvailableMessages::StructExampleG is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleG is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleJ(entity) => {
                             check_StructExampleJ(entity);
-                            println!("Package AvailableMessages::StructExampleJ is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleJ is OK");
                             done += 1;
                         },
                         AvailableMessages::StructExampleEmpty(entity) => {
                             check_StructExampleEmpty(entity);
-                            println!("Package AvailableMessages::StructExampleEmpty is OK");
+                            println!("[OK]\tPackage AvailableMessages::StructExampleEmpty is OK");
                             done += 1;
                         },
                         AvailableMessages::GroupA(entity) => match entity {
                             GroupA::AvailableMessages::StructExampleA(entity) => {
                                 check_GroupAStructExampleA(entity);
-                                println!("Package GroupA::AvailableMessages::StructExampleA is OK");
+                                println!("[OK]\tPackage GroupA::AvailableMessages::StructExampleA is OK");
                                 done += 1;
                             },
                             GroupA::AvailableMessages::StructExampleB(entity) => {
                                 check_GroupAStructExampleB(entity);
-                                println!("Package GroupA::AvailableMessages::StructExampleB is OK");
+                                println!("[OK]\tPackage GroupA::AvailableMessages::StructExampleB is OK");
                                 done += 1;
                             },
                             _ => {}
@@ -1065,18 +1065,18 @@ pub fn read() -> Result<(), String> {
                         AvailableMessages::GroupB(entity) => match entity {
                             GroupB::AvailableMessages::StructExampleA(entity) => {
                                 check_GroupBStructExampleA(entity);
-                                println!("Package GroupB::AvailableMessages::StructExampleA is OK");
+                                println!("[OK]\tPackage GroupB::AvailableMessages::StructExampleA is OK");
                                 done += 1;
                             },
                             GroupB::AvailableMessages::GroupC(entity) => match entity {
                                 GroupB::GroupC::AvailableMessages::StructExampleA(entity) => {
                                     check_GroupCStructExampleA(entity);
-                                    println!("Package GroupB::GroupC::AvailableMessages::StructExampleA is OK");
+                                    println!("[OK]\tPackage GroupB::GroupC::AvailableMessages::StructExampleA is OK");
                                     done += 1;
                                 },
                                 GroupB::GroupC::AvailableMessages::StructExampleB(entity) => {
                                     check_GroupCStructExampleB(entity);
-                                    println!("Package GroupB::GroupC::AvailableMessages::StructExampleB is OK");
+                                    println!("[OK]\tPackage GroupB::GroupC::AvailableMessages::StructExampleB is OK");
                                     done += 1;
                                 }
                             },
@@ -1084,28 +1084,28 @@ pub fn read() -> Result<(), String> {
                         AvailableMessages::GroupD(entity) => match entity {
                             GroupD::AvailableMessages::StructExampleP(entity) => {
                                 check_GroupDStructExampleP(entity);
-                                println!("Package GroupD::AvailableMessages::StructExampleP is OK");
+                                println!("[OK]\tPackage GroupD::AvailableMessages::StructExampleP is OK");
                                 done += 1;
                             },
                             GroupD::AvailableMessages::EnumExampleP(entity) => match entity {
                                 GroupD::EnumExampleP::Option_a(entity) => {
                                     check_GroupDEnumExamplePOption_a(GroupD::EnumExampleP::Option_a(entity));
-                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_a is OK");
+                                    println!("[OK]\tPackage GroupD::AvailableMessages::EnumExampleP.Option_a is OK");
                                     done += 1;
                                 },
                                 GroupD::EnumExampleP::Option_b(entity) => {
                                     check_GroupDEnumExamplePOption_b(GroupD::EnumExampleP::Option_b(entity));
-                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_b is OK");
+                                    println!("[OK]\tPackage GroupD::AvailableMessages::EnumExampleP.Option_b is OK");
                                     done += 1;
                                 },
                                 GroupD::EnumExampleP::Option_c(entity) => {
                                     check_GroupDEnumExamplePOption_c(GroupD::EnumExampleP::Option_c(entity));
-                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_c is OK");
+                                    println!("[OK]\tPackage GroupD::AvailableMessages::EnumExampleP.Option_c is OK");
                                     done += 1;
                                 },
                                 GroupD::EnumExampleP::Option_d(entity) => {
                                     check_GroupDEnumExamplePOption_d(GroupD::EnumExampleP::Option_d(entity));
-                                    println!("Package GroupD::AvailableMessages::EnumExampleP.Option_d is OK");
+                                    println!("[OK]\tPackage GroupD::AvailableMessages::EnumExampleP.Option_d is OK");
                                     done += 1;
                                 },
                                 _ => {},
@@ -1117,11 +1117,11 @@ pub fn read() -> Result<(), String> {
                     break;
                 }
             }
-            println!("[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
+            println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./buffer.prot.bin"));
             if buffer.pending() != 0 || buffer.len() != 0 || count != 32 || count != done {
                 panic!("Fail to read buffer correctly: \n- buffer.pending(): {}\n- buffer.len(): {}\n- count: {}", buffer.pending(), buffer.len(), count);
             }
-            println!("Packages: {}; done: {}", count, done);
+            println!("[OK]\tPackages: {}; done: {}", count, done);
         },
         Err(e) => panic!(e),
     }
