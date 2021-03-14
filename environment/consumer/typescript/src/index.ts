@@ -1,13 +1,12 @@
+// tslint:disable: max-classes-per-file
+
 import { UserJoin } from './declarations/observer.UserJoin';
 import { UserLogout } from './declarations/observer.UserLogout';
 import { UserSignIn } from './declarations/observer.UserSignIn';
 import { UserConnected } from './declarations/observer.UserConnected';
 import { UserDisconnected } from './declarations/observer.UserDisconnected';
-
-// tslint:disable: max-classes-per-file
-import { Client } from 'fiber';
-import { ILogger } from './interfaces/logger.interface';
-import { Subscription, Subject, guid, globals } from 'fiber';
+import { Client, Logger, Subscription, Subject, guid, globals } from 'fiber';
+import { IOptions, Options } from './options';
 
 import * as Protocol from './protocol/protocol';
 
@@ -69,6 +68,8 @@ export class Consumer {
     private readonly _subscriptions: { [key: string]: Subscription } = {};
     private readonly _pending: Map<number, (response: Protocol.IAvailableMessages) => void> = new Map();
     private readonly _buffer: Protocol.BufferReaderMessages = new Protocol.BufferReaderMessages();
+    private readonly _logger: Logger;
+    private readonly _options: Options;
     private _sequence: number = 0;
 
     public readonly connected: Subject<void> = new Subject(`connected`);
@@ -82,8 +83,10 @@ export class Consumer {
         UserDisconnected: new Subject<Protocol.UserDisconnected>(),
     };
 
-    constructor(client: Client) {
+    constructor(client: Client, options?: IOptions) {
         this._client = client;
+        this._options = new Options(`Consumer ${Consumer.GUID}`, options);
+        this._logger = this._options.logger;
         const global = globals();
         if (global instanceof Error) {
             throw global;
@@ -111,7 +114,7 @@ export class Consumer {
 
     public request(buffer: ArrayBufferLike, sequence?: number): Promise<Protocol.IAvailableMessages> {
         if (sequence !== undefined && this._pending.has(sequence)) {
-            return Promise.reject(new Error(`Request with sequence #${sequence} has been already sent and pending for response`));
+            return Promise.reject(new Error(this._logger.debug(`Request with sequence #${sequence} has been already sent and pending for response`)));
         }
         const error: Error | undefined = this._client.send(buffer);
         if (error instanceof Error) {
@@ -129,20 +132,10 @@ export class Consumer {
         return this._sequence ++;
     }
 
-    public logs(): ILogger {
-        return {
-            warm: (msg: string) => {},
-            err: (msg: string) => {},
-            debug: (msg: string) => {},
-            verb: (msg: string) => {},
-            info: (msg: string) => {},
-        };
-    }
-
     private _onData(buffer: ArrayBufferLike) {
         const errors: Error[] | undefined = this._buffer.chunk(buffer);
         if (errors instanceof Array) {
-            // Here is logs messages
+            this._logger.err(`Fail to process chunk of data due error(s):\n\t${errors.map(e => e.message).join('\n\t')}`)
             return;
         }
         do {
@@ -155,7 +148,8 @@ export class Consumer {
                 this._pending.delete(msg.header.sequence);
                 pending(msg.msg);
             } else {
-                switch (msg.getRef<any>().getId()) {
+                const id: number = msg.getRef<any>().getId();
+                switch (id) {
                     case Protocol.UserConnected.getId():
                         this.broadcast.UserConnected.emit(msg.getRef<Protocol.UserConnected>());
                         break;
@@ -163,7 +157,7 @@ export class Consumer {
                         this.broadcast.UserDisconnected.emit(msg.getRef<Protocol.UserDisconnected>());
                         break;
                     default:
-                        // Here is logs messages
+                        this._logger.warn(`Has been gotten unexpected message ID=${id}.`)
                         break;
                 }
             }

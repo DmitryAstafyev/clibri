@@ -12,6 +12,7 @@ export class Connection extends Client {
         rejector: (err: Error) => void;
     } | undefined;
     private _timeout: any = -1;
+    private _logger: Logger;
     private readonly _address: string;
     private readonly _options: ConnectionOptions;
     private readonly _subjects: IClientSubjects = {
@@ -25,6 +26,7 @@ export class Connection extends Client {
         super();
         this._address = addr;
         this._options = new ConnectionOptions('Connection', options);
+        this._logger = this._options.logger;
         this._events.open = this._events.open.bind(this);
         this._events.close = this._events.close.bind(this);
         this._events.message = this._events.message.bind(this);
@@ -36,7 +38,7 @@ export class Connection extends Client {
 
     public send(buffer: ArrayBufferLike): Error | undefined {
         if (!this._connected || this._socket === undefined) {
-            return new Error(`Client isn't connected`);
+            return new Error(this._logger.debug(`Client isn't connected`));
         }
         this._socket.send(buffer);
     }
@@ -44,10 +46,10 @@ export class Connection extends Client {
     public connect(): Promise<void> {
         clearTimeout(this._timeout);
         if (this._pending !== undefined) {
-            return Promise.reject(new Error(`Connection is already requested`));
+            return Promise.reject(new Error(this._logger.debug(`Connection is already requested`)));
         }
         if (this._connected || this._socket !== undefined) {
-            return Promise.reject(new Error(`Already connected`));
+            return Promise.reject(new Error(this._logger.debug(`Already connected`)));
         }
         return new Promise((resolve, reject) => {
             this._pending = {
@@ -86,7 +88,7 @@ export class Connection extends Client {
         this._timeout = setTimeout(() => {
             this._open();
         }, this._options.reconnect);
-        this._options.logger.debug(`Will reconnect in ${this._options.reconnect} ms`);
+        this._logger.debug(`Will reconnect in ${this._options.reconnect} ms`);
     }
 
     private _drop() {
@@ -115,7 +117,7 @@ export class Connection extends Client {
         },
         message: (event: MessageEvent) => { 
             if (!(event.data instanceof Blob)) {
-                this._subjects.error.emit(new Error(`Expecting only Blob data`));
+                this._subjects.error.emit(new Error(this._logger.debug(`Expecting only Blob data`)));
                 return;
             }
             event.data.arrayBuffer().then((buffer: ArrayBuffer) => {
@@ -127,17 +129,17 @@ export class Connection extends Client {
         error: (event: Event) => {
             this._connected = false;
             if (this._pending !== undefined) {
-                this._pending.rejector(new Error(`Fail to connect`));
+                this._pending.rejector(new Error(this._logger.debug(`Fail to connect`)));
                 this._pending = undefined;
             }
-            this._subjects.error.emit(new Error(`Connection error`));
+            this._subjects.error.emit(new Error(this._logger.debug(`Connection error`)));
             this._close();
         }
     }
 
     private _open() {
         if (this._socket !== undefined) {
-            throw new Error(`Attempt to open socket while current isn't closed`);
+            throw new Error(this._logger.err(`Attempt to open socket while current isn't closed`));
         }
         this._socket = new WebSocket(this._address);
         this._socket.addEventListener('open', this._events.open);
@@ -156,7 +158,6 @@ export class Connection extends Client {
             this._socket = undefined;
         }
         this._reconnect();
-
     }
 
 }
