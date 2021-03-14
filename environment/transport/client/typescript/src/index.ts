@@ -1,9 +1,7 @@
-import { Client, Subject, IClientSubjects } from 'fiber';
+import { Client, Subject, IClientSubjects, Logger, ELogLevel } from 'fiber';
+import { IConnectionOptions, ConnectionOptions } from './options';
 
-export class IConnectionOptions {
-    autoconnect: boolean;
-    reconnect: number;
-}
+Logger.setGlobalLevel(ELogLevel.verb);
 
 export class Connection extends Client {
 
@@ -15,7 +13,7 @@ export class Connection extends Client {
     } | undefined;
     private _timeout: any = -1;
     private readonly _address: string;
-    private readonly _options: IConnectionOptions;
+    private readonly _options: ConnectionOptions;
     private readonly _subjects: IClientSubjects = {
         connected: new Subject<void>('connected'),
         disconnected: new Subject<void>('disconnected'),
@@ -23,10 +21,10 @@ export class Connection extends Client {
         data: new Subject<ArrayBufferLike>('data'),
     };
 
-    constructor(addr: string, options: IConnectionOptions = { autoconnect: true, reconnect: 5000 }) {
+    constructor(addr: string, options?: IConnectionOptions) {
         super();
         this._address = addr;
-        this._options = options;
+        this._options = new ConnectionOptions('Connection', options);
         this._events.open = this._events.open.bind(this);
         this._events.close = this._events.close.bind(this);
         this._events.message = this._events.message.bind(this);
@@ -45,7 +43,6 @@ export class Connection extends Client {
 
     public connect(): Promise<void> {
         clearTimeout(this._timeout);
-        this._options.reconnect = -1;
         if (this._pending !== undefined) {
             return Promise.reject(new Error(`Connection is already requested`));
         }
@@ -62,13 +59,13 @@ export class Connection extends Client {
     }
 
     public disconnect(): Promise<void> {
-        this._dropReconnection();
+        this._drop();
         this._close();
         return Promise.resolve(undefined);
     }
 
     public destroy(): Promise<void> {
-        this._dropReconnection();
+        this._drop();
         this._close();
         this._pending = undefined;
         Object.keys(this._subjects).forEach((key: string) => {
@@ -82,13 +79,17 @@ export class Connection extends Client {
     }
 
     private _reconnect() {
+        if (this._options.reconnect <= 0) {
+            return;
+        }
         clearTimeout(this._timeout);
         this._timeout = setTimeout(() => {
             this._open();
         }, this._options.reconnect);
+        this._options.logger.debug(`Will reconnect in ${this._options.reconnect} ms`);
     }
 
-    private _dropReconnection() {
+    private _drop() {
         this._options.reconnect = -1;
         clearTimeout(this._timeout);
     }
@@ -109,9 +110,7 @@ export class Connection extends Client {
         },
         close: () => {
             this._connected = false;
-            if (this._options.reconnect > 0) {
-                this._reconnect();
-            }
+            this._close();
             this._subjects.disconnected.emit();
         },
         message: (event: MessageEvent) => { 
@@ -132,6 +131,7 @@ export class Connection extends Client {
                 this._pending = undefined;
             }
             this._subjects.error.emit(new Error(`Connection error`));
+            this._close();
         }
     }
 
@@ -147,15 +147,16 @@ export class Connection extends Client {
     }
 
     private _close() {
-        if (this._socket === undefined) {
-            return;
+        if (this._socket !== undefined) {
+            this._socket.removeEventListener('open', this._events.open);
+            this._socket.removeEventListener('message', this._events.message);
+            this._socket.removeEventListener('close', this._events.close);
+            this._socket.removeEventListener('error', this._events.error);
+            this._socket.close();
+            this._socket = undefined;
         }
-        this._socket.removeEventListener('open', this._events.open);
-        this._socket.removeEventListener('message', this._events.message);
-        this._socket.removeEventListener('close', this._events.close);
-        this._socket.removeEventListener('error', this._events.error);
-        this._socket.close();
-        this._socket = undefined;
+        this._reconnect();
+
     }
 
 }

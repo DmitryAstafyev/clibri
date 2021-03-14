@@ -93,11 +93,13 @@ export class Consumer {
         }
         this._subscriptions.data = this._client.getEvents().data.subscribe(this._onData.bind(this));
         global[Consumer.GUID] = this;
-        ((subject: Subject<Consumer>) => {
-            subject.emit(this);
-            subject.destroy();
-        })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
-        global[Consumer.GUID_SUBS] = undefined;
+        if (global[Consumer.GUID_SUBS] !== undefined) {
+            ((subject: Subject<Consumer>) => {
+                subject.emit(this);
+                subject.destroy();
+            })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
+            global[Consumer.GUID_SUBS] = undefined;
+        }
     }
 
     public destroy(): Promise<void> {

@@ -5,7 +5,7 @@ module.exports = {
         filename: "index.js",
         path: __dirname + "/dist",
         libraryTarget: 'umd',
-        library: 'fiber',
+        library: 'fiber-case-a',
         umdNamedDefine: true
     },
     // Enable sourcemaps for debugging webpack's output.
