@@ -22,7 +22,7 @@ pub trait Controller {
         event: &Event,
         ucx: UCX,
         broadcasting: &dyn Fn(
-            Protocol::Identification,
+            Protocol::Identification::Key,
             EFilterMatchCondition,
             Broadcasting,
         ) -> Result<(), String>,
@@ -43,7 +43,7 @@ pub trait Controller {
                 match receiver.recv() {
                     Ok(event) => {
                         let broadcast =
-                            |filter: Protocol::Identification,
+                            |filter: Protocol::Identification::Key,
                              condition: EFilterMatchCondition,
                              broadcast: Broadcasting| {
                                 broadcasting(consumers.clone(), filter, condition, broadcast)

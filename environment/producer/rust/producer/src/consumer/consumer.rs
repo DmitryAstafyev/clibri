@@ -32,7 +32,7 @@ impl Context for Cx {
     fn send_to(
         &self,
         buffer: Vec<u8>,
-        filter: Protocol::Identification,
+        filter: Protocol::Identification::Key,
         condition: EFilterMatchCondition,
     ) -> Result<(), String> {
         match self.consumers.write() {
@@ -109,7 +109,7 @@ impl Consumer {
     pub fn send_if(
         &self,
         buffer: Vec<u8>,
-        filter: Protocol::Identification,
+        filter: Protocol::Identification::Key,
         condition: EFilterMatchCondition,
     ) -> Result<bool, String> {
         if self.identification.filter(filter, condition) {
@@ -129,5 +129,14 @@ impl Consumer {
 
     pub fn get_uuid(&self) -> Uuid {
         self.uuid
+    }
+
+    pub fn assign(&mut self, key: Protocol::Identification::Key) -> String {
+        self.identification.set(key);
+        self.uuid.to_string()
+    }
+
+    pub fn assigned(&self) -> bool {
+        self.identification.assigned()
     }
 }

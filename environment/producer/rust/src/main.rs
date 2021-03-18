@@ -15,8 +15,7 @@ use producer::EventUserConnected::{
 use producer::*;
 use producer::consumer_identification::EFilterMatchCondition;
 use std::sync::{Arc, RwLock};
-use std::thread::spawn;
-use std::collections::HashMap;
+// use std::thread::spawn;
 
 #[derive(Clone)]
 struct CustomContext {}
@@ -61,7 +60,7 @@ impl EventUserConnectedController for EventUserConnectedObserver {
         event: &producer::EventUserConnected::Event,
         ucx: WrappedCustomContext,
         broadcasting: &dyn Fn(
-            producer::protocol::Identification,
+            producer::protocol::Identification::Key,
             EFilterMatchCondition,
             Broadcasting,
         ) -> Result<(), String>,
@@ -95,7 +94,7 @@ fn main() {
                 match feedback.events.recv() {
                     Ok(m) => {
                         match m {
-                            producer::ProducerEvents::Connected(ucx) => {
+                            producer::ProducerEvents::Connected(_ucx) => {
                                 println!("Connected");
                             },
                             producer::ProducerEvents::ServerDown => {
@@ -128,6 +127,9 @@ fn main() {
                             producer::ProducerEvents::EventListenError(e) => {
                                 println!("EventListenError: {}", e);
                             },
+                            producer::ProducerEvents::NotAssignedConsumer(e) => {
+                                println!("NotAssignedConsumer: {}", e);
+                            }
                         }
                     },
                     Err(e) => {

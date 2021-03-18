@@ -10,20 +10,22 @@ pub enum EFilterMatchCondition {
 
 #[derive(Debug, Clone)]
 pub struct Identification {
-    fp: Protocol::Identification,
+    fp: Protocol::Identification::Key,
+    assigned: bool,
 }
 
 impl Identification {
 
     pub fn new() -> Self {
-        Identification { fp: Protocol::Identification::defaults() }
+        Identification { fp: Protocol::Identification::Key::defaults(), assigned: false }
     }
 
-    pub fn set(&mut self, fp: Protocol::Identification) {
+    pub fn set(&mut self, fp: Protocol::Identification::Key) {
         self.fp = fp;
+        self.assigned = true;
     }
 
-    pub fn filter(&self, request: Protocol::Identification, condition: EFilterMatchCondition) -> bool {
+    pub fn filter(&self, request: Protocol::Identification::Key, condition: EFilterMatchCondition) -> bool {
         match condition {
             EFilterMatchCondition::Equal => {
                 if self.fp.id == request.id && 
@@ -44,6 +46,10 @@ impl Identification {
                 }
             },
         }
+    }
+
+    pub fn assigned(&self) -> bool {
+        self.assigned
     }
 
 }
