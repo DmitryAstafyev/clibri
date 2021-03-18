@@ -2,6 +2,7 @@ use super::consumer::Consumer;
 use super::consumer_identification::EFilterMatchCondition;
 use super::logger::Logger;
 use super::{broadcasting, Broadcasting,ProducerEvents};
+use super::Protocol;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -21,7 +22,7 @@ pub trait Controller {
         event: &Event,
         ucx: UCX,
         broadcasting: &dyn Fn(
-            HashMap<String, String>,
+            Protocol::Identification,
             EFilterMatchCondition,
             Broadcasting,
         ) -> Result<(), String>,
@@ -42,7 +43,7 @@ pub trait Controller {
                 match receiver.recv() {
                     Ok(event) => {
                         let broadcast =
-                            |filter: HashMap<String, String>,
+                            |filter: Protocol::Identification,
                              condition: EFilterMatchCondition,
                              broadcast: Broadcasting| {
                                 broadcasting(consumers.clone(), filter, condition, broadcast)

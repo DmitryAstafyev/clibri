@@ -1,3 +1,9 @@
+struct Identification {
+    str uuid;
+    u64 id?;
+    str location?;
+}
+
 enum UserRole {
     Admin;
     User;

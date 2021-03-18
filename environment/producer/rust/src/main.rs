@@ -1,7 +1,8 @@
 #[path = "../producer/src/lib.rs"]
 pub mod producer;
 
-use fiber_transport_server::server::Server;
+use fiber_transport_server::server::{ Server };
+use fiber_transport_server::{ ErrorResponse, Request, Response };
 use producer::UserJoinObserver::{
     Observer as UserJoinObserver, ObserverRequest as UserJoinObserverRequest,
 };
@@ -60,7 +61,7 @@ impl EventUserConnectedController for EventUserConnectedObserver {
         event: &producer::EventUserConnected::Event,
         ucx: WrappedCustomContext,
         broadcasting: &dyn Fn(
-            HashMap<String, String>,
+            producer::protocol::Identification,
             EFilterMatchCondition,
             Broadcasting,
         ) -> Result<(), String>,
@@ -70,14 +71,72 @@ impl EventUserConnectedController for EventUserConnectedObserver {
 }
 
 fn main() {
-
-    spawn(move || {
-        let server: Server = Server::new(String::from("127.0.0.1:8080"));
+    /*
+        spawn(move || {
+            let server: Server = Server::new(String::from("127.0.0.1:8080"));
+            let ucx = CustomContext {};
+            // let mut producer: ProducerInstance = ProducerInstance {};
+            let _feedback = match ProducerInstance::listen(server, Arc::new(RwLock::new(ucx)), None) {
+                Ok(feedback) => feedback,
+                Err(e) => panic!(e),
+            };
+        });
+        */
+        let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
+        if let Err(e) = server.handshake(|_: &Request, res: Response| -> Result<Response, ErrorResponse> {
+            Ok(res)
+        }) {
+            println!("Fail to assign handshake hadler due error: {}", e);
+        }
         let ucx = CustomContext {};
         // let mut producer: ProducerInstance = ProducerInstance {};
         let _feedback = match ProducerInstance::listen(server, Arc::new(RwLock::new(ucx)), None) {
-            Ok(feedback) => feedback,
+            Ok(feedback) => loop {
+                match feedback.events.recv() {
+                    Ok(m) => {
+                        match m {
+                            producer::ProducerEvents::Connected(ucx) => {
+                                println!("Connected");
+                            },
+                            producer::ProducerEvents::ServerDown => {
+                                println!("ServerDown");
+                            },
+                            producer::ProducerEvents::Disconnected => {
+                                println!("Disconnected");
+                            },
+                            producer::ProducerEvents::InternalError(e) => {
+                                println!("InternalError: {}", e);
+                            },
+                            producer::ProducerEvents::EmitError(e) => {
+                                println!("EmitError: {}", e);
+                            },
+                            producer::ProducerEvents::EventError(e) => {
+                                println!("EventError: {}", e);
+                            },
+                            producer::ProducerEvents::EventChannelError(e) => {
+                                println!("EventChannelError: {}", e);
+                            },
+                            producer::ProducerEvents::ConnectionError(e) => {
+                                println!("ConnectionError: {}", e);
+                            },
+                            producer::ProducerEvents::ServerError(e) => {
+                                println!("ServerError: {}", e);
+                            },
+                            producer::ProducerEvents::Reading(e) => {
+                                println!("Reading: {}", e);
+                            },
+                            producer::ProducerEvents::EventListenError(e) => {
+                                println!("EventListenError: {}", e);
+                            },
+                        }
+                    },
+                    Err(e) => {
+                        panic!("Error on events: {:?}", e);
+                    }
+                }
+            },
             Err(e) => panic!(e),
         };
-    });
-}
+        
+    }
+    

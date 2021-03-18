@@ -4,7 +4,6 @@ use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::EFilterMatchCondition;
 use super::{ Broadcasting };
 use super::Protocol;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum Conclusion {
@@ -29,7 +28,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
@@ -39,7 +38,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
@@ -49,7 +48,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
@@ -60,7 +59,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(HashMap<String, String>, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         let error = |mut error: Protocol::UserJoin::Err| {
             match error.abduct() {

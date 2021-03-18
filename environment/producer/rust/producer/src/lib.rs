@@ -67,7 +67,7 @@ impl Logger for DefaultLogger {}
 
 pub fn broadcasting(
     consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
-    filter: HashMap<String, String>,
+    filter: Protocol::Identification,
     condition: EFilterMatchCondition,
     broadcast: Broadcasting,
 ) -> Result<(), String> {
@@ -99,8 +99,8 @@ pub fn broadcasting(
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 pub struct Channel<UCX> where UCX: 'static + Sync + Send + Clone {
-    events: Receiver<ProducerEvents<UCX>>,
-    EventUserConnectedSender: Sender<EventUserConnected::Event>,
+    pub events: Receiver<ProducerEvents<UCX>>,
+    pub EventUserConnectedSender: Sender<EventUserConnected::Event>,
 }
 
 #[allow(unused_variables)]
@@ -211,7 +211,7 @@ where
                             ServerEvents::Received(uuid, buffer) => match consumers_wp.write() {
                                 Ok(mut consumers) => {
                                     if let Some(consumer) = consumers.get_mut(&uuid) {
-                                        let broadcast = |filter: HashMap<String, String>, condition: EFilterMatchCondition, broadcast: Broadcasting| {
+                                        let broadcast = |filter: Protocol::Identification, condition: EFilterMatchCondition, broadcast: Broadcasting| {
                                                 broadcasting(consumers_wp.clone(), filter, condition, broadcast)
                                             };
                                         if let Err(e) = consumer.chunk(&buffer) {

@@ -1,55 +1,49 @@
-use std::collections::HashMap;
+use super::Protocol;
 use std::cmp::{ PartialEq, Eq };
+use Protocol::StructDecode;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EFilterMatchCondition {
-    All,
-    AtLeastOne,
+    PartialEqual,
     Equal,
 }
 
 #[derive(Debug, Clone)]
 pub struct Identification {
-    fp: HashMap<String, String>,
+    fp: Protocol::Identification,
 }
 
 impl Identification {
 
     pub fn new() -> Self {
-        Identification { fp: HashMap::new() }
+        Identification { fp: Protocol::Identification::defaults() }
     }
 
-    pub fn set(&mut self, fp: HashMap<String, String>) {
-        for (key, value) in fp {
-            self.fp.remove(&key);
-            self.fp.insert(key, value);
-        }
+    pub fn set(&mut self, fp: Protocol::Identification) {
+        self.fp = fp;
     }
 
-    pub fn remove(&mut self, key: String) {
-        self.fp.remove(&key);
-    }
-
-    pub fn filter(&self, request: HashMap<String, String>, condition: EFilterMatchCondition) -> bool {
-        fn is_match(key: String, value: String, request: HashMap<String, String>) -> bool {
-            if let Some(v) = request.get(&key) {
-                v == &*value
-            } else {
-                false
-            }
+    pub fn filter(&self, request: Protocol::Identification, condition: EFilterMatchCondition) -> bool {
+        match condition {
+            EFilterMatchCondition::Equal => {
+                if self.fp.id == request.id && 
+                   self.fp.location == request.location &&
+                   self.fp.uuid == request.uuid {
+                    true
+                } else {
+                    false
+                }
+            },
+            EFilterMatchCondition::PartialEqual => {
+                if self.fp.id == request.id ||
+                   self.fp.location == request.location ||
+                   self.fp.uuid == request.uuid {
+                    true
+                } else {
+                    false
+                }
+            },
         }
-        if condition == EFilterMatchCondition::Equal && self.fp.len() != request.len() {
-            return false;
-        }
-        for (key, value) in request.into_iter() {
-            let matching: bool = is_match(key, value, self.fp.clone());
-            if condition == EFilterMatchCondition::AtLeastOne && matching{
-                return true;
-            } else if !matching{
-                return false;
-            }
-        }
-        true
     }
 
 }
