@@ -88,8 +88,8 @@ fn main() {
             println!("Fail to assign handshake hadler due error: {}", e);
         }
         let ucx = CustomContext {};
-        // let mut producer: ProducerInstance = ProducerInstance {};
-        let _feedback = match ProducerInstance::listen(server, Arc::new(RwLock::new(ucx)), None) {
+        let mut producer: ProducerInstance = ProducerInstance {};
+        let _feedback = match producer.listen(server, Arc::new(RwLock::new(ucx))) {
             Ok(feedback) => loop {
                 match feedback.events.recv() {
                     Ok(m) => {

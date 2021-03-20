@@ -1,9 +1,6 @@
 #[path = "./traits/observer.rs"]
 pub mod observer;
 
-#[path = "./traits/logger.rs"]
-pub mod logger;
-
 #[path = "./protocol/protocol.rs"]
 pub mod protocol;
 
@@ -30,12 +27,12 @@ pub mod EventUserConnected;
 
 use consumer::Consumer;
 use consumer_identification::EFilterMatchCondition;
-use logger::Logger;
 use protocol as Protocol;
 use Protocol::StructEncode;
 
 use fiber::server::events::ServerEvents;
 use fiber::server::server::Server as ServerTrait;
+use fiber::logger::{ Logger, DefaultLogger };
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -61,10 +58,6 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     Connected(UCX),
     Disconnected,
 }
-
-pub struct DefaultLogger {}
-
-impl Logger for DefaultLogger {}
 
 pub fn broadcasting(
     consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
@@ -111,16 +104,16 @@ where
     S: 'static + ServerTrait,
     UCX: 'static + Sync + Send + Clone,
 {
+    fn logger(&self) -> Arc<RwLock<dyn Logger + Send + Sync>> {
+        Arc::new(RwLock::new(DefaultLogger::new("Producer".to_owned(), 2)))
+    }
+
     fn listen(
+        &self,
         mut server: S,
         ucx: UCX,
-        logger: Option<&'static (dyn Logger + Send + Sync)>,
     ) -> Result<Channel<UCX>, String> {
-        let logger = if let Some(logger) = logger {
-            logger
-        } else {
-            &(DefaultLogger {})
-        };
+        let logger = self.logger();
         let (tx_channel, rx_channel): (Sender<ServerEvents>, Receiver<ServerEvents>) =
             mpsc::channel();
         let (sender_tx_channel, sender_rx_channel): (
@@ -137,7 +130,7 @@ where
         let EventUserConnectedSender = match EventUserConnected::Observer::new().listen(
             ucx.clone(),
             consumers_wp.clone(),
-            logger,
+            logger.clone(),
             feedback.clone(),
         ) {
             Ok(sender) => sender,
@@ -145,7 +138,7 @@ where
                 if let Err(e) =
                     feedback.send(ProducerEvents::EventListenError(e.to_string()))
                 {
-                    logger.err(&format!(
+                    logger.read().unwrap().err(&format!(
                         "Cannot start listen event EventUserConnected due {}",
                         e
                     ));
@@ -156,8 +149,9 @@ where
                 ));
             }
         };
+        let moved_logger = logger.clone();
         spawn(move || {
-            
+            let logger = moved_logger;
             let UserSignIn = Arc::new(RwLock::new(UserSignInObserver::ObserverRequest::new()));
             let UserJoin = Arc::new(RwLock::new(UserJoinObserver::ObserverRequest::new()));
             loop {
@@ -170,11 +164,12 @@ where
                         let feedback = feedback.clone();
                         let sender_tx_channel_wrapped =
                             Arc::new(Mutex::new(sender_tx_channel.clone()));
+                        let logger = logger.clone();
                         spawn(move || match event {
                             ServerEvents::Connected(uuid) => match consumers_wp.write() {
                                 Ok(mut consumers) => {
                                     let _consumer = consumers.entry(uuid).or_insert_with(|| {
-                                        logger.debug(&format!("New Consumer would be added; uuid: {}", uuid));
+                                        logger.read().unwrap().debug(&format!("New Consumer would be added; uuid: {}", uuid));
                                         Consumer::new(
                                             consumers_wp.clone(),
                                             sender_tx_channel_wrapped.clone(),
@@ -183,14 +178,14 @@ where
                                     if let Err(e) =
                                         feedback.send(ProducerEvents::Connected(ucx.clone()))
                                     {
-                                        logger.err(&format!("{}", e));
+                                        logger.read().unwrap().err(&format!("{}", e));
                                     }
                                 }
                                 Err(e) => {
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
                                         format!("Fail to access to consumers due error: {}", e),
                                     )) {
-                                        logger.err(&format!("{}", e));
+                                        logger.read().unwrap().err(&format!("{}", e));
                                     }
                                 }
                             },
@@ -198,9 +193,9 @@ where
                                 Ok(mut consumers) => {
                                     consumers.remove(&uuid);
                                     if let Err(e) = feedback.send(ProducerEvents::Disconnected) {
-                                        logger.err(&format!("{}", e));
+                                        logger.read().unwrap().err(&format!("{}", e));
                                     } else {
-                                        logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
+                                        logger.read().unwrap().debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                                     }
                                 }
                                 Err(e) => {
@@ -208,13 +203,13 @@ where
                                         format!("Fail to access to consumers due error: {}", e)
                                             .to_owned(),
                                     )) {
-                                        logger.err(&format!("{}", e));
+                                        logger.read().unwrap().err(&format!("{}", e));
                                     }
                                 }
                             },
                             ServerEvents::Received(uuid, buffer) => match consumers_wp.write() {
                                 Ok(mut consumers) => {
-                                    logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
+                                    logger.read().unwrap().debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                                     if let Some(consumer) = consumers.get_mut(&uuid) {
                                         let broadcast = |filter: Protocol::Identification::Key, condition: EFilterMatchCondition, broadcast: Broadcasting| {
                                                 broadcasting(consumers_wp.clone(), filter, condition, broadcast)
@@ -227,7 +222,7 @@ where
                                                 )
                                                 .to_owned(),
                                             )) {
-                                                logger.err(&format!("{}", e));
+                                                logger.read().unwrap().err(&format!("{}", e));
                                             }
                                         }
                                         while let Some(message) = consumer.next() {
@@ -236,7 +231,7 @@ where
                                                         match message {
                                                             Protocol::Identification::AvailableMessages::Key(request) => {
                                                                 let uuid = consumer.assign(request);
-                                                                logger.debug(&format!("Identification for {} is done", uuid));
+                                                                logger.read().unwrap().debug(&format!("Identification for {} is done", uuid));
                                                                 if let Err(e) = match (Protocol::Identification::Response { uuid: uuid }).abduct() {
                                                                     Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                                         Err(e)
@@ -246,7 +241,7 @@ where
                                                                     Err(e) => Err(e),
                                                                 } {
                                                                     if let Err(e) = feedback.send(ProducerEvents::ConnectionError(format!("Fail to response for Identification due error: {:?}", e).to_owned())) {
-                                                                        logger.err(&format!("{}", e));
+                                                                        logger.read().unwrap().err(&format!("{}", e));
                                                                     }
                                                                 }
                                                             },
@@ -255,7 +250,7 @@ where
                                                     },
                                                     message => if !consumer.assigned() {
                                                         if let Err(e) = feedback.send(ProducerEvents::NotAssignedConsumer(format!("Consumer ({}) didn't apply Identification", consumer.get_uuid()).to_owned())) {
-                                                            logger.err(&format!("{}", e));
+                                                            logger.read().unwrap().err(&format!("{}", e));
                                                         }
                                                         // TODO: Consumer should be disconnected or some feedback should be to consumer
                                                         // it might be some option of producer like NonAssignedStratagy
@@ -272,12 +267,12 @@ where
                                                                             &broadcast,
                                                                         ) {
                                                                             if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit UserSignInRequest due error: {:?}", e).to_owned())) {
-                                                                                logger.err(&format!("{}", e));
+                                                                                logger.read().unwrap().err(&format!("{}", e));
                                                                             }
                                                                         }
                                                                     }
                                                                     Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to UserSignIn due error: {}", e).to_owned())) {
-                                                                        logger.err(&format!("{}", e));
+                                                                        logger.read().unwrap().err(&format!("{}", e));
                                                                     }
                                                                 }
                                                             },
@@ -292,12 +287,12 @@ where
                                                                             &broadcast,
                                                                         ) {
                                                                             if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserJoin::Request due error: {:?}", e).to_owned())) {
-                                                                                logger.err(&format!("{}", e));
+                                                                                logger.read().unwrap().err(&format!("{}", e));
                                                                             }
                                                                         }
                                                                     }
                                                                     Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to UserJoin due error: {}", e).to_owned())) {
-                                                                        logger.err(&format!("{}", e));
+                                                                        logger.read().unwrap().err(&format!("{}", e));
                                                                     }
                                                                 }
                                                             },
@@ -307,7 +302,7 @@ where
                                                 };
                                         }
                                     } else {
-                                        logger.err(&format!("Fail to find consumer uuid: {}", uuid));
+                                        logger.read().unwrap().err(&format!("Fail to find consumer uuid: {}", uuid));
                                     }
                                 }
                                 Err(e) => {
@@ -315,7 +310,7 @@ where
                                         format!("Fail to access to consumers due error: {}", e)
                                             .to_owned(),
                                     )) {
-                                        logger.err(&format!("{}", e));
+                                        logger.read().unwrap().err(&format!("{}", e));
                                     }
                                 }
                             },
@@ -323,13 +318,13 @@ where
                                 if let Err(e) = feedback.send(ProducerEvents::ConnectionError(
                                     format!("Connection {:?}: {}", uuid, e).to_owned(),
                                 )) {
-                                    logger.err(&format!("{}", e));
+                                    logger.read().unwrap().err(&format!("{}", e));
                                 }
                             }
                         });
                     }
                     Err(e) => {
-                        logger.err(&format!("{}", e));
+                        logger.read().unwrap().err(&format!("{}", e));
                     }
                 }
             }
@@ -339,12 +334,12 @@ where
             match server.listen(tx_channel, sender_rx_channel) {
                 Ok(()) => {
                     if let Err(e) = feedback.send(ProducerEvents::ServerDown) {
-                        logger.warn(&format!("{}", e));
+                        logger.read().unwrap().warn(&format!("{}", e));
                     }
                 }
                 Err(e) => {
                     if let Err(e) = feedback.send(ProducerEvents::ServerError(e)) {
-                        logger.err(&format!("{}", e));
+                        logger.read().unwrap().err(&format!("{}", e));
                     }
                 }
             };

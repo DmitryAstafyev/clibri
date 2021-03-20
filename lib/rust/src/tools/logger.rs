@@ -61,3 +61,35 @@ pub trait Logger {
     fn get_alias(&self) -> &str;
 
 }
+
+pub struct DefaultLogger {
+    alias: String,
+    level: u8,
+}
+
+impl DefaultLogger {
+
+    pub fn new(alias: String, level: u8) -> Self {
+        DefaultLogger { alias: alias, level: level }
+    }
+}
+
+impl Logger for DefaultLogger {
+    fn set_level(&mut self, level: LogLevel) -> () {
+        self.level = 2;
+    }
+
+    fn get_level(&self) -> u8 {
+        self.level
+    }
+
+    fn set_alias(&mut self, alias: String) -> () {
+        self.alias = alias;
+    }
+
+    fn get_alias(&self) -> &str {
+        &self.alias
+    }
+}
+
+

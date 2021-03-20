@@ -1,6 +1,6 @@
 use super::consumer::Consumer;
 use super::consumer_identification::EFilterMatchCondition;
-use super::logger::Logger;
+use fiber::logger::{ Logger };
 use super::{broadcasting, Broadcasting,ProducerEvents};
 use super::Protocol;
 use std::collections::HashMap;
@@ -34,7 +34,7 @@ pub trait Controller {
         &mut self,
         ucx: UCX,
         consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
-        logger: &'static (dyn Logger + Send + Sync),
+        logger: Arc<RwLock<dyn Logger + Send + Sync>>,
         feedback: Sender<ProducerEvents<UCX>>,
     ) -> Result<Sender<Event>, String> {
         let (sender, receiver): (Sender<Event>, Receiver<Event>) = mpsc::channel();
@@ -50,14 +50,14 @@ pub trait Controller {
                             };
                         if let Err(e) = Self::connected(&event, ucx.clone(), &broadcast) {
                             if let Err(e) = feedback.send(ProducerEvents::EventError(e)) {
-                                logger.err(&format!("Fail to call connected handler for event due error: {}", e));
+                                logger.read().unwrap().err(&format!("Fail to call connected handler for event due error: {}", e));
                             }
                             break;
                         }
                     },
                     Err(e) => {
                         if let Err(e) = feedback.send(ProducerEvents::EventChannelError(e.to_string())) {
-                            logger.err(&format!("Fail receive event due error: {}", e));
+                            logger.read().unwrap().err(&format!("Fail receive event due error: {}", e));
                         }
                         break;
                     }
