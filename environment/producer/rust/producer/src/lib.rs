@@ -174,6 +174,7 @@ where
                             ServerEvents::Connected(uuid) => match consumers_wp.write() {
                                 Ok(mut consumers) => {
                                     let _consumer = consumers.entry(uuid).or_insert_with(|| {
+                                        logger.debug(&format!("New Consumer would be added; uuid: {}", uuid));
                                         Consumer::new(
                                             consumers_wp.clone(),
                                             sender_tx_channel_wrapped.clone(),
@@ -198,6 +199,8 @@ where
                                     consumers.remove(&uuid);
                                     if let Err(e) = feedback.send(ProducerEvents::Disconnected) {
                                         logger.err(&format!("{}", e));
+                                    } else {
+                                        logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                                     }
                                 }
                                 Err(e) => {
@@ -211,6 +214,7 @@ where
                             },
                             ServerEvents::Received(uuid, buffer) => match consumers_wp.write() {
                                 Ok(mut consumers) => {
+                                    logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                                     if let Some(consumer) = consumers.get_mut(&uuid) {
                                         let broadcast = |filter: Protocol::Identification::Key, condition: EFilterMatchCondition, broadcast: Broadcasting| {
                                                 broadcasting(consumers_wp.clone(), filter, condition, broadcast)
@@ -232,6 +236,7 @@ where
                                                         match message {
                                                             Protocol::Identification::AvailableMessages::Key(request) => {
                                                                 let uuid = consumer.assign(request);
+                                                                logger.debug(&format!("Identification for {} is done", uuid));
                                                                 if let Err(e) = match (Protocol::Identification::Response { uuid: uuid }).abduct() {
                                                                     Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                                         Err(e)
@@ -252,6 +257,8 @@ where
                                                         if let Err(e) = feedback.send(ProducerEvents::NotAssignedConsumer(format!("Consumer ({}) didn't apply Identification", consumer.get_uuid()).to_owned())) {
                                                             logger.err(&format!("{}", e));
                                                         }
+                                                        // TODO: Consumer should be disconnected or some feedback should be to consumer
+                                                        // it might be some option of producer like NonAssignedStratagy
                                                     } else {
                                                         match message {
                                                             Protocol::AvailableMessages::UserSignIn(Protocol::UserSignIn::AvailableMessages::Request(request)) => {
@@ -299,6 +306,8 @@ where
                                                     },
                                                 };
                                         }
+                                    } else {
+                                        logger.err(&format!("Fail to find consumer uuid: {}", uuid));
                                     }
                                 }
                                 Err(e) => {

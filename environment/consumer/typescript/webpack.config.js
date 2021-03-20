@@ -1,3 +1,5 @@
+const path = require("path");
+
 module.exports = {
     entry: "./src/index.ts",
     mode: "production",
@@ -13,7 +15,10 @@ module.exports = {
 
     resolve: {
         // Add '.ts' and '.tsx' as resolvable extensions.
-        extensions: [".ts", ".tsx", ".js", ".json"]
+        extensions: [".ts", ".tsx", ".js", ".json"],
+        alias: {
+            buffer: path.resolve(__dirname, "./node_modules/buffer"),
+        },
     },
 
     module: {

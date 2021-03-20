@@ -207,9 +207,8 @@ impl Server {
 
     fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, _cx: ConnectionContext) {
         spawn(move || {
-            let timeout = Duration::from_millis(50);
             loop {
-                match rx_channel.try_recv() {
+                match rx_channel.recv() {
                     Ok(msg) => match msg {
                         connection_channel::Messages::Binary { uuid, buffer } => if let Err(e) =
                         events.send(ServerEvents::Received(uuid, buffer))
@@ -232,9 +231,11 @@ impl Server {
                             );
                         },
                     },
-                    Err(_) => {
-                        // No needs logs here;
-                        thread::sleep(timeout);
+                    Err(e) => {
+                        error!(
+                            "Fail to receive connection message due error: {}",
+                            e
+                        );
                     }
                 }
             }

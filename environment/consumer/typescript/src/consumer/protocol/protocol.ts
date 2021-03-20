@@ -5,6 +5,7 @@
 // tslint:disable: no-shadowed-variable
 // tslint:disable: array-type
 // tslint:disable: variable-name
+import { Buffer } from 'buffer';
 
 const Tools: {
     append: typeof append;
