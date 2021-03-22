@@ -84,7 +84,7 @@ impl EventUserConnectedController for EventUserConnectedObserver {
 
 fn main() {
     match fiber::tools::LOGGER_SETTINGS.lock() {
-        Ok(mut settings) => settings.set_level(LogLevel::Verb),
+        Ok(mut settings) => settings.set_level(LogLevel::Info),
         Err(e) => println!("Fail set log level due error: {}", e),
     };
     /*
@@ -112,28 +112,28 @@ fn main() {
                     Ok(m) => {
                         match m {
                             producer::ProducerEvents::Connected(_ucx) => {
-                                println!("Connected");
+                                println!(">>>>>> Connected");
                             },
                             producer::ProducerEvents::ServerDown => {
-                                println!("ServerDown");
+                                println!(">>>>>> ServerDown");
                             },
                             producer::ProducerEvents::Disconnected => {
-                                println!("Disconnected");
+                                println!(">>>>>> Disconnected");
                             },
                             producer::ProducerEvents::InternalError(e) => {
-                                println!("InternalError: {}", e);
+                                println!(">>>>>> InternalError: {}", e);
                             },
                             producer::ProducerEvents::EmitError(e) => {
-                                println!("EmitError: {}", e);
+                                println!(">>>>>> EmitError: {}", e);
                             },
                             producer::ProducerEvents::EventError(e) => {
-                                println!("EventError: {}", e);
+                                println!(">>>>>> EventError: {}", e);
                             },
                             producer::ProducerEvents::EventChannelError(e) => {
-                                println!("EventChannelError: {}", e);
+                                println!(">>>>>> EventChannelError: {}", e);
                             },
                             producer::ProducerEvents::ConnectionError(e) => {
-                                println!("ConnectionError: {}", e);
+                                println!(">>>>>> ConnectionError: {}", e);
                             },
                             producer::ProducerEvents::ServerError(e) => {
                                 println!("ServerError: {}", e);

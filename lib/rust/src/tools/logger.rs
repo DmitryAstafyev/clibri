@@ -11,12 +11,18 @@ pub enum LogLevel {
 
 pub struct GlobalLoggerSettings {
     level: u8,
+    created: u128,
+    last: u128,
 }
 
 impl GlobalLoggerSettings {
 
     pub fn new() -> Self {
-        GlobalLoggerSettings { level: 0 }
+        let current = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(v) => v.as_millis(),
+            Err(_) => 0,
+        };
+        GlobalLoggerSettings { level: 0, created: current, last: current }
     }
 
     pub fn set_level(&mut self, level: LogLevel) {
@@ -45,6 +51,23 @@ impl GlobalLoggerSettings {
         self.level
     }
 
+    pub fn get_pass_time(&mut self) -> u128 {
+        let prev = self.last;
+        self.last = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(v) => v.as_millis(),
+            Err(_) => 0,
+        };
+        self.last - prev
+    }
+
+    pub fn get_gen_time(&mut self) -> u128 {
+        let cur = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(v) => v.as_millis(),
+            Err(_) => 0,
+        };
+        cur - self.created
+    }
+
 }
 
 pub trait Logger {
@@ -70,17 +93,17 @@ pub trait Logger {
     }
 
     fn log(&self, str: &str, level: LogLevel) {
-        let signature = format!("[{}\t][{}\t][{}\t]", self.get_ms(), match level {
+        let (g_level, gen_ms, pass_ms): (u8, u128, u128) = match tools::LOGGER_SETTINGS.lock() {
+            Ok(mut settings) => (settings.get_level(), settings.get_gen_time(), settings.get_pass_time()),
+            Err(_) => (0u8, 0u128, 0u128),
+        };
+        let signature = format!("[{} +{}ms\t][{}\t][{}\t]", gen_ms, pass_ms, match level {
             LogLevel::Error => "ERR",
             LogLevel::Warn  => "WARN",
             LogLevel::Debug => "DEBUG",
             LogLevel::Info  => "INFO",
             LogLevel::Verb  => "VERB",
         }, self.get_alias());
-        let g_level: u8 = match tools::LOGGER_SETTINGS.lock() {
-            Ok(settings) => settings.get_level(),
-            Err(_) => 0,
-        };
         let c_level: u8 = if g_level == 0 { self.get_level() } else { g_level };
         if match level {
             LogLevel::Error => true,
@@ -101,29 +124,28 @@ pub trait Logger {
 
     fn get_alias(&self) -> &str;
 
-    fn get_ms(&self) -> u128;
-
 }
 
 pub struct DefaultLogger {
     alias: String,
     level: u8,
-    created: u128,
 }
 
 impl DefaultLogger {
 
     pub fn new(alias: String, level: Option<u8>) -> Self {
-        let created: u128 = match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(v) => v.as_millis(),
-            Err(_) => 0,
-        };
+        let mut g_level = 0;
         let level = if let Some(l) = level {
             match tools::LOGGER_SETTINGS.lock() {
-                Ok(settings) => if l < settings.get_min_level() || l > settings.get_max_level() {
-                    settings.get_default_level()
-                } else {
-                    l
+                Ok(settings) => {
+                    g_level = settings.get_level();
+                    if g_level != 0 {
+                        g_level
+                    } else if l < settings.get_min_level() || l > settings.get_max_level() {
+                        settings.get_default_level()
+                    } else {
+                        l
+                    }
                 },
                 Err(_) => {
                     l
@@ -132,8 +154,8 @@ impl DefaultLogger {
         } else {
             1
         };
-        let logger = DefaultLogger { alias: alias.clone(), level, created };
-        logger.verb(&format!("Created logger {}. Default log level: {}", alias, logger.get_level()));
+        let logger = DefaultLogger { alias: alias.clone(), level };
+        logger.verb(&format!("Created logger {}. {} log level: {}", if g_level == 0 { "Default" } else { "Using global "}, alias, logger.get_level()));
         logger
     }
 }
@@ -161,12 +183,6 @@ impl Logger for DefaultLogger {
         &self.alias
     }
 
-    fn get_ms(&self) -> u128 {
-        match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(v) => v.as_millis() - self.created,
-            Err(_) => 0,
-        }
-    }
 }
 
 

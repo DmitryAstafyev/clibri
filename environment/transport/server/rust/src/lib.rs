@@ -16,6 +16,7 @@ pub mod connection_channel;
 #[path = "./connection/connection.context.rs"]
 pub mod connection_context;
 
+#[allow(non_upper_case_globals)]
 pub mod tools {
     use fiber::logger::{ DefaultLogger };
 

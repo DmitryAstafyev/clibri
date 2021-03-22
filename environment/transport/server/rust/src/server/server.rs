@@ -79,13 +79,16 @@ impl ServerTrait for Server {
                 match messages.try_recv() {
                     Ok((buffer, uuid)) => match connections.write() {
                         Ok(mut connections) => {
+                            let len = buffer.len();
                             if let Some(uuid) = uuid {
                                 if let Some(connection) = connections.get_mut(&uuid) {
                                     if let Err(e) = connection.send(buffer) {
-                                        tools::logger.err(&format!("Fail to send buffer to {} due error: {}", uuid, e));
+                                        tools::logger.err(&format!("{}:: fail to send buffer ({} bytes) due error: {}", uuid, len, e));
+                                    } else {
+                                        tools::logger.debug(&format!("{}:: has been sent {} bytes", uuid, len));
                                     }
                                 } else {
-                                    tools::logger.warn(&format!("Fail to find connection {}", uuid));
+                                    tools::logger.warn(&format!("Fail to find connection {} to send buffer ({} bytes) outside", uuid, len));
                                 }
                             } else {
                                 for (uuid, connection) in connections.iter_mut() {
@@ -165,14 +168,14 @@ impl Server {
         match self.accept(stream) {
             Ok(socket) => {
                 let mut conn = connection::Connection::new(socket);
+                let uuid = conn.get_uuid();
                 let mut cx = ConnectionContext {
-                    uuid: conn.get_uuid(),
+                    uuid: uuid,
                     connections: self.connections.clone(),
                 };
                 match self.connections.write() {
                     Ok(mut connections) => {
                         // Register
-                        let uuid = conn.get_uuid();
                         let conn = connections.entry(uuid).or_insert(conn);
                         let (tx_channel, rx_channel): (
                             Sender<connection_channel::Messages>,
@@ -181,13 +184,18 @@ impl Server {
                         // Listen
                         match conn.listen(tx_channel) {
                             Ok(_) => {
-                                self.redirect(events, rx_channel, cx.clone());
-                                Ok(cx.get_uuid())
+                                self.redirect(events, rx_channel, cx.clone(), uuid.clone());
+                                tools::logger.debug(&format!("Active connections: {}", connections.len()));
+                                Ok(uuid)
                             }
                             Err(e) => {
-                                tools::logger.warn(&format!("Client {} error: {}", uuid, e));
+                                tools::logger.err(&format!("{}:: error on listening {}", uuid, e));
+                                if let Err(_) = conn.close() {
+                                    tools::logger.err(&format!("{}:: fail close connection", uuid));
+                                }
+                                connections.remove(&uuid);
                                 Err(format!(
-                                    "Fail start listening client {} due error: {}",
+                                    "Fail to start listening client {} due error: {}",
                                     uuid, e
                                 ))
                             }
@@ -206,8 +214,26 @@ impl Server {
         }
     }
 
-    fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, _cx: ConnectionContext) {
+    fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, _cx: ConnectionContext, uuid: Uuid) {
+        let connections = self.connections.clone();
         spawn(move || {
+            let close = |uuid: &Uuid| {
+                match connections.write() {
+                    Ok(mut connections) => {
+                        if let Some(mut connection) = connections.remove(uuid) {
+                            if let Err(e) = connection.close() {
+                                tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e));
+                            } else {
+                                tools::logger.debug(&format!("{}:: connection is closed", uuid));
+                            }
+                        } else {
+                            tools::logger.warn(&format!("{}:: Fail to find connection to close it", uuid));
+                        }
+                        tools::logger.debug(&format!("Active connections: {}", connections.len()));
+                    },
+                    Err(e) => tools::logger.err(&format!("{}:: Fail to close connection. No access to connections: {}", uuid, e)),
+                };
+            };
             let mut disconnected: Option<Uuid> = None;
             loop {
                 match rx_channel.recv() {
@@ -234,6 +260,7 @@ impl Server {
                             } else {
                                 tools::logger.debug(&format!("{}:: [Messages::Disconnect] event is gotten", uuid));
                             }
+                            close(&uuid);
                         },
                     },
                     Err(e) => {
@@ -241,12 +268,12 @@ impl Server {
                             tools::logger.debug(&format!("{}:: closing receiver thread", uuid));
                         } else {
                             tools::logger.err(&format!("Fail to receive connection message due error: {}", e));
+                            close(&uuid);
                         }
                         break;
                     }
                 }
             }
-            // TODO: remove session / connection
         });
     }
 

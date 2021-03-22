@@ -42,11 +42,6 @@ impl Connection {
             let timeout = Duration::from_millis(50);
             let mut connection_error: Option<connection_channel::Error> = None;
             let mut disconnect_frame: Option<CloseFrame> = None;
-            /*
-            if let Err(e) = channel.send(connection_channel::Messages::Ping {uuid, msg: "opening loop".to_owned()}) {
-                tools::logger.err(&format!("{}:: fail to ping due error: {}", uuid, e));
-            }
-            */
             tools::logger.warn(&format!("{}:: start listening client", uuid));
             loop {
                 match socket.write() {
@@ -66,11 +61,10 @@ impl Connection {
                                             uuid,
                                             buffer,
                                         }) {
-                                            Ok(_) => break,
+                                            Ok(_) => {},
                                             Err(e) => {
                                                 tools::logger.err(&format!("{}:: fail to send data to session due error: {}", uuid, e));
                                                 connection_error = Some(connection_channel::Error::Channel(format!("{}", e)));
-                                                break;
                                             },
                                         };
                                     },
@@ -136,6 +130,25 @@ impl Connection {
             }
         };
         result
+    }
+
+    pub fn close(&mut self) -> Result<(), String> {
+        match self.socket.write() {
+            Ok(mut socket) => {
+                tools::logger.debug(&format!("{}:: would close connection", self.uuid));
+                match socket.close(None) {
+                    Ok(()) => Ok(()),
+                    Err(_) => {
+                        tools::logger.err(&format!("{}:: fail to close connection", self.uuid));   
+                        Err("Fail to close connection".to_owned())
+                    }
+                }
+            },
+            Err(e) => {
+                tools::logger.err(&format!("{}:: probably socket is busy; fail to close connection due error: {}", self.uuid, e));   
+                Err(format!("{}:: probably socket is busy; cannot fail to close connection due error: {}", self.uuid, e))
+            }
+        }
     }
 
 }
