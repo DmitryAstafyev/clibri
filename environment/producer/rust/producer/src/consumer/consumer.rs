@@ -65,8 +65,7 @@ pub struct Consumer {
 }
 
 impl Consumer {
-    pub fn new(consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>, sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>) -> Self {
-        let uuid: Uuid = Uuid::new_v4();
+    pub fn new(uuid: Uuid, consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>, sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>) -> Self {
         Consumer {
             uuid,
             buffer: Protocol::Buffer::new(),

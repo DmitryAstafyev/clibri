@@ -164,6 +164,7 @@ where
                                     let _consumer = consumers.entry(uuid).or_insert_with(|| {
                                         tools::logger.debug(&format!("New Consumer would be added; uuid: {}", uuid));
                                         Consumer::new(
+                                            uuid,
                                             consumers_wp.clone(),
                                             sender_tx_channel_wrapped.clone(),
                                         )

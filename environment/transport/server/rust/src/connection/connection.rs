@@ -103,7 +103,12 @@ impl Connection {
                     Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
                 };
             }
-            match channel.send(connection_channel::Messages::Disconnect { uuid, frame: disconnect_frame }) {
+            let code = if let Some(f) = disconnect_frame {
+                Some(f.code)
+            } else {
+                None
+            };
+            match channel.send(connection_channel::Messages::Disconnect { uuid, code }) {
                 Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
                 Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
             };

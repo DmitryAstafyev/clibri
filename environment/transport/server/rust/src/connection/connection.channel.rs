@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use tungstenite::protocol::CloseFrame;
+use tungstenite::protocol::frame::coding::CloseCode;
 
 #[derive(Debug, Clone)]
 pub enum Error {
@@ -11,6 +11,6 @@ pub enum Error {
 #[derive(Debug, Clone)]
 pub enum Messages {
     Error { uuid: Uuid, error: Error },
-    Disconnect { uuid: Uuid, frame: Option<CloseFrame<'static>> },
+    Disconnect { uuid: Uuid, code: Option<CloseCode> },
     Binary { uuid: Uuid, buffer: Vec<u8> },
 }

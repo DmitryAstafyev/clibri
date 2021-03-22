@@ -16,6 +16,7 @@ use std::thread::spawn;
 use std::time::Duration;
 use tungstenite::accept_hdr;
 use tungstenite::protocol::WebSocket;
+use tungstenite::protocol::frame::coding::CloseCode;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -217,14 +218,20 @@ impl Server {
     fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, _cx: ConnectionContext, uuid: Uuid) {
         let connections = self.connections.clone();
         spawn(move || {
-            let close = |uuid: &Uuid| {
+            let close = |uuid: &Uuid, code: Option<CloseCode>| {
                 match connections.write() {
                     Ok(mut connections) => {
                         if let Some(mut connection) = connections.remove(uuid) {
-                            if let Err(e) = connection.close() {
-                                tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e));
+                            if if let Some(code) = code {
+                                code != CloseCode::Away
                             } else {
-                                tools::logger.debug(&format!("{}:: connection is closed", uuid));
+                                true
+                            } {
+                                if let Err(e) = connection.close() {
+                                    tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e));
+                                } else {
+                                    tools::logger.debug(&format!("{}:: connection is closed", uuid));
+                                }
                             }
                         } else {
                             tools::logger.warn(&format!("{}:: Fail to find connection to close it", uuid));
@@ -234,7 +241,7 @@ impl Server {
                     Err(e) => tools::logger.err(&format!("{}:: Fail to close connection. No access to connections: {}", uuid, e)),
                 };
             };
-            let mut disconnected: Option<Uuid> = None;
+            let mut disconnected: Option<(Uuid, Option<CloseCode>)> = None;
             loop {
                 match rx_channel.recv() {
                     Ok(msg) => match msg {
@@ -253,22 +260,22 @@ impl Server {
                         } else {
                             tools::logger.debug(&format!("{}:: [Messages::Error] event is gotten", uuid));
                         },
-                        connection_channel::Messages::Disconnect { uuid, frame: _ } => {
-                            disconnected = Some(uuid);
+                        connection_channel::Messages::Disconnect { uuid, code } => {
+                            disconnected = Some((uuid, code));
                             if let Err(e) = events.send(ServerEvents::Disconnected(uuid)) {
                                 tools::logger.err(&format!("{}:: Fail to send ServerEvents::Disconnected due error: {}", uuid, e));
                             } else {
                                 tools::logger.debug(&format!("{}:: [Messages::Disconnect] event is gotten", uuid));
                             }
-                            close(&uuid);
+                            close(&uuid, code);
                         },
                     },
                     Err(e) => {
-                        if let Some(uuid) = disconnected {
-                            tools::logger.debug(&format!("{}:: closing receiver thread", uuid));
+                        if let Some((uuid, code)) = disconnected {
+                            tools::logger.debug(&format!("{}:: closing receiver thread. Code: {:?}", uuid, code));
                         } else {
                             tools::logger.err(&format!("Fail to receive connection message due error: {}", e));
-                            close(&uuid);
+                            close(&uuid, None);
                         }
                         break;
                     }
