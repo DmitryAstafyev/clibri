@@ -31,10 +31,7 @@ pub trait Logger {
     }
 
     fn log(&self, str: &str, level: LogLevel) -> () {
-        let signature = format!("[{}\t][{}][{}]", match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(d) => format!("{}ms", d.as_millis()),
-            Err(_) => "n/d".to_string(),
-        }, match level {
+        let signature = format!("[{}\t][{}\t][{}\t]", self.get_ms(), match level {
             LogLevel::Error => "ERR",
             LogLevel::Warn  => "WARN",
             LogLevel::Debug => "DEBUG",
@@ -60,23 +57,36 @@ pub trait Logger {
 
     fn get_alias(&self) -> &str;
 
+    fn get_ms(&self) -> u128;
+
 }
 
 pub struct DefaultLogger {
     alias: String,
     level: u8,
+    created: u128,
 }
 
 impl DefaultLogger {
 
     pub fn new(alias: String, level: u8) -> Self {
-        DefaultLogger { alias: alias, level: level }
+        let created: u128 = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(v) => v.as_millis(),
+            Err(_) => 0,
+        };
+        DefaultLogger { alias: alias, level: level, created: created }
     }
 }
 
 impl Logger for DefaultLogger {
     fn set_level(&mut self, level: LogLevel) -> () {
-        self.level = 2;
+        self.level = match level {
+            LogLevel::Error => 1,
+            LogLevel::Warn => 2,
+            LogLevel::Debug => 3,
+            LogLevel::Info => 4,
+            LogLevel::Verb => 5,
+        };
     }
 
     fn get_level(&self) -> u8 {
@@ -89,6 +99,13 @@ impl Logger for DefaultLogger {
 
     fn get_alias(&self) -> &str {
         &self.alias
+    }
+
+    fn get_ms(&self) -> u128 {
+        match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(v) => v.as_millis() - self.created,
+            Err(_) => 0,
+        }
     }
 }
 

@@ -1,6 +1,6 @@
-use super::{ connection_channel };
+use super::{ connection_channel, tools };
+use fiber::logger::{ Logger };
 use std::time::{ Duration, Instant };
-use log::{ error, warn, debug, trace };
 use std::net::{ TcpStream };
 use tungstenite::protocol::Message as ProtocolMessage;
 use tungstenite::protocol::{WebSocket, CloseFrame};
@@ -43,6 +43,9 @@ impl Connection {
             let timeout = Duration::from_millis(50);
             let mut connection_error: Option<connection_channel::Error> = None;
             let mut disconnect_frame: Option<CloseFrame> = None;
+            if let Err(e) = channel.send(connection_channel::Messages::Ping {uuid, msg: "opening loop".to_owned()}) {
+                tools::logger.err(&format!("{}:: fail to ping due error: {}", uuid, e));
+            }
             loop {
                 match socket.write() {
                     Ok(mut socket) => {
@@ -52,7 +55,7 @@ impl Connection {
                         match socket.read_message() {
                             Ok(msg) => {
                                 if msg.is_binary() {
-                                    trace!("{}:: binary data {:?}", uuid, msg);
+                                    tools::logger.verb(&format!("{}:: binary data {:?}", uuid, msg));
                                 }
                                 match msg {
                                     ProtocolMessage::Binary(buffer) => {
@@ -62,7 +65,7 @@ impl Connection {
                                         }) {
                                             Ok(_) => break,
                                             Err(e) => {
-                                                error!("{}:: fail to send data to session due error: {}", uuid, e);
+                                                tools::logger.err(&format!("{}:: fail to send data to session due error: {}", uuid, e));
                                                 connection_error = Some(connection_channel::Error::Channel(format!("{}", e)));
                                                 break;
                                             },
@@ -74,7 +77,7 @@ impl Connection {
                                         }
                                     },
                                     _ => { 
-                                        error!("{}:: expected only binary data", uuid);
+                                        tools::logger.err(&format!("{}:: expected only binary data", uuid));
                                         // break;
                                     },
                                 }
@@ -85,26 +88,27 @@ impl Connection {
                                 },
                                 err => {
                                     connection_error = Some(connection_channel::Error::ReadSocket(err.to_string()));
-                                    error!("{}:: fail read message due error: {}", uuid, err);
+                                    tools::logger.err(&format!("{}:: fail read message due error: {}", uuid, err));
                                     break;
                                 }
                             }
                         }
                     },
-                    Err(e) => warn!("{}:: probably socket is busy; cannot get access due error: {}", uuid, e)
+                    Err(e) => tools::logger.warn(&format!("{}:: probably socket is busy; cannot get access due error: {}", uuid, e))
                 }
                 // Thread should sleep a bit to let "send" method work.
                 thread::sleep(timeout);
-            }
+            };
+            tools::logger.debug("Exit connection loop");
             if let Some(error) = connection_error {
                 match channel.send(connection_channel::Messages::Error { uuid, error }) {
-                    Ok(_) => debug!("{}:: client would be disconnected", uuid),
-                    Err(e) => error!("{}:: fail to notify server about disconnecting due error: {}", uuid, e),
+                    Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
+                    Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
                 };
             }
             match channel.send(connection_channel::Messages::Disconnect { uuid, frame: disconnect_frame }) {
-                Ok(_) => debug!("{}:: client would be disconnected", uuid),
-                Err(e) => error!("{}:: fail to notify server about disconnecting due error: {}", uuid, e),
+                Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
+                Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
             };
         });
         Ok(())
@@ -113,17 +117,17 @@ impl Connection {
     #[allow(dead_code)]
     pub fn send(&mut self, buffer: Vec<u8>) -> Result<(), String> {
         let socket = self.socket.clone();
-        debug!("{}:: try to get access to socket", self.uuid);
+        tools::logger.debug(&format!("{}:: try to get access to socket", self.uuid));
         let result = match socket.write() {
             Ok(mut socket) => {
-                debug!("{}:: access to socket has been gotten", self.uuid);
+                tools::logger.debug(&format!("{}:: access to socket has been gotten", self.uuid));
                 match socket.write_message(ProtocolMessage::from(buffer)) {
                     Ok(_) => Ok(()),
                     Err(e) => Err(format!("{}:: fail to send message due error: {}", self.uuid, e)),
                 }
             },
             Err(e) => {
-                error!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e);   
+                tools::logger.err(&format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e));   
                 Err(format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e))
             }
         };

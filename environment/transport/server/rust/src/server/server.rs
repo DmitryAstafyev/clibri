@@ -1,10 +1,10 @@
-use super::{connection, connection_channel, connection_context, ErrorResponse, Request, Response};
+use super::{connection, connection_channel, connection_context, ErrorResponse, Request, Response, tools };
 use connection::Connection;
 use connection_context::ConnectionContext;
 use fiber::server::events::ServerEvents;
 use fiber::server::server::Server as ServerTrait;
+use fiber::logger::{ Logger };
 
-use log::{debug, error, warn};
 use std::collections::HashMap;
 use std::net::TcpListener;
 use std::net::TcpStream;
@@ -57,12 +57,12 @@ impl ServerTrait for Server {
                                 None,
                                 format!("{:?}", e).to_string(),
                             )) {
-                                error!("Fail to send ServerEvents::Error due error: {}", e);
+                                tools::logger.err(&format!("Fail to send ServerEvents::Error due error: {}", e));
                             }
                         }
                     }
                     Err(e) => if let Err(e) = events_sp.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                        error!("Fail to send ServerEvents::Error due error: {}", e);
+                        tools::logger.err(&format!("Fail to send ServerEvents::Error due error: {}", e));
                     },
                 }
             }
@@ -82,20 +82,20 @@ impl ServerTrait for Server {
                             if let Some(uuid) = uuid {
                                 if let Some(connection) = connections.get_mut(&uuid) {
                                     if let Err(e) = connection.send(buffer) {
-                                        error!("Fail to send buffer to {} due error: {}", uuid, e);
+                                        tools::logger.err(&format!("Fail to send buffer to {} due error: {}", uuid, e));
                                     }
                                 } else {
-                                    warn!("Fail to find connection {}", uuid);
+                                    tools::logger.warn(&format!("Fail to find connection {}", uuid));
                                 }
                             } else {
                                 for (uuid, connection) in connections.iter_mut() {
                                     if let Err(e) = connection.send(buffer.clone()) {
-                                        error!("Fail to send buffer to {} due error: {}", uuid, e);
+                                        tools::logger.err(&format!("Fail to send buffer to {} due error: {}", uuid, e));
                                     };
                                 }
                             }
                         },
-                        Err(e) => error!("Fail to extract connections to send buffer due error: {}", e),
+                        Err(e) => tools::logger.err(&format!("Fail to extract connections to send buffer due error: {}", e)),
                     },
                     Err(_) => {
                         // No needs logs here;
@@ -108,7 +108,7 @@ impl ServerTrait for Server {
         loop {
             if let Ok(reason) = self.heartbeat.1.try_recv() {
                 if let Err(e) = shutdown_tx_channel.send(reason.clone()) {
-                    error!("Fail to send shutdown signal due error: {}", e);
+                    tools::logger.err(&format!("Fail to send shutdown signal due error: {}", e));
                 }
                 match reason {
                     ServerHeartbeat::Stop => {
@@ -122,10 +122,10 @@ impl ServerTrait for Server {
             match rx_channel.try_recv() {
                 Ok(stream) => match self.add(stream, events.clone()) {
                     Ok(uuid) => if let Err(e) = events.send(ServerEvents::Connected(uuid)) {
-                        error!("Fail to send ServerEvents::Connected due error: {}", e);
+                        tools::logger.err(&format!("Fail to send ServerEvents::Connected due error: {}", e));
                     },
                     Err(e) => if let Err(e) = events.send(ServerEvents::Error(None, format!("{:?}", e).to_string())) {
-                        error!("Fail to send ServerEvents::Error due error: {}", e);
+                        tools::logger.err(&format!("Fail to send ServerEvents::Error due error: {}", e));
                     },
                 },
                 Err(_) => {
@@ -135,6 +135,7 @@ impl ServerTrait for Server {
             }
         }
     }
+
 }
 
 impl Server {
@@ -184,7 +185,7 @@ impl Server {
                                 Ok(cx.get_uuid())
                             }
                             Err(e) => {
-                                warn!("Client {} error: {}", uuid, e);
+                                tools::logger.warn(&format!("Client {} error: {}", uuid, e));
                                 Err(format!(
                                     "Fail start listening client {} due error: {}",
                                     uuid, e
@@ -193,13 +194,13 @@ impl Server {
                         }
                     }
                     Err(e) => {
-                        error!("Fail get connections due error: {}", e);
+                        tools::logger.err(&format!("Fail get connections due error: {}", e));
                         Err(format!("Fail get connections due error: {}", e))
                     }
                 }
             }
             Err(e) => {
-                error!("Fail accept connection due error: {}", e);
+                tools::logger.err(&format!("Fail accept connection due error: {}", e));
                 Err(format!("Fail accept connection due error: {}", e))
             }
         }
@@ -213,29 +214,24 @@ impl Server {
                         connection_channel::Messages::Binary { uuid, buffer } => if let Err(e) =
                         events.send(ServerEvents::Received(uuid, buffer))
                         {
-                            error!(
-                                "Fail to send ServerEvents::Received due error: {}",
-                                e
-                            );
+                            tools::logger.err(&format!("Fail to send ServerEvents::Received due error: {}", e));
                         },
                         connection_channel::Messages::Error { uuid, error } => if let Err(e) = events.send(ServerEvents::Error(
                             Some(uuid),
                             format!("{:?}", error).to_string(),
                         )) {
-                            error!("Fail to send ServerEvents::Error due error: {}", e);
+                            tools::logger.err(&format!("Fail to send ServerEvents::Error due error: {}", e));
                         },
                         connection_channel::Messages::Disconnect { uuid, frame: _ } => if let Err(e) = events.send(ServerEvents::Disconnected(uuid)) {
-                            error!(
-                                "Fail to send ServerEvents::Disconnected due error: {}",
-                                e
-                            );
+                            tools::logger.err(&format!("Fail to send ServerEvents::Disconnected due error: {}", e));
                         },
+                        connection_channel::Messages::Ping { uuid, msg} => {
+                            tools::logger.debug(&format!("Ping from: {}: {}", uuid, msg));
+                        }
                     },
                     Err(e) => {
-                        error!(
-                            "Fail to receive connection message due error: {}",
-                            e
-                        );
+                        tools::logger.err(&format!("Fail to receive connection message due error: {}", e));
+                        break;
                     }
                 }
             }
@@ -252,9 +248,9 @@ impl Server {
         };
         match stream.set_nonblocking(true) {
             Ok(_) => {
-                debug!("Stream is switched to nonblocking mode");
+                tools::logger.debug("Stream is switched to nonblocking mode");
                 match accept_hdr(stream, |req: &Request, mut response: Response| {
-                    debug!("Connection is accepted. Calling controller accept-callback");
+                    tools::logger.debug("Connection is accepted. Calling controller accept-callback");
                     match handshake_handler.write() {
                         Ok(mut handshake_handler) => match handshake_handler(req, response) {
                             Ok(response) => Ok(response),
@@ -265,16 +261,13 @@ impl Server {
                 }) {
                     Ok(socket) => Ok(socket),
                     Err(e) => {
-                        warn!(
-                            "(accept_hdr) Connection handshake was failed due error: {}",
-                            e
-                        );
+                        tools::logger.warn(&format!("(accept_hdr) Connection handshake was failed due error: {}", e));
                         Err(e.to_string())
                     }
                 }
             }
             Err(e) => {
-                warn!("Fail to set stream into nonblocking mode due error: {}", e);
+                tools::logger.warn(&format!("Fail to set stream into nonblocking mode due error: {}", e));
                 Err(e.to_string())
             }
         }

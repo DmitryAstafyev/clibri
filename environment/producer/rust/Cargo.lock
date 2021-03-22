@@ -169,6 +169,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "fiber",
+ "lazy_static",
  "log",
  "log4rs",
  "tungstenite",
