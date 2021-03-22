@@ -141,6 +141,7 @@ checksum = "88d7ed2934d741c6b37e33e3832298e8850b53fd2d2bea03873375596c7cea4e"
 name = "fiber"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "uuid",
 ]
 
@@ -152,6 +153,7 @@ dependencies = [
  "fiber",
  "fiber_protocol_rs",
  "fiber_transport_server",
+ "lazy_static",
  "uuid",
 ]
 

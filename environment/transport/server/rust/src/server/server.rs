@@ -208,6 +208,7 @@ impl Server {
 
     fn redirect(&self, events: Sender<ServerEvents>, rx_channel: Receiver<connection_channel::Messages>, _cx: ConnectionContext) {
         spawn(move || {
+            let mut disconnected: Option<Uuid> = None;
             loop {
                 match rx_channel.recv() {
                     Ok(msg) => match msg {
@@ -215,22 +216,32 @@ impl Server {
                         events.send(ServerEvents::Received(uuid, buffer))
                         {
                             tools::logger.err(&format!("Fail to send ServerEvents::Received due error: {}", e));
+                        } else {
+                            tools::logger.debug(&format!("{}:: [Messages::Binary] event is gotten", uuid));
                         },
                         connection_channel::Messages::Error { uuid, error } => if let Err(e) = events.send(ServerEvents::Error(
                             Some(uuid),
                             format!("{:?}", error).to_string(),
                         )) {
                             tools::logger.err(&format!("Fail to send ServerEvents::Error due error: {}", e));
+                        } else {
+                            tools::logger.debug(&format!("{}:: [Messages::Error] event is gotten", uuid));
                         },
-                        connection_channel::Messages::Disconnect { uuid, frame: _ } => if let Err(e) = events.send(ServerEvents::Disconnected(uuid)) {
-                            tools::logger.err(&format!("Fail to send ServerEvents::Disconnected due error: {}", e));
+                        connection_channel::Messages::Disconnect { uuid, frame: _ } => {
+                            disconnected = Some(uuid);
+                            if let Err(e) = events.send(ServerEvents::Disconnected(uuid)) {
+                                tools::logger.err(&format!("{}:: Fail to send ServerEvents::Disconnected due error: {}", uuid, e));
+                            } else {
+                                tools::logger.debug(&format!("{}:: [Messages::Disconnect] event is gotten", uuid));
+                            }
                         },
-                        connection_channel::Messages::Ping { uuid, msg} => {
-                            tools::logger.debug(&format!("Ping from: {}: {}", uuid, msg));
-                        }
                     },
                     Err(e) => {
-                        tools::logger.err(&format!("Fail to receive connection message due error: {}", e));
+                        if let Some(uuid) = disconnected {
+                            tools::logger.debug(&format!("{}:: closing receiver thread", uuid));
+                        } else {
+                            tools::logger.err(&format!("Fail to receive connection message due error: {}", e));
+                        }
                         break;
                     }
                 }

@@ -9,3 +9,5 @@ fiber_transport_server = { path = "../../transport/server/rust" }
 fiber_protocol_rs = { path = "../../../protocol/implementations/rust" }
 uuid = { version = "0.8.1", features = ["v4"] }
 bytes = "0.5.5"
+lazy_static = "*"
+

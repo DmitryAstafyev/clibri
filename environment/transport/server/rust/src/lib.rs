@@ -20,7 +20,7 @@ pub mod tools {
     use fiber::logger::{ DefaultLogger };
 
     lazy_static! {
-        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), 5);
+        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), None);
     }
 
 }

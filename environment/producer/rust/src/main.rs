@@ -1,6 +1,10 @@
+#[macro_use]
+extern crate lazy_static;
+
 #[path = "../producer/src/lib.rs"]
 pub mod producer;
 
+use fiber::logger::{ LogLevel };
 use fiber_transport_server::server::{ Server };
 use fiber_transport_server::{ ErrorResponse, Request, Response };
 use producer::UserJoinObserver::{
@@ -16,6 +20,15 @@ use producer::*;
 use producer::consumer_identification::EFilterMatchCondition;
 use std::sync::{Arc, RwLock};
 // use std::thread::spawn;
+
+pub mod tools {
+    use fiber::logger::{ DefaultLogger };
+
+    lazy_static! {
+        pub static ref logger: DefaultLogger = DefaultLogger::new("Producer".to_owned(), None);
+    }
+
+}
 
 #[derive(Clone)]
 struct CustomContext {}
@@ -70,6 +83,10 @@ impl EventUserConnectedController for EventUserConnectedObserver {
 }
 
 fn main() {
+    match fiber::tools::LOGGER_SETTINGS.lock() {
+        Ok(mut settings) => settings.set_level(LogLevel::Verb),
+        Err(e) => println!("Fail set log level due error: {}", e),
+    };
     /*
         spawn(move || {
             let server: Server = Server::new(String::from("127.0.0.1:8080"));

@@ -13,5 +13,4 @@ pub enum Messages {
     Error { uuid: Uuid, error: Error },
     Disconnect { uuid: Uuid, frame: Option<CloseFrame<'static>> },
     Binary { uuid: Uuid, buffer: Vec<u8> },
-    Ping { uuid: Uuid, msg: String },
 }

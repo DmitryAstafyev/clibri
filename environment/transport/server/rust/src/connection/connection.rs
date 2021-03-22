@@ -34,22 +34,25 @@ impl Connection {
 
     pub fn listen (
         &mut self,
-        tx_channel: Sender<connection_channel::Messages>,
+        channel: Sender<connection_channel::Messages>,
     ) -> Result<(), String> {
         let socket = self.socket.clone();
         let uuid = self.uuid;
-        let channel = tx_channel;
         spawn(move || {
             let timeout = Duration::from_millis(50);
             let mut connection_error: Option<connection_channel::Error> = None;
             let mut disconnect_frame: Option<CloseFrame> = None;
+            /*
             if let Err(e) = channel.send(connection_channel::Messages::Ping {uuid, msg: "opening loop".to_owned()}) {
                 tools::logger.err(&format!("{}:: fail to ping due error: {}", uuid, e));
             }
+            */
+            tools::logger.warn(&format!("{}:: start listening client", uuid));
             loop {
                 match socket.write() {
                     Ok(mut socket) => {
                         if !socket.can_read() {
+                            tools::logger.debug(&format!("{}:: cannot read socket. Client is disconnected.", uuid));
                             break;
                         }
                         match socket.read_message() {
@@ -99,7 +102,7 @@ impl Connection {
                 // Thread should sleep a bit to let "send" method work.
                 thread::sleep(timeout);
             };
-            tools::logger.debug("Exit connection loop");
+            tools::logger.debug(&format!("{}:: exit from socket listening loop.", uuid));
             if let Some(error) = connection_error {
                 match channel.send(connection_channel::Messages::Error { uuid, error }) {
                     Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
@@ -110,6 +113,7 @@ impl Connection {
                 Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
                 Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
             };
+            tools::logger.debug(&format!("{}:: closing socket thread", uuid));
         });
         Ok(())
     }
