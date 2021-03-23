@@ -23,7 +23,9 @@
     "webpack": "^5.27.2",
     "webpack-cli": "^4.5.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "buffer": "^6.0.3"
+  },
   "repository": {
     "type": "git",
     "url": ""

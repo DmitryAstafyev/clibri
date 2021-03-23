@@ -23,7 +23,6 @@
     "webpack-cli": "^4.5.0"
   },
   "dependencies": {
-    "buffer": "^6.0.3",
     "fiber": "file:../../../lib/typescript",
     "fiber-websocket": "file:../../transport/client/typescript"
   },
