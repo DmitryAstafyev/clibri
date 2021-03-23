@@ -69,9 +69,11 @@ export class Consumer {
     private readonly _logger: Logger;
     private readonly _options: Options;
     private _uuid: string | undefined;
+    private _key: Protocol.Identification.IKey;
     private _sequence: number = 0;
 
     public readonly connected: Subject<void> = new Subject(`connected`);
+    public readonly ready: Subject<string> = new Subject(`ready`);
     public readonly disconnected: Subject<void> = new Subject(`disconnected`);
     public readonly error: Subject<ExtError.TError> = new Subject(`error`);
     public readonly broadcast: {
@@ -100,8 +102,9 @@ export class Consumer {
         }
     }
 
-    constructor(client: Client, options?: IOptions) {
+    constructor(client: Client, key: Protocol.Identification.IKey, options?: IOptions) {
         this._client = client;
+        this._key = key;
         this._options = new Options(`Consumer ${Consumer.GUID}`, options);
         this._logger = this._options.logger;
         const global = globals();
@@ -160,6 +163,7 @@ export class Consumer {
                     return reject(new Error(this._logger.err(`Expecting message "Identification.Response".`)));
                 }
                 this.uuid = response.Identification.Response.uuid;
+                this._logger.debug(`Consumer is assigned with uuid ${this.uuid}`);
                 resolve(response.Identification.Response.uuid);
             }).catch((err: Error) => {
                 reject(new Error(this._logger.err(`Fail assing consumer due error: ${err.message}`)));
@@ -173,6 +177,11 @@ export class Consumer {
 
     private _onClientConnected() {
         this._logger.debug(`Client is connected`);
+        this.assign(this._key).then((uuid: string) => {
+            this.ready.emit(uuid);
+        }).catch((err: Error) => {
+            this._logger.err(`Default assign prodecure is failed.`);
+        });
         this.connected.emit();
     }
 
