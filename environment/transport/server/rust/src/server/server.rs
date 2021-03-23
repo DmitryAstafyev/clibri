@@ -171,7 +171,7 @@ impl Server {
                 let mut conn = connection::Connection::new(socket);
                 let uuid = conn.get_uuid();
                 let mut cx = ConnectionContext {
-                    uuid: uuid,
+                    uuid,
                     connections: self.connections.clone(),
                 };
                 match self.connections.write() {
@@ -185,13 +185,13 @@ impl Server {
                         // Listen
                         match conn.listen(tx_channel) {
                             Ok(_) => {
-                                self.redirect(events, rx_channel, cx.clone(), uuid.clone());
+                                self.redirect(events, rx_channel, cx, uuid);
                                 tools::logger.debug(&format!("Active connections: {}", connections.len()));
                                 Ok(uuid)
                             }
                             Err(e) => {
                                 tools::logger.err(&format!("{}:: error on listening {}", uuid, e));
-                                if let Err(_) = conn.close() {
+                                if conn.close().is_err() {
                                     tools::logger.err(&format!("{}:: fail close connection", uuid));
                                 }
                                 connections.remove(&uuid);

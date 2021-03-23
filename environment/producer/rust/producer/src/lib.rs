@@ -29,7 +29,7 @@ use super::{ tools };
 use consumer::Consumer;
 use consumer_identification::EFilterMatchCondition;
 use protocol as Protocol;
-use Protocol::StructEncode;
+use Protocol::{StructEncode, PackingStruct};
 
 use fiber::server::events::ServerEvents;
 use fiber::server::server::Server as ServerTrait;
@@ -219,27 +219,22 @@ where
                                                 tools::logger.err(&format!("{}", e));
                                             }
                                         }
-                                        while let Some(message) = consumer.next() {
+                                        while let Some((message, header)) = consumer.next() {
                                             match message {
-                                                    Protocol::AvailableMessages::Identification(message) => {
-                                                        match message {
-                                                            Protocol::Identification::AvailableMessages::Key(request) => {
-                                                                let uuid = consumer.assign(request);
-                                                                tools::logger.debug(&format!("Identification for {} is done", uuid));
-                                                                if let Err(e) = match (Protocol::Identification::Response { uuid: uuid }).abduct() {
-                                                                    Ok(buffer) => if let Err(e) = consumer.send(buffer) {
-                                                                        Err(e)
-                                                                    } else {
-                                                                        Ok(())
-                                                                    },
-                                                                    Err(e) => Err(e),
-                                                                } {
-                                                                    if let Err(e) = feedback.send(ProducerEvents::ConnectionError(format!("Fail to response for Identification due error: {:?}", e).to_owned())) {
-                                                                        tools::logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
+                                                    Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::Key(request) = message {
+                                                        let uuid = consumer.assign(request);
+                                                        tools::logger.debug(&format!("{}:: identification is done", uuid));
+                                                        if let Err(e) = match (Protocol::Identification::Response { uuid }).pack(header.sequence) {
+                                                            Ok(buffer) => if let Err(e) = consumer.send(buffer) {
+                                                                Err(e)
+                                                            } else {
+                                                                Ok(())
                                                             },
-                                                            _ => {},
+                                                            Err(e) => Err(e),
+                                                        } {
+                                                            if let Err(e) = feedback.send(ProducerEvents::ConnectionError(format!("Fail to response for Identification due error: {:?}", e).to_owned())) {
+                                                                tools::logger.err(&format!("{}", e));
+                                                            }
                                                         }
                                                     },
                                                     message => if !consumer.assigned() {

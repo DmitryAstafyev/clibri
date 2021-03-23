@@ -42,7 +42,7 @@ impl Connection {
             let timeout = Duration::from_millis(50);
             let mut connection_error: Option<connection_channel::Error> = None;
             let mut disconnect_frame: Option<CloseFrame> = None;
-            tools::logger.warn(&format!("{}:: start listening client", uuid));
+            tools::logger.debug(&format!("{}:: start listening client", uuid));
             loop {
                 match socket.write() {
                     Ok(mut socket) => {

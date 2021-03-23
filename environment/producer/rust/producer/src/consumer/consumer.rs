@@ -86,9 +86,9 @@ impl Consumer {
         }
     }
 
-    pub fn next(&mut self) -> Option<Protocol::AvailableMessages> {
+    pub fn next(&mut self) -> Option<(Protocol::AvailableMessages, Protocol::PackageHeader)> {
         if let Some(msg) = self.buffer.next() {
-            Some(msg.msg)
+            Some((msg.msg, msg.header))
         } else {
             None
         }
