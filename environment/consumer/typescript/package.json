@@ -14,22 +14,16 @@
   "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
   "license": "MIT",
   "devDependencies": {
-    "@types/jasmine": "^3.5.4",
-    "chai": "^4.2.0",
-    "jasmine": "^3.5.0",
-    "jasmine-core": "^3.5.0",
-    "jasmine-ts": "^0.3.0",
-    "source-map-loader": "^1.0.1",
-    "ts-loader": "^8.0.1",
-    "ts-node": "^8.6.2",
-    "tslint": "^6.0.0",
-    "typescript": "^3.5.3",
-    "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11"
+    "source-map-loader": "^2.0.1",
+    "ts-loader": "^8.0.18",
+    "ts-node": "^9.1.1",
+    "tslint": "^6.1.3",
+    "typescript": "^4.2.3",
+    "webpack": "^5.27.2",
+    "webpack-cli": "^4.5.0"
   },
   "dependencies": {
     "buffer": "^6.0.3",
-    "build": "^0.1.4",
     "fiber": "file:../../../lib/typescript",
     "fiber-websocket": "file:../../transport/client/typescript"
   },

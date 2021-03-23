@@ -10,6 +10,11 @@ module.exports = {
         library: 'fiber-consumer',
         umdNamedDefine: true
     },
+    node: {
+        global: false,
+        __filename: false,
+        __dirname: false,
+    },
     // Enable sourcemaps for debugging webpack's output.
     devtool: "source-map",
 

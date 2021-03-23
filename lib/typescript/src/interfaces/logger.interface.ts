@@ -1,3 +1,5 @@
+// tslint:disable: max-classes-per-file
+
 import globals from '../tools/tools.globals';
 
 export enum ELogLevel {
@@ -88,6 +90,7 @@ export class DefaultLogger extends Logger {
 }
 
 function setDefaults() {
+    const global: any = globals();
     if (global[Logger.GLOBAL_ALIAS] === undefined) {
         global[Logger.GLOBAL_ALIAS] = { ts: Date.now(), level: ELogLevel.warn };
     }
