@@ -1,5 +1,5 @@
 use super::consumer_context::Context;
-use super::consumer_identification::{EFilterMatchCondition, Identification};
+use super::consumer_identification::{Identification, Filter};
 use super::Protocol;
 use std::collections::HashMap;
 use std::sync::mpsc::{Sender};
@@ -32,15 +32,14 @@ impl Context for Cx {
     fn send_to(
         &self,
         buffer: Vec<u8>,
-        filter: Protocol::Identification::SelfKey,
-        condition: EFilterMatchCondition,
+        filter: Filter,
     ) -> Result<(), String> {
         match self.consumers.write() {
             Ok(consumers) => {
                 let mut errors: Vec<String> = vec![];
                 for (uuid, consumer) in consumers.iter() {
                     if let Err(e) =
-                        consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
+                        consumer.send_if(buffer.clone(), filter.clone())
                     {
                         errors.push(format!("Fail to send data to {}, due error: {}", uuid, e));
                     }
@@ -108,10 +107,9 @@ impl Consumer {
     pub fn send_if(
         &self,
         buffer: Vec<u8>,
-        filter: Protocol::Identification::SelfKey,
-        condition: EFilterMatchCondition,
+        filter: Filter,
     ) -> Result<bool, String> {
-        if self.identification.filter(Some(filter), condition) {
+        if self.identification.filter(filter) {
             if let Err(e) = self.send(buffer) {
                 Err(e)
             } else {

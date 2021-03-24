@@ -17,7 +17,7 @@ use producer::EventUserConnected::{
     Controller as EventUserConnectedController, Observer as EventUserConnectedObserver,
 };
 use producer::*;
-use producer::consumer_identification::EFilterMatchCondition;
+use producer::consumer_identification::Filter;
 use std::sync::{Arc, RwLock};
 // use std::thread::spawn;
 
@@ -74,8 +74,7 @@ impl EventUserConnectedController for EventUserConnectedObserver {
         event: &producer::EventUserConnected::Event,
         ucx: WrappedCustomContext,
         broadcasting: &dyn Fn(
-            producer::protocol::Identification::SelfKey,
-            EFilterMatchCondition,
+            Filter,
             Broadcasting,
         ) -> Result<(), String>,
     ) -> Result<(), String> {

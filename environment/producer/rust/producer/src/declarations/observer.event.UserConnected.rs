@@ -1,5 +1,5 @@
 use super::consumer::Consumer;
-use super::consumer_identification::EFilterMatchCondition;
+use super::consumer_identification::Filter;
 use super::{ tools };
 use fiber::logger::{ Logger };
 use super::{broadcasting, Broadcasting,ProducerEvents};
@@ -23,8 +23,7 @@ pub trait Controller {
         event: &Event,
         ucx: UCX,
         broadcasting: &dyn Fn(
-            Protocol::Identification::SelfKey,
-            EFilterMatchCondition,
+            Filter,
             Broadcasting,
         ) -> Result<(), String>,
     ) -> Result<(), String> {
@@ -43,10 +42,9 @@ pub trait Controller {
                 match receiver.recv() {
                     Ok(event) => {
                         let broadcast =
-                            |filter: Protocol::Identification::SelfKey,
-                             condition: EFilterMatchCondition,
+                            |filter: Filter,
                              broadcast: Broadcasting| {
-                                broadcasting(consumers.clone(), filter, condition, broadcast)
+                                broadcasting(consumers.clone(), filter, broadcast)
                             };
                         if let Err(e) = Self::connected(&event, ucx.clone(), &broadcast) {
                             if let Err(e) = feedback.send(ProducerEvents::EventError(e)) {

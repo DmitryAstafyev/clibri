@@ -1,7 +1,7 @@
 use super::consumer_context::{ Context };
 use super::protocol::{ StructEncode };
 use super::observer::{ RequestObserverErrors };
-use super::consumer_identification::EFilterMatchCondition;
+use super::consumer_identification::Filter;
 use super::{ Broadcasting };
 use super::Protocol;
 
@@ -28,7 +28,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
-        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
@@ -38,7 +38,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
-        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
@@ -48,7 +48,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
-        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
@@ -59,7 +59,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserSignIn::Request,
-        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         let error = |mut error: Protocol::UserSignIn::Err| {
             match error.abduct() {

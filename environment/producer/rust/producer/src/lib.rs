@@ -27,7 +27,7 @@ pub mod EventUserConnected;
 
 use super::{ tools };
 use consumer::Consumer;
-use consumer_identification::EFilterMatchCondition;
+use consumer_identification::Filter;
 use protocol as Protocol;
 use Protocol::{StructEncode, PackingStruct};
 
@@ -62,8 +62,7 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
 
 pub fn broadcasting(
     consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
-    filter: Protocol::Identification::SelfKey,
-    condition: EFilterMatchCondition,
+    filter: Filter,
     broadcast: Broadcasting,
 ) -> Result<(), String> {
     match consumers.write() {
@@ -73,7 +72,7 @@ pub fn broadcasting(
                     let mut errors: Vec<String> = vec![];
                     for (uuid, consumer) in consumers.iter() {
                         if let Err(e) =
-                            consumer.send_if(buffer.clone(), filter.clone(), condition.clone())
+                            consumer.send_if(buffer.clone(), filter.clone())
                         {
                             errors.push(format!("Fail to send data to {}, due error: {}", uuid, e));
                         }
@@ -205,8 +204,8 @@ where
                                 Ok(mut consumers) => {
                                     tools::logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                                     if let Some(consumer) = consumers.get_mut(&uuid) {
-                                        let broadcast = |filter: Protocol::Identification::SelfKey, condition: EFilterMatchCondition, broadcast: Broadcasting| {
-                                                broadcasting(consumers_wp.clone(), filter, condition, broadcast)
+                                        let broadcast = |filter: Filter, broadcast: Broadcasting| {
+                                                broadcasting(consumers_wp.clone(), filter, broadcast)
                                             };
                                         if let Err(e) = consumer.chunk(&buffer) {
                                             if let Err(e) = feedback.send(ProducerEvents::Reading(
