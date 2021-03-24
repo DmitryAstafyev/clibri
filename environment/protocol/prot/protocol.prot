@@ -1,11 +1,15 @@
 group Identification {
-    struct Key {
+    struct SelfKey {
         str uuid;
         u64 id?;
         str location?;
     }
-    struct Response {
+    struct SelfKeyResponse {
         str uuid;
+    }
+    struct AssignedKey {
+        str uuid;
+        bool auth;
     }
 }
 

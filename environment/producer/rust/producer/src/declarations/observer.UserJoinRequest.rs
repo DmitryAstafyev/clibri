@@ -28,7 +28,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(Protocol::Identification::Key, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
@@ -38,7 +38,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(Protocol::Identification::Key, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
@@ -48,7 +48,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(Protocol::Identification::Key, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(Protocol::UserJoin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
@@ -59,7 +59,7 @@ pub trait Observer
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::UserJoin::Request,
-        broadcast: &dyn Fn(Protocol::Identification::Key, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Protocol::Identification::SelfKey, EFilterMatchCondition, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         let error = |mut error: Protocol::UserJoin::Err| {
             match error.abduct() {

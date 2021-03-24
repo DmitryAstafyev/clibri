@@ -21,6 +21,7 @@ use producer::consumer_identification::EFilterMatchCondition;
 use std::sync::{Arc, RwLock};
 // use std::thread::spawn;
 
+#[allow(non_upper_case_globals)]
 pub mod tools {
     use fiber::logger::{ DefaultLogger };
 
@@ -73,7 +74,7 @@ impl EventUserConnectedController for EventUserConnectedObserver {
         event: &producer::EventUserConnected::Event,
         ucx: WrappedCustomContext,
         broadcasting: &dyn Fn(
-            producer::protocol::Identification::Key,
+            producer::protocol::Identification::SelfKey,
             EFilterMatchCondition,
             Broadcasting,
         ) -> Result<(), String>,
@@ -105,7 +106,7 @@ fn main() {
             println!("Fail to assign handshake hadler due error: {}", e);
         }
         let ucx = CustomContext {};
-        let mut producer: ProducerInstance = ProducerInstance {};
+        let producer: ProducerInstance = ProducerInstance {};
         let _feedback = match producer.listen(server, Arc::new(RwLock::new(ucx))) {
             Ok(feedback) => loop {
                 match feedback.events.recv() {

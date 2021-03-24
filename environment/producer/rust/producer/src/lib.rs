@@ -62,7 +62,7 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
 
 pub fn broadcasting(
     consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
-    filter: Protocol::Identification::Key,
+    filter: Protocol::Identification::SelfKey,
     condition: EFilterMatchCondition,
     broadcast: Broadcasting,
 ) -> Result<(), String> {
@@ -205,7 +205,7 @@ where
                                 Ok(mut consumers) => {
                                     tools::logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                                     if let Some(consumer) = consumers.get_mut(&uuid) {
-                                        let broadcast = |filter: Protocol::Identification::Key, condition: EFilterMatchCondition, broadcast: Broadcasting| {
+                                        let broadcast = |filter: Protocol::Identification::SelfKey, condition: EFilterMatchCondition, broadcast: Broadcasting| {
                                                 broadcasting(consumers_wp.clone(), filter, condition, broadcast)
                                             };
                                         if let Err(e) = consumer.chunk(&buffer) {
@@ -221,10 +221,10 @@ where
                                         }
                                         while let Some((message, header)) = consumer.next() {
                                             match message {
-                                                    Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::Key(request) = message {
-                                                        let uuid = consumer.assign(request);
+                                                    Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::SelfKey(request) = message {
+                                                        let uuid = consumer.set_key(request);
                                                         tools::logger.debug(&format!("{}:: identification is done", uuid));
-                                                        if let Err(e) = match (Protocol::Identification::Response { uuid }).pack(header.sequence) {
+                                                        if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid }).pack(header.sequence) {
                                                             Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                                 Err(e)
                                                             } else {

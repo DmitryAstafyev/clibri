@@ -69,7 +69,7 @@ export class Consumer {
     private readonly _logger: Logger;
     private readonly _options: Options;
     private _uuid: string | undefined;
-    private _key: Protocol.Identification.IKey;
+    private _key: Protocol.Identification.ISelfKey;
     private _sequence: number = 0;
 
     public readonly connected: Subject<void> = new Subject(`connected`);
@@ -102,7 +102,7 @@ export class Consumer {
         }
     }
 
-    constructor(client: Client, key: Protocol.Identification.IKey, options?: IOptions) {
+    constructor(client: Client, key: Protocol.Identification.ISelfKey, options?: IOptions) {
         this._client = client;
         this._key = key;
         this._options = new Options(`Consumer ${Consumer.GUID}`, options);
@@ -151,20 +151,20 @@ export class Consumer {
         });
     }
 
-    public assign(key: Protocol.Identification.IKey): Promise<string> {
+    public assign(key: Protocol.Identification.ISelfKey): Promise<string> {
         return new Promise((resolve, reject) => {
-            const request: Protocol.Identification.Key = new Protocol.Identification.Key(key);
+            const request: Protocol.Identification.SelfKey = new Protocol.Identification.SelfKey(key);
             const sequence: number = this.getSequence();
             this.request(request.pack(sequence), sequence).then((response: Protocol.IAvailableMessages) => {
                 if (response.Identification === undefined) {
                     return reject(new Error(this._logger.err(`Expecting message from "Identification" group.`)));
                 }
-                if (response.Identification.Response === undefined) {
-                    return reject(new Error(this._logger.err(`Expecting message "Identification.Response".`)));
+                if (response.Identification.SelfKeyResponse === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message "Identification.SelfKeyResponse".`)));
                 }
-                this.uuid = response.Identification.Response.uuid;
+                this.uuid = response.Identification.SelfKeyResponse.uuid;
                 this._logger.debug(`Consumer is assigned with uuid ${this.uuid}`);
-                resolve(response.Identification.Response.uuid);
+                resolve(response.Identification.SelfKeyResponse.uuid);
             }).catch((err: Error) => {
                 reject(new Error(this._logger.err(`Fail assing consumer due error: ${err.message}`)));
             });
