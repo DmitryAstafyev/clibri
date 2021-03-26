@@ -29,6 +29,6 @@ export abstract class UserConnected {
         this._subscriptions.UserConnected = consumer.broadcast.UserConnected.subscribe(this.emitted.bind(this));
     }
 
-    public abstract emitted(broadcast: Protocol.UserConnected);
+    public abstract emitted(broadcast: Protocol.Events.UserConnected);
 
 }

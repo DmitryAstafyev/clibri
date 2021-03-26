@@ -77,11 +77,11 @@ export class Consumer {
     public readonly disconnected: Subject<void> = new Subject(`disconnected`);
     public readonly error: Subject<ExtError.TError> = new Subject(`error`);
     public readonly broadcast: {
-        UserConnected: Subject<Protocol.UserConnected>,
-        UserDisconnected: Subject<Protocol.UserDisconnected>,
+        UserConnected: Subject<Protocol.Events.UserConnected>,
+        UserDisconnected: Subject<Protocol.Events.UserDisconnected>,
     } = {
-        UserConnected: new Subject<Protocol.UserConnected>(),
-        UserDisconnected: new Subject<Protocol.UserDisconnected>(),
+        UserConnected: new Subject<Protocol.Events.UserConnected>(),
+        UserDisconnected: new Subject<Protocol.Events.UserDisconnected>(),
     };
 
     public get uuid(): string {
@@ -213,11 +213,11 @@ export class Consumer {
             } else {
                 const id: number = msg.getRef<any>().getId();
                 switch (id) {
-                    case Protocol.UserConnected.getId():
-                        this.broadcast.UserConnected.emit(msg.getRef<Protocol.UserConnected>());
+                    case Protocol.Events.UserConnected.getId():
+                        this.broadcast.UserConnected.emit(msg.getRef<Protocol.Events.UserConnected>());
                         break;
-                    case Protocol.UserDisconnected.getId():
-                        this.broadcast.UserDisconnected.emit(msg.getRef<Protocol.UserDisconnected>());
+                    case Protocol.Events.UserDisconnected.getId():
+                        this.broadcast.UserDisconnected.emit(msg.getRef<Protocol.Events.UserDisconnected>());
                         break;
                     default:
                         this._logger.warn(`Has been gotten unexpected message ID=${id}.`)

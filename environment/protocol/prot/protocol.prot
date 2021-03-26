@@ -19,14 +19,66 @@ enum UserRole {
     Manager;
 }
 
-struct UserConnected {
-    str username;
-    str uuid;
+group Events {
+    struct UserConnected {
+        str username;
+        str uuid;
+    }
+
+    struct UserDisconnected {
+        str username;
+        str uuid;
+    }
+
+    struct Message {
+        u64 timestamp;
+        str user;
+        str message;
+    }
 }
 
-struct UserDisconnected {
-    str username;
-    str uuid;
+group Message {
+
+    struct Request {
+        str user;
+        str message;
+    }
+
+    struct Accepted {
+        str uuid;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
+
+group Messages {
+
+    struct Message {
+        u64 timestamp;
+        str user;
+        str message;
+    }
+
+    struct Request {
+        str user;
+        str name;
+    }
+
+    struct Response {
+        Message[] messages;
+    }
+
+    struct Err {
+        str error;
+    }
+
 }
 
 group UserSignIn {

@@ -8,9 +8,28 @@
   <meta name="description" content="The HTML5 Herald">
   <meta name="author" content="SitePoint">
   <script type="text/javascript" src="../dist/index.js"></script>
-
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+  <div class="main">
+    <header class="header background-b">Header</header>
+    <div class="output">
+      <div class="content"></div>
+      <div class="input">
+        <textarea id="message-input" class="border-a"></textarea>
+      </div>
+    </div>
+    <aside class="aside background-a border-a">Aside 2</aside>
+    <footer class="footer background-b">Footer</footer>
+  </div>
+  <div class="holder">
+    <div id="login" class="modal background-a border-a">
+      <div>
+        <label>User name</label>
+        <input id="username" type="text"/>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

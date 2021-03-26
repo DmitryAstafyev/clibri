@@ -42,7 +42,7 @@ use std::thread::spawn;
 use uuid::Uuid;
 
 pub enum Broadcasting {
-    UserDisconnected(Protocol::UserDisconnected),
+    UserDisconnected(Protocol::Events::UserDisconnected),
 }
 
 pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
