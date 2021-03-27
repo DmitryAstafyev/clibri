@@ -1,3 +1,15 @@
+body * {
+    font-family: 'Roboto', sans-serif;
+}
+input,
+textarea {
+    position: relative;
+    display: inline-block;
+    border-radius: 3px;
+    border: thin solid rgb(185, 185, 185);
+    outline: none;
+    font-size: 16px;
+}
 body,
 div.main {
     position: absolute;
@@ -14,6 +26,7 @@ div.main {
 
 div.holder{
     display: flex;
+    position: absolute;
     justify-content: center;
     align-items: center;
     width: 100%;
@@ -21,6 +34,7 @@ div.holder{
     margin: 0;
     padding: 0;
     background: rgba(0,0,0,0.7);
+
 }
 header {
     position: absolute;
@@ -86,6 +100,11 @@ div.modal{
     position: absolute;
     padding: 1rem 2rem;
     box-shadow: 0px 0px 12px rgba(0,0,0, 0.4);
+    filter: none;
+
+}
+label {
+    padding: 0 1rem 0 0;
 }
 
 .background-a {
@@ -105,6 +124,6 @@ div.modal{
 }
 
 .border-a{
-    border: 1px solid rgb(185, 185, 185);
+    border: 1px solid #474747;
     border-radius: 3px;
 }
