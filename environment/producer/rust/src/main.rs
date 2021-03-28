@@ -44,14 +44,37 @@ impl Producer<Server, WrappedCustomContext> for ProducerInstance {}
 
 #[allow(unused_variables)]
 impl UserLoginObserver for UserLoginObserverRequest {
+    
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::UserLogin::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
         error: &dyn Fn(producer::protocol::UserLogin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::UserLoginObserver::Conclusion, String> {
-        println!("GOOOD");
-        Err(String::from("conclusion method isn't implemented"))
+        println!("{:?}", request);
+        Ok(producer::UserLoginObserver::Conclusion::Accept(
+            producer::protocol::UserLogin::Accepted { uuid: cx.uuid().to_string() }
+        ))
+    }
+
+    fn accept<UCX: 'static + Sync + Send + Clone>(
+        cx: &dyn producer::consumer_context::Context,
+        ucx: UCX,
+        request: producer::protocol::UserLogin::Request,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(producer::protocol::UserLogin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+
+    fn broadcast<UCX: 'static + Sync + Send + Clone>(
+        cx: &dyn producer::consumer_context::Context,
+        ucx: UCX,
+        request: producer::protocol::UserLogin::Request,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(producer::protocol::UserLogin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<(), String> {
+        Ok(())
     }
 }
 

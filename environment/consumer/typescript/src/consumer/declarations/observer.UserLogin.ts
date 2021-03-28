@@ -2,10 +2,25 @@ import * as Protocol from '../protocol/protocol';
 
 import { Consumer } from '../index';
 import { ERequestState } from '../interfaces/request.states';
+import { Subject } from 'fiber';
 
-export abstract class UserLogin extends Protocol.UserLogin.Request {
+export type TUserLoginResponse = Protocol.UserLogin.Accepted | Protocol.UserLogin.Denied | Protocol.UserLogin.Err;
+export type TAcceptHandler = (response: Protocol.UserLogin.Accepted) => void;
+export type TDenyHandler = (response: Protocol.UserLogin.Denied) => void;
+export type TErrHandler = (response: Protocol.UserLogin.Err) => void;
+
+export class UserLogin extends Protocol.UserLogin.Request {
 
     private _state: ERequestState = ERequestState.Ready;
+    private _handlers: {
+        accept: TAcceptHandler | undefined;
+        deny: TDenyHandler | undefined;
+        err: TErrHandler | undefined;
+    } = {
+        accept: undefined,
+        deny: undefined,
+        err: undefined,
+    };
 
     constructor(request: Protocol.UserLogin.IRequest) {
         super(request);
@@ -13,9 +28,14 @@ export abstract class UserLogin extends Protocol.UserLogin.Request {
 
     public destroy() {
         this._state = ERequestState.Destroyed;
+        this._handlers = {
+            accept: undefined,
+            deny: undefined,
+            err: undefined,
+        };
     }
 
-    public send(): Promise<void> {
+    public send(): Promise<TUserLoginResponse> {
         const consumer: Consumer | Error = Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
@@ -36,15 +56,17 @@ export abstract class UserLogin extends Protocol.UserLogin.Request {
                         if (message.UserLogin === undefined) {
                             return reject(new Error(`Expecting message from "UserLogin" group.`));
                         } else if (message.UserLogin.Accepted !== undefined) {
-                            this.accept(message.UserLogin.Accepted);
+                            this._handlers.accept !== undefined && this._handlers.accept(message.UserLogin.Accepted);
+                            return resolve(message.UserLogin.Accepted);
                         } else if (message.UserLogin.Denied !== undefined) {
-                            this.deny(message.UserLogin.Denied);
+                            this._handlers.deny !== undefined && this._handlers.deny(message.UserLogin.Denied);
+                            return resolve(message.UserLogin.Denied);
                         } else if (message.UserLogin.Err !== undefined) {
-                            this.error(message.UserLogin.Err);
+                            this._handlers.err !== undefined && this._handlers.err(message.UserLogin.Err);
+                            return resolve(message.UserLogin.Err);
                         } else {
                             return reject(new Error(`No message in "UserLogin" group.`));
                         }
-                        return resolve();
                     case ERequestState.Destroyed:
                         return reject(new Error(`Request "UserLogin" has been destroyed. Response would not be processed.`));
                     case ERequestState.Pending:
@@ -56,8 +78,19 @@ export abstract class UserLogin extends Protocol.UserLogin.Request {
         });
     }
 
-    public abstract accept(response: Protocol.UserLogin.Accepted);
-    public abstract deny(response: Protocol.UserLogin.Denied);
-    public abstract error(response: Protocol.UserLogin.Err);
+    public accept(handler: TAcceptHandler): UserLogin {
+        this._handlers.accept = handler;
+        return this;
+    }
+
+    public deny(handler: TDenyHandler): UserLogin {
+        this._handlers.deny = handler;
+        return this;
+    }
+
+    public err(handler: TErrHandler): UserLogin {
+        this._handlers.err = handler;
+        return this;
+    }
 
 }

@@ -53,6 +53,11 @@ impl Context for Cx {
             Err(e) => Err(format!("{}", e)),
         }
     }
+
+    fn uuid(&self) -> Uuid {
+        self.uuid.clone()
+    }
+
 }
 
 pub struct Consumer {

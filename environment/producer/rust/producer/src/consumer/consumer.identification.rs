@@ -1,5 +1,6 @@
-use super::Protocol;
+use super::{ Protocol, tools };
 use std::cmp::{Eq, PartialEq};
+use fiber::logger::{ Logger };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EFilterMatchCondition {
@@ -102,6 +103,9 @@ impl Identification {
     }
 
     pub fn assigned(&self) -> bool {
-        self.key.is_some() && self.assigned.is_some()
+        if self.assigned.is_none() {
+            tools::logger.warn("Client doesn't have producer identification");
+        }
+        self.key.is_some()
     }
 }

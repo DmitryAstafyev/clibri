@@ -1,15 +1,16 @@
 // tslint:disable: max-classes-per-file
 
-import { UserLogin } from './declarations/observer.UserLogin';
-import { UserLogout } from './declarations/observer.UserLogout';
-import { UserConnected } from './declarations/observer.UserConnected';
-import { UserDisconnected } from './declarations/observer.UserDisconnected';
 import { Client, Logger, Subscription, Subject, guid, globals } from 'fiber';
 import { IOptions, Options } from './options';
 
 import * as Protocol from './protocol/protocol';
 
 export { Protocol };
+
+export { UserLogin } from './declarations/observer.UserLogin';
+export { UserLogout } from './declarations/observer.UserLogout';
+export { UserConnected } from './declarations/observer.UserConnected';
+export { UserDisconnected } from './declarations/observer.UserDisconnected';
 
 export namespace ExtError {
 

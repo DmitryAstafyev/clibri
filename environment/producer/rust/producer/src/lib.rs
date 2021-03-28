@@ -254,7 +254,7 @@ where
                                                                             request,
                                                                             &broadcast,
                                                                         ) {
-                                                                            if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit UserSignInRequest due error: {:?}", e).to_owned())) {
+                                                                            if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit UserLogin due error: {:?}", e).to_owned())) {
                                                                                 tools::logger.err(&format!("{}", e));
                                                                             }
                                                                         }
