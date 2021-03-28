@@ -1,8 +1,7 @@
 // tslint:disable: max-classes-per-file
 
-import { UserJoin } from './declarations/observer.UserJoin';
+import { UserLogin } from './declarations/observer.UserLogin';
 import { UserLogout } from './declarations/observer.UserLogout';
-import { UserSignIn } from './declarations/observer.UserSignIn';
 import { UserConnected } from './declarations/observer.UserConnected';
 import { UserDisconnected } from './declarations/observer.UserDisconnected';
 import { Client, Logger, Subscription, Subject, guid, globals } from 'fiber';

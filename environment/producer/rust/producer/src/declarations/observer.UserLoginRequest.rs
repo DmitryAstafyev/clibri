@@ -7,8 +7,8 @@ use super::Protocol;
 
 #[derive(Debug, Clone)]
 pub enum Conclusion {
-    Accept(Protocol::UserSignIn::Accepted),
-    Deny(Protocol::UserSignIn::Denied),
+    Accept(Protocol::UserLogin::Accepted),
+    Deny(Protocol::UserLogin::Denied),
 }
 
 #[allow(unused_variables)]
@@ -16,10 +16,10 @@ pub trait Observer
 {
 
     fn conclusion<UCX: 'static + Sync + Send + Clone>(
-        request: Protocol::UserSignIn::Request,
+        request: Protocol::UserLogin::Request,
         cx: &dyn Context,
         ucx: UCX,
-        error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserLogin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<Conclusion, String> {
         Err(String::from("conclusion method isn't implemented"))
     }
@@ -27,9 +27,9 @@ pub trait Observer
     fn accept<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSignIn::Request,
+        request: Protocol::UserLogin::Request,
         broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserLogin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("accept method isn't implemented"))
     }
@@ -37,9 +37,9 @@ pub trait Observer
     fn broadcast<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSignIn::Request,
+        request: Protocol::UserLogin::Request,
         broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserLogin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("broadcast method isn't implemented"))
     }
@@ -47,9 +47,9 @@ pub trait Observer
     fn deny<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSignIn::Request,
+        request: Protocol::UserLogin::Request,
         broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::UserSignIn::Err) -> Result<(), RequestObserverErrors>,
+        error: &dyn Fn(Protocol::UserLogin::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
     }
@@ -58,10 +58,10 @@ pub trait Observer
         &self,
         cx: &dyn Context,
         ucx: UCX,
-        request: Protocol::UserSignIn::Request,
+        request: Protocol::UserLogin::Request,
         broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        let error = |mut error: Protocol::UserSignIn::Err| {
+        let error = |mut error: Protocol::UserLogin::Err| {
             match error.abduct() {
                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                     Err(RequestObserverErrors::ResponsingError(e))

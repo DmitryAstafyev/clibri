@@ -7,11 +7,11 @@ pub mod producer;
 use fiber::logger::{ LogLevel };
 use fiber_transport_server::server::{ Server };
 use fiber_transport_server::{ ErrorResponse, Request, Response };
-use producer::UserJoinObserver::{
-    Observer as UserJoinObserver, ObserverRequest as UserJoinObserverRequest,
+use producer::UserLoginObserver::{
+    Observer as UserLoginObserver, ObserverRequest as UserLoginObserverRequest,
 };
-use producer::UserSignInObserver::{
-    Observer as UserSignInObserver, ObserverRequest as UserSignInObserverRequest,
+use producer::UserLogoutObserver::{
+    Observer as UserLogoutObserver, ObserverRequest as UserLogoutObserverRequest,
 };
 use producer::EventUserConnected::{
     Controller as EventUserConnectedController, Observer as EventUserConnectedObserver,
@@ -43,26 +43,26 @@ struct ProducerInstance {}
 impl Producer<Server, WrappedCustomContext> for ProducerInstance {}
 
 #[allow(unused_variables)]
-impl UserJoinObserver for UserJoinObserverRequest {
+impl UserLoginObserver for UserLoginObserverRequest {
     fn conclusion<WrappedCustomContext>(
-        request: producer::protocol::UserJoin::Request,
+        request: producer::protocol::UserLogin::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-        error: &dyn Fn(producer::protocol::UserJoin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::UserJoinObserver::Conclusion, String> {
+        error: &dyn Fn(producer::protocol::UserLogin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<producer::UserLoginObserver::Conclusion, String> {
         println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))
     }
 }
 
 #[allow(unused_variables)]
-impl UserSignInObserver for UserSignInObserverRequest {
+impl UserLogoutObserver for UserLogoutObserverRequest {
     fn conclusion<WrappedCustomContext>(
-        request: producer::protocol::UserSignIn::Request,
+        request: producer::protocol::UserLogout::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-        error: &dyn Fn(producer::protocol::UserSignIn::Err) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::UserSignInObserver::Conclusion, String> {
+        error: &dyn Fn(producer::protocol::UserLogout::Err) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<producer::UserLogoutObserver::Conclusion, String> {
         println!("GOOOD");
         Err(String::from("conclusion method isn't implemented"))
     }

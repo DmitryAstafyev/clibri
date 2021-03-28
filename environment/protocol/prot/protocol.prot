@@ -81,33 +81,10 @@ group Messages {
 
 }
 
-group UserSignIn {
+group UserLogin {
 
     struct Request {
-        str email;
-        str hash;
-    }
-
-    struct Accepted {
-        str uuid;
-    }
-
-    struct Denied {
-        str reason;
-    }
-
-    struct Err {
-        str error;
-    }
-
-}
-
-group UserJoin {
-
-    struct Request {
-        str email;
         str username;
-        UserRole role;
     }
 
     struct Accepted {

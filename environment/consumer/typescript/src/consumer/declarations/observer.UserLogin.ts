@@ -3,11 +3,11 @@ import * as Protocol from '../protocol/protocol';
 import { Consumer } from '../index';
 import { ERequestState } from '../interfaces/request.states';
 
-export abstract class UserSignIn extends Protocol.UserSignIn.Request {
+export abstract class UserLogin extends Protocol.UserLogin.Request {
 
     private _state: ERequestState = ERequestState.Ready;
 
-    constructor(request: Protocol.UserSignIn.IRequest) {
+    constructor(request: Protocol.UserLogin.IRequest) {
         super(request);
     }
 
@@ -33,32 +33,31 @@ export abstract class UserSignIn extends Protocol.UserSignIn.Request {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message.UserSignIn === undefined) {
-                            return reject(new Error(`Expecting message from "UserSignIn" group.`));
-                        } else if (message.UserSignIn.Accepted !== undefined) {
-                            this.accept(message.UserSignIn.Accepted);
-                        } else if (message.UserSignIn.Denied !== undefined) {
-                            this.deny(message.UserSignIn.Denied);
-                        } else if (message.UserSignIn.Err !== undefined) {
-                            this.error(message.UserSignIn.Err);
+                        if (message.UserLogin === undefined) {
+                            return reject(new Error(`Expecting message from "UserLogin" group.`));
+                        } else if (message.UserLogin.Accepted !== undefined) {
+                            this.accept(message.UserLogin.Accepted);
+                        } else if (message.UserLogin.Denied !== undefined) {
+                            this.deny(message.UserLogin.Denied);
+                        } else if (message.UserLogin.Err !== undefined) {
+                            this.error(message.UserLogin.Err);
                         } else {
-                            return reject(new Error(`No message in "UserSignIn" group.`));
+                            return reject(new Error(`No message in "UserLogin" group.`));
                         }
                         return resolve();
                     case ERequestState.Destroyed:
-                        return reject(new Error(`Request "UserSignIn" has been destroyed. Response would not be processed.`));
+                        return reject(new Error(`Request "UserLogin" has been destroyed. Response would not be processed.`));
                     case ERequestState.Pending:
-                        return reject(new Error(`Unexpected state for request "UserSignIn".`));
+                        return reject(new Error(`Unexpected state for request "UserLogin".`));
                 }
             }).catch((err: Error) => {
                 reject(err);
             });
         });
-        
     }
 
-    public abstract accept(response: Protocol.UserSignIn.Accepted);
-    public abstract deny(response: Protocol.UserSignIn.Denied);
-    public abstract error(response: Protocol.UserSignIn.Err);
+    public abstract accept(response: Protocol.UserLogin.Accepted);
+    public abstract deny(response: Protocol.UserLogin.Denied);
+    public abstract error(response: Protocol.UserLogin.Err);
 
 }
