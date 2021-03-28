@@ -18,13 +18,12 @@ class Application {
 
     constructor() {
         this._init = this._init.bind(this);
-        document.addEventListener('load', this._init);
-        window.addEventListener('load', this._init);
+        [document, window].forEach(v => v.addEventListener('load', this._init));
     }
 
     private _init() {
-        document.removeEventListener('load', this._init);
-        window.removeEventListener('load', this._init);
+        [document, window].forEach(v => v.removeEventListener('load', this._init));
+        this._components.login.input.subscribe(this._onLogin.bind(this));
         this._components.spinner.mount();
         this._connection = new Connection(`ws://127.0.0.1:8080`);
         this._consumer = new Consumer(this._connection, {
@@ -32,14 +31,21 @@ class Application {
             uuid: 'Some UUID',
             location: 'London'
         });
-        this._consumer.connected.subscribe(() => {
-            console.log(`Consumer is connected!`);
-        });
-        this._consumer.ready.subscribe(() => {
-            console.log(`Consumer is ready!`);
-            this._components.spinner.umount();
-            this._components.login.mount();
-        });
+        this._consumer.connected.subscribe(this._onConnected.bind(this));
+        this._consumer.ready.subscribe(this._onReady.bind(this));
+    }
+
+    private _onConnected() {
+        console.log(`Consumer is connected!`);
+    }
+
+    private _onReady() {
+        this._components.spinner.umount();
+        this._components.login.mount();
+    }
+
+    private _onLogin(login: string) {
+        this._components.login.umount();
     }
 }
 

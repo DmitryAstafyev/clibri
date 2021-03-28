@@ -1,8 +1,13 @@
 import { Component } from '../component';
+import { Subject } from 'fiber';
+
+type TInputHandler = (value: string) => void;
 
 export class LoginComponent extends Component {
 
     private _instance: HTMLElement | undefined;
+
+    public readonly input: Subject<string> = new Subject<string>();
 
     constructor() {
         super();
@@ -47,6 +52,7 @@ export class LoginComponent extends Component {
         this.umount();
         this.unlink();
         this._instance = undefined;
+        this.input.destroy();
     }
 
     private _events(): {
@@ -65,11 +71,11 @@ export class LoginComponent extends Component {
         };
         const self = this;
         return {
-            bind: () => {
+            bind() {
                 const input = getter();
                 input !== undefined && input.addEventListener('keyup', self._onKeyUp);
             },
-            unbind: () => {
+            unbind() {
                 const input = getter();
                 input !== undefined && input.removeEventListener('keyup', self._onKeyUp);
             },
@@ -78,7 +84,10 @@ export class LoginComponent extends Component {
 
     private _onKeyUp(event: KeyboardEvent) {
         if (event.key === 'Enter') {
-            console.log(`Input: ${(event.target as HTMLInputElement).value}`);
+            const value: string = (event.target as HTMLInputElement).value;
+            if (value.trim() !== '') {
+                this.input.emit(value);
+            }
         }
     }
 
