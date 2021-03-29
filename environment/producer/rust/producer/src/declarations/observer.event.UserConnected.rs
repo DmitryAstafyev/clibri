@@ -1,14 +1,10 @@
-use super::consumer::Consumer;
 use super::consumer_identification::Filter;
-use super::{ tools, ConsumersChannel, Protocol, broadcasting, Broadcasting,ProducerEvents };
+use super::{ tools, ConsumersChannel, broadcasting, Broadcasting,ProducerEvents };
 use fiber::logger::{ Logger };
-use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, Mutex};
 use std::thread::spawn;
-
-use uuid::Uuid;
 
 pub struct Event {
     pub prop1: String,
@@ -35,33 +31,37 @@ pub trait Controller {
         feedback: Sender<ProducerEvents<UCX>>,
     ) -> Result<Sender<Event>, String> {
         let (sender, receiver): (Sender<Event>, Receiver<Event>) = mpsc::channel();
-        /*
         spawn(move || {
             loop {
                 match receiver.recv() {
                     Ok(event) => {
-                        let broadcast =
-                            |filter: Filter,
-                             broadcast: Broadcasting| {
-                                broadcasting(consumers.clone(), filter, broadcast)
-                            };
-                        if let Err(e) = Self::connected(&event, ucx.clone(), &broadcast) {
-                            if let Err(e) = feedback.send(ProducerEvents::EventError(e)) {
-                                tools::logger.err(&format!("Fail to call connected handler for event due error: {}", e));
+                        match consumers.lock() {
+                            Ok(consumers) => {
+                                let broadcast = |filter: Filter, broadcast: Broadcasting| {
+                                    broadcasting(consumers.clone(), filter, broadcast)
+                                };
+                                if let Err(e) = Self::connected(&event, ucx.clone(), &broadcast) {
+                                    if let Err(e) = feedback.send(ProducerEvents::EventError(tools::logger.err(&format!("Fail to call connected handler for event due error: {}", e)))) {
+                                        tools::logger.err(&format!("Fail send ProducerEvents:EventError {}", e));
+                                    }
+                                    break;
+                                }
+                            },
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::EventChannelError(tools::logger.err(&format!("Fail get access to consumers channel due error: {}", e)))) {
+                                tools::logger.err(&format!("Fail send ProducerEvents:EventChannelError {}", e));
                             }
-                            break;
                         }
+                        
                     },
                     Err(e) => {
-                        if let Err(e) = feedback.send(ProducerEvents::EventChannelError(e.to_string())) {
-                            tools::logger.err(&format!("Fail receive event due error: {}", e));
+                        if let Err(e) = feedback.send(ProducerEvents::EventChannelError(tools::logger.err(&format!("Fail receive event due error: {}", e)))) {
+                            tools::logger.err(&format!("Fail send ProducerEvents:EventChannelError {}", e));
                         }
                         break;
                     }
                 }
             }
         });
-        */
         Ok(sender)
     }
 }

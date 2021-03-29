@@ -1403,7 +1403,7 @@ pub mod Identification {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct SelfKey {
-        pub uuid: String,
+        pub uuid: Option<String>,
         pub id: Option<u64>,
         pub location: Option<String>,
     }
@@ -1415,13 +1415,13 @@ pub mod Identification {
         }
         fn defaults() -> SelfKey {
             SelfKey {
-                uuid: String::from(""),
+                uuid: None,
                 id: None,
                 location: None,
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(3)) {
+            self.uuid = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(3)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1501,8 +1501,8 @@ pub mod Identification {
 
     #[derive(Debug, Clone, PartialEq)]
     pub struct AssignedKey {
-        pub uuid: String,
-        pub auth: bool,
+        pub uuid: Option<String>,
+        pub auth: Option<bool>,
     }
     #[allow(unused_variables)]
     #[allow(unused_mut)]
@@ -1512,16 +1512,16 @@ pub mod Identification {
         }
         fn defaults() -> AssignedKey {
             AssignedKey {
-                uuid: String::from(""),
-                auth: true,
+                uuid: None,
+                auth: None,
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(9)) {
+            self.uuid = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(9)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.auth = match bool::get_from_storage(Source::Storage(&mut storage), Some(10)) {
+            self.auth = match Option::<bool>::get_from_storage(Source::Storage(&mut storage), Some(10)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };

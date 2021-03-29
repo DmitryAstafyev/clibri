@@ -6,6 +6,7 @@ use fiber::logger::{ Logger };
 pub enum EFilterMatchCondition {
     PartialEqual,
     Equal,
+    NotEqual,
 }
 
 #[derive(Debug, Clone)]
@@ -45,25 +46,35 @@ impl Identification {
             if let Some(o_key) = self.key.as_ref() {
                 match filter.condition {
                     EFilterMatchCondition::Equal => {
-                        if o_key.id == key.id
-                            && o_key.location == key.location
-                            && o_key.uuid == key.uuid
+                        if (key.id.is_some() && o_key.id == key.id)
+                            && (key.location.is_some() && o_key.location == key.location)
+                            && (key.uuid.is_some() && o_key.uuid == key.uuid)
                         {
                             true
                         } else {
                             false
                         }
-                    }
+                    },
                     EFilterMatchCondition::PartialEqual => {
-                        if o_key.id == key.id
-                            || o_key.location == key.location
-                            || o_key.uuid == key.uuid
+                        if key.id.is_some() && o_key.id == key.id
+                            || key.location.is_some() && o_key.location == key.location
+                            || key.uuid.is_some() && o_key.uuid == key.uuid
                         {
                             true
                         } else {
                             false
                         }
-                    }
+                    },
+                    EFilterMatchCondition::NotEqual => {
+                        if (key.id.is_some() && o_key.id != key.id)
+                            && (key.location.is_some() && o_key.location != key.location)
+                            && (key.uuid.is_some() && o_key.uuid != key.uuid)
+                        {
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 }
             } else {
                 false
@@ -75,23 +86,32 @@ impl Identification {
             if let Some(o_assigned) = self.assigned.as_ref() {
                 match filter.condition {
                     EFilterMatchCondition::Equal => {
-                        if o_assigned.auth == assigned.auth
-                            && o_assigned.uuid == assigned.uuid
+                        if (assigned.auth.is_some() && o_assigned.auth == assigned.auth)
+                            && (assigned.uuid.is_some() && o_assigned.uuid == assigned.uuid)
                         {
                             true
                         } else {
                             false
                         }
-                    }
+                    },
                     EFilterMatchCondition::PartialEqual => {
-                        if o_assigned.auth == assigned.auth
-                            || o_assigned.uuid == assigned.uuid
+                        if (assigned.auth.is_some() && o_assigned.auth == assigned.auth)
+                            || (assigned.uuid.is_some() && o_assigned.uuid == assigned.uuid)
                         {
                             true
                         } else {
                             false
                         }
-                    }
+                    },
+                    EFilterMatchCondition::NotEqual => {
+                        if (assigned.auth.is_some() && o_assigned.auth != assigned.auth)
+                            && (assigned.uuid.is_some() && o_assigned.uuid != assigned.uuid)
+                        {
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 }
             } else {
                 false
@@ -99,6 +119,8 @@ impl Identification {
         } else {
             true
         };
+        println!(">>>>>>>>>> key_match: {}", key_match);
+        println!(">>>>>>>>>> assigned_match: {}", assigned_match);
         key_match && assigned_match
     }
 

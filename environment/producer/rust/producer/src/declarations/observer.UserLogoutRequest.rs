@@ -1,5 +1,5 @@
 use super::consumer_context::{ Context };
-use super::protocol::{ StructEncode, PackingStruct };
+use super::protocol::{ PackingStruct };
 use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::Filter;
 use super::{ Broadcasting };

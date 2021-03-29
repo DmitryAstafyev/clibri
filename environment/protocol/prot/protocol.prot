@@ -1,6 +1,6 @@
 group Identification {
     struct SelfKey {
-        str uuid;
+        str uuid?;
         u64 id?;
         str location?;
     }
@@ -8,8 +8,8 @@ group Identification {
         str uuid;
     }
     struct AssignedKey {
-        str uuid;
-        bool auth;
+        str uuid?;
+        bool auth?;
     }
 }
 

@@ -2292,7 +2292,6 @@ export class MessageHeader {
             this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
             this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
             console.log(`buffer: ${buffer.join(' ')}`);
-            console.log(`id: ${this.id}; signature: ${this.signature}; sequence: ${this.sequence}; ts: ${this.ts}; len: ${this.len}; `);
         }
     }
 
@@ -2470,21 +2469,21 @@ export namespace Identification {
     }
 
     export interface ISelfKey {
-        uuid: string;
+        uuid: string | undefined;
         id: bigint | undefined;
         location: string | undefined;
     }
     export class SelfKey extends Protocol.Convertor implements ISelfKey, ISigned<SelfKey> {
 
         public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: true, },
             { prop: 'id', types: Protocol.Primitives.u64, optional: true, },
             { prop: 'location', types: Protocol.Primitives.StrUTF8, optional: true, },
         ];
 
         public static defaults(): SelfKey {
             return new Identification.SelfKey({
-                uuid: '',
+                uuid: undefined,
                 id: undefined,
                 location: undefined,
             });
@@ -2528,7 +2527,7 @@ export namespace Identification {
             }
         }
 
-        public uuid: string;
+        public uuid: string | undefined;
         public id: bigint | undefined;
         public location: string | undefined;
         public static getSignature(): string { return 'SelfKey'; }
@@ -2552,7 +2551,7 @@ export namespace Identification {
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(3, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.uuid === undefined ? this.getBuffer(3, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(3, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
                 () => this.id === undefined ? this.getBuffer(4, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(4, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.id)),
                 () => this.location === undefined ? this.getBuffer(5, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(5, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.location),
             ]);
@@ -2563,11 +2562,19 @@ export namespace Identification {
             if (storage instanceof Error) {
                 return storage;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 3, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
+            const uuidBuf: ArrayBufferLike | undefined = storage.get(3);
+            if (uuidBuf === undefined) {
+                return new Error(`Fail to get property uuid`);
+            }
+            if (uuidBuf.byteLength === 0) {
+                this.uuid = undefined;
             } else {
-                this.uuid = uuid;
+                const uuid: string | Error = this.getValue<string>(storage, 3, Protocol.Primitives.StrUTF8.decode);
+                if (uuid instanceof Error) {
+                    return uuid;
+                } else {
+                    this.uuid = uuid;
+                }
             }
             const idBuf: ArrayBufferLike | undefined = storage.get(4);
             if (idBuf === undefined) {
@@ -2700,20 +2707,20 @@ export namespace Identification {
     }
 
     export interface IAssignedKey {
-        uuid: string;
-        auth: boolean;
+        uuid: string | undefined;
+        auth: boolean | undefined;
     }
     export class AssignedKey extends Protocol.Convertor implements IAssignedKey, ISigned<AssignedKey> {
 
         public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'auth', types: Protocol.Primitives.bool, optional: false, },
+            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: true, },
+            { prop: 'auth', types: Protocol.Primitives.bool, optional: true, },
         ];
 
         public static defaults(): AssignedKey {
             return new Identification.AssignedKey({
-                uuid: '',
-                auth: true,
+                uuid: undefined,
+                auth: undefined,
             });
         }
 
@@ -2754,8 +2761,8 @@ export namespace Identification {
             }
         }
 
-        public uuid: string;
-        public auth: boolean;
+        public uuid: string | undefined;
+        public auth: boolean | undefined;
         public static getSignature(): string { return 'AssignedKey'; }
         public static getId(): number { return 8; }
 
@@ -2777,8 +2784,8 @@ export namespace Identification {
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(9, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-                () => this.getBuffer(10, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.auth)),
+                () => this.uuid === undefined ? this.getBuffer(9, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(9, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.auth === undefined ? this.getBuffer(10, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(10, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.auth)),
             ]);
         }
 
@@ -2787,17 +2794,33 @@ export namespace Identification {
             if (storage instanceof Error) {
                 return storage;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 9, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
+            const uuidBuf: ArrayBufferLike | undefined = storage.get(9);
+            if (uuidBuf === undefined) {
+                return new Error(`Fail to get property uuid`);
             }
-            const auth: boolean | Error = this.getValue<boolean>(storage, 10, Protocol.Primitives.bool.decode);
-            if (auth instanceof Error) {
-                return auth;
+            if (uuidBuf.byteLength === 0) {
+                this.uuid = undefined;
             } else {
-                this.auth = auth;
+                const uuid: string | Error = this.getValue<string>(storage, 9, Protocol.Primitives.StrUTF8.decode);
+                if (uuid instanceof Error) {
+                    return uuid;
+                } else {
+                    this.uuid = uuid;
+                }
+            }
+            const authBuf: ArrayBufferLike | undefined = storage.get(10);
+            if (authBuf === undefined) {
+                return new Error(`Fail to get property auth`);
+            }
+            if (authBuf.byteLength === 0) {
+                this.auth = undefined;
+            } else {
+                const auth: boolean | Error = this.getValue<boolean>(storage, 10, Protocol.Primitives.bool.decode);
+                if (auth instanceof Error) {
+                    return auth;
+                } else {
+                    this.auth = auth;
+                }
             }
         }
 

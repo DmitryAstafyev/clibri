@@ -29,7 +29,7 @@ use super::{ tools };
 use consumer::Consumer;
 use consumer_identification::Filter;
 use protocol as Protocol;
-use Protocol::{StructEncode, PackingStruct};
+use Protocol::{PackingStruct};
 
 use fiber::server::events::ServerEvents;
 use fiber::server::server::Server as ServerTrait;
@@ -42,6 +42,7 @@ use std::thread::spawn;
 use uuid::Uuid;
 
 pub enum Broadcasting {
+    UserConnected(Protocol::Events::UserConnected),
     UserDisconnected(Protocol::Events::UserDisconnected),
 }
 
@@ -70,32 +71,25 @@ pub enum ConsumersChannel {
 }
 
 pub fn broadcasting(
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
+    consumers: Sender<ConsumersChannel>,
     filter: Filter,
     broadcast: Broadcasting,
 ) -> Result<(), String> {
-    match consumers.write() {
-        Ok(consumers) => match broadcast {
-            Broadcasting::UserDisconnected(mut msg) => match msg.abduct() {
-                Ok(buffer) => {
-                    let mut errors: Vec<String> = vec![];
-                    for (uuid, consumer) in consumers.iter() {
-                        if let Err(e) =
-                            consumer.send_if(buffer.clone(), filter.clone())
-                        {
-                            errors.push(format!("Fail to send data to {}, due error: {}", uuid, e));
-                        }
-                    }
-                    if errors.is_empty() {
-                        Ok(())
-                    } else {
-                        Err(errors.join("\n"))
-                    }
-                }
-                Err(e) => Err(e),
-            },
+    let buffer = match broadcast {
+        Broadcasting::UserDisconnected(mut msg) => match msg.pack(0u32) {
+            Ok(buffer) => buffer,
+            Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::UserDisconnected due error: {}", e))); },
         },
-        Err(e) => Err(format!("{}", e)),
+        Broadcasting::UserConnected(mut msg) => match msg.pack(0u32) {
+            Ok(buffer) => buffer,
+            Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::UserConnected due error: {}", e))); },
+        },
+    };
+    if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
+        Err(tools::logger.err(&format!("Fail to get access consumers channel due error: {}", e)))
+    } else {
+        println!(">>>>>>>>>> broadcasting sent");
+        Ok(())
     }
 }
 
@@ -245,6 +239,9 @@ where
             let UserLogin = Arc::new(RwLock::new(UserLoginObserver::ObserverRequest::new()));
             let UserLogout = Arc::new(RwLock::new(UserLogoutObserver::ObserverRequest::new()));
             loop {
+                let broadcast = |filter: Filter, broadcast: Broadcasting| {
+                    broadcasting(tx_consumers.clone(), filter, broadcast)
+                };
                 match rx_consumers.recv() {
                     Ok(action) => match action {
                         ConsumersChannel::Add(uuid) => match store.write() {
@@ -324,17 +321,9 @@ where
                             Ok(mut consumers) => {
                                 tools::logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                                 if let Some(consumer) = consumers.get_mut(&uuid) {
-                                    let broadcast = |filter: Filter, broadcast: Broadcasting| {
-                                            // broadcasting(consumers_wp.clone(), filter, broadcast)
-                                            Ok(())
-                                        };
                                     if let Err(e) = consumer.chunk(&buffer) {
                                         if let Err(e) = feedback.send(ProducerEvents::Reading(
-                                            format!(
-                                                "Fail to read connection buffer due error: {}",
-                                                e
-                                            )
-                                            .to_owned(),
+                                            tools::logger.err(&format!("Fail to read connection buffer due error: {}", e))
                                         )) {
                                             tools::logger.err(&format!("{}", e));
                                         }

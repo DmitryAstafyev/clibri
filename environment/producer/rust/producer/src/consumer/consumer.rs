@@ -1,9 +1,8 @@
 use super::consumer_context::Context;
 use super::consumer_identification::{Identification, Filter};
 use super::{ Protocol, ConsumersChannel };
-use std::collections::HashMap;
 use std::sync::mpsc::{Sender};
-use std::sync::{Arc, RwLock, Mutex};
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 pub struct Cx {

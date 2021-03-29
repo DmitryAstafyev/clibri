@@ -73,7 +73,20 @@ impl UserLoginObserver for UserLoginObserverRequest {
         broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
         error: &dyn Fn(producer::protocol::UserLogin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
-        Ok(())
+        let filter = Filter {
+            key: Some(producer::protocol::Identification::SelfKey {
+                id: None,
+                uuid: Some(cx.uuid().to_string()),
+                location: None,
+            }),
+            assigned: None,
+            condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+        };
+        println!(">>>>>>>> broadcasting");
+        broadcast(filter, Broadcasting::UserConnected(producer::protocol::Events::UserConnected {
+            uuid: cx.uuid().to_string(),
+            username: "----".to_string(),
+        }))
     }
 }
 
