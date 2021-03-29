@@ -1,13 +1,11 @@
 use super::consumer::Consumer;
 use super::consumer_identification::Filter;
-use super::{ tools };
+use super::{ tools, ConsumersChannel, Protocol, broadcasting, Broadcasting,ProducerEvents };
 use fiber::logger::{ Logger };
-use super::{broadcasting, Broadcasting,ProducerEvents};
-use super::Protocol;
 use std::collections::HashMap;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Mutex};
 use std::thread::spawn;
 
 use uuid::Uuid;
@@ -33,10 +31,11 @@ pub trait Controller {
     fn listen<UCX: 'static + Sync + Send + Clone>(
         &mut self,
         ucx: UCX,
-        consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
+        consumers: Arc<Mutex<Sender<ConsumersChannel>>>,
         feedback: Sender<ProducerEvents<UCX>>,
     ) -> Result<Sender<Event>, String> {
         let (sender, receiver): (Sender<Event>, Receiver<Event>) = mpsc::channel();
+        /*
         spawn(move || {
             loop {
                 match receiver.recv() {
@@ -62,6 +61,7 @@ pub trait Controller {
                 }
             }
         });
+        */
         Ok(sender)
     }
 }

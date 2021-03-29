@@ -1,6 +1,6 @@
 use super::consumer_context::Context;
 use super::consumer_identification::{Identification, Filter};
-use super::Protocol;
+use super::{ Protocol, ConsumersChannel };
 use std::collections::HashMap;
 use std::sync::mpsc::{Sender};
 use std::sync::{Arc, RwLock, Mutex};
@@ -8,24 +8,18 @@ use uuid::Uuid;
 
 pub struct Cx {
     uuid: Uuid,
-    consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>,
+    consumers: Arc<Mutex<Sender<ConsumersChannel>>>,
 }
 
 impl Context for Cx {
     fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
-        match self.consumers.write() {
-            Ok(mut consumers) => {
-                if let Some(consumer) = consumers.get_mut(&self.uuid) {
-                    if let Err(e) = consumer.send(buffer) {
-                        Err(format!("Fail to send buffer for consumer {} due error {}", self.uuid, e))
-                    } else {
-                        Ok(())
-                    }
-                } else {
-                    Err(format!("Fail to find consumer {}", self.uuid))
-                }
-            }
-            Err(e) => Err(format!("{}", e)),
+        match self.consumers.lock() {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendTo((self.uuid.clone(), buffer))) {
+                Err(e.to_string())
+            } else {
+                Ok(())
+            },
+            Err(e) => Err(e.to_string()),
         }
     }
 
@@ -34,23 +28,13 @@ impl Context for Cx {
         buffer: Vec<u8>,
         filter: Filter,
     ) -> Result<(), String> {
-        match self.consumers.write() {
-            Ok(consumers) => {
-                let mut errors: Vec<String> = vec![];
-                for (uuid, consumer) in consumers.iter() {
-                    if let Err(e) =
-                        consumer.send_if(buffer.clone(), filter.clone())
-                    {
-                        errors.push(format!("Fail to send data to {}, due error: {}", uuid, e));
-                    }
-                }
-                if errors.is_empty() {
-                    Ok(())
-                } else {
-                    Err(errors.join("\n"))
-                }
-            }
-            Err(e) => Err(format!("{}", e)),
+        match self.consumers.lock() {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
+                Err(e.to_string())
+            } else {
+                Ok(())
+            },
+            Err(e) => Err(e.to_string()),
         }
     }
 
@@ -69,7 +53,7 @@ pub struct Consumer {
 }
 
 impl Consumer {
-    pub fn new(uuid: Uuid, consumers: Arc<RwLock<HashMap<Uuid, Consumer>>>, sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>) -> Self {
+    pub fn new(uuid: Uuid, consumers: Arc<Mutex<Sender<ConsumersChannel>>>, sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>) -> Self {
         Consumer {
             uuid,
             buffer: Protocol::Buffer::new(),
