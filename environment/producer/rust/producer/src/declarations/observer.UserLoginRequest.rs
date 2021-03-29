@@ -1,5 +1,5 @@
 use super::consumer_context::{ Context };
-use super::protocol::{ StructEncode };
+use super::protocol::{ StructEncode, PackingStruct };
 use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::Filter;
 use super::{ Broadcasting };
@@ -58,11 +58,12 @@ pub trait Observer
         &self,
         cx: &dyn Context,
         ucx: UCX,
+        sequence: u32,
         request: Protocol::UserLogin::Request,
         broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         let error = |mut error: Protocol::UserLogin::Err| {
-            match error.abduct() {
+            match error.pack(sequence) {
                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                     Err(RequestObserverErrors::ResponsingError(e))
                 } else {
@@ -80,7 +81,7 @@ pub trait Observer
                     if let Err(e) = Self::broadcast(cx, ucx.clone(), request, broadcast, &error) {
                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                     }
-                    match response.abduct() {
+                    match response.pack(sequence) {
                         Ok(buffer) => if let Err(e) = cx.send(buffer) {
                             Err(RequestObserverErrors::ResponsingError(e))
                         } else {
@@ -93,7 +94,7 @@ pub trait Observer
                     if let Err(e) = Self::deny(cx, ucx, request, broadcast, &error) {
                         return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
                     }
-                    match response.abduct() {
+                    match response.pack(sequence) {
                         Ok(buffer) => if let Err(e) = cx.send(buffer) {
                             Err(RequestObserverErrors::ResponsingError(e))
                         } else {

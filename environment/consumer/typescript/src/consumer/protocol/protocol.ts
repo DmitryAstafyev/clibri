@@ -2291,6 +2291,8 @@ export class MessageHeader {
             this.sequence = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
             this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
             this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
+            console.log(`buffer: ${buffer.join(' ')}`);
+            console.log(`id: ${this.id}; signature: ${this.signature}; sequence: ${this.sequence}; ts: ${this.ts}; len: ${this.len}; `);
         }
     }
 

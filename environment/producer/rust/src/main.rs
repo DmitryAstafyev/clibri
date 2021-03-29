@@ -51,7 +51,6 @@ impl UserLoginObserver for UserLoginObserverRequest {
         ucx: WrappedCustomContext,
         error: &dyn Fn(producer::protocol::UserLogin::Err) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::UserLoginObserver::Conclusion, String> {
-        println!("{:?}", request);
         Ok(producer::UserLoginObserver::Conclusion::Accept(
             producer::protocol::UserLogin::Accepted { uuid: cx.uuid().to_string() }
         ))

@@ -366,12 +366,14 @@ where
                                                 } else {
                                                     match message {
                                                         Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(request)) => {
+                                                            tools::logger.debug(&format!("Protocol::AvailableMessages::UserLogin::Request {:?}", request));
                                                             match UserLogin.write() {
                                                                 Ok(UserLogin) => {
                                                                     use UserLoginObserver::Observer;
                                                                     if let Err(e) = UserLogin.emit(
                                                                         consumer.get_cx(),
                                                                         ucx.clone(),
+                                                                        header.sequence,
                                                                         request,
                                                                         &broadcast,
                                                                     ) {
@@ -386,12 +388,14 @@ where
                                                             }
                                                         },
                                                         Protocol::AvailableMessages::UserLogout(Protocol::UserLogout::AvailableMessages::Request(request)) => {
+                                                            tools::logger.debug(&format!("Protocol::AvailableMessages::UserLogout::Request {:?}", request));
                                                             match UserLogout.write() {
                                                                 Ok(UserLogout) => {
                                                                     use UserLogoutObserver::Observer;
                                                                     if let Err(e) = UserLogout.emit(
                                                                         consumer.get_cx(),
                                                                         ucx.clone(),
+                                                                        header.sequence,
                                                                         request,
                                                                         &broadcast,
                                                                     ) {
