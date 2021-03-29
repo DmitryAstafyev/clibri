@@ -72,27 +72,27 @@ impl GlobalLoggerSettings {
 
 pub trait Logger {
 
-    fn warn(&self, str: &str) {
-        self.log(str, LogLevel::Warn);
+    fn warn(&self, str: &str) -> String {
+        self.log(str, LogLevel::Warn)
     }
 
-    fn err(&self, str: &str) -> () {
-        self.log(str, LogLevel::Error);
+    fn err(&self, str: &str) -> String {
+        self.log(str, LogLevel::Error)
     }
 
-    fn debug(&self, str: &str) {
-        self.log(str, LogLevel::Debug);
+    fn debug(&self, str: &str) -> String {
+        self.log(str, LogLevel::Debug)
     }
 
-    fn info(&self, str: &str){
-        self.log(str, LogLevel::Debug);
+    fn info(&self, str: &str) -> String {
+        self.log(str, LogLevel::Debug)
     }
 
-    fn verb(&self, str: &str) {
-        self.log(str, LogLevel::Verb);
+    fn verb(&self, str: &str) -> String {
+        self.log(str, LogLevel::Verb)
     }
 
-    fn log(&self, str: &str, level: LogLevel) {
+    fn log(&self, str: &str, level: LogLevel) -> String {
         let (g_level, gen_ms, pass_ms): (u8, u128, u128) = match tools::LOGGER_SETTINGS.lock() {
             Ok(mut settings) => (settings.get_level(), settings.get_gen_time(), settings.get_pass_time()),
             Err(_) => (0u8, 0u128, 0u128),
@@ -114,6 +114,7 @@ pub trait Logger {
         } {
             println!("{}: {}", signature, str);
         }
+        str.to_string()
     }
 
     fn set_level(&mut self, level: LogLevel);

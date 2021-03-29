@@ -91,7 +91,7 @@ impl Connection {
                             }
                         }
                     },
-                    Err(e) => tools::logger.warn(&format!("{}:: probably socket is busy; cannot get access due error: {}", uuid, e))
+                    Err(e) => { tools::logger.warn(&format!("{}:: probably socket is busy; cannot get access due error: {}", uuid, e)); }
                 }
                 // Thread should sleep a bit to let "send" method work.
                 thread::sleep(timeout);

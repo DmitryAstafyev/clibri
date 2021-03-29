@@ -167,17 +167,15 @@ where
                         spawn(move || match event {
                             ServerEvents::Connected(uuid) => match consumers.lock() {
                                 Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Add(uuid)) {
-                                    tools::logger.err(&format!("Fail to access to consumers due error: {}", e));
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers due error: {}", e),
+                                        tools::logger.err(&format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e)),
                                     )) {
                                         tools::logger.err(&format!("{}", e));
                                     }
                                 },
                                 Err(e) => {
-                                    tools::logger.err(&format!("Fail to access to consumers channel due error: {}", e));
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers channel due error: {}", e),
+                                        tools::logger.err(&format!("ConsumersChannel::Add: Fail to access to consumers channel due error: {}", e)),
                                     )) {
                                         tools::logger.err(&format!("{}", e));
                                     }
@@ -185,17 +183,15 @@ where
                             },
                             ServerEvents::Disconnected(uuid) => match consumers.lock() {
                                 Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Remove(uuid)) {
-                                    tools::logger.err(&format!("Fail to access to consumers due error: {}", e));
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers due error: {}", e),
+                                        tools::logger.err(&format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e)),
                                     )) {
                                         tools::logger.err(&format!("{}", e));
                                     }
                                 },
                                 Err(e) => {
-                                    tools::logger.err(&format!("Fail to access to consumers channel due error: {}", e));
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers channel due error: {}", e),
+                                        tools::logger.err(&format!("ConsumersChannel::Remove: Fail to access to consumers channel due error: {}", e)),
                                     )) {
                                         tools::logger.err(&format!("{}", e));
                                     }
@@ -203,24 +199,22 @@ where
                             },
                             ServerEvents::Received(uuid, buffer) => match consumers.lock() {
                                 Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Chunk((uuid, buffer))) {
-                                    tools::logger.err(&format!("Fail to access to consumers due error: {}", e));
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers due error: {}", e),
+                                        tools::logger.err(&format!("ConsumersChannel::Chunk: Fail to access to consumers due error: {}", e)),
                                     )) {
                                         tools::logger.err(&format!("{}", e));
                                     }
                                 },
                                 Err(e) => {
-                                    tools::logger.err(&format!("Fail to access to consumers channel due error: {}", e));
                                     if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                        format!("Fail to access to consumers channel due error: {}", e),
+                                        tools::logger.err(&format!("ConsumersChannel::Chunk: Fail to access to consumers channel due error: {}", e)),
                                     )) {
                                         tools::logger.err(&format!("{}", e));
                                     }
                                 }
                             },
                             ServerEvents::Error(uuid, e) => if let Err(e) = feedback.send(ProducerEvents::ConnectionError(
-                                format!("Connection {:?}: {}", uuid, e).to_owned(),
+                                tools::logger.err(&format!("Connection {:?}: {}", uuid, e)),
                             )) {
                                 tools::logger.err(&format!("{}", e));
                             }
@@ -269,12 +263,10 @@ where
                                     tools::logger.err(&format!("{}", e));
                                 }
                             }
-                            Err(e) => {
-                                if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                    format!("Fail to access to consumers due error: {}", e),
-                                )) {
-                                    tools::logger.err(&format!("{}", e));
-                                }
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
+                                format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e),
+                            )) {
+                                tools::logger.err(&format!("{}", e));
                             }
                         },
                         ConsumersChannel::Remove(uuid) => match store.write() {
@@ -286,12 +278,10 @@ where
                                     tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                                 }
                             },
-                            Err(e) => {
-                                if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                    format!("Fail to access to consumers due error: {}", e),
-                                )) {
-                                    tools::logger.err(&format!("{}", e));
-                                }
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
+                                format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e),
+                            )) {
+                                tools::logger.err(&format!("{}", e));
                             }
                         },
                         ConsumersChannel::SendByFilter((filter, buffer)) => match store.write() {
@@ -308,7 +298,11 @@ where
                                     tools::logger.err(&errors.join("\n"));
                                 }
                             }
-                            Err(e) => tools::logger.err(&format!("{}", e)),
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
+                                format!("ConsumersChannel::SendByFilter: Fail to access to consumers due error: {}", e),
+                            )) {
+                                tools::logger.err(&format!("{}", e));
+                            },
                         },
                         ConsumersChannel::SendTo((uuid, buffer)) => match store.write() {
                             Ok(mut store) => {
@@ -317,15 +311,13 @@ where
                                         tools::logger.err(&format!("Fail to send buffer for consumer {} due error {}", uuid, e));
                                     }
                                 } else {
-                                    tools::logger.err(&format!("Fail to find consumer {}", uuid))
+                                    tools::logger.err(&format!("Fail to find consumer {}", uuid));
                                 }
                             },
-                            Err(e) => {
-                                if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                    format!("Fail to access to consumers to find {} due error: {}", uuid, e),
-                                )) {
-                                    tools::logger.err(&format!("{}", e));
-                                }
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
+                                format!("ConsumersChannel::SendTo: Fail to access to consumers due error: {}", e),
+                            )) {
+                                tools::logger.err(&format!("{}", e));
                             },
                         },
                         ConsumersChannel::Chunk((uuid, buffer)) => match store.write() {
@@ -422,13 +414,10 @@ where
                                     tools::logger.err(&format!("Fail to find consumer uuid: {}", uuid));
                                 }
                             },
-                            Err(e) => {
-                                if let Err(e) = feedback.send(ProducerEvents::InternalError(
-                                    format!("Fail to access to consumers due error: {}", e)
-                                        .to_owned(),
-                                )) {
-                                    tools::logger.err(&format!("{}", e));
-                                }
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
+                                format!("ConsumersChannel::Chunk: Fail to access to consumers due error: {}", e),
+                            )) {
+                                tools::logger.err(&format!("{}", e));
                             }
                         },
                     }

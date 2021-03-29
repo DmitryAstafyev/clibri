@@ -99,7 +99,7 @@ impl ServerTrait for Server {
                                 }
                             }
                         },
-                        Err(e) => tools::logger.err(&format!("Fail to extract connections to send buffer due error: {}", e)),
+                        Err(e) => { tools::logger.err(&format!("Fail to extract connections to send buffer due error: {}", e)); },
                     },
                     Err(_) => {
                         // No needs logs here;
@@ -238,7 +238,7 @@ impl Server {
                         }
                         tools::logger.debug(&format!("Active connections: {}", connections.len()));
                     },
-                    Err(e) => tools::logger.err(&format!("{}:: Fail to close connection. No access to connections: {}", uuid, e)),
+                    Err(e) => { tools::logger.err(&format!("{}:: Fail to close connection. No access to connections: {}", uuid, e)); },
                 };
             };
             let mut disconnected: Option<(Uuid, Option<CloseCode>)> = None;
