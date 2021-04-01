@@ -18,6 +18,7 @@ export class SpinnerComponent extends Component {
             return new Error(`Already umount`);
         }
         this._instance.parentNode.removeChild(this._instance);
+        this._instance = undefined;
     }
 
     public element(): HTMLElement {

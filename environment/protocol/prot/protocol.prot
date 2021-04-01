@@ -115,3 +115,23 @@ group UserLogout {
     }
 
 }
+
+group Users {
+
+    struct User {
+        str name;
+        str uuid;
+    }
+
+    struct Request {
+    }
+
+    struct Response {
+        User[] users;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}

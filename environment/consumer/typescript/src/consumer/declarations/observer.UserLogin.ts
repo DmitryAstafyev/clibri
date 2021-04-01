@@ -2,7 +2,6 @@ import * as Protocol from '../protocol/protocol';
 
 import { Consumer } from '../index';
 import { ERequestState } from '../interfaces/request.states';
-import { Subject } from 'fiber';
 
 export type TUserLoginResponse = Protocol.UserLogin.Accepted | Protocol.UserLogin.Denied | Protocol.UserLogin.Err;
 export type TAcceptHandler = (response: Protocol.UserLogin.Accepted) => void;

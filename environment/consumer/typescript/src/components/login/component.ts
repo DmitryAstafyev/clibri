@@ -30,6 +30,7 @@ export class LoginComponent extends Component {
         }
         this._events().unbind();
         this._instance.parentNode.removeChild(this._instance);
+        this._instance = undefined;
     }
 
     public element(): HTMLElement {

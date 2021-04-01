@@ -77,6 +77,7 @@ impl Consumer {
         if let Some(msg) = self.buffer.next() {
             Some((msg.msg, msg.header))
         } else {
+            println!(">>>>>> No messages in buffer");
             None
         }
     }

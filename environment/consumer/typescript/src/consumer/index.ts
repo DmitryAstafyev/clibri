@@ -9,6 +9,7 @@ export { Protocol };
 
 export { UserLogin } from './declarations/observer.UserLogin';
 export { UserLogout } from './declarations/observer.UserLogout';
+export { Users } from './declarations/observer.Users';
 export { UserConnected } from './declarations/observer.UserConnected';
 export { UserDisconnected } from './declarations/observer.UserDisconnected';
 
