@@ -126,12 +126,12 @@ export abstract class Convertor {
         const selfs: Array<Required<Convertor>> = [];
         let offset: number = 0;
         do {
-            const len = buffer.readUInt32LE(offset);
-            if (isNaN(len) || !isFinite(len)) {
+            const len = buffer.readBigUInt64LE(offset);
+            if (isNaN(Number(len)) || !isFinite(Number(len))) {
                 return new Error(`Invalid length of ${this.getSignature()}/${this.getId()} in an array`);
             }
-            offset += u32.getSize();
-            const body = buffer.slice(offset, offset + len);
+            offset += u64.getSize();
+            const body = buffer.slice(offset, offset + Number(len));
             const self = this.defaults();
             const err = self.decode(body);
             if (err instanceof Error) {
