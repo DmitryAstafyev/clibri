@@ -59,6 +59,7 @@ struct StructExampleB {
     f32[] field_f32;
     f64[] field_f64;
     bool[] field_bool;
+    StructExampleA[] field_struct;
 }
 
 struct StructExampleC {

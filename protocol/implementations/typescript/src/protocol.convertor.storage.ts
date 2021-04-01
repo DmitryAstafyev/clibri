@@ -49,7 +49,7 @@ export class Storage {
                 case 16: return ESize.u16;
                 case 32: return ESize.u32;
                 case 64: return ESize.u64;
-                default: return new Error(`Invalid size rank`);
+                default: return new Error(`Invalid size rank: ${rank}`);
             }
         } catch (e) {
             return e;

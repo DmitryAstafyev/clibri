@@ -23,7 +23,7 @@ pub struct PackageHeader {
 }
 
 pub fn has_buffer_header(buf: &[u8]) -> bool {
-    buf.len() > MSG_HEADER_LEN
+    buf.len() >= MSG_HEADER_LEN
 }
 
 pub fn get_header_from_buffer(buf: &[u8]) -> Result<PackageHeader, String> {

@@ -4,6 +4,7 @@ import * as Tools from './tools/index';
 import { ESize, CBits } from './protocol.sizes';
 import { Storage } from './protocol.convertor.storage';
 import { u32 } from './protocol.primitives.u32';
+import { u64 } from './protocol.primitives.u64';
 
 // injectable
 export abstract class Convertor {
@@ -106,7 +107,7 @@ export abstract class Convertor {
                 error = buffer;
                 return;
             }
-            const len = u32.encode(buffer.byteLength);
+            const len = u64.encode(BigInt(buffer.byteLength));
             if (len instanceof Error) {
                 error = len;
                 return;
