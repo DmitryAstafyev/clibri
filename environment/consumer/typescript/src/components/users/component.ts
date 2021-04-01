@@ -48,7 +48,7 @@ export class UsersComponent extends Component {
     public element(): HTMLElement {
         if (this._users.length === 0) {
             const holder: HTMLElement = document.createElement('p');
-            holder.className = 'users';
+            holder.className = 't-normal';
             holder.innerHTML = 'No users are online';
             return holder;
         } else {
@@ -75,13 +75,14 @@ export class UsersComponent extends Component {
             return;
         }
         this._users = users;
-        this._instance.parentNode.removeChild(this._instance);
-        this._instance = this.element();
-        const holder: HTMLElement | null = document.body.querySelector('aside[id="users"]');
-        if (holder === null) {
-            return new Error(`Fail find holder DOM element`);
+        if (this._instance.nodeName.toLowerCase() === 'p') {
+            const parent = this._instance.parentNode;
+            parent.removeChild(this._instance);
+            this._instance = this.element();
+            parent.appendChild(this._instance);
+        } else {
+            this._instance.innerHTML = this.element().innerHTML;
         }
-        holder.appendChild(this._instance);
     }
 
     private _onUserConnected(event: Protocol.Events.UserConnected) {

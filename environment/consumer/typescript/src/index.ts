@@ -4,6 +4,7 @@ import { Connection } from 'fiber-websocket';
 import { SpinnerComponent } from './components/spinner/component';
 import { LoginComponent } from './components/login/component';
 import { UsersComponent } from './components/users/component';
+import { SenderComponent } from './components/sender/component';
 
 class Application {
 
@@ -11,6 +12,7 @@ class Application {
         spinner: SpinnerComponent;
         login: LoginComponent;
         users: UsersComponent;
+        sender: SenderComponent;
     } | undefined;
     private _connection: Connection;
     private _consumer: Consumer;
@@ -34,6 +36,7 @@ class Application {
             spinner: new SpinnerComponent(),
             login: new LoginComponent(),
             users: new UsersComponent(this._consumer),
+            sender: new SenderComponent(),
         };
         this._components.login.input.subscribe(this._onLoginInput.bind(this));
         this._components.spinner.mount();
@@ -53,6 +56,8 @@ class Application {
         const login: UserLogin = new UserLogin({ username: username });
         login.accept((response: Protocol.UserLogin.Accepted) => {
             this._components.users.mount();
+            this._components.sender.setUsername(username);
+            this._components.sender.mount();
             // console.log(response);
         }).deny((response: Protocol.UserLogin.Denied) => {
             // console.log(response);

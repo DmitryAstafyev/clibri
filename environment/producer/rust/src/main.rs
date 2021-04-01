@@ -14,13 +14,18 @@ use producer::UserLogoutObserver::{
     Observer as UserLogoutObserver, ObserverRequest as UserLogoutObserverRequest,
 };
 use producer::UsersObserver::{Observer as UsersObserver, ObserverRequest as UsersObserverRequest};
-
+use producer::MessageObserver::{
+    Observer as MessageObserver, ObserverRequest as MessageObserverRequest,
+};
 use producer::consumer_identification::Filter;
 use producer::EventUserConnected::{
     Controller as EventUserConnectedController, Observer as EventUserConnectedObserver,
 };
 use producer::*;
 use std::sync::{Arc, RwLock};
+use regex::Regex;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 // use std::thread::spawn;
 
 #[allow(non_upper_case_globals)]
@@ -44,8 +49,16 @@ pub mod store {
         pub uuid: Uuid,
     }
 
+    #[derive(Clone, Debug)]
+    pub struct Message {
+        pub name: String,
+        pub uuid: Uuid,
+        pub message: String,
+        pub timestamp: u64,
+    }
     lazy_static! {
         pub static ref users: RwLock<HashMap<Uuid, User>> = RwLock::new(HashMap::new());
+        pub static ref messages: RwLock<HashMap<Uuid, Message>> = RwLock::new(HashMap::new());
     }
 }
 
@@ -151,7 +164,6 @@ impl UsersObserver for UsersObserverRequest {
             producer::protocol::Users::Err,
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::UsersObserver::Conclusion, String> {
-        println!(">>>>>>>>>>>>>> USERS are REQUESTED");
         match store::users.read() {
             Ok(users) => Ok(producer::UsersObserver::Conclusion::Response(
                 producer::protocol::Users::Response {
@@ -179,6 +191,92 @@ impl UsersObserver for UsersObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         Ok(())
+    }
+}
+
+#[allow(unused_variables)]
+impl MessageObserver for MessageObserverRequest {
+    fn conclusion<WrappedCustomContext>(
+        request: producer::protocol::Message::Request,
+        cx: &dyn producer::consumer_context::Context,
+        ucx: WrappedCustomContext,
+        error: &dyn Fn(
+            producer::protocol::Message::Err,
+        ) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<producer::MessageObserver::Conclusion, String> {
+        let re = Regex::new(r"[<>]").unwrap();
+        if re.is_match(&request.message) {
+            Ok(producer::MessageObserver::Conclusion::Deny(
+                producer::protocol::Message::Denied {
+                    reason: "Symbols < and > cannot be used".to_owned(),
+                },
+            ))
+        } else {
+            Ok(producer::MessageObserver::Conclusion::Accept(
+                producer::protocol::Message::Accepted {
+                    uuid: cx.uuid().to_string(),
+                },
+            ))
+        }
+    }
+
+    fn accept<UCX: 'static + Sync + Send + Clone>(
+        cx: &dyn producer::consumer_context::Context,
+        ucx: UCX,
+        request: producer::protocol::Message::Request,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(
+            producer::protocol::Message::Err,
+        ) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<(), String> {
+        let start = SystemTime::now();
+        let tm = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        match store::messages.write() {
+            Ok(mut messages) => {
+                messages.insert(cx.uuid(), store::Message {
+                    name: request.user,
+                    uuid: cx.uuid(),
+                    message: request.message,
+                    timestamp: tm.as_secs(),
+                });
+            },
+            Err(e) => {}
+        };
+        Ok(())
+    }
+
+    fn broadcast<UCX: 'static + Sync + Send + Clone>(
+        cx: &dyn producer::consumer_context::Context,
+        ucx: UCX,
+        request: producer::protocol::Message::Request,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(
+            producer::protocol::Message::Err,
+        ) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<(), String> {
+        let filter = Filter {
+            key: Some(producer::protocol::Identification::SelfKey {
+                id: None,
+                uuid: Some(cx.uuid().to_string()),
+                location: None,
+            }),
+            assigned: None,
+            condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+        };
+        let start = SystemTime::now();
+        let tm = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        broadcast(
+            filter,
+            Broadcasting::Message(producer::protocol::Events::Message {
+                user: request.user,
+                message: request.message,
+                timestamp: tm.as_secs(),
+            }),
+        )
     }
 }
 

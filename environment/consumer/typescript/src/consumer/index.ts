@@ -12,6 +12,7 @@ export { UserLogout } from './declarations/observer.UserLogout';
 export { Users } from './declarations/observer.Users';
 export { UserConnected } from './declarations/observer.UserConnected';
 export { UserDisconnected } from './declarations/observer.UserDisconnected';
+export { Message } from './declarations/observer.Message';
 
 export namespace ExtError {
 

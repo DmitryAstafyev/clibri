@@ -26,6 +26,10 @@ pub mod UserLogoutObserver;
 pub mod UsersObserver;
 
 #[allow(non_snake_case)]
+#[path = "./declarations/observer.MessageRequest.rs"]
+pub mod MessageObserver;
+
+#[allow(non_snake_case)]
 #[path = "./declarations/observer.event.UserConnected.rs"]
 pub mod EventUserConnected;
 
@@ -48,6 +52,7 @@ use uuid::Uuid;
 pub enum Broadcasting {
     UserConnected(Protocol::Events::UserConnected),
     UserDisconnected(Protocol::Events::UserDisconnected),
+    Message(Protocol::Events::Message),
 }
 
 pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
@@ -87,6 +92,10 @@ pub fn broadcasting(
         Broadcasting::UserConnected(mut msg) => match msg.pack(0u32) {
             Ok(buffer) => buffer,
             Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::UserConnected due error: {}", e))); },
+        },
+        Broadcasting::Message(mut msg) => match msg.pack(0u32) {
+            Ok(buffer) => buffer,
+            Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::Message due error: {}", e))); },
         },
     };
     if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
@@ -242,6 +251,8 @@ where
             let UserLogin = Arc::new(RwLock::new(UserLoginObserver::ObserverRequest::new()));
             let UserLogout = Arc::new(RwLock::new(UserLogoutObserver::ObserverRequest::new()));
             let Users = Arc::new(RwLock::new(UsersObserver::ObserverRequest::new()));
+            let Message = Arc::new(RwLock::new(MessageObserver::ObserverRequest::new()));
+
             loop {
                 let broadcast = |filter: Filter, broadcast: Broadcasting| {
                     broadcasting(tx_consumers.clone(), filter, broadcast)
@@ -425,6 +436,28 @@ where
                                                                     }
                                                                 }
                                                                 Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to Users due error: {}", e).to_owned())) {
+                                                                    tools::logger.err(&format!("{}", e));
+                                                                }
+                                                            }
+                                                        },
+                                                        Protocol::AvailableMessages::Message(Protocol::Message::AvailableMessages::Request(request)) => {
+                                                            tools::logger.debug(&format!("Protocol::AvailableMessages::Message::Request {:?}", request));
+                                                            match Message.write() {
+                                                                Ok(Message) => {
+                                                                    use MessageObserver::Observer;
+                                                                    if let Err(e) = Message.emit(
+                                                                        consumer.get_cx(),
+                                                                        ucx.clone(),
+                                                                        header.sequence,
+                                                                        request,
+                                                                        &broadcast,
+                                                                    ) {
+                                                                        if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit Message due error: {:?}", e).to_owned())) {
+                                                                            tools::logger.err(&format!("{}", e));
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to Message due error: {}", e).to_owned())) {
                                                                     tools::logger.err(&format!("{}", e));
                                                                 }
                                                             }

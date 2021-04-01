@@ -85,7 +85,7 @@ export class LoginComponent extends Component {
 
     private _onKeyUp(event: KeyboardEvent) {
         if (event.key === 'Enter') {
-            const value: string = (event.target as HTMLInputElement).value;
+            const value: string = (event.target as HTMLInputElement).value.replace(/</gi, '(').replace(/>/gi, ')');
             if (value.trim() !== '') {
                 this.input.emit(value);
             }
