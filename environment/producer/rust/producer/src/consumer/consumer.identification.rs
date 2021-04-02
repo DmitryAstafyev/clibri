@@ -1,6 +1,7 @@
 use super::{ Protocol, tools };
 use std::cmp::{Eq, PartialEq};
 use fiber::logger::{ Logger };
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EFilterMatchCondition {
@@ -11,6 +12,7 @@ pub enum EFilterMatchCondition {
 
 #[derive(Debug, Clone)]
 pub struct Filter {
+    pub uuid: Option<Uuid>,
     pub key: Option<Protocol::Identification::SelfKey>,
     pub assigned: Option<Protocol::Identification::AssignedKey>,
     pub condition: EFilterMatchCondition,
@@ -18,13 +20,15 @@ pub struct Filter {
 
 #[derive(Debug, Clone)]
 pub struct Identification {
+    uuid: Uuid,
     key: Option<Protocol::Identification::SelfKey>,
     assigned: Option<Protocol::Identification::AssignedKey>,
 }
 
 impl Identification {
-    pub fn new() -> Self {
+    pub fn new(uuid: Uuid) -> Self {
         Identification {
+            uuid: uuid,
             key: None,
             assigned: None,
         }
@@ -42,6 +46,21 @@ impl Identification {
         &self,
         filter: Filter,
     ) -> bool {
+        let uuid_match = if let Some(uuid) = filter.uuid {
+            match filter.condition {
+                EFilterMatchCondition::Equal => {
+                    self.uuid == uuid
+                },
+                EFilterMatchCondition::PartialEqual => {
+                    self.uuid == uuid
+                },
+                EFilterMatchCondition::NotEqual => {
+                    self.uuid != uuid
+                },
+            }
+        } else {
+            true
+        };
         let key_match = if let Some(key) = filter.key {
             if let Some(o_key) = self.key.as_ref() {
                 match filter.condition {
@@ -119,9 +138,7 @@ impl Identification {
         } else {
             true
         };
-        println!(">>>>>>>>>> key_match: {}", key_match);
-        println!(">>>>>>>>>> assigned_match: {}", assigned_match);
-        key_match && assigned_match
+        key_match && assigned_match && uuid_match
     }
 
     pub fn assigned(&self) -> bool {

@@ -56,7 +56,7 @@ impl Consumer {
         Consumer {
             uuid,
             buffer: Protocol::Buffer::new(),
-            identification: Identification::new(),
+            identification: Identification::new(uuid.clone()),
             cx: Cx {
                 uuid,
                 consumers,
@@ -77,7 +77,6 @@ impl Consumer {
         if let Some(msg) = self.buffer.next() {
             Some((msg.msg, msg.header))
         } else {
-            println!(">>>>>> No messages in buffer");
             None
         }
     }
@@ -98,7 +97,8 @@ impl Consumer {
         buffer: Vec<u8>,
         filter: Filter,
     ) -> Result<bool, String> {
-        if self.identification.filter(filter) {
+        if self.identification.filter(filter.clone()) {
+            println!(">>>>>>>>>> SENDING WITH CONDITION! {:?} / {}", filter, self.uuid);
             if let Err(e) = self.send(buffer) {
                 Err(e)
             } else {

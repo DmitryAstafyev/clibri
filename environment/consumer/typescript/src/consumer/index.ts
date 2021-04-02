@@ -81,9 +81,11 @@ export class Consumer {
     public readonly broadcast: {
         UserConnected: Subject<Protocol.Events.UserConnected>,
         UserDisconnected: Subject<Protocol.Events.UserDisconnected>,
+        Message: Subject<Protocol.Events.Message>,
     } = {
         UserConnected: new Subject<Protocol.Events.UserConnected>(),
         UserDisconnected: new Subject<Protocol.Events.UserDisconnected>(),
+        Message: new Subject<Protocol.Events.Message>(),
     };
 
     public get uuid(): string {
@@ -220,6 +222,9 @@ export class Consumer {
                         break;
                     case Protocol.Events.UserDisconnected.getId():
                         this.broadcast.UserDisconnected.emit(msg.getRef<Protocol.Events.UserDisconnected>());
+                        break;
+                    case Protocol.Events.Message.getId():
+                        this.broadcast.Message.emit(msg.getRef<Protocol.Events.Message>());
                         break;
                     default:
                         this._logger.warn(`Has been gotten unexpected message ID=${id}.`)

@@ -101,6 +101,7 @@ pub fn broadcasting(
     if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
         Err(tools::logger.err(&format!("Fail to get access consumers channel due error: {}", e)))
     } else {
+        println!(">>>>>>>>>>> BROADCASTING!");
         Ok(())
     }
 }
@@ -300,6 +301,7 @@ where
                             Ok(store) => {
                                 let mut errors: Vec<String> = vec![];
                                 for (uuid, consumer) in store.iter() {
+                                    println!(">>>>>>>>>> SENDING BY FILTER");
                                     if let Err(e) =
                                         consumer.send_if(buffer.clone(), filter.clone())
                                     {
@@ -336,18 +338,14 @@ where
                             Ok(mut consumers) => {
                                 tools::logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                                 if let Some(consumer) = consumers.get_mut(&uuid) {
-                                    println!(">>>>>>>>>>>>> POINT 1");
                                     if let Err(e) = consumer.chunk(&buffer) {
-                                        println!(">>>>>>>>>>>>> POINT 1/1");
                                         if let Err(e) = feedback.send(ProducerEvents::Reading(
                                             tools::logger.err(&format!("Fail to read connection buffer due error: {}", e))
                                         )) {
                                             tools::logger.err(&format!("{}", e));
                                         }
                                     }
-                                    println!(">>>>>>>>>>>>> POINT 2");
                                     while let Some((message, header)) = consumer.next() {
-                                        println!(">>>>>>>>>>>>> POINT IN 1");
                                         match message {
                                                 Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::SelfKey(request) = message {
                                                     let uuid = consumer.set_key(request);
@@ -372,7 +370,6 @@ where
                                                     // TODO: Consumer should be disconnected or some feedback should be to consumer
                                                     // it might be some option of producer like NonAssignedStratagy
                                                 } else {
-                                                    println!(">>>>>>>>>>>>> POINT IN 2");
                                                     match message {
                                                         Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(request)) => {
                                                             tools::logger.debug(&format!("Protocol::AvailableMessages::UserLogin::Request {:?}", request));
@@ -463,13 +460,11 @@ where
                                                             }
                                                         },
                                                         _ => {
-                                                            println!("OOOPS >>>>>>>>> message isn't recognized");
                                                         },
                                                     }
                                                 },
                                             };
                                     }
-                                    println!(">>>>>>>>>>>>> POINT 3");
                                 } else {
                                     tools::logger.err(&format!("Fail to find consumer uuid: {}", uuid));
                                 }

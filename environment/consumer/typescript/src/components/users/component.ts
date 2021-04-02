@@ -86,7 +86,7 @@ export class UsersComponent extends Component {
     }
 
     private _onUserConnected(event: Protocol.Events.UserConnected) {
-        console.log(event);
+        this._request();
     }
 
     private _request() {

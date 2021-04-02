@@ -34,6 +34,7 @@ group Events {
         u64 timestamp;
         str user;
         str message;
+        str uuid;
     }
 }
 

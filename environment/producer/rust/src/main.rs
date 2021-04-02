@@ -121,11 +121,8 @@ impl UserLoginObserver for UserLoginObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         let filter = Filter {
-            key: Some(producer::protocol::Identification::SelfKey {
-                id: None,
-                uuid: Some(cx.uuid().to_string()),
-                location: None,
-            }),
+            uuid: Some(cx.uuid()),
+            key: None,
             assigned: None,
             condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
         };
@@ -257,11 +254,8 @@ impl MessageObserver for MessageObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         let filter = Filter {
-            key: Some(producer::protocol::Identification::SelfKey {
-                id: None,
-                uuid: Some(cx.uuid().to_string()),
-                location: None,
-            }),
+            uuid: Some(cx.uuid()),
+            key: None,
             assigned: None,
             condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
         };
@@ -275,6 +269,7 @@ impl MessageObserver for MessageObserverRequest {
                 user: request.user,
                 message: request.message,
                 timestamp: tm.as_secs(),
+                uuid: cx.uuid().to_string(),
             }),
         )
     }

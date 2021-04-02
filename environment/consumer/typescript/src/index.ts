@@ -5,6 +5,7 @@ import { SpinnerComponent } from './components/spinner/component';
 import { LoginComponent } from './components/login/component';
 import { UsersComponent } from './components/users/component';
 import { SenderComponent } from './components/sender/component';
+import { MessagesComponent } from './components/messages/component';
 
 class Application {
 
@@ -13,6 +14,7 @@ class Application {
         login: LoginComponent;
         users: UsersComponent;
         sender: SenderComponent;
+        messages: MessagesComponent;
     } | undefined;
     private _connection: Connection;
     private _consumer: Consumer;
@@ -37,6 +39,7 @@ class Application {
             login: new LoginComponent(),
             users: new UsersComponent(this._consumer),
             sender: new SenderComponent(),
+            messages: new MessagesComponent(this._consumer),
         };
         this._components.login.input.subscribe(this._onLoginInput.bind(this));
         this._components.spinner.mount();
@@ -56,7 +59,11 @@ class Application {
         const login: UserLogin = new UserLogin({ username: username });
         login.accept((response: Protocol.UserLogin.Accepted) => {
             this._components.users.mount();
+            this._components.messages.setUuid(response.uuid);
+            this._components.messages.mount();
             this._components.sender.setUsername(username);
+            this._components.sender.setMessagesRef(this._components.messages);
+            this._components.sender.setUuid(response.uuid);
             this._components.sender.mount();
             // console.log(response);
         }).deny((response: Protocol.UserLogin.Denied) => {

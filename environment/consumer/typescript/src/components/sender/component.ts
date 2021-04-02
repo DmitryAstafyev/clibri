@@ -1,10 +1,13 @@
 import { Component } from '../component';
-import { Consumer, Protocol, Message } from '../../consumer/index';
+import { Protocol, Message } from '../../consumer/index';
+import { MessagesComponent } from '../messages/component';
 
 export class SenderComponent extends Component {
 
     private _instance: HTMLTextAreaElement | undefined;
     private _username: string | undefined;
+    private _messages: MessagesComponent | undefined;
+    private _uuid: string | undefined;
 
     constructor() {
         super();
@@ -54,6 +57,14 @@ export class SenderComponent extends Component {
         this._username = username;
     }
 
+    public setMessagesRef(messages: MessagesComponent) {
+        this._messages = messages;
+    }
+
+    public setUuid(uuid: string) {
+        this._uuid = uuid;
+    }
+
     private _events(): {
         bind: () => void,
         unbind: () => void,
@@ -97,6 +108,12 @@ export class SenderComponent extends Component {
                 if (response instanceof Protocol.Message.Denied) {
                     return reject(new Error(`Message cannot be posted because: ${response.reason}`));
                 }
+                this._messages.addOwnMessage({
+                    uuid: this._uuid,
+                    user: this._username,
+                    message: message,
+                    datetime: (new Date()).toLocaleString(),
+                });
                 resolve();
             }).catch(reject);
         });
