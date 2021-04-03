@@ -1,5 +1,5 @@
 import { Component } from '../component';
-import { Consumer, Protocol, Message } from '../../consumer/index';
+import { Consumer, Protocol, Messages } from '../../consumer/index';
 import { Subscription } from 'fiber';
 
 interface IMessage {
@@ -34,6 +34,7 @@ export class MessagesComponent extends Component {
             return new Error(`Fail find holder DOM element`);
         }
         holder.appendChild(this._instance);
+        this._request();
     }
 
     public umount(): Error | undefined {
@@ -100,16 +101,21 @@ export class MessagesComponent extends Component {
         this.update(this._messages);    }
 
     private _request() {
-        /*
-        (new Users(new Protocol.Users.Request({}))).send().then((response: Protocol.Users.Response | Protocol.Users.Err) => {
-            if (response instanceof Protocol.Users.Err) {
+        (new Messages(new Protocol.Messages.Request({}))).send().then((response: Protocol.Messages.Response | Protocol.Messages.Err) => {
+            if (response instanceof Protocol.Messages.Err) {
                 return console.log(`Error: ${response.error}`);
             }
-            this.update(response.users)
+            this.update(response.messages.map((msg: Protocol.Messages.Message) => {
+                return {
+                    user: msg.user,
+                    uuid: msg.uuid,
+                    message: msg.message,
+                    datetime: (new Date(Number(msg.timestamp))).toLocaleString()
+                }
+            }));
         }).catch((err: Error) => {
             console.log(err);
         });
-        */
     }
 
     private _onMessage(event: Protocol.Events.Message) {

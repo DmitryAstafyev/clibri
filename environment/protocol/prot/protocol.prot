@@ -64,12 +64,11 @@ group Messages {
     struct Message {
         u64 timestamp;
         str user;
+        str uuid;
         str message;
     }
 
     struct Request {
-        str user;
-        str name;
     }
 
     struct Response {

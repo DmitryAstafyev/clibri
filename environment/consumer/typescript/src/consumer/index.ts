@@ -13,6 +13,7 @@ export { Users } from './declarations/observer.Users';
 export { UserConnected } from './declarations/observer.UserConnected';
 export { UserDisconnected } from './declarations/observer.UserDisconnected';
 export { Message } from './declarations/observer.Message';
+export { Messages } from './declarations/observer.Messages';
 
 export namespace ExtError {
 

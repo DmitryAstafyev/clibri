@@ -17,6 +17,9 @@ use producer::UsersObserver::{Observer as UsersObserver, ObserverRequest as User
 use producer::MessageObserver::{
     Observer as MessageObserver, ObserverRequest as MessageObserverRequest,
 };
+use producer::MessagesObserver::{
+    Observer as MessagesObserver, ObserverRequest as MessagesObserverRequest,
+};
 use producer::consumer_identification::Filter;
 use producer::EventUserConnected::{
     Controller as EventUserConnectedController, Observer as EventUserConnectedObserver,
@@ -272,6 +275,48 @@ impl MessageObserver for MessageObserverRequest {
                 uuid: cx.uuid().to_string(),
             }),
         )
+    }
+}
+
+#[allow(unused_variables)]
+impl MessagesObserver for MessagesObserverRequest {
+    fn conclusion<WrappedCustomContext>(
+        request: producer::protocol::Messages::Request,
+        cx: &dyn producer::consumer_context::Context,
+        ucx: WrappedCustomContext,
+        error: &dyn Fn(
+            producer::protocol::Messages::Err,
+        ) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<producer::MessagesObserver::Conclusion, String> {
+        match store::messages.read() {
+            Ok(mut messages) => Ok(producer::MessagesObserver::Conclusion::Response(
+                producer::protocol::Messages::Response {
+                    messages: messages
+                    .values()
+                    .cloned()
+                    .map(|msg| producer::protocol::Messages::Message {
+                        timestamp: msg.timestamp,
+                        user: msg.name,
+                        uuid: msg.uuid.to_string(),
+                        message: msg.message,
+                    })
+                    .collect()
+                },
+            )),
+            Err(e) => Err(format!("{}", e))
+        }
+    }
+
+    fn response<UCX: 'static + Sync + Send + Clone>(
+        cx: &dyn producer::consumer_context::Context,
+        ucx: UCX,
+        request: producer::protocol::Messages::Request,
+        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+        error: &dyn Fn(
+            producer::protocol::Messages::Err,
+        ) -> Result<(), producer::observer::RequestObserverErrors>,
+    ) -> Result<(), String> {
+        Ok(())
     }
 }
 

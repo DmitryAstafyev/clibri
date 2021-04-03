@@ -30,6 +30,10 @@ pub mod UsersObserver;
 pub mod MessageObserver;
 
 #[allow(non_snake_case)]
+#[path = "./declarations/observer.MessagesRequest.rs"]
+pub mod MessagesObserver;
+
+#[allow(non_snake_case)]
 #[path = "./declarations/observer.event.UserConnected.rs"]
 pub mod EventUserConnected;
 
@@ -253,7 +257,7 @@ where
             let UserLogout = Arc::new(RwLock::new(UserLogoutObserver::ObserverRequest::new()));
             let Users = Arc::new(RwLock::new(UsersObserver::ObserverRequest::new()));
             let Message = Arc::new(RwLock::new(MessageObserver::ObserverRequest::new()));
-
+            let Messages = Arc::new(RwLock::new(MessagesObserver::ObserverRequest::new()));
             loop {
                 let broadcast = |filter: Filter, broadcast: Broadcasting| {
                     broadcasting(tx_consumers.clone(), filter, broadcast)
@@ -455,6 +459,28 @@ where
                                                                     }
                                                                 }
                                                                 Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to Message due error: {}", e).to_owned())) {
+                                                                    tools::logger.err(&format!("{}", e));
+                                                                }
+                                                            }
+                                                        },
+                                                        Protocol::AvailableMessages::Messages(Protocol::Messages::AvailableMessages::Request(request)) => {
+                                                            tools::logger.debug(&format!("Protocol::AvailableMessages::Messages::Request {:?}", request));
+                                                            match Messages.write() {
+                                                                Ok(Messages) => {
+                                                                    use MessagesObserver::Observer;
+                                                                    if let Err(e) = Messages.emit(
+                                                                        consumer.get_cx(),
+                                                                        ucx.clone(),
+                                                                        header.sequence,
+                                                                        request,
+                                                                        &broadcast,
+                                                                    ) {
+                                                                        if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit Messages due error: {:?}", e).to_owned())) {
+                                                                            tools::logger.err(&format!("{}", e));
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to Messages due error: {}", e).to_owned())) {
                                                                     tools::logger.err(&format!("{}", e));
                                                                 }
                                                             }
