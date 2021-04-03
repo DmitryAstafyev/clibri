@@ -98,7 +98,6 @@ impl Consumer {
         filter: Filter,
     ) -> Result<bool, String> {
         if self.identification.filter(filter.clone()) {
-            println!(">>>>>>>>>> SENDING WITH CONDITION! {:?} / {}", filter, self.uuid);
             if let Err(e) = self.send(buffer) {
                 Err(e)
             } else {

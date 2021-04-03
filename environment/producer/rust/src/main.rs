@@ -289,7 +289,7 @@ impl MessagesObserver for MessagesObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::MessagesObserver::Conclusion, String> {
         match store::messages.read() {
-            Ok(mut messages) => Ok(producer::MessagesObserver::Conclusion::Response(
+            Ok(messages) => Ok(producer::MessagesObserver::Conclusion::Response(
                 producer::protocol::Messages::Response {
                     messages: messages
                     .values()
@@ -359,13 +359,13 @@ fn main() {
         Ok(feedback) => loop {
             match feedback.events.recv() {
                 Ok(m) => match m {
-                    producer::ProducerEvents::Connected(_ucx) => {
+                    producer::ProducerEvents::Connected((_uuid, _ucx)) => {
                         println!(">>>>>> Connected");
                     }
                     producer::ProducerEvents::ServerDown => {
                         println!(">>>>>> ServerDown");
                     }
-                    producer::ProducerEvents::Disconnected => {
+                    producer::ProducerEvents::Disconnected(_uuid) => {
                         println!(">>>>>> Disconnected");
                     }
                     producer::ProducerEvents::InternalError(e) => {

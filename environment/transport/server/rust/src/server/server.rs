@@ -170,7 +170,7 @@ impl Server {
             Ok(socket) => {
                 let mut conn = connection::Connection::new(socket);
                 let uuid = conn.get_uuid();
-                let mut cx = ConnectionContext {
+                let cx = ConnectionContext {
                     uuid,
                     connections: self.connections.clone(),
                 };

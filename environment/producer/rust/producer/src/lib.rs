@@ -70,8 +70,8 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     ServerError(String),
     ServerDown,
     Reading(String),
-    Connected(UCX),
-    Disconnected,
+    Connected((Uuid, UCX)),
+    Disconnected(Uuid),
 }
 
 #[derive(Debug, Clone)]
@@ -105,7 +105,6 @@ pub fn broadcasting(
     if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
         Err(tools::logger.err(&format!("Fail to get access consumers channel due error: {}", e)))
     } else {
-        println!(">>>>>>>>>>> BROADCASTING!");
         Ok(())
     }
 }
@@ -275,7 +274,7 @@ where
                                 });
                                 tools::logger.debug(&format!("New Consumer added; uuid: {}", uuid));
                                 if let Err(e) =
-                                    feedback.send(ProducerEvents::Connected(ucx.clone()))
+                                    feedback.send(ProducerEvents::Connected((uuid.clone(), ucx.clone())))
                                 {
                                     tools::logger.err(&format!("{}", e));
                                 }
@@ -289,7 +288,7 @@ where
                         ConsumersChannel::Remove(uuid) => match store.write() {
                             Ok(mut store) => {
                                 store.remove(&uuid);
-                                if let Err(e) = feedback.send(ProducerEvents::Disconnected) {
+                                if let Err(e) = feedback.send(ProducerEvents::Disconnected(uuid.clone())) {
                                     tools::logger.err(&format!("{}", e));
                                 } else {
                                     tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
@@ -305,7 +304,6 @@ where
                             Ok(store) => {
                                 let mut errors: Vec<String> = vec![];
                                 for (uuid, consumer) in store.iter() {
-                                    println!(">>>>>>>>>> SENDING BY FILTER");
                                     if let Err(e) =
                                         consumer.send_if(buffer.clone(), filter.clone())
                                     {
