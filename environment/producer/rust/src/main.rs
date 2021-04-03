@@ -21,13 +21,17 @@ use producer::MessagesObserver::{
     Observer as MessagesObserver, ObserverRequest as MessagesObserverRequest,
 };
 use producer::consumer_identification::Filter;
-use producer::EventUserConnected::{
-    Controller as EventUserConnectedController, Observer as EventUserConnectedObserver,
+use producer::EventConnected::{
+    Controller as EventConnectedController, Observer as EventConnectedObserver,
+};
+use producer::EventDisconnected::{
+    Controller as EventDisconnectedController, Observer as EventDisconnectedObserver,
 };
 use producer::*;
 use std::sync::{Arc, RwLock};
 use regex::Regex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 // use std::thread::spawn;
 
@@ -321,13 +325,31 @@ impl MessagesObserver for MessagesObserverRequest {
 }
 
 #[allow(unused_variables)]
-impl EventUserConnectedController for EventUserConnectedObserver {
+impl EventConnectedController for EventConnectedObserver {
     fn connected<WrappedCustomContext>(
-        event: &producer::EventUserConnected::Event,
+        uuid: Uuid,
         ucx: WrappedCustomContext,
         broadcasting: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
-        Err(String::from("connected handler isn't implemented"))
+        Ok(())
+        // Err(String::from("connected handler isn't implemented"))
+    }
+}
+
+#[allow(unused_variables)]
+impl EventDisconnectedController for EventDisconnectedObserver {
+    fn disconnected<WrappedCustomContext>(
+        uuid: Uuid,
+        ucx: WrappedCustomContext,
+        broadcasting: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+    ) -> Result<(), String> {
+        match store::users.write() {
+            Ok(mut users) => {
+                users.remove(&uuid);
+                Ok(())
+            },
+            Err(e) => Err(format!("{}", e))
+        }
     }
 }
 

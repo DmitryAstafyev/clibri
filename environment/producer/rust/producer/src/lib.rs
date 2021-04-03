@@ -34,8 +34,12 @@ pub mod MessageObserver;
 pub mod MessagesObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.event.UserConnected.rs"]
-pub mod EventUserConnected;
+#[path = "./declarations/observer.event.Connected.rs"]
+pub mod EventConnected;
+
+#[allow(non_snake_case)]
+#[path = "./declarations/observer.event.Disconnected.rs"]
+pub mod EventDisconnected;
 
 use super::{ tools };
 use consumer::Consumer;
@@ -113,7 +117,6 @@ pub fn broadcasting(
 #[allow(non_snake_case)]
 pub struct Channel<UCX> where UCX: 'static + Sync + Send + Clone {
     pub events: Receiver<ProducerEvents<UCX>>,
-    pub EventUserConnectedSender: Sender<EventUserConnected::Event>,
 }
 
 #[allow(unused_variables)]
@@ -145,8 +148,8 @@ where
         ) = mpsc::channel();
         let consumers = Arc::new(Mutex::new(tx_consumers.clone()));
         let feedback = tx_feedback.clone();
-        use EventUserConnected::Controller;
-        let EventUserConnectedSender = match EventUserConnected::Observer::new().listen(
+        use EventConnected::{ Controller as EventConnectedController };
+        let EventConnectedSender = match EventConnected::Observer::new().listen(
             ucx.clone(),
             consumers.clone(),
             feedback.clone(),
@@ -157,12 +160,34 @@ where
                     feedback.send(ProducerEvents::EventListenError(e.to_string()))
                 {
                     tools::logger.err(&format!(
-                        "Cannot start listen event EventUserConnected due {}",
+                        "Cannot start listen event EventConnected due {}",
                         e
                     ));
                 }
                 return Err(format!(
-                    "Cannot start listen event EventUserConnected due {}",
+                    "Cannot start listen event EventConnected due {}",
+                    e
+                ));
+            }
+        };
+        use EventDisconnected::{ Controller as EventDisconnectedController };
+        let EventDisconnectedSender = match EventDisconnected::Observer::new().listen(
+            ucx.clone(),
+            consumers.clone(),
+            feedback.clone(),
+        ) {
+            Ok(sender) => sender,
+            Err(e) => {
+                if let Err(e) =
+                    feedback.send(ProducerEvents::EventListenError(e.to_string()))
+                {
+                    tools::logger.err(&format!(
+                        "Cannot start listen event EventDisconnected due {}",
+                        e
+                    ));
+                }
+                return Err(format!(
+                    "Cannot start listen event EventDisconnected due {}",
                     e
                 ));
             }
@@ -278,6 +303,10 @@ where
                                 {
                                     tools::logger.err(&format!("{}", e));
                                 }
+                                if let Err(e) = EventConnectedSender.send(uuid.clone())
+                                {
+                                    tools::logger.err(&format!("{}", e));
+                                }
                             }
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
                                 format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e),
@@ -292,6 +321,10 @@ where
                                     tools::logger.err(&format!("{}", e));
                                 } else {
                                     tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
+                                }
+                                if let Err(e) = EventDisconnectedSender.send(uuid.clone())
+                                {
+                                    tools::logger.err(&format!("{}", e));
                                 }
                             },
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
@@ -508,7 +541,6 @@ where
         });
         Ok(Channel {
             events: rx_feedback,
-            EventUserConnectedSender: EventUserConnectedSender,
         })
     }
 
