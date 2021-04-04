@@ -1132,22 +1132,22 @@ impl TypescriptRender {
                     body = format!(
                         "{}const arr{}Inst: {} = {}.defaults();",
                         self.spaces(level),
-                        strct.name,
+                        field.name,
                         store.get_struct_path(strct.id).join("."),
                         store.get_struct_path(strct.id).join(".")
                     );
-                    body = format!("{}\n{}const arr{}: Array<any> | Error = this.getValue<{}[]>(storage, {}, arr{}Inst.decodeSelfArray.bind(arr{}Inst));", body, self.spaces(level), strct.name, strct.name, field.id, strct.name, strct.name);
+                    body = format!("{}\n{}const arr{}: Array<any> | Error = this.getValue<{}[]>(storage, {}, arr{}Inst.decodeSelfArray.bind(arr{}Inst));", body, self.spaces(level), field.name, strct.name, field.id, field.name, field.name);
                     body = format!(
                         "{}\n{}if (arr{} instanceof Error) {{",
                         body,
                         self.spaces(level),
-                        strct.name
+                        field.name
                     );
                     body = format!(
                         "{}\n{}return arr{};",
                         body,
                         self.spaces(level + 1),
-                        strct.name
+                        field.name
                     );
                     body = format!("{}\n{}}} else {{", body, self.spaces(level));
                     body = format!(
@@ -1155,7 +1155,7 @@ impl TypescriptRender {
                         body,
                         self.spaces(level + 1),
                         field.name,
-                        strct.name,
+                        field.name,
                         store.get_struct_path(strct.id).join(".")
                     );
                     body = format!("{}\n{}}}", body, self.spaces(level));
