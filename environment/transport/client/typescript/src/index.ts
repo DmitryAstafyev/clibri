@@ -123,7 +123,7 @@ export class Connection extends Client {
             event.data.arrayBuffer().then((buffer: ArrayBuffer) => {
                 this._subjects.data.emit(buffer);
             }).catch((err: Error) => {
-                this._subjects.error.emit(err);
+                this._subjects.error.emit(new Error(`Error on message event: ${err.message}`));
             });
         },
         error: (event: Event) => {
