@@ -28,6 +28,9 @@ export class ArrayBool extends Primitive<boolean[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): boolean[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u8.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }

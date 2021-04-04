@@ -123,6 +123,19 @@ fn check_StructExampleB(entity: StructExampleB) {
                 field_bool: true,
             }
         ],
+        field_str_empty: vec![],
+        field_u8_empty: vec![],
+        field_u16_empty: vec![],
+        field_u32_empty: vec![],
+        field_u64_empty: vec![],
+        field_i8_empty: vec![],
+        field_i16_empty: vec![],
+        field_i32_empty: vec![],
+        field_i64_empty: vec![],
+        field_f32_empty: vec![],
+        field_f64_empty: vec![],
+        field_bool_empty: vec![],
+        field_struct_empty: vec![],
     };
     if entity != src {
         panic!("StructExampleB: failed: \n\t{:?}\n\t{:?})", entity, src)
@@ -269,6 +282,19 @@ fn check_StructExampleG(entity: StructExampleG) {
                     field_bool: true,
                 }
             ],
+            field_str_empty: vec![],
+            field_u8_empty: vec![],
+            field_u16_empty: vec![],
+            field_u32_empty: vec![],
+            field_u64_empty: vec![],
+            field_i8_empty: vec![],
+            field_i16_empty: vec![],
+            field_i32_empty: vec![],
+            field_i64_empty: vec![],
+            field_f32_empty: vec![],
+            field_f64_empty: vec![],
+            field_bool_empty: vec![],
+            field_struct_empty: vec![],
         },
     };
     if entity != src {

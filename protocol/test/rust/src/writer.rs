@@ -308,6 +308,19 @@ pub fn write() -> Result<(), String> {
                 field_bool: true,
             }
         ],
+        field_str_empty: vec![],
+        field_u8_empty: vec![],
+        field_u16_empty: vec![],
+        field_u32_empty: vec![],
+        field_u64_empty: vec![],
+        field_i8_empty: vec![],
+        field_i16_empty: vec![],
+        field_i32_empty: vec![],
+        field_i64_empty: vec![],
+        field_f32_empty: vec![],
+        field_f64_empty: vec![],
+        field_bool_empty: vec![],
+        field_struct_empty: vec![],
     };
     if let Ok(buf) = usecase.encode() {
         if let Err(e) = write_file(root.join("./StructExampleB.prot.bin"), &buf) {
@@ -454,6 +467,19 @@ pub fn write() -> Result<(), String> {
                     field_bool: true,
                 }
             ],
+            field_str_empty: vec![],
+            field_u8_empty: vec![],
+            field_u16_empty: vec![],
+            field_u32_empty: vec![],
+            field_u64_empty: vec![],
+            field_i8_empty: vec![],
+            field_i16_empty: vec![],
+            field_i32_empty: vec![],
+            field_i64_empty: vec![],
+            field_f32_empty: vec![],
+            field_f64_empty: vec![],
+            field_bool_empty: vec![],
+            field_struct_empty: vec![],
         },
     };
     if let Ok(buf) = usecase.encode() {

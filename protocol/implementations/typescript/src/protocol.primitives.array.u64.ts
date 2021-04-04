@@ -27,6 +27,9 @@ export class ArrayU64 extends Primitive<Array<bigint>> {
     }
 
     public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u64.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }

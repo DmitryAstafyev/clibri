@@ -26,6 +26,9 @@ export class ArrayF64 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < f64.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${f64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }

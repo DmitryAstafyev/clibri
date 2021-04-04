@@ -124,6 +124,11 @@ export abstract class Convertor {
     public decodeSelfArray(bytes: ArrayBufferLike): Array<Required<Convertor>> | Error {
         const buffer = Buffer.from(bytes);
         const selfs: Array<Required<Convertor>> = [];
+        if (buffer.byteLength === 0) {
+            return selfs;
+        } else if (buffer.byteLength < u64.getSize()) {
+            return new Error(`Invalid size marker. Expecting u64 (size ${u64.getSize()} bytes), but size of buffer: ${buffer.byteLength} bytes.`);
+        }
         let offset: number = 0;
         do {
             const len = buffer.readBigUInt64LE(offset);

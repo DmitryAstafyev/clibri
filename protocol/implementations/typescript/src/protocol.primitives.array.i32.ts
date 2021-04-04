@@ -27,6 +27,9 @@ export class ArrayI32 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < i32.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${i32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }

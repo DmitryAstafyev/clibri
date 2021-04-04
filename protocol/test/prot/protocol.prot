@@ -60,6 +60,20 @@ struct StructExampleB {
     f64[] field_f64;
     bool[] field_bool;
     StructExampleA[] field_struct;
+    str[] field_str_empty;
+    u8[] field_u8_empty;
+    u16[] field_u16_empty;
+    u32[] field_u32_empty;
+    u64[] field_u64_empty;
+    i8[] field_i8_empty;
+    i16[] field_i16_empty;
+    i32[] field_i32_empty;
+    i64[] field_i64_empty;
+    f32[] field_f32_empty;
+    f64[] field_f64_empty;
+    bool[] field_bool_empty;
+    StructExampleA[] field_struct_empty;
+    
 }
 
 struct StructExampleC {

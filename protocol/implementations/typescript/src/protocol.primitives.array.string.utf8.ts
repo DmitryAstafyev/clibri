@@ -47,6 +47,11 @@ export class ArrayStrUTF8 extends Primitive<string[]> {
     public static decode(bytes: ArrayBufferLike): string[] | Error {
         const buffer = Buffer.from(bytes);
         const strings: string[] = [];
+        if (buffer.byteLength === 0) {
+            return strings;
+        } else if (buffer.byteLength < u32.getSize()) {
+            return new Error(`Invalid size marker. Expecting u64 (size ${u32.getSize()} bytes), but size of buffer: ${buffer.byteLength} bytes.`);
+        }
         let offset: number = 0;
         do {
             const len = buffer.readUInt32LE(offset);
