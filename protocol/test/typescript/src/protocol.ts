@@ -2805,6 +2805,7 @@ export class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
 
 export interface IStructExampleA {
     field_str: string;
+    field_str_empty: string;
     field_u8: number;
     field_u16: number;
     field_u32: number;
@@ -2821,6 +2822,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.StrUTF8, optional: false, },
+        { prop: 'field_str_empty', types: Protocol.Primitives.StrUTF8, optional: false, },
         { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
         { prop: 'field_u16', types: Protocol.Primitives.u16, optional: false, },
         { prop: 'field_u32', types: Protocol.Primitives.u32, optional: false, },
@@ -2837,6 +2839,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     public static defaults(): StructExampleA {
         return new StructExampleA({
             field_str: '',
+            field_str_empty: '',
             field_u8: 0,
             field_u16: 0,
             field_u32: 0,
@@ -2883,6 +2886,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
             const error: Error | undefined = Protocol.validate(obj, StructExampleA.scheme);
             return error instanceof Error ? error : new StructExampleA({
                 field_str: obj.field_str,
+                field_str_empty: obj.field_str_empty,
                 field_u8: obj.field_u8,
                 field_u16: obj.field_u16,
                 field_u32: obj.field_u32,
@@ -2899,6 +2903,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     }
 
     public field_str: string;
+    public field_str_empty: string;
     public field_u8: number;
     public field_u16: number;
     public field_u32: number;
@@ -2932,17 +2937,18 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     public encode(): ArrayBufferLike {
         return this.collect([
             () => this.getBufferFromBuf<string>(5, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.field_str),
-            () => this.getBuffer(6, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-            () => this.getBuffer(7, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-            () => this.getBuffer(8, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.field_u32)),
-            () => this.getBuffer(9, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.field_u64)),
-            () => this.getBuffer(10, Protocol.ESize.u8, Protocol.Primitives.i8.getSize(), Protocol.Primitives.i8.encode(this.field_i8)),
-            () => this.getBuffer(11, Protocol.ESize.u8, Protocol.Primitives.i16.getSize(), Protocol.Primitives.i16.encode(this.field_i16)),
-            () => this.getBuffer(12, Protocol.ESize.u8, Protocol.Primitives.i32.getSize(), Protocol.Primitives.i32.encode(this.field_i32)),
-            () => this.getBuffer(13, Protocol.ESize.u8, Protocol.Primitives.i64.getSize(), Protocol.Primitives.i64.encode(this.field_i64)),
-            () => this.getBuffer(14, Protocol.ESize.u8, Protocol.Primitives.f32.getSize(), Protocol.Primitives.f32.encode(this.field_f32)),
-            () => this.getBuffer(15, Protocol.ESize.u8, Protocol.Primitives.f64.getSize(), Protocol.Primitives.f64.encode(this.field_f64)),
-            () => this.getBuffer(16, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.field_bool)),
+            () => this.getBufferFromBuf<string>(6, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.field_str_empty),
+            () => this.getBuffer(7, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+            () => this.getBuffer(8, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+            () => this.getBuffer(9, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.field_u32)),
+            () => this.getBuffer(10, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.field_u64)),
+            () => this.getBuffer(11, Protocol.ESize.u8, Protocol.Primitives.i8.getSize(), Protocol.Primitives.i8.encode(this.field_i8)),
+            () => this.getBuffer(12, Protocol.ESize.u8, Protocol.Primitives.i16.getSize(), Protocol.Primitives.i16.encode(this.field_i16)),
+            () => this.getBuffer(13, Protocol.ESize.u8, Protocol.Primitives.i32.getSize(), Protocol.Primitives.i32.encode(this.field_i32)),
+            () => this.getBuffer(14, Protocol.ESize.u8, Protocol.Primitives.i64.getSize(), Protocol.Primitives.i64.encode(this.field_i64)),
+            () => this.getBuffer(15, Protocol.ESize.u8, Protocol.Primitives.f32.getSize(), Protocol.Primitives.f32.encode(this.field_f32)),
+            () => this.getBuffer(16, Protocol.ESize.u8, Protocol.Primitives.f64.getSize(), Protocol.Primitives.f64.encode(this.field_f64)),
+            () => this.getBuffer(17, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.field_bool)),
         ]);
     }
 
@@ -2957,67 +2963,73 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
         } else {
             this.field_str = field_str;
         }
-        const field_u8: number | Error = this.getValue<number>(storage, 6, Protocol.Primitives.u8.decode);
+        const field_str_empty: string | Error = this.getValue<string>(storage, 6, Protocol.Primitives.StrUTF8.decode);
+        if (field_str_empty instanceof Error) {
+            return field_str_empty;
+        } else {
+            this.field_str_empty = field_str_empty;
+        }
+        const field_u8: number | Error = this.getValue<number>(storage, 7, Protocol.Primitives.u8.decode);
         if (field_u8 instanceof Error) {
             return field_u8;
         } else {
             this.field_u8 = field_u8;
         }
-        const field_u16: number | Error = this.getValue<number>(storage, 7, Protocol.Primitives.u16.decode);
+        const field_u16: number | Error = this.getValue<number>(storage, 8, Protocol.Primitives.u16.decode);
         if (field_u16 instanceof Error) {
             return field_u16;
         } else {
             this.field_u16 = field_u16;
         }
-        const field_u32: number | Error = this.getValue<number>(storage, 8, Protocol.Primitives.u32.decode);
+        const field_u32: number | Error = this.getValue<number>(storage, 9, Protocol.Primitives.u32.decode);
         if (field_u32 instanceof Error) {
             return field_u32;
         } else {
             this.field_u32 = field_u32;
         }
-        const field_u64: bigint | Error = this.getValue<bigint>(storage, 9, Protocol.Primitives.u64.decode);
+        const field_u64: bigint | Error = this.getValue<bigint>(storage, 10, Protocol.Primitives.u64.decode);
         if (field_u64 instanceof Error) {
             return field_u64;
         } else {
             this.field_u64 = field_u64;
         }
-        const field_i8: number | Error = this.getValue<number>(storage, 10, Protocol.Primitives.i8.decode);
+        const field_i8: number | Error = this.getValue<number>(storage, 11, Protocol.Primitives.i8.decode);
         if (field_i8 instanceof Error) {
             return field_i8;
         } else {
             this.field_i8 = field_i8;
         }
-        const field_i16: number | Error = this.getValue<number>(storage, 11, Protocol.Primitives.i16.decode);
+        const field_i16: number | Error = this.getValue<number>(storage, 12, Protocol.Primitives.i16.decode);
         if (field_i16 instanceof Error) {
             return field_i16;
         } else {
             this.field_i16 = field_i16;
         }
-        const field_i32: number | Error = this.getValue<number>(storage, 12, Protocol.Primitives.i32.decode);
+        const field_i32: number | Error = this.getValue<number>(storage, 13, Protocol.Primitives.i32.decode);
         if (field_i32 instanceof Error) {
             return field_i32;
         } else {
             this.field_i32 = field_i32;
         }
-        const field_i64: bigint | Error = this.getValue<bigint>(storage, 13, Protocol.Primitives.i64.decode);
+        const field_i64: bigint | Error = this.getValue<bigint>(storage, 14, Protocol.Primitives.i64.decode);
         if (field_i64 instanceof Error) {
             return field_i64;
         } else {
             this.field_i64 = field_i64;
         }
-        const field_f32: number | Error = this.getValue<number>(storage, 14, Protocol.Primitives.f32.decode);
+        const field_f32: number | Error = this.getValue<number>(storage, 15, Protocol.Primitives.f32.decode);
         if (field_f32 instanceof Error) {
             return field_f32;
         } else {
             this.field_f32 = field_f32;
         }
-        const field_f64: number | Error = this.getValue<number>(storage, 15, Protocol.Primitives.f64.decode);
+        const field_f64: number | Error = this.getValue<number>(storage, 16, Protocol.Primitives.f64.decode);
         if (field_f64 instanceof Error) {
             return field_f64;
         } else {
             this.field_f64 = field_f64;
         }
-        const field_bool: boolean | Error = this.getValue<boolean>(storage, 16, Protocol.Primitives.bool.decode);
+        const field_bool: boolean | Error = this.getValue<boolean>(storage, 17, Protocol.Primitives.bool.decode);
         if (field_bool instanceof Error) {
             return field_bool;
         } else {
@@ -3208,7 +3220,7 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
     public field_bool_empty: Array<boolean>;
     public field_struct_empty: Array<StructExampleA>;
     public static getSignature(): string { return 'StructExampleB'; }
-    public static getId(): number { return 17; }
+    public static getId(): number { return 18; }
 
 
     constructor(params: IStructExampleB)  {
@@ -3224,36 +3236,36 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleB { return this; }
 
-    public getId(): number { return 17; }
+    public getId(): number { return 18; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => this.getBufferFromBuf<Array<string>>(18, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str),
-            () => this.getBufferFromBuf<Array<number>>(19, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8),
-            () => this.getBufferFromBuf<Array<number>>(20, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16),
-            () => this.getBufferFromBuf<Array<number>>(21, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32),
-            () => this.getBufferFromBuf<Array<bigint>>(22, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64),
-            () => this.getBufferFromBuf<Array<number>>(23, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8),
-            () => this.getBufferFromBuf<Array<number>>(24, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16),
-            () => this.getBufferFromBuf<Array<number>>(25, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32),
-            () => this.getBufferFromBuf<Array<bigint>>(26, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64),
-            () => this.getBufferFromBuf<Array<number>>(27, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32),
-            () => this.getBufferFromBuf<Array<number>>(28, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64),
-            () => this.getBufferFromBuf<Array<boolean>>(29, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool),
-            () => { const self: StructExampleA = StructExampleA.defaults(); return this.getBufferFromBuf<StructExampleA[]>(30, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.field_struct); },
-            () => this.getBufferFromBuf<Array<string>>(31, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str_empty),
-            () => this.getBufferFromBuf<Array<number>>(32, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8_empty),
-            () => this.getBufferFromBuf<Array<number>>(33, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16_empty),
-            () => this.getBufferFromBuf<Array<number>>(34, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32_empty),
-            () => this.getBufferFromBuf<Array<bigint>>(35, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64_empty),
-            () => this.getBufferFromBuf<Array<number>>(36, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8_empty),
-            () => this.getBufferFromBuf<Array<number>>(37, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16_empty),
-            () => this.getBufferFromBuf<Array<number>>(38, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32_empty),
-            () => this.getBufferFromBuf<Array<bigint>>(39, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64_empty),
-            () => this.getBufferFromBuf<Array<number>>(40, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32_empty),
-            () => this.getBufferFromBuf<Array<number>>(41, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64_empty),
-            () => this.getBufferFromBuf<Array<boolean>>(42, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool_empty),
-            () => { const self: StructExampleA = StructExampleA.defaults(); return this.getBufferFromBuf<StructExampleA[]>(43, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.field_struct_empty); },
+            () => this.getBufferFromBuf<Array<string>>(19, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str),
+            () => this.getBufferFromBuf<Array<number>>(20, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8),
+            () => this.getBufferFromBuf<Array<number>>(21, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16),
+            () => this.getBufferFromBuf<Array<number>>(22, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32),
+            () => this.getBufferFromBuf<Array<bigint>>(23, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64),
+            () => this.getBufferFromBuf<Array<number>>(24, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8),
+            () => this.getBufferFromBuf<Array<number>>(25, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16),
+            () => this.getBufferFromBuf<Array<number>>(26, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32),
+            () => this.getBufferFromBuf<Array<bigint>>(27, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64),
+            () => this.getBufferFromBuf<Array<number>>(28, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32),
+            () => this.getBufferFromBuf<Array<number>>(29, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64),
+            () => this.getBufferFromBuf<Array<boolean>>(30, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool),
+            () => { const self: StructExampleA = StructExampleA.defaults(); return this.getBufferFromBuf<StructExampleA[]>(31, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.field_struct); },
+            () => this.getBufferFromBuf<Array<string>>(32, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str_empty),
+            () => this.getBufferFromBuf<Array<number>>(33, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8_empty),
+            () => this.getBufferFromBuf<Array<number>>(34, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16_empty),
+            () => this.getBufferFromBuf<Array<number>>(35, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32_empty),
+            () => this.getBufferFromBuf<Array<bigint>>(36, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64_empty),
+            () => this.getBufferFromBuf<Array<number>>(37, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8_empty),
+            () => this.getBufferFromBuf<Array<number>>(38, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16_empty),
+            () => this.getBufferFromBuf<Array<number>>(39, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32_empty),
+            () => this.getBufferFromBuf<Array<bigint>>(40, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64_empty),
+            () => this.getBufferFromBuf<Array<number>>(41, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32_empty),
+            () => this.getBufferFromBuf<Array<number>>(42, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64_empty),
+            () => this.getBufferFromBuf<Array<boolean>>(43, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool_empty),
+            () => { const self: StructExampleA = StructExampleA.defaults(); return this.getBufferFromBuf<StructExampleA[]>(44, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.field_struct_empty); },
         ]);
     }
 
@@ -3262,159 +3274,159 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
         if (storage instanceof Error) {
             return storage;
         }
-        const field_str: Array<string> | Error = this.getValue<Array<string>>(storage, 18, Protocol.Primitives.ArrayStrUTF8.decode);
+        const field_str: Array<string> | Error = this.getValue<Array<string>>(storage, 19, Protocol.Primitives.ArrayStrUTF8.decode);
         if (field_str instanceof Error) {
             return field_str;
         } else {
             this.field_str = field_str;
         }
-        const field_u8: Array<number> | Error = this.getValue<Array<number>>(storage, 19, Protocol.Primitives.ArrayU8.decode);
+        const field_u8: Array<number> | Error = this.getValue<Array<number>>(storage, 20, Protocol.Primitives.ArrayU8.decode);
         if (field_u8 instanceof Error) {
             return field_u8;
         } else {
             this.field_u8 = field_u8;
         }
-        const field_u16: Array<number> | Error = this.getValue<Array<number>>(storage, 20, Protocol.Primitives.ArrayU16.decode);
+        const field_u16: Array<number> | Error = this.getValue<Array<number>>(storage, 21, Protocol.Primitives.ArrayU16.decode);
         if (field_u16 instanceof Error) {
             return field_u16;
         } else {
             this.field_u16 = field_u16;
         }
-        const field_u32: Array<number> | Error = this.getValue<Array<number>>(storage, 21, Protocol.Primitives.ArrayU32.decode);
+        const field_u32: Array<number> | Error = this.getValue<Array<number>>(storage, 22, Protocol.Primitives.ArrayU32.decode);
         if (field_u32 instanceof Error) {
             return field_u32;
         } else {
             this.field_u32 = field_u32;
         }
-        const field_u64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 22, Protocol.Primitives.ArrayU64.decode);
+        const field_u64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 23, Protocol.Primitives.ArrayU64.decode);
         if (field_u64 instanceof Error) {
             return field_u64;
         } else {
             this.field_u64 = field_u64;
         }
-        const field_i8: Array<number> | Error = this.getValue<Array<number>>(storage, 23, Protocol.Primitives.ArrayI8.decode);
+        const field_i8: Array<number> | Error = this.getValue<Array<number>>(storage, 24, Protocol.Primitives.ArrayI8.decode);
         if (field_i8 instanceof Error) {
             return field_i8;
         } else {
             this.field_i8 = field_i8;
         }
-        const field_i16: Array<number> | Error = this.getValue<Array<number>>(storage, 24, Protocol.Primitives.ArrayI16.decode);
+        const field_i16: Array<number> | Error = this.getValue<Array<number>>(storage, 25, Protocol.Primitives.ArrayI16.decode);
         if (field_i16 instanceof Error) {
             return field_i16;
         } else {
             this.field_i16 = field_i16;
         }
-        const field_i32: Array<number> | Error = this.getValue<Array<number>>(storage, 25, Protocol.Primitives.ArrayI32.decode);
+        const field_i32: Array<number> | Error = this.getValue<Array<number>>(storage, 26, Protocol.Primitives.ArrayI32.decode);
         if (field_i32 instanceof Error) {
             return field_i32;
         } else {
             this.field_i32 = field_i32;
         }
-        const field_i64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 26, Protocol.Primitives.ArrayI64.decode);
+        const field_i64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 27, Protocol.Primitives.ArrayI64.decode);
         if (field_i64 instanceof Error) {
             return field_i64;
         } else {
             this.field_i64 = field_i64;
         }
-        const field_f32: Array<number> | Error = this.getValue<Array<number>>(storage, 27, Protocol.Primitives.ArrayF32.decode);
+        const field_f32: Array<number> | Error = this.getValue<Array<number>>(storage, 28, Protocol.Primitives.ArrayF32.decode);
         if (field_f32 instanceof Error) {
             return field_f32;
         } else {
             this.field_f32 = field_f32;
         }
-        const field_f64: Array<number> | Error = this.getValue<Array<number>>(storage, 28, Protocol.Primitives.ArrayF64.decode);
+        const field_f64: Array<number> | Error = this.getValue<Array<number>>(storage, 29, Protocol.Primitives.ArrayF64.decode);
         if (field_f64 instanceof Error) {
             return field_f64;
         } else {
             this.field_f64 = field_f64;
         }
-        const field_bool: Array<boolean> | Error = this.getValue<Array<boolean>>(storage, 29, Protocol.Primitives.ArrayBool.decode);
+        const field_bool: Array<boolean> | Error = this.getValue<Array<boolean>>(storage, 30, Protocol.Primitives.ArrayBool.decode);
         if (field_bool instanceof Error) {
             return field_bool;
         } else {
             this.field_bool = field_bool;
         }
         const arrfield_structInst: StructExampleA = StructExampleA.defaults();
-        const arrfield_struct: Array<any> | Error = this.getValue<StructExampleA[]>(storage, 30, arrfield_structInst.decodeSelfArray.bind(arrfield_structInst));
+        const arrfield_struct: Array<any> | Error = this.getValue<StructExampleA[]>(storage, 31, arrfield_structInst.decodeSelfArray.bind(arrfield_structInst));
         if (arrfield_struct instanceof Error) {
             return arrfield_struct;
         } else {
             this.field_struct = arrfield_struct as StructExampleA[];
         }
-        const field_str_empty: Array<string> | Error = this.getValue<Array<string>>(storage, 31, Protocol.Primitives.ArrayStrUTF8.decode);
+        const field_str_empty: Array<string> | Error = this.getValue<Array<string>>(storage, 32, Protocol.Primitives.ArrayStrUTF8.decode);
         if (field_str_empty instanceof Error) {
             return field_str_empty;
         } else {
             this.field_str_empty = field_str_empty;
         }
-        const field_u8_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 32, Protocol.Primitives.ArrayU8.decode);
+        const field_u8_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 33, Protocol.Primitives.ArrayU8.decode);
         if (field_u8_empty instanceof Error) {
             return field_u8_empty;
         } else {
             this.field_u8_empty = field_u8_empty;
         }
-        const field_u16_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 33, Protocol.Primitives.ArrayU16.decode);
+        const field_u16_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 34, Protocol.Primitives.ArrayU16.decode);
         if (field_u16_empty instanceof Error) {
             return field_u16_empty;
         } else {
             this.field_u16_empty = field_u16_empty;
         }
-        const field_u32_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 34, Protocol.Primitives.ArrayU32.decode);
+        const field_u32_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 35, Protocol.Primitives.ArrayU32.decode);
         if (field_u32_empty instanceof Error) {
             return field_u32_empty;
         } else {
             this.field_u32_empty = field_u32_empty;
         }
-        const field_u64_empty: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 35, Protocol.Primitives.ArrayU64.decode);
+        const field_u64_empty: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 36, Protocol.Primitives.ArrayU64.decode);
         if (field_u64_empty instanceof Error) {
             return field_u64_empty;
         } else {
             this.field_u64_empty = field_u64_empty;
         }
-        const field_i8_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 36, Protocol.Primitives.ArrayI8.decode);
+        const field_i8_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 37, Protocol.Primitives.ArrayI8.decode);
         if (field_i8_empty instanceof Error) {
             return field_i8_empty;
         } else {
             this.field_i8_empty = field_i8_empty;
         }
-        const field_i16_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 37, Protocol.Primitives.ArrayI16.decode);
+        const field_i16_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 38, Protocol.Primitives.ArrayI16.decode);
         if (field_i16_empty instanceof Error) {
             return field_i16_empty;
         } else {
             this.field_i16_empty = field_i16_empty;
         }
-        const field_i32_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 38, Protocol.Primitives.ArrayI32.decode);
+        const field_i32_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 39, Protocol.Primitives.ArrayI32.decode);
         if (field_i32_empty instanceof Error) {
             return field_i32_empty;
         } else {
             this.field_i32_empty = field_i32_empty;
         }
-        const field_i64_empty: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 39, Protocol.Primitives.ArrayI64.decode);
+        const field_i64_empty: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 40, Protocol.Primitives.ArrayI64.decode);
         if (field_i64_empty instanceof Error) {
             return field_i64_empty;
         } else {
             this.field_i64_empty = field_i64_empty;
         }
-        const field_f32_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 40, Protocol.Primitives.ArrayF32.decode);
+        const field_f32_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 41, Protocol.Primitives.ArrayF32.decode);
         if (field_f32_empty instanceof Error) {
             return field_f32_empty;
         } else {
             this.field_f32_empty = field_f32_empty;
         }
-        const field_f64_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 41, Protocol.Primitives.ArrayF64.decode);
+        const field_f64_empty: Array<number> | Error = this.getValue<Array<number>>(storage, 42, Protocol.Primitives.ArrayF64.decode);
         if (field_f64_empty instanceof Error) {
             return field_f64_empty;
         } else {
             this.field_f64_empty = field_f64_empty;
         }
-        const field_bool_empty: Array<boolean> | Error = this.getValue<Array<boolean>>(storage, 42, Protocol.Primitives.ArrayBool.decode);
+        const field_bool_empty: Array<boolean> | Error = this.getValue<Array<boolean>>(storage, 43, Protocol.Primitives.ArrayBool.decode);
         if (field_bool_empty instanceof Error) {
             return field_bool_empty;
         } else {
             this.field_bool_empty = field_bool_empty;
         }
         const arrfield_struct_emptyInst: StructExampleA = StructExampleA.defaults();
-        const arrfield_struct_empty: Array<any> | Error = this.getValue<StructExampleA[]>(storage, 43, arrfield_struct_emptyInst.decodeSelfArray.bind(arrfield_struct_emptyInst));
+        const arrfield_struct_empty: Array<any> | Error = this.getValue<StructExampleA[]>(storage, 44, arrfield_struct_emptyInst.decodeSelfArray.bind(arrfield_struct_emptyInst));
         if (arrfield_struct_empty instanceof Error) {
             return arrfield_struct_empty;
         } else {
@@ -3535,7 +3547,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
     public field_f64: number | undefined;
     public field_bool: boolean | undefined;
     public static getSignature(): string { return 'StructExampleC'; }
-    public static getId(): number { return 44; }
+    public static getId(): number { return 45; }
 
 
     constructor(params: IStructExampleC)  {
@@ -3551,22 +3563,22 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleC { return this; }
 
-    public getId(): number { return 44; }
+    public getId(): number { return 45; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => this.field_str === undefined ? this.getBuffer(45, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(45, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.field_str),
-            () => this.field_u8 === undefined ? this.getBuffer(46, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(46, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-            () => this.field_u16 === undefined ? this.getBuffer(47, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(47, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-            () => this.field_u32 === undefined ? this.getBuffer(48, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(48, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.field_u32)),
-            () => this.field_u64 === undefined ? this.getBuffer(49, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(49, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.field_u64)),
-            () => this.field_i8 === undefined ? this.getBuffer(50, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(50, Protocol.ESize.u8, Protocol.Primitives.i8.getSize(), Protocol.Primitives.i8.encode(this.field_i8)),
-            () => this.field_i16 === undefined ? this.getBuffer(51, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(51, Protocol.ESize.u8, Protocol.Primitives.i16.getSize(), Protocol.Primitives.i16.encode(this.field_i16)),
-            () => this.field_i32 === undefined ? this.getBuffer(52, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(52, Protocol.ESize.u8, Protocol.Primitives.i32.getSize(), Protocol.Primitives.i32.encode(this.field_i32)),
-            () => this.field_i64 === undefined ? this.getBuffer(53, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(53, Protocol.ESize.u8, Protocol.Primitives.i64.getSize(), Protocol.Primitives.i64.encode(this.field_i64)),
-            () => this.field_f32 === undefined ? this.getBuffer(54, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(54, Protocol.ESize.u8, Protocol.Primitives.f32.getSize(), Protocol.Primitives.f32.encode(this.field_f32)),
-            () => this.field_f64 === undefined ? this.getBuffer(55, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(55, Protocol.ESize.u8, Protocol.Primitives.f64.getSize(), Protocol.Primitives.f64.encode(this.field_f64)),
-            () => this.field_bool === undefined ? this.getBuffer(56, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(56, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.field_bool)),
+            () => this.field_str === undefined ? this.getBuffer(46, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(46, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.field_str),
+            () => this.field_u8 === undefined ? this.getBuffer(47, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(47, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+            () => this.field_u16 === undefined ? this.getBuffer(48, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(48, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+            () => this.field_u32 === undefined ? this.getBuffer(49, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(49, Protocol.ESize.u8, Protocol.Primitives.u32.getSize(), Protocol.Primitives.u32.encode(this.field_u32)),
+            () => this.field_u64 === undefined ? this.getBuffer(50, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(50, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.field_u64)),
+            () => this.field_i8 === undefined ? this.getBuffer(51, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(51, Protocol.ESize.u8, Protocol.Primitives.i8.getSize(), Protocol.Primitives.i8.encode(this.field_i8)),
+            () => this.field_i16 === undefined ? this.getBuffer(52, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(52, Protocol.ESize.u8, Protocol.Primitives.i16.getSize(), Protocol.Primitives.i16.encode(this.field_i16)),
+            () => this.field_i32 === undefined ? this.getBuffer(53, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(53, Protocol.ESize.u8, Protocol.Primitives.i32.getSize(), Protocol.Primitives.i32.encode(this.field_i32)),
+            () => this.field_i64 === undefined ? this.getBuffer(54, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(54, Protocol.ESize.u8, Protocol.Primitives.i64.getSize(), Protocol.Primitives.i64.encode(this.field_i64)),
+            () => this.field_f32 === undefined ? this.getBuffer(55, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(55, Protocol.ESize.u8, Protocol.Primitives.f32.getSize(), Protocol.Primitives.f32.encode(this.field_f32)),
+            () => this.field_f64 === undefined ? this.getBuffer(56, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(56, Protocol.ESize.u8, Protocol.Primitives.f64.getSize(), Protocol.Primitives.f64.encode(this.field_f64)),
+            () => this.field_bool === undefined ? this.getBuffer(57, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(57, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.field_bool)),
         ]);
     }
 
@@ -3575,168 +3587,168 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         if (storage instanceof Error) {
             return storage;
         }
-        const field_strBuf: ArrayBufferLike | undefined = storage.get(45);
+        const field_strBuf: ArrayBufferLike | undefined = storage.get(46);
         if (field_strBuf === undefined) {
             return new Error(`Fail to get property field_str`);
         }
         if (field_strBuf.byteLength === 0) {
             this.field_str = undefined;
         } else {
-            const field_str: string | Error = this.getValue<string>(storage, 45, Protocol.Primitives.StrUTF8.decode);
+            const field_str: string | Error = this.getValue<string>(storage, 46, Protocol.Primitives.StrUTF8.decode);
             if (field_str instanceof Error) {
                 return field_str;
             } else {
                 this.field_str = field_str;
             }
         }
-        const field_u8Buf: ArrayBufferLike | undefined = storage.get(46);
+        const field_u8Buf: ArrayBufferLike | undefined = storage.get(47);
         if (field_u8Buf === undefined) {
             return new Error(`Fail to get property field_u8`);
         }
         if (field_u8Buf.byteLength === 0) {
             this.field_u8 = undefined;
         } else {
-            const field_u8: number | Error = this.getValue<number>(storage, 46, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 47, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
         }
-        const field_u16Buf: ArrayBufferLike | undefined = storage.get(47);
+        const field_u16Buf: ArrayBufferLike | undefined = storage.get(48);
         if (field_u16Buf === undefined) {
             return new Error(`Fail to get property field_u16`);
         }
         if (field_u16Buf.byteLength === 0) {
             this.field_u16 = undefined;
         } else {
-            const field_u16: number | Error = this.getValue<number>(storage, 47, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 48, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
                 this.field_u16 = field_u16;
             }
         }
-        const field_u32Buf: ArrayBufferLike | undefined = storage.get(48);
+        const field_u32Buf: ArrayBufferLike | undefined = storage.get(49);
         if (field_u32Buf === undefined) {
             return new Error(`Fail to get property field_u32`);
         }
         if (field_u32Buf.byteLength === 0) {
             this.field_u32 = undefined;
         } else {
-            const field_u32: number | Error = this.getValue<number>(storage, 48, Protocol.Primitives.u32.decode);
+            const field_u32: number | Error = this.getValue<number>(storage, 49, Protocol.Primitives.u32.decode);
             if (field_u32 instanceof Error) {
                 return field_u32;
             } else {
                 this.field_u32 = field_u32;
             }
         }
-        const field_u64Buf: ArrayBufferLike | undefined = storage.get(49);
+        const field_u64Buf: ArrayBufferLike | undefined = storage.get(50);
         if (field_u64Buf === undefined) {
             return new Error(`Fail to get property field_u64`);
         }
         if (field_u64Buf.byteLength === 0) {
             this.field_u64 = undefined;
         } else {
-            const field_u64: bigint | Error = this.getValue<bigint>(storage, 49, Protocol.Primitives.u64.decode);
+            const field_u64: bigint | Error = this.getValue<bigint>(storage, 50, Protocol.Primitives.u64.decode);
             if (field_u64 instanceof Error) {
                 return field_u64;
             } else {
                 this.field_u64 = field_u64;
             }
         }
-        const field_i8Buf: ArrayBufferLike | undefined = storage.get(50);
+        const field_i8Buf: ArrayBufferLike | undefined = storage.get(51);
         if (field_i8Buf === undefined) {
             return new Error(`Fail to get property field_i8`);
         }
         if (field_i8Buf.byteLength === 0) {
             this.field_i8 = undefined;
         } else {
-            const field_i8: number | Error = this.getValue<number>(storage, 50, Protocol.Primitives.i8.decode);
+            const field_i8: number | Error = this.getValue<number>(storage, 51, Protocol.Primitives.i8.decode);
             if (field_i8 instanceof Error) {
                 return field_i8;
             } else {
                 this.field_i8 = field_i8;
             }
         }
-        const field_i16Buf: ArrayBufferLike | undefined = storage.get(51);
+        const field_i16Buf: ArrayBufferLike | undefined = storage.get(52);
         if (field_i16Buf === undefined) {
             return new Error(`Fail to get property field_i16`);
         }
         if (field_i16Buf.byteLength === 0) {
             this.field_i16 = undefined;
         } else {
-            const field_i16: number | Error = this.getValue<number>(storage, 51, Protocol.Primitives.i16.decode);
+            const field_i16: number | Error = this.getValue<number>(storage, 52, Protocol.Primitives.i16.decode);
             if (field_i16 instanceof Error) {
                 return field_i16;
             } else {
                 this.field_i16 = field_i16;
             }
         }
-        const field_i32Buf: ArrayBufferLike | undefined = storage.get(52);
+        const field_i32Buf: ArrayBufferLike | undefined = storage.get(53);
         if (field_i32Buf === undefined) {
             return new Error(`Fail to get property field_i32`);
         }
         if (field_i32Buf.byteLength === 0) {
             this.field_i32 = undefined;
         } else {
-            const field_i32: number | Error = this.getValue<number>(storage, 52, Protocol.Primitives.i32.decode);
+            const field_i32: number | Error = this.getValue<number>(storage, 53, Protocol.Primitives.i32.decode);
             if (field_i32 instanceof Error) {
                 return field_i32;
             } else {
                 this.field_i32 = field_i32;
             }
         }
-        const field_i64Buf: ArrayBufferLike | undefined = storage.get(53);
+        const field_i64Buf: ArrayBufferLike | undefined = storage.get(54);
         if (field_i64Buf === undefined) {
             return new Error(`Fail to get property field_i64`);
         }
         if (field_i64Buf.byteLength === 0) {
             this.field_i64 = undefined;
         } else {
-            const field_i64: bigint | Error = this.getValue<bigint>(storage, 53, Protocol.Primitives.i64.decode);
+            const field_i64: bigint | Error = this.getValue<bigint>(storage, 54, Protocol.Primitives.i64.decode);
             if (field_i64 instanceof Error) {
                 return field_i64;
             } else {
                 this.field_i64 = field_i64;
             }
         }
-        const field_f32Buf: ArrayBufferLike | undefined = storage.get(54);
+        const field_f32Buf: ArrayBufferLike | undefined = storage.get(55);
         if (field_f32Buf === undefined) {
             return new Error(`Fail to get property field_f32`);
         }
         if (field_f32Buf.byteLength === 0) {
             this.field_f32 = undefined;
         } else {
-            const field_f32: number | Error = this.getValue<number>(storage, 54, Protocol.Primitives.f32.decode);
+            const field_f32: number | Error = this.getValue<number>(storage, 55, Protocol.Primitives.f32.decode);
             if (field_f32 instanceof Error) {
                 return field_f32;
             } else {
                 this.field_f32 = field_f32;
             }
         }
-        const field_f64Buf: ArrayBufferLike | undefined = storage.get(55);
+        const field_f64Buf: ArrayBufferLike | undefined = storage.get(56);
         if (field_f64Buf === undefined) {
             return new Error(`Fail to get property field_f64`);
         }
         if (field_f64Buf.byteLength === 0) {
             this.field_f64 = undefined;
         } else {
-            const field_f64: number | Error = this.getValue<number>(storage, 55, Protocol.Primitives.f64.decode);
+            const field_f64: number | Error = this.getValue<number>(storage, 56, Protocol.Primitives.f64.decode);
             if (field_f64 instanceof Error) {
                 return field_f64;
             } else {
                 this.field_f64 = field_f64;
             }
         }
-        const field_boolBuf: ArrayBufferLike | undefined = storage.get(56);
+        const field_boolBuf: ArrayBufferLike | undefined = storage.get(57);
         if (field_boolBuf === undefined) {
             return new Error(`Fail to get property field_bool`);
         }
         if (field_boolBuf.byteLength === 0) {
             this.field_bool = undefined;
         } else {
-            const field_bool: boolean | Error = this.getValue<boolean>(storage, 56, Protocol.Primitives.bool.decode);
+            const field_bool: boolean | Error = this.getValue<boolean>(storage, 57, Protocol.Primitives.bool.decode);
             if (field_bool instanceof Error) {
                 return field_bool;
             } else {
@@ -3858,7 +3870,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
     public field_f64: Array<number | undefined>;
     public field_bool: Array<boolean | undefined>;
     public static getSignature(): string { return 'StructExampleD'; }
-    public static getId(): number { return 57; }
+    public static getId(): number { return 58; }
 
 
     constructor(params: IStructExampleD)  {
@@ -3874,22 +3886,22 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleD { return this; }
 
-    public getId(): number { return 57; }
+    public getId(): number { return 58; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => this.field_str === undefined ? this.getBuffer(58, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<string>>(58, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str),
-            () => this.field_u8 === undefined ? this.getBuffer(59, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(59, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8),
-            () => this.field_u16 === undefined ? this.getBuffer(60, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(60, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16),
-            () => this.field_u32 === undefined ? this.getBuffer(61, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(61, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32),
-            () => this.field_u64 === undefined ? this.getBuffer(62, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(62, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64),
-            () => this.field_i8 === undefined ? this.getBuffer(63, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(63, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8),
-            () => this.field_i16 === undefined ? this.getBuffer(64, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(64, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16),
-            () => this.field_i32 === undefined ? this.getBuffer(65, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(65, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32),
-            () => this.field_i64 === undefined ? this.getBuffer(66, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(66, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64),
-            () => this.field_f32 === undefined ? this.getBuffer(67, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(67, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32),
-            () => this.field_f64 === undefined ? this.getBuffer(68, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(68, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64),
-            () => this.field_bool === undefined ? this.getBuffer(69, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<boolean>>(69, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool),
+            () => this.field_str === undefined ? this.getBuffer(59, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<string>>(59, Protocol.ESize.u64, Protocol.Primitives.ArrayStrUTF8.encode, this.field_str),
+            () => this.field_u8 === undefined ? this.getBuffer(60, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(60, Protocol.ESize.u64, Protocol.Primitives.ArrayU8.encode, this.field_u8),
+            () => this.field_u16 === undefined ? this.getBuffer(61, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(61, Protocol.ESize.u64, Protocol.Primitives.ArrayU16.encode, this.field_u16),
+            () => this.field_u32 === undefined ? this.getBuffer(62, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(62, Protocol.ESize.u64, Protocol.Primitives.ArrayU32.encode, this.field_u32),
+            () => this.field_u64 === undefined ? this.getBuffer(63, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(63, Protocol.ESize.u64, Protocol.Primitives.ArrayU64.encode, this.field_u64),
+            () => this.field_i8 === undefined ? this.getBuffer(64, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(64, Protocol.ESize.u64, Protocol.Primitives.ArrayI8.encode, this.field_i8),
+            () => this.field_i16 === undefined ? this.getBuffer(65, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(65, Protocol.ESize.u64, Protocol.Primitives.ArrayI16.encode, this.field_i16),
+            () => this.field_i32 === undefined ? this.getBuffer(66, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(66, Protocol.ESize.u64, Protocol.Primitives.ArrayI32.encode, this.field_i32),
+            () => this.field_i64 === undefined ? this.getBuffer(67, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<bigint>>(67, Protocol.ESize.u64, Protocol.Primitives.ArrayI64.encode, this.field_i64),
+            () => this.field_f32 === undefined ? this.getBuffer(68, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(68, Protocol.ESize.u64, Protocol.Primitives.ArrayF32.encode, this.field_f32),
+            () => this.field_f64 === undefined ? this.getBuffer(69, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<number>>(69, Protocol.ESize.u64, Protocol.Primitives.ArrayF64.encode, this.field_f64),
+            () => this.field_bool === undefined ? this.getBuffer(70, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<Array<boolean>>(70, Protocol.ESize.u64, Protocol.Primitives.ArrayBool.encode, this.field_bool),
         ]);
     }
 
@@ -3898,168 +3910,168 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         if (storage instanceof Error) {
             return storage;
         }
-        const field_strBuf: ArrayBufferLike | undefined = storage.get(58);
+        const field_strBuf: ArrayBufferLike | undefined = storage.get(59);
         if (field_strBuf === undefined) {
             return new Error(`Fail to get property field_str`);
         }
         if (field_strBuf.byteLength === 0) {
             this.field_str = undefined;
         } else {
-            const field_str: Array<string> | Error = this.getValue<Array<string>>(storage, 58, Protocol.Primitives.ArrayStrUTF8.decode);
+            const field_str: Array<string> | Error = this.getValue<Array<string>>(storage, 59, Protocol.Primitives.ArrayStrUTF8.decode);
             if (field_str instanceof Error) {
                 return field_str;
             } else {
                 this.field_str = field_str;
             }
         }
-        const field_u8Buf: ArrayBufferLike | undefined = storage.get(59);
+        const field_u8Buf: ArrayBufferLike | undefined = storage.get(60);
         if (field_u8Buf === undefined) {
             return new Error(`Fail to get property field_u8`);
         }
         if (field_u8Buf.byteLength === 0) {
             this.field_u8 = undefined;
         } else {
-            const field_u8: Array<number> | Error = this.getValue<Array<number>>(storage, 59, Protocol.Primitives.ArrayU8.decode);
+            const field_u8: Array<number> | Error = this.getValue<Array<number>>(storage, 60, Protocol.Primitives.ArrayU8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
         }
-        const field_u16Buf: ArrayBufferLike | undefined = storage.get(60);
+        const field_u16Buf: ArrayBufferLike | undefined = storage.get(61);
         if (field_u16Buf === undefined) {
             return new Error(`Fail to get property field_u16`);
         }
         if (field_u16Buf.byteLength === 0) {
             this.field_u16 = undefined;
         } else {
-            const field_u16: Array<number> | Error = this.getValue<Array<number>>(storage, 60, Protocol.Primitives.ArrayU16.decode);
+            const field_u16: Array<number> | Error = this.getValue<Array<number>>(storage, 61, Protocol.Primitives.ArrayU16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
                 this.field_u16 = field_u16;
             }
         }
-        const field_u32Buf: ArrayBufferLike | undefined = storage.get(61);
+        const field_u32Buf: ArrayBufferLike | undefined = storage.get(62);
         if (field_u32Buf === undefined) {
             return new Error(`Fail to get property field_u32`);
         }
         if (field_u32Buf.byteLength === 0) {
             this.field_u32 = undefined;
         } else {
-            const field_u32: Array<number> | Error = this.getValue<Array<number>>(storage, 61, Protocol.Primitives.ArrayU32.decode);
+            const field_u32: Array<number> | Error = this.getValue<Array<number>>(storage, 62, Protocol.Primitives.ArrayU32.decode);
             if (field_u32 instanceof Error) {
                 return field_u32;
             } else {
                 this.field_u32 = field_u32;
             }
         }
-        const field_u64Buf: ArrayBufferLike | undefined = storage.get(62);
+        const field_u64Buf: ArrayBufferLike | undefined = storage.get(63);
         if (field_u64Buf === undefined) {
             return new Error(`Fail to get property field_u64`);
         }
         if (field_u64Buf.byteLength === 0) {
             this.field_u64 = undefined;
         } else {
-            const field_u64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 62, Protocol.Primitives.ArrayU64.decode);
+            const field_u64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 63, Protocol.Primitives.ArrayU64.decode);
             if (field_u64 instanceof Error) {
                 return field_u64;
             } else {
                 this.field_u64 = field_u64;
             }
         }
-        const field_i8Buf: ArrayBufferLike | undefined = storage.get(63);
+        const field_i8Buf: ArrayBufferLike | undefined = storage.get(64);
         if (field_i8Buf === undefined) {
             return new Error(`Fail to get property field_i8`);
         }
         if (field_i8Buf.byteLength === 0) {
             this.field_i8 = undefined;
         } else {
-            const field_i8: Array<number> | Error = this.getValue<Array<number>>(storage, 63, Protocol.Primitives.ArrayI8.decode);
+            const field_i8: Array<number> | Error = this.getValue<Array<number>>(storage, 64, Protocol.Primitives.ArrayI8.decode);
             if (field_i8 instanceof Error) {
                 return field_i8;
             } else {
                 this.field_i8 = field_i8;
             }
         }
-        const field_i16Buf: ArrayBufferLike | undefined = storage.get(64);
+        const field_i16Buf: ArrayBufferLike | undefined = storage.get(65);
         if (field_i16Buf === undefined) {
             return new Error(`Fail to get property field_i16`);
         }
         if (field_i16Buf.byteLength === 0) {
             this.field_i16 = undefined;
         } else {
-            const field_i16: Array<number> | Error = this.getValue<Array<number>>(storage, 64, Protocol.Primitives.ArrayI16.decode);
+            const field_i16: Array<number> | Error = this.getValue<Array<number>>(storage, 65, Protocol.Primitives.ArrayI16.decode);
             if (field_i16 instanceof Error) {
                 return field_i16;
             } else {
                 this.field_i16 = field_i16;
             }
         }
-        const field_i32Buf: ArrayBufferLike | undefined = storage.get(65);
+        const field_i32Buf: ArrayBufferLike | undefined = storage.get(66);
         if (field_i32Buf === undefined) {
             return new Error(`Fail to get property field_i32`);
         }
         if (field_i32Buf.byteLength === 0) {
             this.field_i32 = undefined;
         } else {
-            const field_i32: Array<number> | Error = this.getValue<Array<number>>(storage, 65, Protocol.Primitives.ArrayI32.decode);
+            const field_i32: Array<number> | Error = this.getValue<Array<number>>(storage, 66, Protocol.Primitives.ArrayI32.decode);
             if (field_i32 instanceof Error) {
                 return field_i32;
             } else {
                 this.field_i32 = field_i32;
             }
         }
-        const field_i64Buf: ArrayBufferLike | undefined = storage.get(66);
+        const field_i64Buf: ArrayBufferLike | undefined = storage.get(67);
         if (field_i64Buf === undefined) {
             return new Error(`Fail to get property field_i64`);
         }
         if (field_i64Buf.byteLength === 0) {
             this.field_i64 = undefined;
         } else {
-            const field_i64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 66, Protocol.Primitives.ArrayI64.decode);
+            const field_i64: Array<bigint> | Error = this.getValue<Array<bigint>>(storage, 67, Protocol.Primitives.ArrayI64.decode);
             if (field_i64 instanceof Error) {
                 return field_i64;
             } else {
                 this.field_i64 = field_i64;
             }
         }
-        const field_f32Buf: ArrayBufferLike | undefined = storage.get(67);
+        const field_f32Buf: ArrayBufferLike | undefined = storage.get(68);
         if (field_f32Buf === undefined) {
             return new Error(`Fail to get property field_f32`);
         }
         if (field_f32Buf.byteLength === 0) {
             this.field_f32 = undefined;
         } else {
-            const field_f32: Array<number> | Error = this.getValue<Array<number>>(storage, 67, Protocol.Primitives.ArrayF32.decode);
+            const field_f32: Array<number> | Error = this.getValue<Array<number>>(storage, 68, Protocol.Primitives.ArrayF32.decode);
             if (field_f32 instanceof Error) {
                 return field_f32;
             } else {
                 this.field_f32 = field_f32;
             }
         }
-        const field_f64Buf: ArrayBufferLike | undefined = storage.get(68);
+        const field_f64Buf: ArrayBufferLike | undefined = storage.get(69);
         if (field_f64Buf === undefined) {
             return new Error(`Fail to get property field_f64`);
         }
         if (field_f64Buf.byteLength === 0) {
             this.field_f64 = undefined;
         } else {
-            const field_f64: Array<number> | Error = this.getValue<Array<number>>(storage, 68, Protocol.Primitives.ArrayF64.decode);
+            const field_f64: Array<number> | Error = this.getValue<Array<number>>(storage, 69, Protocol.Primitives.ArrayF64.decode);
             if (field_f64 instanceof Error) {
                 return field_f64;
             } else {
                 this.field_f64 = field_f64;
             }
         }
-        const field_boolBuf: ArrayBufferLike | undefined = storage.get(69);
+        const field_boolBuf: ArrayBufferLike | undefined = storage.get(70);
         if (field_boolBuf === undefined) {
             return new Error(`Fail to get property field_bool`);
         }
         if (field_boolBuf.byteLength === 0) {
             this.field_bool = undefined;
         } else {
-            const field_bool: Array<boolean> | Error = this.getValue<Array<boolean>>(storage, 69, Protocol.Primitives.ArrayBool.decode);
+            const field_bool: Array<boolean> | Error = this.getValue<Array<boolean>>(storage, 70, Protocol.Primitives.ArrayBool.decode);
             if (field_bool instanceof Error) {
                 return field_bool;
             } else {
@@ -4166,7 +4178,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
     public static getSignature(): string { return 'StructExampleE'; }
-    public static getId(): number { return 70; }
+    public static getId(): number { return 71; }
 
 
     constructor(params: IStructExampleE)  {
@@ -4188,13 +4200,13 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleE { return this; }
 
-    public getId(): number { return 70; }
+    public getId(): number { return 71; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => { const buffer = this._field_a.encode(); return this.getBuffer(71, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => { const buffer = this._field_b.encode(); return this.getBuffer(72, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => { const buffer = this._field_c.encode(); return this.getBuffer(73, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this._field_a.encode(); return this.getBuffer(72, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this._field_b.encode(); return this.getBuffer(73, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this._field_c.encode(); return this.getBuffer(74, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
 
@@ -4204,7 +4216,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             return storage;
         }
         this.field_a = {};
-        const field_aBuf: ArrayBufferLike = storage.get(71);
+        const field_aBuf: ArrayBufferLike = storage.get(72);
         if (field_aBuf === undefined) {
             return new Error(`Fail to get property "field_a"`);
         }
@@ -4217,7 +4229,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             }
         }
         this.field_b = {};
-        const field_bBuf: ArrayBufferLike = storage.get(72);
+        const field_bBuf: ArrayBufferLike = storage.get(73);
         if (field_bBuf === undefined) {
             return new Error(`Fail to get property "field_b"`);
         }
@@ -4230,7 +4242,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             }
         }
         this.field_c = {};
-        const field_cBuf: ArrayBufferLike = storage.get(73);
+        const field_cBuf: ArrayBufferLike = storage.get(74);
         if (field_cBuf === undefined) {
             return new Error(`Fail to get property "field_c"`);
         }
@@ -4342,7 +4354,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
     public static getSignature(): string { return 'StructExampleF'; }
-    public static getId(): number { return 74; }
+    public static getId(): number { return 75; }
 
 
     constructor(params: IStructExampleF)  {
@@ -4364,13 +4376,13 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleF { return this; }
 
-    public getId(): number { return 74; }
+    public getId(): number { return 75; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => {if (this.field_a === undefined) { return this.getBuffer(75, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this._field_a.encode(); return this.getBuffer(75, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => {if (this.field_b === undefined) { return this.getBuffer(76, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this._field_b.encode(); return this.getBuffer(76, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => {if (this.field_c === undefined) { return this.getBuffer(77, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this._field_c.encode(); return this.getBuffer(77, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_a === undefined) { return this.getBuffer(76, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this._field_a.encode(); return this.getBuffer(76, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_b === undefined) { return this.getBuffer(77, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this._field_b.encode(); return this.getBuffer(77, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_c === undefined) { return this.getBuffer(78, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this._field_c.encode(); return this.getBuffer(78, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
 
@@ -4379,7 +4391,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         if (storage instanceof Error) {
             return storage;
         }
-        const field_aBuf: ArrayBufferLike | undefined = storage.get(75);
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(76);
         if (field_aBuf === undefined) {
             return new Error(`Fail to get property field_a`);
         }
@@ -4387,7 +4399,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
             this.field_a = undefined;
         } else {
             this.field_a = {};
-            const field_aBuf: ArrayBufferLike = storage.get(75);
+            const field_aBuf: ArrayBufferLike = storage.get(76);
             if (field_aBuf === undefined) {
                 return new Error(`Fail to get property "field_a"`);
             }
@@ -4400,7 +4412,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                 }
             }
         }
-        const field_bBuf: ArrayBufferLike | undefined = storage.get(76);
+        const field_bBuf: ArrayBufferLike | undefined = storage.get(77);
         if (field_bBuf === undefined) {
             return new Error(`Fail to get property field_b`);
         }
@@ -4408,7 +4420,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
             this.field_b = undefined;
         } else {
             this.field_b = {};
-            const field_bBuf: ArrayBufferLike = storage.get(76);
+            const field_bBuf: ArrayBufferLike = storage.get(77);
             if (field_bBuf === undefined) {
                 return new Error(`Fail to get property "field_b"`);
             }
@@ -4421,7 +4433,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                 }
             }
         }
-        const field_cBuf: ArrayBufferLike | undefined = storage.get(77);
+        const field_cBuf: ArrayBufferLike | undefined = storage.get(78);
         if (field_cBuf === undefined) {
             return new Error(`Fail to get property field_c`);
         }
@@ -4429,7 +4441,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
             this.field_c = undefined;
         } else {
             this.field_c = {};
-            const field_cBuf: ArrayBufferLike = storage.get(77);
+            const field_cBuf: ArrayBufferLike = storage.get(78);
             if (field_cBuf === undefined) {
                 return new Error(`Fail to get property "field_c"`);
             }
@@ -4464,6 +4476,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
         return new StructExampleG({
             field_a: new StructExampleA({
                 field_str: '',
+                field_str_empty: '',
                 field_u8: 0,
                 field_u16: 0,
                 field_u32: 0,
@@ -4547,7 +4560,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
     public field_a: StructExampleA;
     public field_b: StructExampleB;
     public static getSignature(): string { return 'StructExampleG'; }
-    public static getId(): number { return 78; }
+    public static getId(): number { return 79; }
 
 
     constructor(params: IStructExampleG)  {
@@ -4563,12 +4576,12 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleG { return this; }
 
-    public getId(): number { return 78; }
+    public getId(): number { return 79; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => { const buffer = this.field_a.encode(); return this.getBuffer(79, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => { const buffer = this.field_b.encode(); return this.getBuffer(80, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this.field_a.encode(); return this.getBuffer(80, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this.field_b.encode(); return this.getBuffer(81, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
 
@@ -4579,6 +4592,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
         }
         const field_a: StructExampleA = new StructExampleA({
             field_str: '',
+            field_str_empty: '',
             field_u8: 0,
             field_u16: 0,
             field_u32: 0,
@@ -4591,7 +4605,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
             field_f64: 0,
             field_bool: true,
         });
-        const field_aBuf: ArrayBufferLike = storage.get(79);
+        const field_aBuf: ArrayBufferLike = storage.get(80);
         if (field_aBuf instanceof Error) {
             return field_aBuf;
         }
@@ -4629,7 +4643,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
             field_bool_empty: [],
             field_struct_empty: [],
         });
-        const field_bBuf: ArrayBufferLike = storage.get(80);
+        const field_bBuf: ArrayBufferLike = storage.get(81);
         if (field_bBuf instanceof Error) {
             return field_bBuf;
         }
@@ -4694,7 +4708,7 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
     }
 
     public static getSignature(): string { return 'StructExampleEmpty'; }
-    public static getId(): number { return 81; }
+    public static getId(): number { return 82; }
 
 
     constructor(params: IStructExampleEmpty)  {
@@ -4710,7 +4724,7 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
 
     public get(): StructExampleEmpty { return this; }
 
-    public getId(): number { return 81; }
+    public getId(): number { return 82; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -4793,7 +4807,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
     public field_b: StructExampleB | undefined;
     public field_c: StructExampleEmpty;
     public static getSignature(): string { return 'StructExampleJ'; }
-    public static getId(): number { return 82; }
+    public static getId(): number { return 83; }
 
 
     constructor(params: IStructExampleJ)  {
@@ -4809,13 +4823,13 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
 
     public get(): StructExampleJ { return this; }
 
-    public getId(): number { return 82; }
+    public getId(): number { return 83; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => {if (this.field_a === undefined) { return this.getBuffer(83, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_a.encode(); return this.getBuffer(83, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => {if (this.field_b === undefined) { return this.getBuffer(84, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_b.encode(); return this.getBuffer(84, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => { const buffer = this.field_c.encode(); return this.getBuffer(85, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_a === undefined) { return this.getBuffer(84, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_a.encode(); return this.getBuffer(84, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_b === undefined) { return this.getBuffer(85, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_b.encode(); return this.getBuffer(85, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this.field_c.encode(); return this.getBuffer(86, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
 
@@ -4824,7 +4838,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         if (storage instanceof Error) {
             return storage;
         }
-        const field_aBuf: ArrayBufferLike | undefined = storage.get(83);
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(84);
         if (field_aBuf === undefined) {
             return new Error(`Fail to get property field_a`);
         }
@@ -4833,6 +4847,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         } else {
             const field_a: StructExampleA = new StructExampleA({
                 field_str: '',
+                field_str_empty: '',
                 field_u8: 0,
                 field_u16: 0,
                 field_u32: 0,
@@ -4845,7 +4860,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
                 field_f64: 0,
                 field_bool: true,
             });
-            const field_aBuf: ArrayBufferLike = storage.get(83);
+            const field_aBuf: ArrayBufferLike = storage.get(84);
             if (field_aBuf instanceof Error) {
                 return field_aBuf;
             }
@@ -4856,7 +4871,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
                 this.field_a = field_a;
             }
         }
-        const field_bBuf: ArrayBufferLike | undefined = storage.get(84);
+        const field_bBuf: ArrayBufferLike | undefined = storage.get(85);
         if (field_bBuf === undefined) {
             return new Error(`Fail to get property field_b`);
         }
@@ -4891,7 +4906,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
                 field_bool_empty: [],
                 field_struct_empty: [],
             });
-            const field_bBuf: ArrayBufferLike = storage.get(84);
+            const field_bBuf: ArrayBufferLike = storage.get(85);
             if (field_bBuf instanceof Error) {
                 return field_bBuf;
             }
@@ -4904,7 +4919,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         }
         const field_c: StructExampleEmpty = new StructExampleEmpty({
         });
-        const field_cBuf: ArrayBufferLike = storage.get(85);
+        const field_cBuf: ArrayBufferLike = storage.get(86);
         if (field_cBuf instanceof Error) {
             return field_cBuf;
         }
@@ -4944,12 +4959,12 @@ export namespace GroupA {
             }
             return err instanceof Error ? err : inst.get();
         }
-        public static getId(): number { return 87; }
+        public static getId(): number { return 88; }
         public from(obj: any): IEnumExampleA | Error {
             return EnumExampleA.from(obj);
         }
         public signature(): number { return 0; }
-        public getId(): number { return 87; }
+        public getId(): number { return 88; }
         public getAllowed(): string[] {
             return [
                 Protocol.Primitives.StrUTF8.getSignature(),
@@ -5056,7 +5071,7 @@ export namespace GroupA {
         public opt: IEnumExampleA;
         private _opt: Primitives.Enum;
         public static getSignature(): string { return 'StructExampleA'; }
-        public static getId(): number { return 88; }
+        public static getId(): number { return 89; }
 
 
         constructor(params: IStructExampleA)  {
@@ -5074,13 +5089,13 @@ export namespace GroupA {
 
         public get(): StructExampleA { return this; }
 
-        public getId(): number { return 88; }
+        public getId(): number { return 89; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(89, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                () => this.getBuffer(90, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-                () => { const buffer = this._opt.encode(); return this.getBuffer(91, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => this.getBuffer(90, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                () => this.getBuffer(91, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                () => { const buffer = this._opt.encode(); return this.getBuffer(92, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
 
@@ -5089,20 +5104,20 @@ export namespace GroupA {
             if (storage instanceof Error) {
                 return storage;
             }
-            const field_u8: number | Error = this.getValue<number>(storage, 89, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 90, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
-            const field_u16: number | Error = this.getValue<number>(storage, 90, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 91, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
                 this.field_u16 = field_u16;
             }
             this.opt = {};
-            const optBuf: ArrayBufferLike = storage.get(91);
+            const optBuf: ArrayBufferLike = storage.get(92);
             if (optBuf === undefined) {
                 return new Error(`Fail to get property "opt"`);
             }
@@ -5188,7 +5203,7 @@ export namespace GroupA {
         public field_u16: number;
         public strct: GroupA.StructExampleA;
         public static getSignature(): string { return 'StructExampleB'; }
-        public static getId(): number { return 92; }
+        public static getId(): number { return 93; }
 
 
         constructor(params: IStructExampleB)  {
@@ -5204,13 +5219,13 @@ export namespace GroupA {
 
         public get(): StructExampleB { return this; }
 
-        public getId(): number { return 92; }
+        public getId(): number { return 93; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(93, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                () => this.getBuffer(94, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-                () => { const buffer = this.strct.encode(); return this.getBuffer(95, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => this.getBuffer(94, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                () => this.getBuffer(95, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                () => { const buffer = this.strct.encode(); return this.getBuffer(96, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
 
@@ -5219,13 +5234,13 @@ export namespace GroupA {
             if (storage instanceof Error) {
                 return storage;
             }
-            const field_u8: number | Error = this.getValue<number>(storage, 93, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 94, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
-            const field_u16: number | Error = this.getValue<number>(storage, 94, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 95, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
@@ -5236,7 +5251,7 @@ export namespace GroupA {
                 field_u16: 0,
                 opt: {},
             });
-            const strctBuf: ArrayBufferLike = storage.get(95);
+            const strctBuf: ArrayBufferLike = storage.get(96);
             if (strctBuf instanceof Error) {
                 return strctBuf;
             }
@@ -5319,7 +5334,7 @@ export namespace GroupB {
         public field_u8: number;
         public field_u16: number;
         public static getSignature(): string { return 'StructExampleA'; }
-        public static getId(): number { return 97; }
+        public static getId(): number { return 98; }
 
 
         constructor(params: IStructExampleA)  {
@@ -5335,12 +5350,12 @@ export namespace GroupB {
 
         public get(): StructExampleA { return this; }
 
-        public getId(): number { return 97; }
+        public getId(): number { return 98; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(98, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                () => this.getBuffer(99, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                () => this.getBuffer(99, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                () => this.getBuffer(100, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
             ]);
         }
 
@@ -5349,13 +5364,13 @@ export namespace GroupB {
             if (storage instanceof Error) {
                 return storage;
             }
-            const field_u8: number | Error = this.getValue<number>(storage, 98, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 99, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
-            const field_u16: number | Error = this.getValue<number>(storage, 99, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 100, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
@@ -5432,7 +5447,7 @@ export namespace GroupB {
             public field_u8: number;
             public field_u16: number;
             public static getSignature(): string { return 'StructExampleA'; }
-            public static getId(): number { return 101; }
+            public static getId(): number { return 102; }
 
 
             constructor(params: IStructExampleA)  {
@@ -5448,12 +5463,12 @@ export namespace GroupB {
 
             public get(): StructExampleA { return this; }
 
-            public getId(): number { return 101; }
+            public getId(): number { return 102; }
 
             public encode(): ArrayBufferLike {
                 return this.collect([
-                    () => this.getBuffer(102, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                    () => this.getBuffer(103, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                    () => this.getBuffer(103, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                    () => this.getBuffer(104, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
                 ]);
             }
 
@@ -5462,13 +5477,13 @@ export namespace GroupB {
                 if (storage instanceof Error) {
                     return storage;
                 }
-                const field_u8: number | Error = this.getValue<number>(storage, 102, Protocol.Primitives.u8.decode);
+                const field_u8: number | Error = this.getValue<number>(storage, 103, Protocol.Primitives.u8.decode);
                 if (field_u8 instanceof Error) {
                     return field_u8;
                 } else {
                     this.field_u8 = field_u8;
                 }
-                const field_u16: number | Error = this.getValue<number>(storage, 103, Protocol.Primitives.u16.decode);
+                const field_u16: number | Error = this.getValue<number>(storage, 104, Protocol.Primitives.u16.decode);
                 if (field_u16 instanceof Error) {
                     return field_u16;
                 } else {
@@ -5547,7 +5562,7 @@ export namespace GroupB {
             public field_u16: number;
             public strct: GroupB.GroupC.StructExampleA;
             public static getSignature(): string { return 'StructExampleB'; }
-            public static getId(): number { return 104; }
+            public static getId(): number { return 105; }
 
 
             constructor(params: IStructExampleB)  {
@@ -5563,13 +5578,13 @@ export namespace GroupB {
 
             public get(): StructExampleB { return this; }
 
-            public getId(): number { return 104; }
+            public getId(): number { return 105; }
 
             public encode(): ArrayBufferLike {
                 return this.collect([
-                    () => this.getBuffer(105, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                    () => this.getBuffer(106, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-                    () => { const buffer = this.strct.encode(); return this.getBuffer(107, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                    () => this.getBuffer(106, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                    () => this.getBuffer(107, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                    () => { const buffer = this.strct.encode(); return this.getBuffer(108, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
                 ]);
             }
 
@@ -5578,13 +5593,13 @@ export namespace GroupB {
                 if (storage instanceof Error) {
                     return storage;
                 }
-                const field_u8: number | Error = this.getValue<number>(storage, 105, Protocol.Primitives.u8.decode);
+                const field_u8: number | Error = this.getValue<number>(storage, 106, Protocol.Primitives.u8.decode);
                 if (field_u8 instanceof Error) {
                     return field_u8;
                 } else {
                     this.field_u8 = field_u8;
                 }
-                const field_u16: number | Error = this.getValue<number>(storage, 106, Protocol.Primitives.u16.decode);
+                const field_u16: number | Error = this.getValue<number>(storage, 107, Protocol.Primitives.u16.decode);
                 if (field_u16 instanceof Error) {
                     return field_u16;
                 } else {
@@ -5594,7 +5609,7 @@ export namespace GroupB {
                     field_u8: 0,
                     field_u16: 0,
                 });
-                const strctBuf: ArrayBufferLike = storage.get(107);
+                const strctBuf: ArrayBufferLike = storage.get(108);
                 if (strctBuf instanceof Error) {
                     return strctBuf;
                 }
@@ -5639,12 +5654,12 @@ export namespace GroupD {
             }
             return err instanceof Error ? err : inst.get();
         }
-        public static getId(): number { return 113; }
+        public static getId(): number { return 114; }
         public from(obj: any): IEnumExampleP | Error {
             return EnumExampleP.from(obj);
         }
         public signature(): number { return 0; }
-        public getId(): number { return 113; }
+        public getId(): number { return 114; }
         public getAllowed(): string[] {
             return [
                 StructExampleA.getSignature(),
@@ -5719,6 +5734,7 @@ export namespace GroupD {
             return new GroupD.StructExampleP({
                 field_a: new StructExampleA({
                     field_str: '',
+                    field_str_empty: '',
                     field_u8: 0,
                     field_u16: 0,
                     field_u32: 0,
@@ -5784,7 +5800,7 @@ export namespace GroupD {
         public field_b: GroupB.StructExampleA;
         public field_c: GroupB.GroupC.StructExampleA;
         public static getSignature(): string { return 'StructExampleP'; }
-        public static getId(): number { return 109; }
+        public static getId(): number { return 110; }
 
 
         constructor(params: IStructExampleP)  {
@@ -5800,13 +5816,13 @@ export namespace GroupD {
 
         public get(): StructExampleP { return this; }
 
-        public getId(): number { return 109; }
+        public getId(): number { return 110; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => { const buffer = this.field_a.encode(); return this.getBuffer(110, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-                () => { const buffer = this.field_b.encode(); return this.getBuffer(111, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-                () => { const buffer = this.field_c.encode(); return this.getBuffer(112, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_a.encode(); return this.getBuffer(111, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_b.encode(); return this.getBuffer(112, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_c.encode(); return this.getBuffer(113, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
 
@@ -5817,6 +5833,7 @@ export namespace GroupD {
             }
             const field_a: StructExampleA = new StructExampleA({
                 field_str: '',
+                field_str_empty: '',
                 field_u8: 0,
                 field_u16: 0,
                 field_u32: 0,
@@ -5829,7 +5846,7 @@ export namespace GroupD {
                 field_f64: 0,
                 field_bool: true,
             });
-            const field_aBuf: ArrayBufferLike = storage.get(110);
+            const field_aBuf: ArrayBufferLike = storage.get(111);
             if (field_aBuf instanceof Error) {
                 return field_aBuf;
             }
@@ -5843,7 +5860,7 @@ export namespace GroupD {
                 field_u8: 0,
                 field_u16: 0,
             });
-            const field_bBuf: ArrayBufferLike = storage.get(111);
+            const field_bBuf: ArrayBufferLike = storage.get(112);
             if (field_bBuf instanceof Error) {
                 return field_bBuf;
             }
@@ -5857,7 +5874,7 @@ export namespace GroupD {
                 field_u8: 0,
                 field_u16: 0,
             });
-            const field_cBuf: ArrayBufferLike = storage.get(112);
+            const field_cBuf: ArrayBufferLike = storage.get(113);
             if (field_cBuf instanceof Error) {
                 return field_cBuf;
             }
@@ -5901,13 +5918,13 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleC: instance }, getRef: () => instance };
-            case 87:
+            case 88:
                 instance = new GroupA.EnumExampleA();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } }, getRef: () => instance };
-            case 113:
+            case 114:
                 instance = new GroupD.EnumExampleP();
                 if (instance.decode(buffer) instanceof Error) { return err; }
                 enum_instance = instance.get();
@@ -5917,59 +5934,59 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 instance = StructExampleA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleA: instance }, getRef: () => instance };
-            case 17:
+            case 18:
                 instance = StructExampleB.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleB: instance }, getRef: () => instance };
-            case 44:
+            case 45:
                 instance = StructExampleC.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleC: instance }, getRef: () => instance };
-            case 57:
+            case 58:
                 instance = StructExampleD.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleD: instance }, getRef: () => instance };
-            case 70:
+            case 71:
                 instance = StructExampleE.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleE: instance }, getRef: () => instance };
-            case 74:
+            case 75:
                 instance = StructExampleF.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleF: instance }, getRef: () => instance };
-            case 78:
+            case 79:
                 instance = StructExampleG.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleG: instance }, getRef: () => instance };
-            case 81:
+            case 82:
                 instance = StructExampleEmpty.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleEmpty: instance }, getRef: () => instance };
-            case 82:
+            case 83:
                 instance = StructExampleJ.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructExampleJ: instance }, getRef: () => instance };
-            case 88:
+            case 89:
                 instance = GroupA.StructExampleA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleA: instance } }, getRef: () => instance };
-            case 92:
+            case 93:
                 instance = GroupA.StructExampleB.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructExampleB: instance } }, getRef: () => instance };
-            case 97:
+            case 98:
                 instance = GroupB.StructExampleA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { StructExampleA: instance } }, getRef: () => instance };
-            case 101:
+            case 102:
                 instance = GroupB.GroupC.StructExampleA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleA: instance } } }, getRef: () => instance };
-            case 104:
+            case 105:
                 instance = GroupB.GroupC.StructExampleB.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructExampleB: instance } } }, getRef: () => instance };
-            case 109:
+            case 110:
                 instance = GroupD.StructExampleP.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } }, getRef: () => instance };

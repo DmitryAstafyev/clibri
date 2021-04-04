@@ -157,6 +157,7 @@ pub fn write() -> Result<(), String> {
     buffer.append(&mut usecase.pack(0).unwrap());
     let mut usecase = GroupD::EnumExampleP::Option_a(StructExampleA {
         field_str: String::from("test"),
+        field_str_empty: String::from(""),
         field_u8: 1,
         field_u16: 2,
         field_u32: 3,
@@ -179,6 +180,7 @@ pub fn write() -> Result<(), String> {
     let mut usecase = GroupD::EnumExampleP::Option_b(GroupD::StructExampleP {
         field_a: StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -232,6 +234,7 @@ pub fn write() -> Result<(), String> {
 
     let mut usecase = StructExampleA {
         field_str: String::from("test"),
+        field_str_empty: String::from(""),
         field_u8: 1,
         field_u16: 2,
         field_u32: 3,
@@ -267,6 +270,7 @@ pub fn write() -> Result<(), String> {
         field_struct: vec![
             StructExampleA {
                 field_str: String::from("test"),
+                field_str_empty: String::from(""),
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -281,6 +285,7 @@ pub fn write() -> Result<(), String> {
             },
             StructExampleA {
                 field_str: String::from("test"),
+                field_str_empty: String::from(""),
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -295,6 +300,7 @@ pub fn write() -> Result<(), String> {
             },
             StructExampleA {
                 field_str: String::from("test"),
+                field_str_empty: String::from(""),
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -398,6 +404,7 @@ pub fn write() -> Result<(), String> {
     let mut usecase = StructExampleG {
         field_a: StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -426,6 +433,7 @@ pub fn write() -> Result<(), String> {
             field_struct: vec![
                 StructExampleA {
                     field_str: String::from("test"),
+                    field_str_empty: String::from(""),
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -440,6 +448,7 @@ pub fn write() -> Result<(), String> {
                 },
                 StructExampleA {
                     field_str: String::from("test"),
+                    field_str_empty: String::from(""),
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -454,6 +463,7 @@ pub fn write() -> Result<(), String> {
                 },
                 StructExampleA {
                     field_str: String::from("test"),
+                    field_str_empty: String::from(""),
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -492,6 +502,7 @@ pub fn write() -> Result<(), String> {
     let mut usecase = StructExampleJ {
         field_a: Some(StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -593,6 +604,7 @@ pub fn write() -> Result<(), String> {
     let mut usecase = GroupD::StructExampleP {
         field_a: StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,

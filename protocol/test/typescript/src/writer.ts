@@ -73,6 +73,7 @@ usecases.push({ name: 'GroupD.EnumExampleP.Option_a', entity: (() => {
     const EnumInts = new Protocol.GroupD.EnumExampleP();
     EnumInts.set({ Option_a: new Protocol.StructExampleA({
         field_str: 'test',
+        field_str_empty: '',
         field_u8: 1,
         field_u16: 2,
         field_u32: 3,
@@ -93,6 +94,7 @@ usecases.push({ name: 'GroupD.EnumExampleP.Option_b', entity: (() => {
     EnumInts.set({ Option_b: new Protocol.GroupD.StructExampleP({
         field_a: new Protocol.StructExampleA({
             field_str: 'test',
+            field_str_empty: '',
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -138,6 +140,7 @@ usecases.push({ name: 'GroupD.EnumExampleP.Option_d', entity: (() => {
 usecases.push(...[
     { name: 'StructExampleA' , entity: new Protocol.StructExampleA({
         field_str: 'test',
+        field_str_empty: '',
         field_u8: 1,
         field_u16: 2,
         field_u32: 3,
@@ -166,6 +169,7 @@ usecases.push(...[
         field_struct: [
             new Protocol.StructExampleA({
                 field_str: 'test',
+                field_str_empty: '',
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -180,6 +184,7 @@ usecases.push(...[
             }),
             new Protocol.StructExampleA({
                 field_str: 'test',
+                field_str_empty: '',
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -194,6 +199,7 @@ usecases.push(...[
             }),
             new Protocol.StructExampleA({
                 field_str: 'test',
+                field_str_empty: '',
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -270,6 +276,7 @@ usecases.push(...[
     { name: 'StructExampleG' , entity: new Protocol.StructExampleG({
         field_a: new Protocol.StructExampleA({
             field_str: 'test',
+            field_str_empty: '',
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -298,6 +305,7 @@ usecases.push(...[
             field_struct: [
                 new Protocol.StructExampleA({
                     field_str: 'test',
+                    field_str_empty: '',
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -312,6 +320,7 @@ usecases.push(...[
                 }),
                 new Protocol.StructExampleA({
                     field_str: 'test',
+                    field_str_empty: '',
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -326,6 +335,7 @@ usecases.push(...[
                 }),
                 new Protocol.StructExampleA({
                     field_str: 'test',
+                    field_str_empty: '',
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -357,6 +367,7 @@ usecases.push(...[
     { name: 'StructExampleJ' , entity: new Protocol.StructExampleJ({
         field_a: new Protocol.StructExampleA({
             field_str: 'test',
+            field_str_empty: '',
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -412,6 +423,7 @@ usecases.push(...[
     { name: 'GroupDStructExampleP' , entity: new Protocol.GroupD.StructExampleP({
         field_a: new Protocol.StructExampleA({
             field_str: 'test',
+            field_str_empty: '',
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,

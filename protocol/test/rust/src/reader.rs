@@ -47,6 +47,7 @@ pub fn read_file(path: PathBuf) -> Result<Vec<u8>, String> {
 fn check_StructExampleA(entity: StructExampleA) {
     let src = StructExampleA {
         field_str: String::from("test"),
+        field_str_empty: String::from(""),
         field_u8: 1,
         field_u16: 2,
         field_u32: 3,
@@ -82,6 +83,7 @@ fn check_StructExampleB(entity: StructExampleB) {
         field_struct: vec![
             StructExampleA {
                 field_str: String::from("test"),
+                field_str_empty: String::from(""),
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -96,6 +98,7 @@ fn check_StructExampleB(entity: StructExampleB) {
             },
             StructExampleA {
                 field_str: String::from("test"),
+                field_str_empty: String::from(""),
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -110,6 +113,7 @@ fn check_StructExampleB(entity: StructExampleB) {
             },
             StructExampleA {
                 field_str: String::from("test"),
+                field_str_empty: String::from(""),
                 field_u8: 1,
                 field_u16: 2,
                 field_u32: 3,
@@ -213,6 +217,7 @@ fn check_StructExampleG(entity: StructExampleG) {
     let src = StructExampleG {
         field_a: StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -241,6 +246,7 @@ fn check_StructExampleG(entity: StructExampleG) {
             field_struct: vec![
                 StructExampleA {
                     field_str: String::from("test"),
+                    field_str_empty: String::from(""),
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -255,6 +261,7 @@ fn check_StructExampleG(entity: StructExampleG) {
                 },
                 StructExampleA {
                     field_str: String::from("test"),
+                    field_str_empty: String::from(""),
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -269,6 +276,7 @@ fn check_StructExampleG(entity: StructExampleG) {
                 },
                 StructExampleA {
                     field_str: String::from("test"),
+                    field_str_empty: String::from(""),
                     field_u8: 1,
                     field_u16: 2,
                     field_u32: 3,
@@ -307,6 +315,7 @@ fn check_StructExampleJ(entity: StructExampleJ) {
     let src = StructExampleJ {
         field_a: Some(StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -407,6 +416,7 @@ fn check_GroupDStructExampleP(entity: GroupD::StructExampleP) {
     let src = GroupD::StructExampleP {
         field_a: StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,
@@ -437,6 +447,7 @@ fn check_GroupDStructExampleP(entity: GroupD::StructExampleP) {
 fn check_GroupDEnumExamplePOption_a(entity: GroupD::EnumExampleP) {
     let src = GroupD::EnumExampleP::Option_a(StructExampleA {
         field_str: String::from("test"),
+        field_str_empty: String::from(""),
         field_u8: 1,
         field_u16: 2,
         field_u32: 3,
@@ -459,6 +470,7 @@ fn check_GroupDEnumExamplePOption_b(entity: GroupD::EnumExampleP) {
     let src = GroupD::EnumExampleP::Option_b(GroupD::StructExampleP {
         field_a: StructExampleA {
             field_str: String::from("test"),
+            field_str_empty: String::from(""),
             field_u8: 1,
             field_u16: 2,
             field_u32: 3,

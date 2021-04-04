@@ -1603,6 +1603,7 @@ impl PackingEnum for EnumExampleC {}
 #[derive(Debug, Clone, PartialEq)]
 pub struct StructExampleA {
     pub field_str: String,
+    pub field_str_empty: String,
     pub field_u8: u8,
     pub field_u16: u16,
     pub field_u32: u32,
@@ -1624,6 +1625,7 @@ impl StructDecode for StructExampleA {
     fn defaults() -> StructExampleA {
         StructExampleA {
             field_str: String::from(""),
+            field_str_empty: String::from(""),
             field_u8: 0,
             field_u16: 0,
             field_u32: 0,
@@ -1642,47 +1644,51 @@ impl StructDecode for StructExampleA {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(6)) {
+        self.field_str_empty = match String::get_from_storage(Source::Storage(&mut storage), Some(6)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(7)) {
+        self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(7)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match u32::get_from_storage(Source::Storage(&mut storage), Some(8)) {
+        self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(8)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match u64::get_from_storage(Source::Storage(&mut storage), Some(9)) {
+        self.field_u32 = match u32::get_from_storage(Source::Storage(&mut storage), Some(9)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match i8::get_from_storage(Source::Storage(&mut storage), Some(10)) {
+        self.field_u64 = match u64::get_from_storage(Source::Storage(&mut storage), Some(10)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match i16::get_from_storage(Source::Storage(&mut storage), Some(11)) {
+        self.field_i8 = match i8::get_from_storage(Source::Storage(&mut storage), Some(11)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match i32::get_from_storage(Source::Storage(&mut storage), Some(12)) {
+        self.field_i16 = match i16::get_from_storage(Source::Storage(&mut storage), Some(12)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match i64::get_from_storage(Source::Storage(&mut storage), Some(13)) {
+        self.field_i32 = match i32::get_from_storage(Source::Storage(&mut storage), Some(13)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match f32::get_from_storage(Source::Storage(&mut storage), Some(14)) {
+        self.field_i64 = match i64::get_from_storage(Source::Storage(&mut storage), Some(14)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match f64::get_from_storage(Source::Storage(&mut storage), Some(15)) {
+        self.field_f32 = match f32::get_from_storage(Source::Storage(&mut storage), Some(15)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match bool::get_from_storage(Source::Storage(&mut storage), Some(16)) {
+        self.field_f64 = match f64::get_from_storage(Source::Storage(&mut storage), Some(16)) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.field_bool = match bool::get_from_storage(Source::Storage(&mut storage), Some(17)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1700,47 +1706,51 @@ impl StructEncode for StructExampleA {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.get_buf_to_store(Some(6)) {
+        match self.field_str_empty.get_buf_to_store(Some(6)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.get_buf_to_store(Some(7)) {
+        match self.field_u8.get_buf_to_store(Some(7)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.get_buf_to_store(Some(8)) {
+        match self.field_u16.get_buf_to_store(Some(8)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.get_buf_to_store(Some(9)) {
+        match self.field_u32.get_buf_to_store(Some(9)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.get_buf_to_store(Some(10)) {
+        match self.field_u64.get_buf_to_store(Some(10)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.get_buf_to_store(Some(11)) {
+        match self.field_i8.get_buf_to_store(Some(11)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.get_buf_to_store(Some(12)) {
+        match self.field_i16.get_buf_to_store(Some(12)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.get_buf_to_store(Some(13)) {
+        match self.field_i32.get_buf_to_store(Some(13)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.get_buf_to_store(Some(14)) {
+        match self.field_i64.get_buf_to_store(Some(14)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.get_buf_to_store(Some(15)) {
+        match self.field_f32.get_buf_to_store(Some(15)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.get_buf_to_store(Some(16)) {
+        match self.field_f64.get_buf_to_store(Some(16)) {
+            Ok(mut buf) => { buffer.append(&mut buf); }
+            Err(e) => { return Err(e) },
+        };
+        match self.field_bool.get_buf_to_store(Some(17)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -1782,7 +1792,7 @@ pub struct StructExampleB {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleB {
     fn get_id() -> u32 {
-        17
+        18
     }
     fn defaults() -> StructExampleB {
         StructExampleB {
@@ -1815,107 +1825,107 @@ impl StructDecode for StructExampleB {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(18)) {
+        self.field_str = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(19)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(19)) {
+        self.field_u8 = match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(20)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(20)) {
+        self.field_u16 = match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(21)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(21)) {
+        self.field_u32 = match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(22)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(22)) {
+        self.field_u64 = match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(23)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(23)) {
+        self.field_i8 = match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(24)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(24)) {
+        self.field_i16 = match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(25)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(25)) {
+        self.field_i32 = match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(26)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(26)) {
+        self.field_i64 = match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(27)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(27)) {
+        self.field_f32 = match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(28)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(28)) {
+        self.field_f64 = match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(29)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match Vec::<bool>::get_from_storage(Source::Storage(&mut storage), Some(29)) {
+        self.field_bool = match Vec::<bool>::get_from_storage(Source::Storage(&mut storage), Some(30)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_struct = match Vec::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(30)) {
+        self.field_struct = match Vec::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(31)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_str_empty = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(31)) {
+        self.field_str_empty = match Vec::<String>::get_from_storage(Source::Storage(&mut storage), Some(32)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8_empty = match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(32)) {
+        self.field_u8_empty = match Vec::<u8>::get_from_storage(Source::Storage(&mut storage), Some(33)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16_empty = match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(33)) {
+        self.field_u16_empty = match Vec::<u16>::get_from_storage(Source::Storage(&mut storage), Some(34)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32_empty = match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(34)) {
+        self.field_u32_empty = match Vec::<u32>::get_from_storage(Source::Storage(&mut storage), Some(35)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64_empty = match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(35)) {
+        self.field_u64_empty = match Vec::<u64>::get_from_storage(Source::Storage(&mut storage), Some(36)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8_empty = match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(36)) {
+        self.field_i8_empty = match Vec::<i8>::get_from_storage(Source::Storage(&mut storage), Some(37)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16_empty = match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(37)) {
+        self.field_i16_empty = match Vec::<i16>::get_from_storage(Source::Storage(&mut storage), Some(38)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32_empty = match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(38)) {
+        self.field_i32_empty = match Vec::<i32>::get_from_storage(Source::Storage(&mut storage), Some(39)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64_empty = match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(39)) {
+        self.field_i64_empty = match Vec::<i64>::get_from_storage(Source::Storage(&mut storage), Some(40)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32_empty = match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(40)) {
+        self.field_f32_empty = match Vec::<f32>::get_from_storage(Source::Storage(&mut storage), Some(41)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64_empty = match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(41)) {
+        self.field_f64_empty = match Vec::<f64>::get_from_storage(Source::Storage(&mut storage), Some(42)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool_empty = match Vec::<bool>::get_from_storage(Source::Storage(&mut storage), Some(42)) {
+        self.field_bool_empty = match Vec::<bool>::get_from_storage(Source::Storage(&mut storage), Some(43)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_struct_empty = match Vec::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(43)) {
+        self.field_struct_empty = match Vec::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(44)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -1925,111 +1935,111 @@ impl StructDecode for StructExampleB {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleB {
-    fn get_id(&self) -> u32 { 17 }
+    fn get_id(&self) -> u32 { 18 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.get_buf_to_store(Some(18)) {
+        match self.field_str.get_buf_to_store(Some(19)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.get_buf_to_store(Some(19)) {
+        match self.field_u8.get_buf_to_store(Some(20)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.get_buf_to_store(Some(20)) {
+        match self.field_u16.get_buf_to_store(Some(21)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.get_buf_to_store(Some(21)) {
+        match self.field_u32.get_buf_to_store(Some(22)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.get_buf_to_store(Some(22)) {
+        match self.field_u64.get_buf_to_store(Some(23)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.get_buf_to_store(Some(23)) {
+        match self.field_i8.get_buf_to_store(Some(24)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.get_buf_to_store(Some(24)) {
+        match self.field_i16.get_buf_to_store(Some(25)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.get_buf_to_store(Some(25)) {
+        match self.field_i32.get_buf_to_store(Some(26)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.get_buf_to_store(Some(26)) {
+        match self.field_i64.get_buf_to_store(Some(27)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.get_buf_to_store(Some(27)) {
+        match self.field_f32.get_buf_to_store(Some(28)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.get_buf_to_store(Some(28)) {
+        match self.field_f64.get_buf_to_store(Some(29)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.get_buf_to_store(Some(29)) {
+        match self.field_bool.get_buf_to_store(Some(30)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_struct.get_buf_to_store(Some(30)) {
+        match self.field_struct.get_buf_to_store(Some(31)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_str_empty.get_buf_to_store(Some(31)) {
+        match self.field_str_empty.get_buf_to_store(Some(32)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8_empty.get_buf_to_store(Some(32)) {
+        match self.field_u8_empty.get_buf_to_store(Some(33)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16_empty.get_buf_to_store(Some(33)) {
+        match self.field_u16_empty.get_buf_to_store(Some(34)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32_empty.get_buf_to_store(Some(34)) {
+        match self.field_u32_empty.get_buf_to_store(Some(35)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64_empty.get_buf_to_store(Some(35)) {
+        match self.field_u64_empty.get_buf_to_store(Some(36)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8_empty.get_buf_to_store(Some(36)) {
+        match self.field_i8_empty.get_buf_to_store(Some(37)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16_empty.get_buf_to_store(Some(37)) {
+        match self.field_i16_empty.get_buf_to_store(Some(38)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32_empty.get_buf_to_store(Some(38)) {
+        match self.field_i32_empty.get_buf_to_store(Some(39)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64_empty.get_buf_to_store(Some(39)) {
+        match self.field_i64_empty.get_buf_to_store(Some(40)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32_empty.get_buf_to_store(Some(40)) {
+        match self.field_f32_empty.get_buf_to_store(Some(41)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64_empty.get_buf_to_store(Some(41)) {
+        match self.field_f64_empty.get_buf_to_store(Some(42)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool_empty.get_buf_to_store(Some(42)) {
+        match self.field_bool_empty.get_buf_to_store(Some(43)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_struct_empty.get_buf_to_store(Some(43)) {
+        match self.field_struct_empty.get_buf_to_store(Some(44)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2057,7 +2067,7 @@ pub struct StructExampleC {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleC {
     fn get_id() -> u32 {
-        44
+        45
     }
     fn defaults() -> StructExampleC {
         StructExampleC {
@@ -2076,51 +2086,51 @@ impl StructDecode for StructExampleC {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(45)) {
+        self.field_str = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(46)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match Option::<u8>::get_from_storage(Source::Storage(&mut storage), Some(46)) {
+        self.field_u8 = match Option::<u8>::get_from_storage(Source::Storage(&mut storage), Some(47)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match Option::<u16>::get_from_storage(Source::Storage(&mut storage), Some(47)) {
+        self.field_u16 = match Option::<u16>::get_from_storage(Source::Storage(&mut storage), Some(48)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match Option::<u32>::get_from_storage(Source::Storage(&mut storage), Some(48)) {
+        self.field_u32 = match Option::<u32>::get_from_storage(Source::Storage(&mut storage), Some(49)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match Option::<u64>::get_from_storage(Source::Storage(&mut storage), Some(49)) {
+        self.field_u64 = match Option::<u64>::get_from_storage(Source::Storage(&mut storage), Some(50)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match Option::<i8>::get_from_storage(Source::Storage(&mut storage), Some(50)) {
+        self.field_i8 = match Option::<i8>::get_from_storage(Source::Storage(&mut storage), Some(51)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match Option::<i16>::get_from_storage(Source::Storage(&mut storage), Some(51)) {
+        self.field_i16 = match Option::<i16>::get_from_storage(Source::Storage(&mut storage), Some(52)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match Option::<i32>::get_from_storage(Source::Storage(&mut storage), Some(52)) {
+        self.field_i32 = match Option::<i32>::get_from_storage(Source::Storage(&mut storage), Some(53)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match Option::<i64>::get_from_storage(Source::Storage(&mut storage), Some(53)) {
+        self.field_i64 = match Option::<i64>::get_from_storage(Source::Storage(&mut storage), Some(54)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match Option::<f32>::get_from_storage(Source::Storage(&mut storage), Some(54)) {
+        self.field_f32 = match Option::<f32>::get_from_storage(Source::Storage(&mut storage), Some(55)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match Option::<f64>::get_from_storage(Source::Storage(&mut storage), Some(55)) {
+        self.field_f64 = match Option::<f64>::get_from_storage(Source::Storage(&mut storage), Some(56)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match Option::<bool>::get_from_storage(Source::Storage(&mut storage), Some(56)) {
+        self.field_bool = match Option::<bool>::get_from_storage(Source::Storage(&mut storage), Some(57)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2130,55 +2140,55 @@ impl StructDecode for StructExampleC {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleC {
-    fn get_id(&self) -> u32 { 44 }
+    fn get_id(&self) -> u32 { 45 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.get_buf_to_store(Some(45)) {
+        match self.field_str.get_buf_to_store(Some(46)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.get_buf_to_store(Some(46)) {
+        match self.field_u8.get_buf_to_store(Some(47)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.get_buf_to_store(Some(47)) {
+        match self.field_u16.get_buf_to_store(Some(48)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.get_buf_to_store(Some(48)) {
+        match self.field_u32.get_buf_to_store(Some(49)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.get_buf_to_store(Some(49)) {
+        match self.field_u64.get_buf_to_store(Some(50)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.get_buf_to_store(Some(50)) {
+        match self.field_i8.get_buf_to_store(Some(51)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.get_buf_to_store(Some(51)) {
+        match self.field_i16.get_buf_to_store(Some(52)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.get_buf_to_store(Some(52)) {
+        match self.field_i32.get_buf_to_store(Some(53)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.get_buf_to_store(Some(53)) {
+        match self.field_i64.get_buf_to_store(Some(54)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.get_buf_to_store(Some(54)) {
+        match self.field_f32.get_buf_to_store(Some(55)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.get_buf_to_store(Some(55)) {
+        match self.field_f64.get_buf_to_store(Some(56)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.get_buf_to_store(Some(56)) {
+        match self.field_bool.get_buf_to_store(Some(57)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2206,7 +2216,7 @@ pub struct StructExampleD {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleD {
     fn get_id() -> u32 {
-        57
+        58
     }
     fn defaults() -> StructExampleD {
         StructExampleD {
@@ -2225,51 +2235,51 @@ impl StructDecode for StructExampleD {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_str = match Option::<Vec::<String>>::get_from_storage(Source::Storage(&mut storage), Some(58)) {
+        self.field_str = match Option::<Vec::<String>>::get_from_storage(Source::Storage(&mut storage), Some(59)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u8 = match Option::<Vec::<u8>>::get_from_storage(Source::Storage(&mut storage), Some(59)) {
+        self.field_u8 = match Option::<Vec::<u8>>::get_from_storage(Source::Storage(&mut storage), Some(60)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u16 = match Option::<Vec::<u16>>::get_from_storage(Source::Storage(&mut storage), Some(60)) {
+        self.field_u16 = match Option::<Vec::<u16>>::get_from_storage(Source::Storage(&mut storage), Some(61)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u32 = match Option::<Vec::<u32>>::get_from_storage(Source::Storage(&mut storage), Some(61)) {
+        self.field_u32 = match Option::<Vec::<u32>>::get_from_storage(Source::Storage(&mut storage), Some(62)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_u64 = match Option::<Vec::<u64>>::get_from_storage(Source::Storage(&mut storage), Some(62)) {
+        self.field_u64 = match Option::<Vec::<u64>>::get_from_storage(Source::Storage(&mut storage), Some(63)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i8 = match Option::<Vec::<i8>>::get_from_storage(Source::Storage(&mut storage), Some(63)) {
+        self.field_i8 = match Option::<Vec::<i8>>::get_from_storage(Source::Storage(&mut storage), Some(64)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i16 = match Option::<Vec::<i16>>::get_from_storage(Source::Storage(&mut storage), Some(64)) {
+        self.field_i16 = match Option::<Vec::<i16>>::get_from_storage(Source::Storage(&mut storage), Some(65)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i32 = match Option::<Vec::<i32>>::get_from_storage(Source::Storage(&mut storage), Some(65)) {
+        self.field_i32 = match Option::<Vec::<i32>>::get_from_storage(Source::Storage(&mut storage), Some(66)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_i64 = match Option::<Vec::<i64>>::get_from_storage(Source::Storage(&mut storage), Some(66)) {
+        self.field_i64 = match Option::<Vec::<i64>>::get_from_storage(Source::Storage(&mut storage), Some(67)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f32 = match Option::<Vec::<f32>>::get_from_storage(Source::Storage(&mut storage), Some(67)) {
+        self.field_f32 = match Option::<Vec::<f32>>::get_from_storage(Source::Storage(&mut storage), Some(68)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_f64 = match Option::<Vec::<f64>>::get_from_storage(Source::Storage(&mut storage), Some(68)) {
+        self.field_f64 = match Option::<Vec::<f64>>::get_from_storage(Source::Storage(&mut storage), Some(69)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_bool = match Option::<Vec::<bool>>::get_from_storage(Source::Storage(&mut storage), Some(69)) {
+        self.field_bool = match Option::<Vec::<bool>>::get_from_storage(Source::Storage(&mut storage), Some(70)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2279,55 +2289,55 @@ impl StructDecode for StructExampleD {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleD {
-    fn get_id(&self) -> u32 { 57 }
+    fn get_id(&self) -> u32 { 58 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_str.get_buf_to_store(Some(58)) {
+        match self.field_str.get_buf_to_store(Some(59)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u8.get_buf_to_store(Some(59)) {
+        match self.field_u8.get_buf_to_store(Some(60)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u16.get_buf_to_store(Some(60)) {
+        match self.field_u16.get_buf_to_store(Some(61)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u32.get_buf_to_store(Some(61)) {
+        match self.field_u32.get_buf_to_store(Some(62)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_u64.get_buf_to_store(Some(62)) {
+        match self.field_u64.get_buf_to_store(Some(63)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i8.get_buf_to_store(Some(63)) {
+        match self.field_i8.get_buf_to_store(Some(64)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i16.get_buf_to_store(Some(64)) {
+        match self.field_i16.get_buf_to_store(Some(65)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i32.get_buf_to_store(Some(65)) {
+        match self.field_i32.get_buf_to_store(Some(66)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_i64.get_buf_to_store(Some(66)) {
+        match self.field_i64.get_buf_to_store(Some(67)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f32.get_buf_to_store(Some(67)) {
+        match self.field_f32.get_buf_to_store(Some(68)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_f64.get_buf_to_store(Some(68)) {
+        match self.field_f64.get_buf_to_store(Some(69)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_bool.get_buf_to_store(Some(69)) {
+        match self.field_bool.get_buf_to_store(Some(70)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2346,7 +2356,7 @@ pub struct StructExampleE {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleE {
     fn get_id() -> u32 {
-        70
+        71
     }
     fn defaults() -> StructExampleE {
         StructExampleE {
@@ -2356,15 +2366,15 @@ impl StructDecode for StructExampleE {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(71)) {
+        self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(72)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_b = match EnumExampleB::get_from_storage(Source::Storage(&mut storage), Some(72)) {
+        self.field_b = match EnumExampleB::get_from_storage(Source::Storage(&mut storage), Some(73)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_c = match EnumExampleC::get_from_storage(Source::Storage(&mut storage), Some(73)) {
+        self.field_c = match EnumExampleC::get_from_storage(Source::Storage(&mut storage), Some(74)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2374,19 +2384,19 @@ impl StructDecode for StructExampleE {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleE {
-    fn get_id(&self) -> u32 { 70 }
+    fn get_id(&self) -> u32 { 71 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.get_buf_to_store(Some(71)) {
+        match self.field_a.get_buf_to_store(Some(72)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_b.get_buf_to_store(Some(72)) {
+        match self.field_b.get_buf_to_store(Some(73)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_c.get_buf_to_store(Some(73)) {
+        match self.field_c.get_buf_to_store(Some(74)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2405,7 +2415,7 @@ pub struct StructExampleF {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleF {
     fn get_id() -> u32 {
-        74
+        75
     }
     fn defaults() -> StructExampleF {
         StructExampleF {
@@ -2415,11 +2425,11 @@ impl StructDecode for StructExampleF {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        if let Some(buf) = storage.get(75) {
+        if let Some(buf) = storage.get(76) {
             if buf.is_empty() {
                 self.field_a = None;
             } else {
-                self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(75)) {
+                self.field_a = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(76)) {
                     Ok(val) => Some(val),
                     Err(e) => { return Err(e) },
                 };
@@ -2427,11 +2437,11 @@ impl StructDecode for StructExampleF {
         } else {
             return Err("Buffer for property field_a isn't found".to_string());
         }
-        if let Some(buf) = storage.get(76) {
+        if let Some(buf) = storage.get(77) {
             if buf.is_empty() {
                 self.field_b = None;
             } else {
-                self.field_b = match EnumExampleB::get_from_storage(Source::Storage(&mut storage), Some(76)) {
+                self.field_b = match EnumExampleB::get_from_storage(Source::Storage(&mut storage), Some(77)) {
                     Ok(val) => Some(val),
                     Err(e) => { return Err(e) },
                 };
@@ -2439,11 +2449,11 @@ impl StructDecode for StructExampleF {
         } else {
             return Err("Buffer for property field_b isn't found".to_string());
         }
-        if let Some(buf) = storage.get(77) {
+        if let Some(buf) = storage.get(78) {
             if buf.is_empty() {
                 self.field_c = None;
             } else {
-                self.field_c = match EnumExampleC::get_from_storage(Source::Storage(&mut storage), Some(77)) {
+                self.field_c = match EnumExampleC::get_from_storage(Source::Storage(&mut storage), Some(78)) {
                     Ok(val) => Some(val),
                     Err(e) => { return Err(e) },
                 };
@@ -2457,22 +2467,11 @@ impl StructDecode for StructExampleF {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleF {
-    fn get_id(&self) -> u32 { 74 }
+    fn get_id(&self) -> u32 { 75 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
         if let Some(mut val) = self.field_a.clone() {
-            match val.get_buf_to_store(Some(75)) {
-                Ok(mut buf) => { buffer.append(&mut buf); },
-                Err(e) => { return  Err(e); },
-            };
-        } else {
-            match get_empty_buffer_val(Some(75)) {
-                Ok(mut buf) => { buffer.append(&mut buf); },
-                Err(e) => { return  Err(e); },
-            };
-        }
-        if let Some(mut val) = self.field_b.clone() {
             match val.get_buf_to_store(Some(76)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
@@ -2483,13 +2482,24 @@ impl StructEncode for StructExampleF {
                 Err(e) => { return  Err(e); },
             };
         }
-        if let Some(mut val) = self.field_c.clone() {
+        if let Some(mut val) = self.field_b.clone() {
             match val.get_buf_to_store(Some(77)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
         } else {
             match get_empty_buffer_val(Some(77)) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        }
+        if let Some(mut val) = self.field_c.clone() {
+            match val.get_buf_to_store(Some(78)) {
+                Ok(mut buf) => { buffer.append(&mut buf); },
+                Err(e) => { return  Err(e); },
+            };
+        } else {
+            match get_empty_buffer_val(Some(78)) {
                 Ok(mut buf) => { buffer.append(&mut buf); },
                 Err(e) => { return  Err(e); },
             };
@@ -2508,12 +2518,13 @@ pub struct StructExampleG {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleG {
     fn get_id() -> u32 {
-        78
+        79
     }
     fn defaults() -> StructExampleG {
         StructExampleG {
             field_a: StructExampleA {
                 field_str: String::from(""),
+                field_str_empty: String::from(""),
                 field_u8: 0,
                 field_u16: 0,
                 field_u32: 0,
@@ -2557,11 +2568,11 @@ impl StructDecode for StructExampleG {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(79)) {
+        self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(80)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_b = match StructExampleB::get_from_storage(Source::Storage(&mut storage), Some(80)) {
+        self.field_b = match StructExampleB::get_from_storage(Source::Storage(&mut storage), Some(81)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2571,15 +2582,15 @@ impl StructDecode for StructExampleG {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleG {
-    fn get_id(&self) -> u32 { 78 }
+    fn get_id(&self) -> u32 { 79 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.get_buf_to_store(Some(79)) {
+        match self.field_a.get_buf_to_store(Some(80)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_b.get_buf_to_store(Some(80)) {
+        match self.field_b.get_buf_to_store(Some(81)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2595,7 +2606,7 @@ pub struct StructExampleEmpty {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleEmpty {
     fn get_id() -> u32 {
-        81
+        82
     }
     fn defaults() -> StructExampleEmpty {
         StructExampleEmpty {
@@ -2608,7 +2619,7 @@ impl StructDecode for StructExampleEmpty {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleEmpty {
-    fn get_id(&self) -> u32 { 81 }
+    fn get_id(&self) -> u32 { 82 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
@@ -2627,7 +2638,7 @@ pub struct StructExampleJ {
 #[allow(unused_mut)]
 impl StructDecode for StructExampleJ {
     fn get_id() -> u32 {
-        82
+        83
     }
     fn defaults() -> StructExampleJ {
         StructExampleJ {
@@ -2638,15 +2649,15 @@ impl StructDecode for StructExampleJ {
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-        self.field_a = match Option::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(83)) {
+        self.field_a = match Option::<StructExampleA>::get_from_storage(Source::Storage(&mut storage), Some(84)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_b = match Option::<StructExampleB>::get_from_storage(Source::Storage(&mut storage), Some(84)) {
+        self.field_b = match Option::<StructExampleB>::get_from_storage(Source::Storage(&mut storage), Some(85)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
-        self.field_c = match StructExampleEmpty::get_from_storage(Source::Storage(&mut storage), Some(85)) {
+        self.field_c = match StructExampleEmpty::get_from_storage(Source::Storage(&mut storage), Some(86)) {
             Ok(val) => val,
             Err(e) => { return Err(e) },
         };
@@ -2656,19 +2667,19 @@ impl StructDecode for StructExampleJ {
 #[allow(unused_variables)]
 #[allow(unused_mut)]
 impl StructEncode for StructExampleJ {
-    fn get_id(&self) -> u32 { 82 }
+    fn get_id(&self) -> u32 { 83 }
     fn get_signature(&self) -> u16 { 0 }
     fn abduct(&mut self) -> Result<Vec<u8>, String> {
         let mut buffer: Vec<u8> = vec!();
-        match self.field_a.get_buf_to_store(Some(83)) {
+        match self.field_a.get_buf_to_store(Some(84)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_b.get_buf_to_store(Some(84)) {
+        match self.field_b.get_buf_to_store(Some(85)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
-        match self.field_c.get_buf_to_store(Some(85)) {
+        match self.field_c.get_buf_to_store(Some(86)) {
             Ok(mut buf) => { buffer.append(&mut buf); }
             Err(e) => { return Err(e) },
         };
@@ -2695,7 +2706,7 @@ pub mod GroupA {
         Defaults,
     }
     impl EnumDecode for EnumExampleA {
-        fn get_id(&self) -> u32 { 87 }
+        fn get_id(&self) -> u32 { 88 }
         fn extract(buf: Vec<u8>) -> Result<EnumExampleA, String> {
             if buf.len() <= sizes::U16_LEN {
                 return Err(String::from("Fail to extract value for EnumExampleA because buffer too small"));
@@ -2718,7 +2729,7 @@ pub mod GroupA {
         }
     }
     impl EnumEncode for EnumExampleA {
-        fn get_id(&self) -> u32 { 87 }
+        fn get_id(&self) -> u32 { 88 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let (buf, index) = match self {
@@ -2748,7 +2759,7 @@ pub mod GroupA {
     #[allow(unused_mut)]
     impl StructDecode for StructExampleA {
         fn get_id() -> u32 {
-            88
+            89
         }
         fn defaults() -> StructExampleA {
             StructExampleA {
@@ -2758,15 +2769,15 @@ pub mod GroupA {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(89)) {
+            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(90)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(90)) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(91)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.opt = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(91)) {
+            self.opt = match EnumExampleA::get_from_storage(Source::Storage(&mut storage), Some(92)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -2776,19 +2787,19 @@ pub mod GroupA {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for StructExampleA {
-        fn get_id(&self) -> u32 { 88 }
+        fn get_id(&self) -> u32 { 89 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u8.get_buf_to_store(Some(89)) {
+            match self.field_u8.get_buf_to_store(Some(90)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_u16.get_buf_to_store(Some(90)) {
+            match self.field_u16.get_buf_to_store(Some(91)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.opt.get_buf_to_store(Some(91)) {
+            match self.opt.get_buf_to_store(Some(92)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -2807,7 +2818,7 @@ pub mod GroupA {
     #[allow(unused_mut)]
     impl StructDecode for StructExampleB {
         fn get_id() -> u32 {
-            92
+            93
         }
         fn defaults() -> StructExampleB {
             StructExampleB {
@@ -2821,15 +2832,15 @@ pub mod GroupA {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(93)) {
+            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(94)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(94)) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(95)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.strct = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(95)) {
+            self.strct = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(96)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -2839,19 +2850,19 @@ pub mod GroupA {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for StructExampleB {
-        fn get_id(&self) -> u32 { 92 }
+        fn get_id(&self) -> u32 { 93 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u8.get_buf_to_store(Some(93)) {
+            match self.field_u8.get_buf_to_store(Some(94)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_u16.get_buf_to_store(Some(94)) {
+            match self.field_u16.get_buf_to_store(Some(95)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.strct.get_buf_to_store(Some(95)) {
+            match self.strct.get_buf_to_store(Some(96)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -2881,7 +2892,7 @@ pub mod GroupB {
     #[allow(unused_mut)]
     impl StructDecode for StructExampleA {
         fn get_id() -> u32 {
-            97
+            98
         }
         fn defaults() -> StructExampleA {
             StructExampleA {
@@ -2890,11 +2901,11 @@ pub mod GroupB {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(98)) {
+            self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(99)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(99)) {
+            self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(100)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -2904,15 +2915,15 @@ pub mod GroupB {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for StructExampleA {
-        fn get_id(&self) -> u32 { 97 }
+        fn get_id(&self) -> u32 { 98 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_u8.get_buf_to_store(Some(98)) {
+            match self.field_u8.get_buf_to_store(Some(99)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_u16.get_buf_to_store(Some(99)) {
+            match self.field_u16.get_buf_to_store(Some(100)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -2940,7 +2951,7 @@ pub mod GroupB {
         #[allow(unused_mut)]
         impl StructDecode for StructExampleA {
             fn get_id() -> u32 {
-                101
+                102
             }
             fn defaults() -> StructExampleA {
                 StructExampleA {
@@ -2949,11 +2960,11 @@ pub mod GroupB {
                 }
             }
             fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-                self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(102)) {
+                self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(103)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
-                self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(103)) {
+                self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(104)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
@@ -2963,15 +2974,15 @@ pub mod GroupB {
         #[allow(unused_variables)]
         #[allow(unused_mut)]
         impl StructEncode for StructExampleA {
-            fn get_id(&self) -> u32 { 101 }
+            fn get_id(&self) -> u32 { 102 }
             fn get_signature(&self) -> u16 { 0 }
             fn abduct(&mut self) -> Result<Vec<u8>, String> {
                 let mut buffer: Vec<u8> = vec!();
-                match self.field_u8.get_buf_to_store(Some(102)) {
+                match self.field_u8.get_buf_to_store(Some(103)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
-                match self.field_u16.get_buf_to_store(Some(103)) {
+                match self.field_u16.get_buf_to_store(Some(104)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
@@ -2990,7 +3001,7 @@ pub mod GroupB {
         #[allow(unused_mut)]
         impl StructDecode for StructExampleB {
             fn get_id() -> u32 {
-                104
+                105
             }
             fn defaults() -> StructExampleB {
                 StructExampleB {
@@ -3003,15 +3014,15 @@ pub mod GroupB {
                 }
             }
             fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-                self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(105)) {
+                self.field_u8 = match u8::get_from_storage(Source::Storage(&mut storage), Some(106)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
-                self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(106)) {
+                self.field_u16 = match u16::get_from_storage(Source::Storage(&mut storage), Some(107)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
-                self.strct = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(107)) {
+                self.strct = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(108)) {
                     Ok(val) => val,
                     Err(e) => { return Err(e) },
                 };
@@ -3021,19 +3032,19 @@ pub mod GroupB {
         #[allow(unused_variables)]
         #[allow(unused_mut)]
         impl StructEncode for StructExampleB {
-            fn get_id(&self) -> u32 { 104 }
+            fn get_id(&self) -> u32 { 105 }
             fn get_signature(&self) -> u16 { 0 }
             fn abduct(&mut self) -> Result<Vec<u8>, String> {
                 let mut buffer: Vec<u8> = vec!();
-                match self.field_u8.get_buf_to_store(Some(105)) {
+                match self.field_u8.get_buf_to_store(Some(106)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
-                match self.field_u16.get_buf_to_store(Some(106)) {
+                match self.field_u16.get_buf_to_store(Some(107)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
-                match self.strct.get_buf_to_store(Some(107)) {
+                match self.strct.get_buf_to_store(Some(108)) {
                     Ok(mut buf) => { buffer.append(&mut buf); }
                     Err(e) => { return Err(e) },
                 };
@@ -3065,7 +3076,7 @@ pub mod GroupD {
         Defaults,
     }
     impl EnumDecode for EnumExampleP {
-        fn get_id(&self) -> u32 { 113 }
+        fn get_id(&self) -> u32 { 114 }
         fn extract(buf: Vec<u8>) -> Result<EnumExampleP, String> {
             if buf.len() <= sizes::U16_LEN {
                 return Err(String::from("Fail to extract value for EnumExampleP because buffer too small"));
@@ -3096,7 +3107,7 @@ pub mod GroupD {
         }
     }
     impl EnumEncode for EnumExampleP {
-        fn get_id(&self) -> u32 { 113 }
+        fn get_id(&self) -> u32 { 114 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let (buf, index) = match self {
@@ -3128,12 +3139,13 @@ pub mod GroupD {
     #[allow(unused_mut)]
     impl StructDecode for StructExampleP {
         fn get_id() -> u32 {
-            109
+            110
         }
         fn defaults() -> StructExampleP {
             StructExampleP {
                 field_a: StructExampleA {
                     field_str: String::from(""),
+                    field_str_empty: String::from(""),
                     field_u8: 0,
                     field_u16: 0,
                     field_u32: 0,
@@ -3157,15 +3169,15 @@ pub mod GroupD {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(110)) {
+            self.field_a = match StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(111)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_b = match GroupB::StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(111)) {
+            self.field_b = match GroupB::StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(112)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.field_c = match GroupB::GroupC::StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(112)) {
+            self.field_c = match GroupB::GroupC::StructExampleA::get_from_storage(Source::Storage(&mut storage), Some(113)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -3175,19 +3187,19 @@ pub mod GroupD {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for StructExampleP {
-        fn get_id(&self) -> u32 { 109 }
+        fn get_id(&self) -> u32 { 110 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.field_a.get_buf_to_store(Some(110)) {
+            match self.field_a.get_buf_to_store(Some(111)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_b.get_buf_to_store(Some(111)) {
+            match self.field_b.get_buf_to_store(Some(112)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.field_c.get_buf_to_store(Some(112)) {
+            match self.field_c.get_buf_to_store(Some(113)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -3213,11 +3225,11 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::EnumExampleC(m)),
                 Err(e) => Err(e),
             },
-            87 => match GroupA::EnumExampleA::extract(buf.to_vec()) {
+            88 => match GroupA::EnumExampleA::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::EnumExampleA(m))),
                 Err(e) => Err(e),
             },
-            113 => match GroupD::EnumExampleP::extract(buf.to_vec()) {
+            114 => match GroupD::EnumExampleP::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupD(GroupD::AvailableMessages::EnumExampleP(m))),
                 Err(e) => Err(e),
             },
@@ -3225,59 +3237,59 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::StructExampleA(m)),
                 Err(e) => Err(e),
             },
-            17 => match StructExampleB::extract(buf.to_vec()) {
+            18 => match StructExampleB::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleB(m)),
                 Err(e) => Err(e),
             },
-            44 => match StructExampleC::extract(buf.to_vec()) {
+            45 => match StructExampleC::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleC(m)),
                 Err(e) => Err(e),
             },
-            57 => match StructExampleD::extract(buf.to_vec()) {
+            58 => match StructExampleD::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleD(m)),
                 Err(e) => Err(e),
             },
-            70 => match StructExampleE::extract(buf.to_vec()) {
+            71 => match StructExampleE::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleE(m)),
                 Err(e) => Err(e),
             },
-            74 => match StructExampleF::extract(buf.to_vec()) {
+            75 => match StructExampleF::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleF(m)),
                 Err(e) => Err(e),
             },
-            78 => match StructExampleG::extract(buf.to_vec()) {
+            79 => match StructExampleG::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleG(m)),
                 Err(e) => Err(e),
             },
-            81 => match StructExampleEmpty::extract(buf.to_vec()) {
+            82 => match StructExampleEmpty::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleEmpty(m)),
                 Err(e) => Err(e),
             },
-            82 => match StructExampleJ::extract(buf.to_vec()) {
+            83 => match StructExampleJ::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::StructExampleJ(m)),
                 Err(e) => Err(e),
             },
-            88 => match GroupA::StructExampleA::extract(buf.to_vec()) {
+            89 => match GroupA::StructExampleA::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::StructExampleA(m))),
                 Err(e) => Err(e),
             },
-            92 => match GroupA::StructExampleB::extract(buf.to_vec()) {
+            93 => match GroupA::StructExampleB::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupA(GroupA::AvailableMessages::StructExampleB(m))),
                 Err(e) => Err(e),
             },
-            97 => match GroupB::StructExampleA::extract(buf.to_vec()) {
+            98 => match GroupB::StructExampleA::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::StructExampleA(m))),
                 Err(e) => Err(e),
             },
-            101 => match GroupB::GroupC::StructExampleA::extract(buf.to_vec()) {
+            102 => match GroupB::GroupC::StructExampleA::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::GroupC(GroupB::GroupC::AvailableMessages::StructExampleA(m)))),
                 Err(e) => Err(e),
             },
-            104 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
+            105 => match GroupB::GroupC::StructExampleB::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupB(GroupB::AvailableMessages::GroupC(GroupB::GroupC::AvailableMessages::StructExampleB(m)))),
                 Err(e) => Err(e),
             },
-            109 => match GroupD::StructExampleP::extract(buf.to_vec()) {
+            110 => match GroupD::StructExampleP::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::GroupD(GroupD::AvailableMessages::StructExampleP(m))),
                 Err(e) => Err(e),
             },
