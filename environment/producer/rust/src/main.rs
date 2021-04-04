@@ -239,7 +239,7 @@ impl MessageObserver for MessageObserverRequest {
             .expect("Time went backwards");
         match store::messages.write() {
             Ok(mut messages) => {
-                messages.insert(cx.uuid(), store::Message {
+                messages.insert(Uuid::new_v4(), store::Message {
                     name: request.user,
                     uuid: cx.uuid(),
                     message: request.message,
@@ -292,6 +292,7 @@ impl MessagesObserver for MessagesObserverRequest {
             producer::protocol::Messages::Err,
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::MessagesObserver::Conclusion, String> {
+
         match store::messages.read() {
             Ok(messages) => Ok(producer::MessagesObserver::Conclusion::Response(
                 producer::protocol::Messages::Response {

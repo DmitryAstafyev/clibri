@@ -865,6 +865,9 @@ export class ArrayU8 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u8.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -940,6 +943,9 @@ export class ArrayU16 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u16.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u16.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1015,6 +1021,9 @@ export class ArrayU32 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u32.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1089,6 +1098,9 @@ export class ArrayU64 extends Primitive<Array<bigint>> {
     }
 
     public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u64.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1164,6 +1176,9 @@ export class ArrayI8 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < i8.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${i8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1239,6 +1254,9 @@ export class ArrayI16 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < i16.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${i16.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1314,6 +1332,9 @@ export class ArrayI32 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < i32.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${i32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1389,6 +1410,9 @@ export class ArrayI64 extends Primitive<Array<bigint>> {
     }
 
     public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < i64.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${i64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1464,6 +1488,9 @@ export class ArrayF32 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < f32.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${f32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1538,6 +1565,9 @@ export class ArrayF64 extends Primitive<number[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): number[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < f64.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${f64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1613,6 +1643,9 @@ export class ArrayBool extends Primitive<boolean[]> {
     }
 
     public static decode(bytes: ArrayBufferLike): boolean[] | Error {
+        if (bytes.byteLength === 0) {
+            return [];
+        }
         if (bytes.byteLength < u8.getSize()) {
             return new Error(`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
         }
@@ -1706,6 +1739,11 @@ export class ArrayStrUTF8 extends Primitive<string[]> {
     public static decode(bytes: ArrayBufferLike): string[] | Error {
         const buffer = Buffer.from(bytes);
         const strings: string[] = [];
+        if (buffer.byteLength === 0) {
+            return strings;
+        } else if (buffer.byteLength < u32.getSize()) {
+            return new Error(`Invalid size marker. Expecting u64 (size ${u32.getSize()} bytes), but size of buffer: ${buffer.byteLength} bytes.`);
+        }
         let offset: number = 0;
         do {
             const len = buffer.readUInt32LE(offset);
@@ -2207,6 +2245,11 @@ export abstract class Convertor {
     public decodeSelfArray(bytes: ArrayBufferLike): Array<Required<Convertor>> | Error {
         const buffer = Buffer.from(bytes);
         const selfs: Array<Required<Convertor>> = [];
+        if (buffer.byteLength === 0) {
+            return selfs;
+        } else if (buffer.byteLength < u64.getSize()) {
+            return new Error(`Invalid size marker. Expecting u64 (size ${u64.getSize()} bytes), but size of buffer: ${buffer.byteLength} bytes.`);
+        }
         let offset: number = 0;
         do {
             const len = buffer.readBigUInt64LE(offset);
@@ -3891,12 +3934,12 @@ export namespace Messages {
             if (storage instanceof Error) {
                 return storage;
             }
-            const arrMessageInst: Messages.Message = Messages.Message.defaults();
-            const arrMessage: Array<any> | Error = this.getValue<Message[]>(storage, 42, arrMessageInst.decodeSelfArray.bind(arrMessageInst));
-            if (arrMessage instanceof Error) {
-                return arrMessage;
+            const arrmessagesInst: Messages.Message = Messages.Message.defaults();
+            const arrmessages: Array<any> | Error = this.getValue<Message[]>(storage, 42, arrmessagesInst.decodeSelfArray.bind(arrmessagesInst));
+            if (arrmessages instanceof Error) {
+                return arrmessages;
             } else {
-                this.messages = arrMessage as Messages.Message[];
+                this.messages = arrmessages as Messages.Message[];
             }
         }
 
@@ -4954,12 +4997,12 @@ export namespace Users {
             if (storage instanceof Error) {
                 return storage;
             }
-            const arrUserInst: Users.User = Users.User.defaults();
-            const arrUser: Array<any> | Error = this.getValue<User[]>(storage, 66, arrUserInst.decodeSelfArray.bind(arrUserInst));
-            if (arrUser instanceof Error) {
-                return arrUser;
+            const arrusersInst: Users.User = Users.User.defaults();
+            const arrusers: Array<any> | Error = this.getValue<User[]>(storage, 66, arrusersInst.decodeSelfArray.bind(arrusersInst));
+            if (arrusers instanceof Error) {
+                return arrusers;
             } else {
-                this.users = arrUser as Users.User[];
+                this.users = arrusers as Users.User[];
             }
         }
 
