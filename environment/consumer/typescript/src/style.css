@@ -63,6 +63,8 @@ div.output > div.content {
     left: 0;
     width: 100%;
     bottom: 5rem;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 div.output > div.input {
     position: absolute;
@@ -130,4 +132,17 @@ label {
 .border-a{
     border: 1px solid #474747;
     border-radius: 3px;
+}
+
+div.content::-webkit-scrollbar {
+    width: 6px;               /* width of the entire scrollbar */
+}
+  
+div.content::-webkit-scrollbar-track {
+    background: #222222; 
+}
+  
+div.content::-webkit-scrollbar-thumb {
+    background-color: #3f4c6b;
+    border-radius: 20px;      
 }

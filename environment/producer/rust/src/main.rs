@@ -109,9 +109,42 @@ impl UserLoginObserver for UserLoginObserverRequest {
         match store::users.write() {
             Ok(mut users) => {
                 users.insert(cx.uuid(), store::User {
-                    name: request.username,
+                    name: request.username.clone(),
                     uuid: cx.uuid(),
                 });
+                let start = SystemTime::now();
+                let tm = start
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards");
+                let msg = format!("New user join chat. Welcome {}", request.username);
+                match store::messages.write() {
+                    Ok(mut messages) => {
+                        messages.insert(Uuid::new_v4(), store::Message {
+                            name: "".to_owned(),
+                            uuid: cx.uuid(),
+                            message: msg.clone(),
+                            timestamp: tm.as_secs(),
+                        });
+                        let filter = Filter {
+                            uuid: Some(cx.uuid()),
+                            key: None,
+                            assigned: None,
+                            condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+                        };
+                        if let Err(e) = broadcast(
+                            filter,
+                            Broadcasting::Message(producer::protocol::Events::Message {
+                                user: "".to_owned(),
+                                message: msg,
+                                timestamp: tm.as_secs(),
+                                uuid: cx.uuid().to_string(),
+                            }),
+                        ) {
+                            println!("Fail broadcast due error: {}", e);
+                        }
+                    },
+                    Err(e) => {}
+                };
             },
             Err(e) => {}
         };
@@ -292,7 +325,6 @@ impl MessagesObserver for MessagesObserverRequest {
             producer::protocol::Messages::Err,
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::MessagesObserver::Conclusion, String> {
-
         match store::messages.read() {
             Ok(messages) => Ok(producer::MessagesObserver::Conclusion::Response(
                 producer::protocol::Messages::Response {

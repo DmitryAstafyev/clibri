@@ -51,14 +51,14 @@ export class MessagesComponent extends Component {
     public element(): HTMLElement {
         if (this._messages.length === 0) {
             const element: HTMLElement = document.createElement('p');
-            element.className = 't-normal';
+            element.className = 't-normal messages-info';
             element.innerHTML = 'No messages';
             return element;
         } else {
             const element: HTMLElement = document.createElement('ul');
             element.className = 'messages';
             element.innerHTML = this._messages.map((msg: IMessage) => {
-                return `<li class="${msg.uuid === this._uuid ? 'own' : ''}">
+                return `<li class="${msg.uuid === this._uuid ? 'own' : ''}${msg.user === '' ? ' system' : ''}">
                     <span class="username">${msg.user}</span>
                     <p class="message">${msg.message}</p>
                     <span class="datetime">${msg.datetime}</span>
@@ -110,7 +110,7 @@ export class MessagesComponent extends Component {
                     user: msg.user,
                     uuid: msg.uuid,
                     message: msg.message,
-                    datetime: (new Date(Number(msg.timestamp))).toLocaleString()
+                    datetime: (new Date(Number(msg.timestamp) * 1000)).toLocaleString()
                 }
             }));
         }).catch((err: Error) => {

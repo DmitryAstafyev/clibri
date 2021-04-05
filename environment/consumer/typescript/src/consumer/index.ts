@@ -73,7 +73,7 @@ export class Consumer {
     private readonly _options: Options;
     private _uuid: string | undefined;
     private _key: Protocol.Identification.ISelfKey;
-    private _sequence: number = 0;
+    private _sequence: number = 1;
 
     public readonly connected: Subject<void> = new Subject(`connected`);
     public readonly ready: Subject<string> = new Subject(`ready`);
@@ -232,7 +232,7 @@ export class Consumer {
                         this.broadcast.Message.emit(msg.getRef<Protocol.Events.Message>());
                         break;
                     default:
-                        this._logger.warn(`Has been gotten unexpected message ID=${id}.`)
+                        this._logger.warn(`Has been gotten unexpected message ID=${id};`)
                         break;
                 }
             }
