@@ -106,9 +106,9 @@ export class Connection extends Client {
             this._connected = true;
             if (this._pending !== undefined) {
                 this._pending.resolver();
-                this._subjects.connected.emit();
                 this._pending = undefined;
             }
+            this._subjects.connected.emit();
         },
         close: () => {
             this._connected = false;

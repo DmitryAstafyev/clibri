@@ -37,10 +37,9 @@ pub trait Controller {
                                     broadcasting(consumers.clone(), filter, broadcast)
                                 };
                                 if let Err(e) = Self::disconnected(uuid, ucx.clone(), &broadcast) {
-                                    if let Err(e) = feedback.send(ProducerEvents::EventError(tools::logger.err(&format!("Fail to call disconnected handler for event due error: {}", e)))) {
+                                    if let Err(e) = feedback.send(ProducerEvents::EventError(tools::logger.warn(&format!("Call disconnected handler for event due error: {}", e)))) {
                                         tools::logger.err(&format!("Fail send ProducerEvents:EventError {}", e));
                                     }
-                                    break;
                                 }
                             },
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::EventChannelError(tools::logger.err(&format!("Fail get access to consumers channel due error: {}", e)))) {
@@ -53,6 +52,7 @@ pub trait Controller {
                         if let Err(e) = feedback.send(ProducerEvents::EventChannelError(tools::logger.err(&format!("Fail receive event due error: {}", e)))) {
                             tools::logger.err(&format!("Fail send ProducerEvents:EventChannelError {}", e));
                         }
+                        println!(">>>>>>>>>>>>>> 22 {}", e);
                         break;
                     }
                 }

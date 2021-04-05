@@ -24,6 +24,7 @@ export class UsersComponent extends Component {
             return new Error(`Already mount`);
         }
         this._subscriptions.UserConnected = this._consumer.broadcast.UserConnected.subscribe(this._onUserConnected.bind(this));
+        this._subscriptions.UserDisconnected = this._consumer.broadcast.UserDisconnected.subscribe(this._onUserDisconnected.bind(this));
         this.link(`./components/users/style.css`);
         this._instance = this.element();
         const holder: HTMLElement | null = document.body.querySelector('aside[id="users"]');
@@ -86,6 +87,10 @@ export class UsersComponent extends Component {
     }
 
     private _onUserConnected(event: Protocol.Events.UserConnected) {
+        this._request();
+    }
+
+    private _onUserDisconnected(event: Protocol.Events.UserDisconnected) {
         this._request();
     }
 

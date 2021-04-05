@@ -346,8 +346,24 @@ impl EventDisconnectedController for EventDisconnectedObserver {
     ) -> Result<(), String> {
         match store::users.write() {
             Ok(mut users) => {
-                users.remove(&uuid);
-                Ok(())
+                if let Some(user) = users.remove(&uuid) {
+                    let filter = Filter {
+                        uuid: Some(uuid),
+                        key: None,
+                        assigned: None,
+                        condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+                    };
+                    println!("store::users::len {}", users.len());
+                    broadcasting(
+                        filter,
+                        Broadcasting::UserDisconnected(producer::protocol::Events::UserDisconnected {
+                            username: user.name,
+                            uuid: uuid.to_string(),
+                        }),
+                    )
+                } else {
+                    Err(format!("No {} user has been found", uuid))
+                }
             },
             Err(e) => Err(format!("{}", e))
         }

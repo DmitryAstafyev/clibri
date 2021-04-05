@@ -299,13 +299,13 @@ where
                                 });
                                 tools::logger.debug(&format!("New Consumer added; uuid: {}", uuid));
                                 if let Err(e) =
-                                    feedback.send(ProducerEvents::Connected((uuid.clone(), ucx.clone())))
+                                    feedback.send(ProducerEvents::Connected((uuid, ucx.clone())))
                                 {
                                     tools::logger.err(&format!("{}", e));
                                 }
-                                if let Err(e) = EventConnectedSender.send(uuid.clone())
+                                if let Err(e) = EventConnectedSender.send(uuid)
                                 {
-                                    tools::logger.err(&format!("{}", e));
+                                    tools::logger.err(&format!("EventConnectedSender: {}", e));
                                 }
                             }
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
@@ -317,14 +317,14 @@ where
                         ConsumersChannel::Remove(uuid) => match store.write() {
                             Ok(mut store) => {
                                 store.remove(&uuid);
-                                if let Err(e) = feedback.send(ProducerEvents::Disconnected(uuid.clone())) {
+                                if let Err(e) = feedback.send(ProducerEvents::Disconnected(uuid)) {
                                     tools::logger.err(&format!("{}", e));
                                 } else {
                                     tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                                 }
-                                if let Err(e) = EventDisconnectedSender.send(uuid.clone())
+                                if let Err(e) = EventDisconnectedSender.send(uuid)
                                 {
-                                    tools::logger.err(&format!("{}", e));
+                                    tools::logger.err(&format!("EventDisconnectedSender: {}", e));
                                 }
                             },
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
