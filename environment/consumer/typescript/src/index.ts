@@ -33,6 +33,7 @@ class Application {
             location: 'London'
         });
         this._consumer.connected.subscribe(this._onConnected.bind(this));
+        this._consumer.disconnected.subscribe(this._onDisconnected.bind(this));
         this._consumer.ready.subscribe(this._onReady.bind(this));
         this._components = {
             spinner: new SpinnerComponent(),
@@ -47,6 +48,14 @@ class Application {
 
     private _onConnected() {
         console.log(`Consumer is connected!`);
+    }
+
+    private _onDisconnected() {
+        this._components.login.umount();
+        this._components.messages.umount();
+        this._components.sender.umount();
+        this._components.users.umount();
+        this._components.spinner.mount();
     }
 
     private _onReady() {
@@ -65,7 +74,6 @@ class Application {
             this._components.sender.setMessagesRef(this._components.messages);
             this._components.sender.setUuid(response.uuid);
             this._components.sender.mount();
-            // console.log(response);
         }).deny((response: Protocol.UserLogin.Denied) => {
             // console.log(response);
         }).err((response: Protocol.UserLogin.Err) => {

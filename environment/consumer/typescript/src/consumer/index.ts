@@ -97,7 +97,10 @@ export class Consumer {
     }
 
     public set uuid(value: string) {
-        if (typeof value !== 'string' || value.trim() === '') {
+        if (value === undefined) {
+            this._uuid = undefined;
+            this._logger.debug(`Consumer UUID is dropped`);
+        } else if (typeof value !== 'string' || value.trim() === '') {
             this._logger.err(`Fail set consumer UUID because value has invalid type (${typeof value}) or invalid value (${value})`);
         } else if (this._uuid !== undefined) {
             this._logger.err(`No way to set consumer UUID multiple times`);
@@ -192,6 +195,7 @@ export class Consumer {
 
     private _onClientDisconnected() {
         this._logger.debug(`Client is disconnected`);
+        this.uuid = undefined;
         this.disconnected.emit();
     }
 

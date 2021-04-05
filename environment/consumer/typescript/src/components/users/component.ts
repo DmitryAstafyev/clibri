@@ -36,7 +36,7 @@ export class UsersComponent extends Component {
     }
 
     public umount(): Error | undefined {
-        if (this._instance.parentNode === null || this._instance.parentNode === undefined) {
+        if (this._instance === undefined || this._instance.parentNode === null || this._instance.parentNode === undefined) {
             return new Error(`Already umount`);
         }
         Object.keys(this._subscriptions).forEach((key: string) => {
