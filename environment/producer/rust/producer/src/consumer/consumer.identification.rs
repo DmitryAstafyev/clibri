@@ -38,8 +38,20 @@ impl Identification {
         }
     }
 
-    pub fn key(&mut self, key: Protocol::Identification::SelfKey) {
-        self.key = Some(key);
+    pub fn key(&mut self, key: Protocol::Identification::SelfKey, overwrite: bool) {
+        if overwrite || self.key.is_none() {
+            self.key = Some(key);
+        } else if let Some(existing) = &mut self.key {
+            if let Some(uuid) = key.uuid {
+                existing.uuid = Some(uuid);
+            }
+            if let Some(id) = key.id {
+                existing.id = Some(id);
+            }
+            if let Some(location) = key.location {
+                existing.location = Some(location);
+            }
+        }
     }
 
     pub fn assign(&mut self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) {
@@ -52,7 +64,6 @@ impl Identification {
             if let Some(auth) = assigned.auth {
                 existing.auth = Some(auth);
             }
-            println!(">>>> {:?}", self.assigned);
         }
     }
 

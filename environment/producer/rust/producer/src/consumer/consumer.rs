@@ -129,8 +129,8 @@ impl Consumer {
         self.uuid
     }
 
-    pub fn set_key(&mut self, key: Protocol::Identification::SelfKey) -> String {
-        self.identification.key(key);
+    pub fn key(&mut self, key: Protocol::Identification::SelfKey, overwrite: bool) -> String {
+        self.identification.key(key, overwrite);
         self.uuid.to_string()
     }
 

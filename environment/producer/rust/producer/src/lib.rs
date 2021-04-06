@@ -398,7 +398,7 @@ where
                                     while let Some((message, header)) = consumer.next() {
                                         match message {
                                                 Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::SelfKey(request) = message {
-                                                    let uuid = consumer.set_key(request);
+                                                    let uuid = consumer.key(request, true);
                                                     tools::logger.debug(&format!("{}:: identification is done", uuid));
                                                     if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid }).pack(header.sequence) {
                                                         Ok(buffer) => if let Err(e) = consumer.send(buffer) {
