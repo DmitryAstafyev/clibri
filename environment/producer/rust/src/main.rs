@@ -112,6 +112,12 @@ impl UserLoginObserver for UserLoginObserverRequest {
                     name: request.username.clone(),
                     uuid: cx.uuid(),
                 });
+                if let Err(e) = cx.assign(producer::protocol::Identification::AssignedKey {
+                    uuid: Some(cx.uuid().to_string()),
+                    auth: Some(true),
+                }, true) {
+                    println!("Fail to assign client due error: {}", e);
+                }
                 let start = SystemTime::now();
                 let tm = start
                     .duration_since(UNIX_EPOCH)

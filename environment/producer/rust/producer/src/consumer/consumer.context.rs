@@ -1,4 +1,5 @@
 use super::consumer_identification::{Filter};
+use super::{Protocol};
 use uuid::Uuid;
 
 pub trait Context {
@@ -9,4 +10,5 @@ pub trait Context {
 
     fn uuid(&self) -> Uuid;
 
+    fn assign(&self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String>;
 }

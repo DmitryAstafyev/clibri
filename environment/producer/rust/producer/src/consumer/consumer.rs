@@ -41,6 +41,19 @@ impl Context for Cx {
         self.uuid.clone()
     }
 
+    fn assign(&self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String> {
+        match self.consumers.lock() {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Assign((self.uuid.clone(), assigned, overwrite))) {
+                Err(e.to_string())
+            } else {
+                Ok(())
+            },
+            Err(e) => Err(e.to_string()),
+        }
+
+    }
+
+
 }
 
 pub struct Consumer {
@@ -119,6 +132,10 @@ impl Consumer {
     pub fn set_key(&mut self, key: Protocol::Identification::SelfKey) -> String {
         self.identification.key(key);
         self.uuid.to_string()
+    }
+
+    pub fn assign(&mut self, key: Protocol::Identification::AssignedKey, overwrite: bool) {
+        self.identification.assign(key, overwrite);
     }
 
     pub fn assigned(&self) -> bool {

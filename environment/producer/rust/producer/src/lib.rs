@@ -84,6 +84,7 @@ pub enum ConsumersChannel {
     Remove(Uuid),
     SendByFilter((Filter, Vec<u8>)),
     SendTo((Uuid, Vec<u8>)),
+    Assign((Uuid, Protocol::Identification::AssignedKey, bool)),
     Chunk((Uuid, Vec<u8>)),
 }
 
@@ -360,11 +361,25 @@ where
                                         tools::logger.err(&format!("Fail to send buffer for consumer {} due error {}", uuid, e));
                                     }
                                 } else {
-                                    tools::logger.err(&format!("Fail to find consumer {}", uuid));
+                                    tools::logger.err(&format!("ConsumersChannel::SendTo: Fail to find consumer {}", uuid));
                                 }
                             },
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
                                 format!("ConsumersChannel::SendTo: Fail to access to consumers due error: {}", e),
+                            )) {
+                                tools::logger.err(&format!("{}", e));
+                            },
+                        },
+                        ConsumersChannel::Assign((uuid, key, overwrite)) => match store.write() {
+                            Ok(mut store) => {
+                                if let Some(consumer) = store.get_mut(&uuid) {
+                                    consumer.assign(key, overwrite);
+                                } else {
+                                    tools::logger.err(&format!("ConsumersChannel::Assign: Fail to find consumer {}", uuid));
+                                }
+                            },
+                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
+                                format!("ConsumersChannel::Assign: Fail to access to consumers due error: {}", e),
                             )) {
                                 tools::logger.err(&format!("{}", e));
                             },

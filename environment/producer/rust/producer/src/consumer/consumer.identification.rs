@@ -9,20 +9,17 @@ pub enum Condition {
     Equal,
     NotEqual,
 }
+pub type FilterCallback = dyn Fn(
+    Uuid,
+    Option<Protocol::Identification::SelfKey>,
+    Option<Protocol::Identification::AssignedKey>,
+) -> bool + Send + Sync;
 
 #[derive(Clone)]
 pub struct Filter {
     pub uuid: Option<(Uuid, Condition)>,
     pub assign: Option<bool>,
-    pub filter: Option<
-        Arc<Box<
-            dyn Fn(
-                Uuid,
-                Option<Protocol::Identification::SelfKey>,
-                Option<Protocol::Identification::AssignedKey>,
-            ) -> bool + Send + Sync,
-        >>,
-    >,
+    pub filter: Option<Arc<Box<FilterCallback>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,8 +42,18 @@ impl Identification {
         self.key = Some(key);
     }
 
-    pub fn assign(&mut self, assigned: Protocol::Identification::AssignedKey) {
-        self.assigned = Some(assigned);
+    pub fn assign(&mut self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) {
+        if overwrite || self.assigned.is_none() {
+            self.assigned = Some(assigned);
+        } else if let Some(existing) = &mut self.assigned {
+            if let Some(uuid) = assigned.uuid {
+                existing.uuid = Some(uuid);
+            }
+            if let Some(auth) = assigned.auth {
+                existing.auth = Some(auth);
+            }
+            println!(">>>> {:?}", self.assigned);
+        }
     }
 
     pub fn filter(&self, filter: Filter) -> bool {
