@@ -122,7 +122,7 @@ impl UserLoginObserver for UserLoginObserverRequest {
                 let tm = start
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards");
-                let msg = format!("New user join chat. Welcome {}", request.username);
+                let msg = format!("{} join chat. Welcome {}!", request.username, request.username);
                 match store::messages.write() {
                     Ok(mut messages) => {
                         messages.insert(Uuid::new_v4(), store::Message {
@@ -391,7 +391,38 @@ impl EventDisconnectedController for EventDisconnectedObserver {
                         assign: Some(true),
                         filter: None,
                     };
-                    println!("store::users::len {}", users.len());
+                    let start = SystemTime::now();
+                    let tm = start
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards");
+                    let msg = format!("{} left chat", user.name);
+                    match store::messages.write() {
+                        Ok(mut messages) => {
+                            messages.insert(Uuid::new_v4(), store::Message {
+                                name: "".to_owned(),
+                                uuid: uuid.clone(),
+                                message: msg.clone(),
+                                timestamp: tm.as_secs(),
+                            });
+                            let filter = Filter {
+                                uuid: Some((uuid.clone(), producer::consumer_identification::Condition::NotEqual)),
+                                assign: Some(true),
+                                filter: None,
+                            };
+                            if let Err(e) = broadcasting(
+                                filter,
+                                Broadcasting::Message(producer::protocol::Events::Message {
+                                    user: "".to_owned(),
+                                    message: msg,
+                                    timestamp: tm.as_secs(),
+                                    uuid: uuid.to_string(),
+                                }),
+                            ) {
+                                println!("Fail broadcast due error: {}", e);
+                            }
+                        },
+                        Err(e) => {}
+                    };
                     broadcasting(
                         filter,
                         Broadcasting::UserDisconnected(producer::protocol::Events::UserDisconnected {
