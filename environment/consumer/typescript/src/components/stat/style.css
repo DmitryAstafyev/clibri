@@ -4,7 +4,7 @@ footer p.stat {
     padding: 9px 19px;
     margin: 0;
     user-select: none;
-    cursor: pointer;
+    cursor: default;
 }
 footer p.stat span {
     margin-right: 12px;

@@ -63,7 +63,7 @@ export class MessagesComponent extends Component {
             element.innerHTML = this._messages.map((msg: IMessage) => {
                 return `<li class="${msg.uuid === this._uuid ? 'own' : ''}${msg.user === '' ? ' system' : ''}">
                     <span class="username">${msg.user}</span>
-                    <p class="message">${msg.message}</p>
+                    <p class="message">${msg.message.replace(/\n/gi, '</br>')}</p>
                     <span class="datetime">${msg.datetime}</span>
                 </li>`;
             }).join('');

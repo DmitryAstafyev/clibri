@@ -55,7 +55,7 @@ header p {
     padding: 9px 19px;
     margin: 0;
     user-select: none;
-    cursor: pointer;
+    cursor: default;
 }
 div.output {
     position: absolute;

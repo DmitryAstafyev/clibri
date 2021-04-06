@@ -25,6 +25,7 @@ export class SenderComponent extends Component {
             return new Error(`Fail find holder DOM element`);
         }
         holder.appendChild(this._instance);
+        this._instance.focus();
         this._events().bind();
     }
 
@@ -87,6 +88,7 @@ export class SenderComponent extends Component {
                 this._instance.disabled = true;
                 this._send(value).then(() => {
                     this._instance.value = '';
+                    this._instance.focus();
                 }).catch((err: Error) => {
                     console.log(err);
                 }).finally(() => {
