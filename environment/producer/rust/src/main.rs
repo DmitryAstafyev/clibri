@@ -126,10 +126,9 @@ impl UserLoginObserver for UserLoginObserverRequest {
                             timestamp: tm.as_secs(),
                         });
                         let filter = Filter {
-                            uuid: Some(cx.uuid()),
-                            key: None,
-                            assigned: None,
-                            condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+                            uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
+                            assign: Some(true),
+                            filter: None,
                         };
                         if let Err(e) = broadcast(
                             filter,
@@ -161,10 +160,9 @@ impl UserLoginObserver for UserLoginObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         let filter = Filter {
-            uuid: Some(cx.uuid()),
-            key: None,
-            assigned: None,
-            condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+            uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
+            assign: Some(true),
+            filter: None,
         };
         broadcast(
             filter,
@@ -294,10 +292,9 @@ impl MessageObserver for MessageObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         let filter = Filter {
-            uuid: Some(cx.uuid()),
-            key: None,
-            assigned: None,
-            condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+            uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
+            assign: Some(true),
+            filter: None,
         };
         let start = SystemTime::now();
         let tm = start
@@ -380,10 +377,9 @@ impl EventDisconnectedController for EventDisconnectedObserver {
             Ok(mut users) => {
                 if let Some(user) = users.remove(&uuid) {
                     let filter = Filter {
-                        uuid: Some(uuid),
-                        key: None,
-                        assigned: None,
-                        condition: producer::consumer_identification::EFilterMatchCondition::NotEqual,
+                        uuid: Some((uuid.clone(), producer::consumer_identification::Condition::NotEqual)),
+                        assign: Some(true),
+                        filter: None,
                     };
                     println!("store::users::len {}", users.len());
                     broadcasting(

@@ -78,7 +78,7 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     Disconnected(Uuid),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum ConsumersChannel {
     Add(Uuid),
     Remove(Uuid),

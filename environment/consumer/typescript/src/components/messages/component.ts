@@ -119,7 +119,6 @@ export class MessagesComponent extends Component {
     }
 
     private _onMessage(event: Protocol.Events.Message) {
-        console.log(event);
         const date = new Date(Number(event.timestamp));
         this._messages.push({
             message: event.message,

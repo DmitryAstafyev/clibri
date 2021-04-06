@@ -1,21 +1,28 @@
-use super::{ Protocol, tools };
+use super::{tools, Protocol};
+use fiber::logger::Logger;
 use std::cmp::{Eq, PartialEq};
-use fiber::logger::{ Logger };
+use std::sync::{Arc};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EFilterMatchCondition {
-    PartialEqual,
+pub enum Condition {
     Equal,
     NotEqual,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Filter {
-    pub uuid: Option<Uuid>,
-    pub key: Option<Protocol::Identification::SelfKey>,
-    pub assigned: Option<Protocol::Identification::AssignedKey>,
-    pub condition: EFilterMatchCondition,
+    pub uuid: Option<(Uuid, Condition)>,
+    pub assign: Option<bool>,
+    pub filter: Option<
+        Arc<Box<
+            dyn Fn(
+                Uuid,
+                Option<Protocol::Identification::SelfKey>,
+                Option<Protocol::Identification::AssignedKey>,
+            ) -> bool + Send + Sync,
+        >>,
+    >,
 }
 
 #[derive(Debug, Clone)]
@@ -42,103 +49,21 @@ impl Identification {
         self.assigned = Some(assigned);
     }
 
-    pub fn filter(
-        &self,
-        filter: Filter,
-    ) -> bool {
-        let uuid_match = if let Some(uuid) = filter.uuid {
-            match filter.condition {
-                EFilterMatchCondition::Equal => {
-                    self.uuid == uuid
-                },
-                EFilterMatchCondition::PartialEqual => {
-                    self.uuid == uuid
-                },
-                EFilterMatchCondition::NotEqual => {
-                    self.uuid != uuid
-                },
+    pub fn filter(&self, filter: Filter) -> bool {
+        if let Some((uuid, condition)) = filter.uuid {
+            return match condition {
+                Condition::Equal => uuid == self.uuid,
+                Condition::NotEqual => uuid != self.uuid,
             }
-        } else {
-            true
-        };
-        let key_match = if let Some(key) = filter.key {
-            if let Some(o_key) = self.key.as_ref() {
-                match filter.condition {
-                    EFilterMatchCondition::Equal => {
-                        if (key.id.is_some() && o_key.id == key.id)
-                            && (key.location.is_some() && o_key.location == key.location)
-                            && (key.uuid.is_some() && o_key.uuid == key.uuid)
-                        {
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                    EFilterMatchCondition::PartialEqual => {
-                        if key.id.is_some() && o_key.id == key.id
-                            || key.location.is_some() && o_key.location == key.location
-                            || key.uuid.is_some() && o_key.uuid == key.uuid
-                        {
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                    EFilterMatchCondition::NotEqual => {
-                        if (key.id.is_some() && o_key.id != key.id)
-                            && (key.location.is_some() && o_key.location != key.location)
-                            && (key.uuid.is_some() && o_key.uuid != key.uuid)
-                        {
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                }
-            } else {
-                false
-            }
-        } else {
-            true
-        };
-        let assigned_match = if let Some(assigned) = filter.assigned {
-            if let Some(o_assigned) = self.assigned.as_ref() {
-                match filter.condition {
-                    EFilterMatchCondition::Equal => {
-                        if (assigned.auth.is_some() && o_assigned.auth == assigned.auth)
-                            && (assigned.uuid.is_some() && o_assigned.uuid == assigned.uuid)
-                        {
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                    EFilterMatchCondition::PartialEqual => {
-                        if (assigned.auth.is_some() && o_assigned.auth == assigned.auth)
-                            || (assigned.uuid.is_some() && o_assigned.uuid == assigned.uuid)
-                        {
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                    EFilterMatchCondition::NotEqual => {
-                        if (assigned.auth.is_some() && o_assigned.auth != assigned.auth)
-                            && (assigned.uuid.is_some() && o_assigned.uuid != assigned.uuid)
-                        {
-                            true
-                        } else {
-                            false
-                        }
-                    },
-                }
-            } else {
-                false
-            }
-        } else {
-            true
-        };
-        key_match && assigned_match && uuid_match
+        }
+        if let Some(assign) = filter.assign {
+            return assign == self.assigned();
+        }
+        if let Some(filter) = filter.filter {
+            println!(">>>>>>>>>>>>>>>>>>>>> FILTER CB!");
+            return filter(self.uuid.clone(), self.key.clone(), self.assigned.clone());
+        }
+        false
     }
 
     pub fn assigned(&self) -> bool {
