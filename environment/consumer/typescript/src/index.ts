@@ -6,6 +6,7 @@ import { LoginComponent } from './components/login/component';
 import { UsersComponent } from './components/users/component';
 import { SenderComponent } from './components/sender/component';
 import { MessagesComponent } from './components/messages/component';
+import { StatComponent } from './components/stat/component';
 
 class Application {
 
@@ -15,6 +16,7 @@ class Application {
         users: UsersComponent;
         sender: SenderComponent;
         messages: MessagesComponent;
+        stat: StatComponent;
     } | undefined;
     private _connection: Connection;
     private _consumer: Consumer;
@@ -35,12 +37,14 @@ class Application {
         this._consumer.connected.subscribe(this._onConnected.bind(this));
         this._consumer.disconnected.subscribe(this._onDisconnected.bind(this));
         this._consumer.ready.subscribe(this._onReady.bind(this));
+        const stat: StatComponent = new StatComponent();
         this._components = {
             spinner: new SpinnerComponent(),
             login: new LoginComponent(),
-            users: new UsersComponent(this._consumer),
+            users: new UsersComponent(this._consumer, stat),
             sender: new SenderComponent(),
-            messages: new MessagesComponent(this._consumer),
+            messages: new MessagesComponent(this._consumer, stat),
+            stat: stat,
         };
         this._components.login.input.subscribe(this._onLoginInput.bind(this));
         this._components.spinner.mount();
@@ -56,6 +60,7 @@ class Application {
         this._components.sender.umount();
         this._components.users.umount();
         this._components.spinner.mount();
+        this._components.stat.umount();
     }
 
     private _onReady() {
@@ -74,6 +79,7 @@ class Application {
             this._components.sender.setMessagesRef(this._components.messages);
             this._components.sender.setUuid(response.uuid);
             this._components.sender.mount();
+            this._components.stat.mount();
         }).deny((response: Protocol.UserLogin.Denied) => {
             // console.log(response);
         }).err((response: Protocol.UserLogin.Err) => {

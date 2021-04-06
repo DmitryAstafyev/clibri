@@ -1,6 +1,7 @@
 import { Component } from '../component';
 import { Consumer, Protocol, Messages } from '../../consumer/index';
 import { Subscription } from 'fiber';
+import { StatComponent } from '../stat/component';
 
 interface IMessage {
     datetime: string;
@@ -16,10 +17,12 @@ export class MessagesComponent extends Component {
     private _uuid: string | undefined;
     private _consumer: Consumer;
     private _subscriptions: { [key: string]: Subscription } = {};
+    private _stat: StatComponent;
 
-    constructor(consumer: Consumer) {
+    constructor(consumer: Consumer, stat: StatComponent) {
         super();
         this._consumer = consumer;
+        this._stat = stat;
     }
 
     public mount(): Error | undefined {
@@ -73,6 +76,7 @@ export class MessagesComponent extends Component {
             return;
         }
         this._messages = messages;
+        this._stat.setMessages(this._messages.length);
         if (this._instance.nodeName.toLowerCase() === 'p') {
             const parent = this._instance.parentNode;
             parent.removeChild(this._instance);

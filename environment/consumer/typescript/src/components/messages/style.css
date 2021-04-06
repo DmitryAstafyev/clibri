@@ -57,17 +57,27 @@ ul.messages li.own {
 ul.messages li.system {
     background: none;
     border: none;
+    display: flex;
+    flex-direction: row;
+    margin: 0 12px;
 }
 
 ul.messages li.system p.message {
     background: none;
     font-size: 12px;
-    color: rgb(200, 200, 200);
+    color: rgb(120, 120, 120);
     padding: 6px 0 3px 0;
+    flex: auto;
 }
 
 ul.messages li.system span.username {
     display: none;
+}
+
+ul.messages li.system span.datetime {
+    padding: 9px 0 0 0;
+    font-size: 9px;
+    color: rgb(120, 120, 120);
 }
 
 ul.messages li:hover {

@@ -1,6 +1,7 @@
 import { Component } from '../component';
 import { Consumer, Protocol, Users } from '../../consumer/index';
 import { Subscription } from 'fiber';
+import { StatComponent } from '../stat/component';
 
 interface IUser {
     name: string;
@@ -13,10 +14,12 @@ export class UsersComponent extends Component {
     private _users: IUser[] = [];
     private _consumer: Consumer;
     private _subscriptions: { [key: string]: Subscription } = {};
+    private _stat: StatComponent;
 
-    constructor(consumer: Consumer) {
+    constructor(consumer: Consumer, stat: StatComponent) {
         super();
         this._consumer = consumer;
+        this._stat = stat;
     }
 
     public mount(): Error | undefined {
@@ -76,6 +79,7 @@ export class UsersComponent extends Component {
             return;
         }
         this._users = users;
+        this._stat.setUsers(this._users.length);
         if (this._instance.nodeName.toLowerCase() === 'p') {
             const parent = this._instance.parentNode;
             parent.removeChild(this._instance);

@@ -323,9 +323,8 @@ impl MessagesObserver for MessagesObserverRequest {
         ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<producer::MessagesObserver::Conclusion, String> {
         match store::messages.read() {
-            Ok(messages) => Ok(producer::MessagesObserver::Conclusion::Response(
-                producer::protocol::Messages::Response {
-                    messages: messages
+            Ok(messages) => {
+                let mut msgs: Vec<producer::protocol::Messages::Message> = messages
                     .values()
                     .cloned()
                     .map(|msg| producer::protocol::Messages::Message {
@@ -334,9 +333,14 @@ impl MessagesObserver for MessagesObserverRequest {
                         uuid: msg.uuid.to_string(),
                         message: msg.message,
                     })
-                    .collect()
-                },
-            )),
+                    .collect();
+                msgs.sort_by(|a, b| a.timestamp.partial_cmp(&b.timestamp).unwrap());
+                Ok(producer::MessagesObserver::Conclusion::Response(
+                    producer::protocol::Messages::Response {
+                        messages: msgs
+                    },
+                ))
+            },
             Err(e) => Err(format!("{}", e))
         }
     }

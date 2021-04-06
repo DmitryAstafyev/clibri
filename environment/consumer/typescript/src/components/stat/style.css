@@ -1,0 +1,11 @@
+footer p.stat {
+    font-size: 12px;
+    color: rgb(200,200,200);
+    padding: 9px 19px;
+    margin: 0;
+    user-select: none;
+    cursor: pointer;
+}
+footer p.stat span {
+    margin-right: 12px;
+}
