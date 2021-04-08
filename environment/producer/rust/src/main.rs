@@ -208,34 +208,24 @@ impl UsersObserver for UsersObserverRequest {
         request: producer::protocol::Users::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-    ) -> Result<producer::UsersObserver::Conclusion, producer::protocol::Users::Err> {
+    ) -> Result<producer::protocol::Users::Response, producer::protocol::Users::Err> {
         match store::users.read() {
-            Ok(users) => Ok(producer::UsersObserver::Conclusion::Response(
-                producer::protocol::Users::Response {
-                    users: users
-                        .values()
-                        .cloned()
-                        .map(|user| producer::protocol::Users::User {
-                            name: user.name,
-                            uuid: user.uuid.to_string(),
-                        })
-                        .collect(),
-                },
-            )),
+            Ok(users) => Ok(producer::protocol::Users::Response {
+                users: users
+                    .values()
+                    .cloned()
+                    .map(|user| producer::protocol::Users::User {
+                        name: user.name,
+                        uuid: user.uuid.to_string(),
+                    })
+                    .collect(),
+            }),
             Err(e) => Err(producer::protocol::Users::Err {
                 error: format!("{}", e) 
             })
         }
     }
 
-    fn Response<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn producer::consumer_context::Context,
-        ucx: UCX,
-        request: producer::protocol::Users::Request,
-    ) -> Result<(), String> {
-        Ok(())
-        // TODO: remove
-    }
 }
 
 #[allow(unused_variables)]
@@ -307,7 +297,7 @@ impl MessagesObserver for MessagesObserverRequest {
         request: producer::protocol::Messages::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-    ) -> Result<producer::MessagesObserver::Conclusion, producer::protocol::Messages::Err> {
+    ) -> Result<producer::protocol::Messages::Response, producer::protocol::Messages::Err> {
         match store::messages.read() {
             Ok(messages) => {
                 let mut msgs: Vec<producer::protocol::Messages::Message> = messages
@@ -321,11 +311,9 @@ impl MessagesObserver for MessagesObserverRequest {
                     })
                     .collect();
                 msgs.sort_by(|a, b| a.timestamp.partial_cmp(&b.timestamp).unwrap());
-                Ok(producer::MessagesObserver::Conclusion::Response(
-                    producer::protocol::Messages::Response {
-                        messages: msgs
-                    },
-                ))
+                Ok(producer::protocol::Messages::Response {
+                    messages: msgs
+                })
             },
             Err(e) => Err(producer::protocol::Messages::Err {
                 error: format!("{}", e)

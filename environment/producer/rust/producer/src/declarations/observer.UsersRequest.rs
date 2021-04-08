@@ -4,11 +4,6 @@ use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::Filter;
 use super::Protocol;
 
-#[derive(Debug, Clone)]
-pub enum Conclusion {
-    Response(Protocol::Users::Response),
-}
-
 #[allow(unused_variables)]
 pub trait Observer
 {
@@ -17,16 +12,8 @@ pub trait Observer
         request: Protocol::Users::Request,
         cx: &dyn Context,
         ucx: UCX,
-    ) -> Result<Conclusion, Protocol::Users::Err> {
+    ) -> Result<Protocol::Users::Response, Protocol::Users::Err> {
         panic!("conclusion method isn't implemented");
-    }
-
-    fn Response<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn Context,
-        ucx: UCX,
-        request: Protocol::Users::Request,
-    ) -> Result<(), String> {
-        Err(String::from("accept method isn't implemented"))
     }
 
     fn emit<UCX: 'static + Sync + Send + Clone>(
@@ -48,20 +35,13 @@ pub trait Observer
             }
         };
         match Self::conclusion(request.clone(), cx, ucx.clone(),) {
-            Ok(conclusion) => match conclusion {
-                Conclusion::Response(mut response) => {
-                    if let Err(e) = Self::Response(cx, ucx.clone(), request.clone()) {
-                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                    }
-                    match response.pack(sequence) {
-                        Ok(buffer) => if let Err(e) = cx.send(buffer) {
-                            Err(RequestObserverErrors::ResponsingError(e))
-                        } else {
-                            Ok(())
-                        },
-                        Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
-                    }
+            Ok(mut response) => match response.pack(sequence) {
+                Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                    Err(RequestObserverErrors::ResponsingError(e))
+                } else {
+                    Ok(())
                 },
+                Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
             },
             Err(mut error) => {
                 match error.pack(sequence) {

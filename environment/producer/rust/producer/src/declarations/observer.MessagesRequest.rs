@@ -4,11 +4,6 @@ use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::Filter;
 use super::Protocol;
 
-#[derive(Debug, Clone)]
-pub enum Conclusion {
-    Response(Protocol::Messages::Response),
-}
-
 #[allow(unused_variables)]
 pub trait Observer
 {
@@ -17,7 +12,7 @@ pub trait Observer
         request: Protocol::Messages::Request,
         cx: &dyn Context,
         ucx: UCX,
-    ) -> Result<Conclusion, Protocol::Messages::Err> {
+    ) -> Result<Protocol::Messages::Response, Protocol::Messages::Err> {
         panic!("conclusion method isn't implemented");
     }
 
@@ -38,22 +33,13 @@ pub trait Observer
         broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         match Self::conclusion(request.clone(), cx, ucx.clone()) {
-            Ok(conclusion) => match conclusion {
-                Conclusion::Response(mut response) => {
-                    match Self::Response(cx, ucx.clone(), request.clone()) {
-                        Ok(_) => {
-                            match response.pack(sequence) {
-                                Ok(buffer) => if let Err(e) = cx.send(buffer) {
-                                    Err(RequestObserverErrors::ResponsingError(e))
-                                } else {
-                                    Ok(())
-                                },
-                                Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
-                            }
-                        },
-                        Err(error) => Err(RequestObserverErrors::AfterConclusionError(error))
-                    }
+            Ok(mut response) => match response.pack(sequence) {
+                Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                    Err(RequestObserverErrors::ResponsingError(e))
+                } else {
+                    Ok(())
                 },
+                Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
             },
             Err(mut error) => {
                 match error.pack(sequence) {
