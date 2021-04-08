@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 #[allow(unused_variables)]
 pub trait Controller {
-    fn disconnected<UCX: 'static + Sync + Send + Clone>(
+    fn connected<UCX: 'static + Sync + Send + Clone>(
         uuid: Uuid,
         ucx: UCX,
         broadcasting: &dyn Fn(
@@ -17,7 +17,7 @@ pub trait Controller {
             Broadcasting,
         ) -> Result<(), String>,
     ) -> Result<(), String> {
-        Err(String::from("disconnected handler isn't implemented"))
+        Err(String::from("connected handler isn't implemented"))
     }
 
     fn listen<UCX: 'static + Sync + Send + Clone>(
@@ -36,8 +36,8 @@ pub trait Controller {
                                 let broadcast = |filter: Filter, broadcast: Broadcasting| {
                                     broadcasting(consumers.clone(), filter, broadcast)
                                 };
-                                if let Err(e) = Self::disconnected(uuid, ucx.clone(), &broadcast) {
-                                    if let Err(e) = feedback.send(ProducerEvents::EventError(tools::logger.warn(&format!("Call disconnected handler for event due error: {}", e)))) {
+                                if let Err(e) = Self::connected(uuid, ucx.clone(), &broadcast) {
+                                    if let Err(e) = feedback.send(ProducerEvents::EventError(tools::logger.warn(&format!("Called connected handler for event due error: {}", e)))) {
                                         tools::logger.err(&format!("Fail send ProducerEvents:EventError {}", e));
                                     }
                                 }
@@ -52,7 +52,6 @@ pub trait Controller {
                         if let Err(e) = feedback.send(ProducerEvents::EventChannelError(tools::logger.err(&format!("Fail receive event due error: {}", e)))) {
                             tools::logger.err(&format!("Fail send ProducerEvents:EventChannelError {}", e));
                         }
-                        println!(">>>>>>>>>>>>>> 22 {}", e);
                         break;
                     }
                 }

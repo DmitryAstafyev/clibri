@@ -18,10 +18,6 @@ pub mod consumer_context;
 pub mod UserLoginObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.UserLogoutRequest.rs"]
-pub mod UserLogoutObserver;
-
-#[allow(non_snake_case)]
 #[path = "./declarations/observer.UsersRequest.rs"]
 pub mod UsersObserver;
 
@@ -32,15 +28,11 @@ pub mod MessageObserver;
 #[allow(non_snake_case)]
 #[path = "./declarations/observer.MessagesRequest.rs"]
 pub mod MessagesObserver;
-
-#[allow(non_snake_case)]
-#[path = "./declarations/observer.event.Connected.rs"]
-pub mod EventConnected;
-
+/*
 #[allow(non_snake_case)]
 #[path = "./declarations/observer.event.Disconnected.rs"]
 pub mod EventDisconnected;
-
+*/
 use super::{ tools };
 use consumer::Consumer;
 use consumer_identification::Filter;
@@ -57,12 +49,6 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::thread::spawn;
 use uuid::Uuid;
 
-pub enum Broadcasting {
-    UserConnected(Protocol::Events::UserConnected),
-    UserDisconnected(Protocol::Events::UserDisconnected),
-    Message(Protocol::Events::Message),
-}
-
 pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     InternalError(String),
     EmitError(String),
@@ -70,6 +56,7 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     EventChannelError(String),
     EventListenError(String),
     ConnectionError(String),
+    BroadcastingError(String),
     NotAssignedConsumer(String),
     ServerError(String),
     ServerDown,
@@ -91,27 +78,19 @@ pub enum ConsumersChannel {
 pub fn broadcasting(
     consumers: Sender<ConsumersChannel>,
     filter: Filter,
-    broadcast: Broadcasting,
+    buffer: Vec<u8>,
 ) -> Result<(), String> {
-    let buffer = match broadcast {
-        Broadcasting::UserDisconnected(mut msg) => match msg.pack(0u32) {
-            Ok(buffer) => buffer,
-            Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::UserDisconnected due error: {}", e))); },
-        },
-        Broadcasting::UserConnected(mut msg) => match msg.pack(0u32) {
-            Ok(buffer) => buffer,
-            Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::UserConnected due error: {}", e))); },
-        },
-        Broadcasting::Message(mut msg) => match msg.pack(0u32) {
-            Ok(buffer) => buffer,
-            Err(e) => { return Err(tools::logger.err(&format!("Fail to create pack for message Broadcasting::Message due error: {}", e))); },
-        },
-    };
     if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
         Err(tools::logger.err(&format!("Fail to get access consumers channel due error: {}", e)))
     } else {
         Ok(())
     }
+}
+
+#[allow(non_snake_case)]
+pub struct EventDisconnectedBroadcasting {
+    pub UserDisconnected: (Filter, Protocol::Events::UserDisconnected),
+    pub Message: Option<(Filter, Protocol::Events::Message)>,
 }
 
 #[allow(dead_code)]
@@ -149,28 +128,7 @@ where
         ) = mpsc::channel();
         let consumers = Arc::new(Mutex::new(tx_consumers.clone()));
         let feedback = tx_feedback.clone();
-        use EventConnected::{ Controller as EventConnectedController };
-        let EventConnectedSender = match EventConnected::Observer::new().listen(
-            ucx.clone(),
-            consumers.clone(),
-            feedback.clone(),
-        ) {
-            Ok(sender) => sender,
-            Err(e) => {
-                if let Err(e) =
-                    feedback.send(ProducerEvents::EventListenError(e.to_string()))
-                {
-                    tools::logger.err(&format!(
-                        "Cannot start listen event EventConnected due {}",
-                        e
-                    ));
-                }
-                return Err(format!(
-                    "Cannot start listen event EventConnected due {}",
-                    e
-                ));
-            }
-        };
+        /*
         use EventDisconnected::{ Controller as EventDisconnectedController };
         let EventDisconnectedSender = match EventDisconnected::Observer::new().listen(
             ucx.clone(),
@@ -193,6 +151,7 @@ where
                 ));
             }
         };
+        */
         let css = tx_consumers.clone();
         spawn(move || {
             loop {
@@ -279,13 +238,12 @@ where
             let store = Arc::new(RwLock::new(HashMap::new()));
             let sender_tx_channel = Arc::new(Mutex::new(sender_tx_channel.clone()));
             let UserLogin = Arc::new(RwLock::new(UserLoginObserver::ObserverRequest::new()));
-            let UserLogout = Arc::new(RwLock::new(UserLogoutObserver::ObserverRequest::new()));
             let Users = Arc::new(RwLock::new(UsersObserver::ObserverRequest::new()));
             let Message = Arc::new(RwLock::new(MessageObserver::ObserverRequest::new()));
             let Messages = Arc::new(RwLock::new(MessagesObserver::ObserverRequest::new()));
             loop {
-                let broadcast = |filter: Filter, broadcast: Broadcasting| {
-                    broadcasting(tx_consumers.clone(), filter, broadcast)
+                let broadcast = |filter: Filter, buffer: Vec<u8>| {
+                    broadcasting(tx_consumers.clone(), filter, buffer)
                 };
                 match rx_consumers.recv() {
                     Ok(action) => match action {
@@ -304,9 +262,8 @@ where
                                 {
                                     tools::logger.err(&format!("{}", e));
                                 }
-                                if let Err(e) = EventConnectedSender.send(uuid)
-                                {
-                                    tools::logger.err(&format!("EventConnectedSender: {}", e));
+                                if let Err(e) = Self::connected(uuid.clone(), ucx.clone()) {
+                                    tools::logger.err(&e);
                                 }
                             }
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
@@ -320,13 +277,43 @@ where
                                 store.remove(&uuid);
                                 if let Err(e) = feedback.send(ProducerEvents::Disconnected(uuid)) {
                                     tools::logger.err(&format!("{}", e));
-                                } else {
-                                    tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                                 }
-                                if let Err(e) = EventDisconnectedSender.send(uuid)
-                                {
-                                    tools::logger.err(&format!("EventDisconnectedSender: {}", e));
-                                }
+                                tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
+                                match Self::disconnected(uuid.clone(), ucx.clone()) {
+                                    Ok(mut msgs) => {
+                                        match msgs.UserDisconnected.1.pack(0) {
+                                            Ok(buffer) => if let Err(e) = broadcast(msgs.UserDisconnected.0, buffer) {
+                                                if let Err(e) = feedback.send(ProducerEvents::BroadcastingError(
+                                                    tools::logger.err(&format!("ConsumersChannel::Remove: cannot broadcast UserDisconnected due error: {}", e)),
+                                                )) {
+                                                    tools::logger.err(&format!("{}", e));
+                                                }
+                                            },
+                                            Err(e) => if let Err(e) = feedback.send(ProducerEvents::BroadcastingError(
+                                                tools::logger.err(&format!("ConsumersChannel::Remove: cannot encode UserDisconnected due error: {}", e)),
+                                            )) {
+                                                tools::logger.err(&format!("{}", e));
+                                            },
+                                        }
+                                        if let Some(mut msg) = msgs.Message {
+                                            match msg.1.pack(0) {
+                                                Ok(buffer) => if let Err(e) = broadcast(msg.0, buffer) {
+                                                    if let Err(e) = feedback.send(ProducerEvents::BroadcastingError(
+                                                        tools::logger.err(&format!("ConsumersChannel::Remove: cannot broadcast Message due error: {}", e)),
+                                                    )) {
+                                                        tools::logger.err(&format!("{}", e));
+                                                    }
+                                                },
+                                                Err(e) => if let Err(e) = feedback.send(ProducerEvents::BroadcastingError(
+                                                    tools::logger.err(&format!("ConsumersChannel::Remove: cannot encode Message due error: {}", e)),
+                                                )) {
+                                                    tools::logger.err(&format!("{}", e));
+                                                },
+                                            };
+                                        }
+                                    },
+                                    Err(e) => { tools::logger.err(&e); },
+                                };
                             },
                             Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(
                                 format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e),
@@ -443,28 +430,6 @@ where
                                                                 }
                                                             }
                                                         },
-                                                        Protocol::AvailableMessages::UserLogout(Protocol::UserLogout::AvailableMessages::Request(request)) => {
-                                                            tools::logger.debug(&format!("Protocol::AvailableMessages::UserLogout::Request {:?}", request));
-                                                            match UserLogout.write() {
-                                                                Ok(UserLogout) => {
-                                                                    use UserLogoutObserver::Observer;
-                                                                    if let Err(e) = UserLogout.emit(
-                                                                        consumer.get_cx(),
-                                                                        ucx.clone(),
-                                                                        header.sequence,
-                                                                        request,
-                                                                        &broadcast,
-                                                                    ) {
-                                                                        if let Err(e) = feedback.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::UserLogout::Request due error: {:?}", e).to_owned())) {
-                                                                            tools::logger.err(&format!("{}", e));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                Err(e) => if let Err(e) = feedback.send(ProducerEvents::InternalError(format!("Fail to access to UserLogout due error: {}", e).to_owned())) {
-                                                                    tools::logger.err(&format!("{}", e));
-                                                                }
-                                                            }
-                                                        },
                                                         Protocol::AvailableMessages::Users(Protocol::Users::AvailableMessages::Request(request)) => {
                                                             tools::logger.debug(&format!("Protocol::AvailableMessages::Users::Request {:?}", request));
                                                             match Users.write() {
@@ -557,6 +522,14 @@ where
         Ok(Channel {
             events: rx_feedback,
         })
+    }
+
+    fn connected(uuid: Uuid, ucx: UCX) -> Result<(), String> {
+        Err(format!("Handler for event conntected isn't implemented."))
+    }
+
+    fn disconnected(uuid: Uuid, ucx: UCX) -> Result<EventDisconnectedBroadcasting, String> {
+        Err(format!("Handler for event conntected isn't implemented."))
     }
 
 }

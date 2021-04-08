@@ -8,25 +8,24 @@ use fiber::logger::LogLevel;
 use fiber_transport_server::server::Server;
 use fiber_transport_server::{ErrorResponse, Request, Response};
 use producer::UserLoginObserver::{
-    Observer as UserLoginObserver, ObserverRequest as UserLoginObserverRequest,
-};
-use producer::UserLogoutObserver::{
-    Observer as UserLogoutObserver, ObserverRequest as UserLogoutObserverRequest,
+    Observer as UserLoginObserver,
+    ObserverRequest as UserLoginObserverRequest,
+    AcceptBroadcasting as UserLoginAcceptBroadcasting,
 };
 use producer::UsersObserver::{Observer as UsersObserver, ObserverRequest as UsersObserverRequest};
 use producer::MessageObserver::{
-    Observer as MessageObserver, ObserverRequest as MessageObserverRequest,
+    Observer as MessageObserver,
+    ObserverRequest as MessageObserverRequest,
+    AcceptBroadcasting as MessageAcceptBroadcasting,
 };
 use producer::MessagesObserver::{
     Observer as MessagesObserver, ObserverRequest as MessagesObserverRequest,
 };
-use producer::consumer_identification::Filter;
-use producer::EventConnected::{
-    Controller as EventConnectedController, Observer as EventConnectedObserver,
-};
+/*
 use producer::EventDisconnected::{
     Controller as EventDisconnectedController, Observer as EventDisconnectedObserver,
-};
+};*/
+use producer::consumer_identification::Filter;
 use producer::*;
 use std::sync::{Arc, RwLock};
 use regex::Regex;
@@ -78,7 +77,58 @@ type WrappedCustomContext = Arc<RwLock<CustomContext>>;
 
 struct ProducerInstance {}
 
-impl Producer<Server, WrappedCustomContext> for ProducerInstance {}
+impl Producer<Server, WrappedCustomContext> for ProducerInstance {
+
+    fn disconnected(uuid: Uuid, _ucx: WrappedCustomContext) -> Result<producer::EventDisconnectedBroadcasting, String> {
+        match store::users.write() {
+            Ok(mut users) => {
+                if let Some(user) = users.remove(&uuid) {
+                    let filter = Filter {
+                        uuid: Some((uuid.clone(), producer::consumer_identification::Condition::NotEqual)),
+                        assign: Some(true),
+                        filter: None,
+                    };
+                    let start = SystemTime::now();
+                    let tm = start
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards");
+                    let msg = format!("{} left chat", user.name);
+                    match store::messages.write() {
+                        Ok(mut messages) => {
+                            messages.insert(Uuid::new_v4(), store::Message {
+                                name: "".to_owned(),
+                                uuid: uuid,
+                                message: msg.clone(),
+                                timestamp: tm.as_secs(),
+                            });
+                            Ok(producer::EventDisconnectedBroadcasting {
+                                UserDisconnected: (
+                                    filter.clone(),
+                                    producer::protocol::Events::UserDisconnected {
+                                        username: user.name,
+                                        uuid: uuid.to_string(),
+                                }),
+                                Message: Some((filter,
+                                    producer::protocol::Events::Message {
+                                        user: "".to_owned(),
+                                        message: msg,
+                                        timestamp: tm.as_secs(),
+                                        uuid: uuid.to_string(),
+                                }))
+                            })
+
+                        },
+                        Err(e) => Err(format!("Cannot get access to messages due error: {}", e))
+                    }
+                } else {
+                    Err(format!("No {} user has been found", uuid))
+                }
+            },
+            Err(e) => Err(format!("{}", e))
+        }
+    }
+
+}
 
 #[allow(unused_variables)]
 impl UserLoginObserver for UserLoginObserverRequest {
@@ -86,10 +136,7 @@ impl UserLoginObserver for UserLoginObserverRequest {
         request: producer::protocol::UserLogin::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-        error: &dyn Fn(
-            producer::protocol::UserLogin::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::UserLoginObserver::Conclusion, String> {
+    ) -> Result<producer::UserLoginObserver::Conclusion, producer::protocol::UserLogin::Err> {
         Ok(producer::UserLoginObserver::Conclusion::Accept(
             producer::protocol::UserLogin::Accepted {
                 uuid: cx.uuid().to_string(),
@@ -97,15 +144,11 @@ impl UserLoginObserver for UserLoginObserverRequest {
         ))
     }
 
-    fn accept<UCX: 'static + Sync + Send + Clone>(
+    fn Accept<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn producer::consumer_context::Context,
         ucx: UCX,
         request: producer::protocol::UserLogin::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(
-            producer::protocol::UserLogin::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<(), String> {
+    ) -> Result<UserLoginAcceptBroadcasting, String> {
         match store::users.write() {
             Ok(mut users) => {
                 users.insert(cx.uuid(), store::User {
@@ -116,7 +159,7 @@ impl UserLoginObserver for UserLoginObserverRequest {
                     uuid: Some(cx.uuid().to_string()),
                     auth: Some(true),
                 }, true) {
-                    println!("Fail to assign client due error: {}", e);
+                    return Err(format!("Fail to assign client due error: {}", e));
                 }
                 let start = SystemTime::now();
                 let tm = start
@@ -136,64 +179,28 @@ impl UserLoginObserver for UserLoginObserverRequest {
                             assign: Some(true),
                             filter: None,
                         };
-                        if let Err(e) = broadcast(
-                            filter,
-                            Broadcasting::Message(producer::protocol::Events::Message {
+                        Ok(UserLoginAcceptBroadcasting {
+                            UserConnected: (filter.clone(), producer::protocol::Events::UserConnected {
+                                uuid: cx.uuid().to_string(),
+                                username: "----".to_string(),
+                            }),
+                            Message: Some((filter, producer::protocol::Events::Message {
                                 user: "".to_owned(),
                                 message: msg,
                                 timestamp: tm.as_secs(),
                                 uuid: cx.uuid().to_string(),
-                            }),
-                        ) {
-                            println!("Fail broadcast due error: {}", e);
-                        }
+                            })),
+                        })
                     },
-                    Err(e) => {}
-                };
+                    Err(e) => Err(format!("Fail write message due error: {}", e)),
+                }
             },
-            Err(e) => {}
-        };
-        Ok(())
+            Err(e) => Err(format!("Fail write user due error: {}", e)),
+        }
     }
 
-    fn broadcast<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn producer::consumer_context::Context,
-        ucx: UCX,
-        request: producer::protocol::UserLogin::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(
-            producer::protocol::UserLogin::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<(), String> {
-        let filter = Filter {
-            uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
-            assign: Some(true),
-            filter: None,
-        };
-        broadcast(
-            filter,
-            Broadcasting::UserConnected(producer::protocol::Events::UserConnected {
-                uuid: cx.uuid().to_string(),
-                username: "----".to_string(),
-            }),
-        )
-    }
 }
 
-#[allow(unused_variables)]
-impl UserLogoutObserver for UserLogoutObserverRequest {
-    fn conclusion<WrappedCustomContext>(
-        request: producer::protocol::UserLogout::Request,
-        cx: &dyn producer::consumer_context::Context,
-        ucx: WrappedCustomContext,
-        error: &dyn Fn(
-            producer::protocol::UserLogout::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::UserLogoutObserver::Conclusion, String> {
-        println!("GOOOD");
-        Err(String::from("conclusion method isn't implemented"))
-    }
-}
 
 #[allow(unused_variables)]
 impl UsersObserver for UsersObserverRequest {
@@ -201,10 +208,7 @@ impl UsersObserver for UsersObserverRequest {
         request: producer::protocol::Users::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-        error: &dyn Fn(
-            producer::protocol::Users::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::UsersObserver::Conclusion, String> {
+    ) -> Result<producer::UsersObserver::Conclusion, producer::protocol::Users::Err> {
         match store::users.read() {
             Ok(users) => Ok(producer::UsersObserver::Conclusion::Response(
                 producer::protocol::Users::Response {
@@ -218,20 +222,19 @@ impl UsersObserver for UsersObserverRequest {
                         .collect(),
                 },
             )),
-            Err(e) => Err(format!("{}", e))
+            Err(e) => Err(producer::protocol::Users::Err {
+                error: format!("{}", e) 
+            })
         }
     }
 
-    fn response<UCX: 'static + Sync + Send + Clone>(
+    fn Response<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn producer::consumer_context::Context,
         ucx: UCX,
         request: producer::protocol::Users::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(
-            producer::protocol::Users::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         Ok(())
+        // TODO: remove
     }
 }
 
@@ -241,10 +244,7 @@ impl MessageObserver for MessageObserverRequest {
         request: producer::protocol::Message::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-        error: &dyn Fn(
-            producer::protocol::Message::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::MessageObserver::Conclusion, String> {
+    ) -> Result<producer::MessageObserver::Conclusion, producer::protocol::Message::Err> {
         let re = Regex::new(r"[<>]").unwrap();
         if re.is_match(&request.message) {
             Ok(producer::MessageObserver::Conclusion::Deny(
@@ -261,15 +261,11 @@ impl MessageObserver for MessageObserverRequest {
         }
     }
 
-    fn accept<UCX: 'static + Sync + Send + Clone>(
+    fn Accept<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn producer::consumer_context::Context,
         ucx: UCX,
         request: producer::protocol::Message::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(
-            producer::protocol::Message::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<(), String> {
+    ) -> Result<MessageAcceptBroadcasting, String> {
         let start = SystemTime::now();
         let tm = start
             .duration_since(UNIX_EPOCH)
@@ -277,45 +273,32 @@ impl MessageObserver for MessageObserverRequest {
         match store::messages.write() {
             Ok(mut messages) => {
                 messages.insert(Uuid::new_v4(), store::Message {
-                    name: request.user,
+                    name: request.user.clone(),
                     uuid: cx.uuid(),
-                    message: request.message,
+                    message: request.message.clone(),
                     timestamp: tm.as_secs(),
                 });
+                let start = SystemTime::now();
+                let tm = start
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards");
+                Ok(MessageAcceptBroadcasting {
+                    Message: (Filter {
+                        uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
+                        assign: Some(true),
+                        filter: None,
+                    }, producer::protocol::Events::Message {
+                        user: request.user,
+                        message: request.message,
+                        timestamp: tm.as_secs(),
+                        uuid: cx.uuid().to_string(),
+                    })
+                })
             },
-            Err(e) => {}
-        };
-        Ok(())
+            Err(e) => Err(format!("{}", e))
+        }
     }
 
-    fn broadcast<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn producer::consumer_context::Context,
-        ucx: UCX,
-        request: producer::protocol::Message::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(
-            producer::protocol::Message::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<(), String> {
-        let filter = Filter {
-            uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
-            assign: Some(true),
-            filter: None,
-        };
-        let start = SystemTime::now();
-        let tm = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        broadcast(
-            filter,
-            Broadcasting::Message(producer::protocol::Events::Message {
-                user: request.user,
-                message: request.message,
-                timestamp: tm.as_secs(),
-                uuid: cx.uuid().to_string(),
-            }),
-        )
-    }
 }
 
 #[allow(unused_variables)]
@@ -324,10 +307,7 @@ impl MessagesObserver for MessagesObserverRequest {
         request: producer::protocol::Messages::Request,
         cx: &dyn producer::consumer_context::Context,
         ucx: WrappedCustomContext,
-        error: &dyn Fn(
-            producer::protocol::Messages::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
-    ) -> Result<producer::MessagesObserver::Conclusion, String> {
+    ) -> Result<producer::MessagesObserver::Conclusion, producer::protocol::Messages::Err> {
         match store::messages.read() {
             Ok(messages) => {
                 let mut msgs: Vec<producer::protocol::Messages::Message> = messages
@@ -347,41 +327,28 @@ impl MessagesObserver for MessagesObserverRequest {
                     },
                 ))
             },
-            Err(e) => Err(format!("{}", e))
+            Err(e) => Err(producer::protocol::Messages::Err {
+                error: format!("{}", e)
+            })
         }
     }
 
-    fn response<UCX: 'static + Sync + Send + Clone>(
+    fn Response<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn producer::consumer_context::Context,
         ucx: UCX,
         request: producer::protocol::Messages::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(
-            producer::protocol::Messages::Err,
-        ) -> Result<(), producer::observer::RequestObserverErrors>,
     ) -> Result<(), String> {
         Ok(())
+        // Remove
     }
 }
-
-#[allow(unused_variables)]
-impl EventConnectedController for EventConnectedObserver {
-    fn connected<WrappedCustomContext>(
-        uuid: Uuid,
-        ucx: WrappedCustomContext,
-        broadcasting: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-    ) -> Result<(), String> {
-        Ok(())
-        // Err(String::from("connected handler isn't implemented"))
-    }
-}
+        /*
 
 #[allow(unused_variables)]
 impl EventDisconnectedController for EventDisconnectedObserver {
     fn disconnected<WrappedCustomContext>(
         uuid: Uuid,
         ucx: WrappedCustomContext,
-        broadcasting: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
     ) -> Result<(), String> {
         match store::users.write() {
             Ok(mut users) => {
@@ -436,8 +403,10 @@ impl EventDisconnectedController for EventDisconnectedObserver {
             },
             Err(e) => Err(format!("{}", e))
         }
+        Ok(())
     }
 }
+        */
 
 fn main() {
     match fiber::tools::LOGGER_SETTINGS.lock() {
@@ -493,6 +462,9 @@ fn main() {
                     }
                     producer::ProducerEvents::ServerError(e) => {
                         println!("ServerError: {}", e);
+                    }
+                    producer::ProducerEvents::BroadcastingError(e) => {
+                        println!("BroadcastingError: {}", e);
                     }
                     producer::ProducerEvents::Reading(e) => {
                         println!("Reading: {}", e);

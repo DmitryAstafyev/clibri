@@ -6,6 +6,8 @@ pub enum RequestObserverErrors {
     BeforeResponseActionFail(String),
     ErrorOnEventsEmit(String),
     GettingConclusionError(String),
+    AfterConclusionError(String),
+    BroadcastingError(String),
 }
 
 #[derive(Debug)]

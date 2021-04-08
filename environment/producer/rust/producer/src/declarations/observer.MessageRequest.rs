@@ -2,13 +2,16 @@ use super::consumer_context::{ Context };
 use super::protocol::{ PackingStruct };
 use super::observer::{ RequestObserverErrors };
 use super::consumer_identification::Filter;
-use super::{ Broadcasting };
 use super::Protocol;
 
 #[derive(Debug, Clone)]
 pub enum Conclusion {
     Accept(Protocol::Message::Accepted),
     Deny(Protocol::Message::Denied),
+}
+
+pub struct AcceptBroadcasting {
+    pub Message: (Filter, Protocol::Events::Message),
 }
 
 #[allow(unused_variables)]
@@ -19,37 +22,22 @@ pub trait Observer
         request: Protocol::Message::Request,
         cx: &dyn Context,
         ucx: UCX,
-        error: &dyn Fn(Protocol::Message::Err) -> Result<(), RequestObserverErrors>,
-    ) -> Result<Conclusion, String> {
-        Err(String::from("conclusion method isn't implemented"))
+    ) -> Result<Conclusion, Protocol::Message::Err> {
+        panic!("conclusion method isn't implemented")
     }
 
-    fn accept<UCX: 'static + Sync + Send + Clone>(
+    fn Accept<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::Message::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::Message::Err) -> Result<(), RequestObserverErrors>,
-    ) -> Result<(), String> {
+    ) -> Result<AcceptBroadcasting, String> {
         Err(String::from("accept method isn't implemented"))
     }
 
-    fn broadcast<UCX: 'static + Sync + Send + Clone>(
+    fn Deny<UCX: 'static + Sync + Send + Clone>(
         cx: &dyn Context,
         ucx: UCX,
         request: Protocol::Message::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::Message::Err) -> Result<(), RequestObserverErrors>,
-    ) -> Result<(), String> {
-        Err(String::from("broadcast method isn't implemented"))
-    }
-
-    fn deny<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn Context,
-        ucx: UCX,
-        request: Protocol::Message::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
-        error: &dyn Fn(Protocol::Message::Err) -> Result<(), RequestObserverErrors>,
     ) -> Result<(), String> {
         Err(String::from("deny method isn't implemented"))
     }
@@ -60,51 +48,56 @@ pub trait Observer
         ucx: UCX,
         sequence: u32,
         request: Protocol::Message::Request,
-        broadcast: &dyn Fn(Filter, Broadcasting) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        let error = |mut error: Protocol::Message::Err| {
-            match error.pack(sequence) {
-                Ok(buffer) => if let Err(e) = cx.send(buffer) {
-                    Err(RequestObserverErrors::ResponsingError(e))
-                } else {
-                    Ok(())
-                },
-                Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
-            }
-        };
-        match Self::conclusion(request.clone(), cx, ucx.clone(), &error) {
+        match Self::conclusion(request.clone(), cx, ucx.clone()) {
             Ok(conclusion) => match conclusion {
                 Conclusion::Accept(mut response) => {
-                    if let Err(e) = Self::accept(cx, ucx.clone(), request.clone(), broadcast, &error) {
-                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                    }
-                    if let Err(e) = Self::broadcast(cx, ucx.clone(), request, broadcast, &error) {
-                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                    }
-                    match response.pack(sequence) {
-                        Ok(buffer) => if let Err(e) = cx.send(buffer) {
-                            Err(RequestObserverErrors::ResponsingError(e))
-                        } else {
-                            Ok(())
+                    match Self::Accept(cx, ucx.clone(), request.clone()) {
+                        Ok(mut msgs) => match response.pack(sequence) {
+                            Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                                Err(RequestObserverErrors::ResponsingError(e))
+                            } else {
+                                match msgs.Message.1.pack(0) {
+                                    Ok(buffer) => if let Err(e) = broadcast(msgs.Message.0, buffer) {
+                                        return Err(RequestObserverErrors::BroadcastingError(e));
+                                    },
+                                    Err(e) => {
+                                        return Err(RequestObserverErrors::EncodingResponseError(e));
+                                    },
+                                };
+                                Ok(())
+                            },
+                            Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
                         },
-                        Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
+                        Err(error) => Err(RequestObserverErrors::AfterConclusionError(error))
                     }
+                   
                 },
                 Conclusion::Deny(mut response) => {
-                    if let Err(e) = Self::deny(cx, ucx, request, broadcast, &error) {
-                        return Err(RequestObserverErrors::ErrorOnEventsEmit(e));
-                    }
-                    match response.pack(sequence) {
-                        Ok(buffer) => if let Err(e) = cx.send(buffer) {
-                            Err(RequestObserverErrors::ResponsingError(e))
-                        } else {
-                            Ok(())
+                    match Self::Deny(cx, ucx, request) {
+                        Ok(_) => match response.pack(sequence) {
+                            Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                                Err(RequestObserverErrors::ResponsingError(e))
+                            } else {
+                                Ok(())
+                            },
+                            Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
                         },
-                        Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
+                        Err(error) => Err(RequestObserverErrors::AfterConclusionError(error))
                     }
                 },
             },
-            Err(e) => Err(RequestObserverErrors::GettingConclusionError(e))
+            Err(mut error) => {
+                match error.pack(sequence) {
+                    Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                        Err(RequestObserverErrors::ResponsingError(e))
+                    } else {
+                        Ok(())
+                    },
+                    Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
+                }
+            }
         }
     }
 }

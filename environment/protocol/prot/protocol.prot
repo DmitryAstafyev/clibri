@@ -101,21 +101,6 @@ group UserLogin {
 
 }
 
-group UserLogout {
-
-    struct Request {
-        str uuid;
-    }
-
-    struct Done {
-    }
-
-    struct Err {
-        str error;
-    }
-
-}
-
 group Users {
 
     struct User {
