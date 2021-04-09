@@ -50,9 +50,7 @@ impl Context for Cx {
             },
             Err(e) => Err(e.to_string()),
         }
-
     }
-
 
 }
 

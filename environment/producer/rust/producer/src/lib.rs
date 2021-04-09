@@ -97,6 +97,37 @@ pub struct EventDisconnectedBroadcasting {
 #[allow(non_snake_case)]
 pub struct Channel<UCX> where UCX: 'static + Sync + Send + Clone {
     pub events: Receiver<ProducerEvents<UCX>>,
+    consumers: Arc<Mutex<Sender<ConsumersChannel>>>,
+}
+
+impl<UCX: 'static + Sync + Send + Clone> Channel<UCX> {
+
+    pub fn send(&self, filter: Filter, buffer: Vec<u8>) -> Result<(), String> {
+        match self.consumers.lock() {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
+                Err(e.to_string())
+            } else {
+                Ok(())
+            },
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    pub fn assign(&self, uuid: Uuid, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String> {
+        match self.consumers.lock() {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Assign((uuid, assigned, overwrite))) {
+                Err(e.to_string())
+            } else {
+                Ok(())
+            },
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    pub fn drop(&self, uuid: Uuid) -> Result<(), String> {
+        // TODO: drop connection of consumer
+        Ok(())
+    }
 }
 
 #[allow(unused_variables)]
@@ -127,6 +158,7 @@ where
             Receiver<ConsumersChannel>,
         ) = mpsc::channel();
         let consumers = Arc::new(Mutex::new(tx_consumers.clone()));
+        let channel_consumers = Arc::new(Mutex::new(tx_consumers.clone()));
         let feedback = tx_feedback.clone();
         /*
         use EventDisconnected::{ Controller as EventDisconnectedController };
@@ -521,6 +553,7 @@ where
         });
         Ok(Channel {
             events: rx_feedback,
+            consumers: channel_consumers
         })
     }
 
