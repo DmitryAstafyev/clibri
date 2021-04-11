@@ -25,7 +25,7 @@ pub trait Observer
         broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         let error = |mut error: Protocol::Users::Err| {
-            match error.pack(sequence) {
+            match error.pack(sequence, Some(cx.uuid().to_string())) {
                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                     Err(RequestObserverErrors::ResponsingError(e))
                 } else {
@@ -35,7 +35,7 @@ pub trait Observer
             }
         };
         match Self::conclusion(request.clone(), cx, ucx.clone(),) {
-            Ok(mut response) => match response.pack(sequence) {
+            Ok(mut response) => match response.pack(sequence, Some(cx.uuid().to_string())) {
                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                     Err(RequestObserverErrors::ResponsingError(e))
                 } else {
@@ -44,7 +44,7 @@ pub trait Observer
                 Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
             },
             Err(mut error) => {
-                match error.pack(sequence) {
+                match error.pack(sequence, Some(cx.uuid().to_string())) {
                     Ok(buffer) => if let Err(e) = cx.send(buffer) {
                         Err(RequestObserverErrors::ResponsingError(e))
                     } else {

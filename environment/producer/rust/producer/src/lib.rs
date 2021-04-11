@@ -313,7 +313,7 @@ where
                                 tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                                 match Self::disconnected(uuid.clone(), ucx.clone()) {
                                     Ok(mut msgs) => {
-                                        match msgs.UserDisconnected.1.pack(0) {
+                                        match msgs.UserDisconnected.1.pack(0, Some(uuid.to_string())) {
                                             Ok(buffer) => if let Err(e) = broadcast(msgs.UserDisconnected.0, buffer) {
                                                 if let Err(e) = feedback.send(ProducerEvents::BroadcastingError(
                                                     tools::logger.err(&format!("ConsumersChannel::Remove: cannot broadcast UserDisconnected due error: {}", e)),
@@ -328,7 +328,7 @@ where
                                             },
                                         }
                                         if let Some(mut msg) = msgs.Message {
-                                            match msg.1.pack(0) {
+                                            match msg.1.pack(0, Some(uuid.to_string())) {
                                                 Ok(buffer) => if let Err(e) = broadcast(msg.0, buffer) {
                                                     if let Err(e) = feedback.send(ProducerEvents::BroadcastingError(
                                                         tools::logger.err(&format!("ConsumersChannel::Remove: cannot broadcast Message due error: {}", e)),
@@ -419,7 +419,7 @@ where
                                                 Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::SelfKey(request) = message {
                                                     let uuid = consumer.key(request, true);
                                                     tools::logger.debug(&format!("{}:: identification is done", uuid));
-                                                    if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid }).pack(header.sequence) {
+                                                    if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
                                                         Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                             Err(e)
                                                         } else {

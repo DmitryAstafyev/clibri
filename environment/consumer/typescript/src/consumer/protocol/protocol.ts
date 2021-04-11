@@ -1875,7 +1875,7 @@ export abstract class Enum<T> {
         }
     }
 
-    public pack(sequence: number): ArrayBufferLike {
+    public pack(sequence: number, uuid?: string): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
         const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
@@ -1893,7 +1893,17 @@ export abstract class Enum<T> {
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
         }
-        const buffer: ArrayBufferLike = this.encode();
+        const buffer: ArrayBufferLike | Error = (() => {
+            const middleware: PackingMiddleware | undefined = getPackingMiddleware();
+            if (middleware instanceof PackingMiddleware) {
+                return middleware.encode(this.encode(), this.getId(), sequence, uuid);
+            } else {
+                return this.encode();
+            }
+        })();
+        if (buffer instanceof Error) {
+            throw buffer;
+        }
         const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
@@ -2128,6 +2138,169 @@ export class Storage {
 
 }
 
+export class MessageHeader {
+    public static readonly ID_LENGTH = 4;
+    public static readonly SIGN_LENGTH = 2;
+    public static readonly SEQ_LENGTH = 4;
+    public static readonly TS_LENGTH = 8;
+    public static readonly LEN_LENGTH = 8;
+    public static readonly SIZE =
+        MessageHeader.ID_LENGTH +
+        MessageHeader.SIGN_LENGTH +
+        MessageHeader.SEQ_LENGTH +
+        MessageHeader.TS_LENGTH +
+        MessageHeader.LEN_LENGTH;
+
+    public readonly id: number;
+    public readonly signature: number;
+    public readonly sequence: number;
+    public readonly ts: BigInt;
+    public readonly len: number;
+
+    constructor(buffer: Buffer) {
+        if (MessageHeader.enow(buffer) === false) {
+            throw new Error(
+                `Cannot parse header because size problem. Buffer: ${buffer.byteLength} bytes; header size: ${MessageHeader.SIZE} bytes`
+            );
+        } else {
+            this.id = buffer.readUInt32LE(0);
+            this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
+            this.sequence = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
+            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
+            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
+        }
+    }
+
+    public static enow(buffer: Buffer): boolean {
+        return buffer.byteLength >= MessageHeader.SIZE;
+    }
+
+}
+
+declare var window: Window | undefined;
+declare var global: any | undefined;
+
+export function globals(): Window | any | Error {
+    if (typeof window === 'object' && window !== null) {
+        return window;
+    } else if (typeof global === 'object' && global !== null) {
+        return global;
+    } else {
+        return new Error(`Fail to find global namespece ()`);
+    }
+}
+
+export function getPackingMiddleware(): PackingMiddleware | undefined {
+    const space = globals();
+    if (space instanceof Error) {
+        return undefined;
+    }
+    return space[PackingMiddleware.GUID];
+}
+
+export abstract class PackingMiddleware {
+
+    static GUID: string = '___FiberPackingMiddleware___';
+
+    constructor() {
+        const space = globals();
+        if (space instanceof Error) {
+            console.error(`Fail to bind PackingMiddleware as soon as fail to find global object (window or NodeJS global)`);
+            return;
+        }
+        if (space[PackingMiddleware.GUID] !== undefined) {
+            console.warn(`PackingMiddleware instance is overwritten.`);
+        }
+        space[PackingMiddleware.GUID] = this;
+    }
+
+    public decode(buffer: ArrayBufferLike, id: number, sequence: number, uuid?: string): ArrayBufferLike | Error {
+        return buffer;
+    }
+
+    public encode(buffer: ArrayBufferLike, id: number, sequence: number, uuid?: string): ArrayBufferLike | Error {
+        return buffer;
+    }
+
+}
+
+
+export interface IAvailableMessage<T> {
+    header: {
+        id: number;
+        sequence: number;
+        timestamp: BigInt;
+    },
+    msg: T,
+    getRef: <Z>() => Z,
+}
+
+export abstract class BufferReader<T> {
+
+    private _buffer: Buffer = Buffer.alloc(0);
+    private _queue: T[] = [];
+
+    public abstract signature(): number;
+
+    public abstract getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): T | Error;
+
+    public chunk(buffer: Buffer | ArrayBuffer | ArrayBufferLike, uuid?: string): Error[] | undefined {
+        const errors: Error[] = [];
+        this._buffer = Buffer.concat([this._buffer, buffer instanceof Buffer ? buffer : Buffer.from(buffer)]);
+        do {
+            if (!MessageHeader.enow(this._buffer)) {
+                break;
+            }
+            const header: MessageHeader = new MessageHeader(this._buffer.slice(0, MessageHeader.SIZE));
+            if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
+                break;
+            }
+            if (header.signature !== this.signature()) {
+                errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
+            } else {
+                const body: ArrayBufferLike | Error = (() => {
+                    const middleware: PackingMiddleware | undefined = getPackingMiddleware();
+                    if (middleware instanceof PackingMiddleware) {
+                        return middleware.decode(this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len), header.id, header.sequence, uuid);
+                    } else {
+                        return this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len);
+                    }
+                })();
+                if (body instanceof Error) {
+                    errors.push(body);
+                } else {
+                    const msg = this.getMessage(header, body);
+                    if (msg instanceof Error) {
+                        errors.push(msg);
+                    } else {
+                        this._queue.push(msg);
+                    }
+                }
+                this._buffer = this._buffer.slice(MessageHeader.SIZE + header.len);
+            }
+        } while (true);
+        return errors.length > 0 ? errors : undefined;
+    }
+
+    public destroy() {
+        // Drop buffer
+        this._buffer = Buffer.alloc(0);
+        this._queue = [];
+    }
+
+    public pending(): number {
+        return this._queue.length;
+    }
+
+    public len(): number {
+        return this._buffer.byteLength;
+    }
+
+    public next(): T | undefined {
+        return this._queue.length === 0 ? undefined : this._queue.splice(0, 1)[0];
+    }
+
+}
 export abstract class Convertor {
 
     public collect(getters: Array<() => ArrayBufferLike | Error>): ArrayBufferLike {
@@ -2269,7 +2442,7 @@ export abstract class Convertor {
         return selfs;
     }
 
-    public pack(sequence: number): ArrayBufferLike {
+    public pack(sequence: number, uuid?: string): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
         const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
@@ -2287,7 +2460,17 @@ export abstract class Convertor {
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
         }
-        const buffer: ArrayBufferLike = this.encode();
+        const buffer: ArrayBufferLike | Error = (() => {
+            const middleware: PackingMiddleware | undefined = getPackingMiddleware();
+            if (middleware instanceof PackingMiddleware) {
+                return middleware.encode(this.encode(), this.getId(), sequence, uuid);
+            } else {
+                return this.encode();
+            }
+        })();
+        if (buffer instanceof Error) {
+            throw buffer;
+        }
         const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
@@ -2304,110 +2487,6 @@ export abstract class Convertor {
 
 }
 
-export class MessageHeader {
-    public static readonly ID_LENGTH = 4;
-    public static readonly SIGN_LENGTH = 2;
-    public static readonly SEQ_LENGTH = 4;
-    public static readonly TS_LENGTH = 8;
-    public static readonly LEN_LENGTH = 8;
-    public static readonly SIZE =
-        MessageHeader.ID_LENGTH +
-        MessageHeader.SIGN_LENGTH +
-        MessageHeader.SEQ_LENGTH +
-        MessageHeader.TS_LENGTH +
-        MessageHeader.LEN_LENGTH;
-
-    public readonly id: number;
-    public readonly signature: number;
-    public readonly sequence: number;
-    public readonly ts: BigInt;
-    public readonly len: number;
-
-    constructor(buffer: Buffer) {
-        if (MessageHeader.enow(buffer) === false) {
-            throw new Error(
-                `Cannot parse header because size problem. Buffer: ${buffer.byteLength} bytes; header size: ${MessageHeader.SIZE} bytes`
-            );
-        } else {
-            this.id = buffer.readUInt32LE(0);
-            this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
-            this.sequence = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
-            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
-            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
-        }
-    }
-
-    public static enow(buffer: Buffer): boolean {
-        return buffer.byteLength >= MessageHeader.SIZE;
-    }
-
-}
-
-
-export interface IAvailableMessage<T> {
-    header: {
-        id: number;
-        sequence: number;
-        timestamp: BigInt;
-    },
-    msg: T,
-    getRef: <Z>() => Z,
-}
-
-export abstract class BufferReader<T> {
-
-    private _buffer: Buffer = Buffer.alloc(0);
-    private _queue: T[] = [];
-
-    public abstract signature(): number;
-
-    public abstract getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): T | Error;
-
-    public chunk(buffer: Buffer | ArrayBuffer | ArrayBufferLike): Error[] | undefined {
-        const errors: Error[] = [];
-        this._buffer = Buffer.concat([this._buffer, buffer instanceof Buffer ? buffer : Buffer.from(buffer)]);
-        do {
-            if (!MessageHeader.enow(this._buffer)) {
-                break;
-            }
-            const header: MessageHeader = new MessageHeader(this._buffer.slice(0, MessageHeader.SIZE));
-            if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
-                break;
-            }
-            if (header.signature !== this.signature()) {
-                errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
-            } else {
-                const msg = this.getMessage(header, this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len));
-                if (msg instanceof Error) {
-                    errors.push(msg);
-                } else {
-                    this._queue.push(msg);
-                }
-                this._buffer = this._buffer.slice(MessageHeader.SIZE + header.len);
-            }
-        } while (true);
-        return errors.length > 0 ? errors : undefined;
-    }
-
-    public destroy() {
-        // Drop buffer
-        this._buffer = Buffer.alloc(0);
-        this._queue = [];
-    }
-
-    public pending(): number {
-        return this._queue.length;
-    }
-
-    public len(): number {
-        return this._buffer.byteLength;
-    }
-
-    public next(): T | undefined {
-        return this._queue.length === 0 ? undefined : this._queue.splice(0, 1)[0];
-    }
-
-}
 type ESizeAlias = ESize; const ESizeAlias = ESize;
 type ConvertorAlias = Convertor; const ConvertorAlias = Convertor;
 type IPropSchemeAlias = IPropScheme;

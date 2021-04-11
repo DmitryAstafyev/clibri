@@ -52,7 +52,7 @@ pub trait Observer
         broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         let error = |mut error: Protocol::UserLogin::Err| {
-            match error.pack(sequence) {
+            match error.pack(sequence, Some(cx.uuid().to_string())) {
                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                     Err(RequestObserverErrors::ResponsingError(e))
                 } else {
@@ -66,11 +66,11 @@ pub trait Observer
                 Conclusion::Accept(mut response) => {
                     match Self::Accept(cx, ucx.clone(), request.clone()) {
                         Ok(mut msgs) => {
-                            match response.pack(sequence) {
+                            match response.pack(sequence, Some(cx.uuid().to_string())) {
                                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                                     Err(RequestObserverErrors::ResponsingError(e))
                                 } else {
-                                    match msgs.UserConnected.1.pack(0) {
+                                    match msgs.UserConnected.1.pack(0, Some(cx.uuid().to_string())) {
                                         Ok(buffer) => if let Err(e) = broadcast(msgs.UserConnected.0, buffer) {
                                             return Err(RequestObserverErrors::BroadcastingError(e));
                                         },
@@ -79,7 +79,7 @@ pub trait Observer
                                         },
                                     }
                                     if let Some(mut msg) = msgs.Message {
-                                        match msg.1.pack(0) {
+                                        match msg.1.pack(0, Some(cx.uuid().to_string())) {
                                             Ok(buffer) => if let Err(e) = broadcast(msg.0, buffer) {
                                                 return Err(RequestObserverErrors::BroadcastingError(e));
                                             },
@@ -99,7 +99,7 @@ pub trait Observer
                 Conclusion::Deny(mut response) => {
                     match Self::Deny(cx, ucx, request) {
                         Ok(_) => {
-                            match response.pack(sequence) {
+                            match response.pack(sequence, Some(cx.uuid().to_string())) {
                                 Ok(buffer) => if let Err(e) = cx.send(buffer) {
                                     Err(RequestObserverErrors::ResponsingError(e))
                                 } else {
@@ -113,7 +113,7 @@ pub trait Observer
                 },
             },
             Err(mut error) => {
-                match error.pack(sequence) {
+                match error.pack(sequence, Some(cx.uuid().to_string())) {
                     Ok(buffer) => if let Err(e) = cx.send(buffer) {
                         Err(RequestObserverErrors::ResponsingError(e))
                     } else {

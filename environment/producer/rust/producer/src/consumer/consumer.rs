@@ -77,7 +77,7 @@ impl Consumer {
     }
 
     pub fn chunk(&mut self, buffer: &Vec<u8>) -> Result<(), String> {
-        if let Err(e) = self.buffer.chunk(buffer) {
+        if let Err(e) = self.buffer.chunk(buffer, Some(self.uuid.to_string())) {
             Err(format!("{:?}", e))
         } else {
             Ok(())
