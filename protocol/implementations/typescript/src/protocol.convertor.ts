@@ -5,6 +5,7 @@ import { ESize, CBits } from './protocol.sizes';
 import { Storage } from './protocol.convertor.storage';
 import { u32 } from './protocol.primitives.u32';
 import { u64 } from './protocol.primitives.u64';
+import { getPackingMiddleware, PackingMiddleware } from './packing.middleware';
 
 // injectable
 export abstract class Convertor {
@@ -148,7 +149,7 @@ export abstract class Convertor {
         return selfs;
     }
 
-    public pack(sequence: number): ArrayBufferLike {
+    public pack(sequence: number, uuid?: string): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
         const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
@@ -166,7 +167,17 @@ export abstract class Convertor {
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
         }
-        const buffer: ArrayBufferLike = this.encode();
+        const buffer: ArrayBufferLike | Error = (() => {
+            const middleware: PackingMiddleware | undefined = getPackingMiddleware();
+            if (middleware instanceof PackingMiddleware) {
+                return middleware.encode(this.encode(), this.getId(), sequence, uuid);
+            } else {
+                return this.encode();
+            }
+        })();
+        if (buffer instanceof Error) {
+            throw buffer;
+        }
         const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);

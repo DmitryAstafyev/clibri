@@ -2,6 +2,8 @@ import * as Protocol from './protocol';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { state } from './state';
+
 export const usecases: Array<{ name: string, entity: Protocol.Convertor | Protocol.Enum<any> }> = [];
 
 usecases.push({ name: 'EnumExampleA.a', entity: (() => {
@@ -450,7 +452,11 @@ usecases.push(...[
 export function write(): Promise<void> {
     function wr(name: string, entity: Protocol.Convertor | Protocol.Enum<any> | Buffer): Promise<void> {
         return new Promise((resolve, reject) => {
-            const target = path.resolve(dest, `${name}.prot.bin`);
+            if ((entity instanceof Protocol.Convertor || entity instanceof Protocol.Enum) && state.getMiddleware()) {
+                buffers.push(Buffer.from(entity.pack(0)));
+                return resolve();
+            }
+            const target = path.resolve(dest, `${name}.prot.${state.getMiddleware() ? 'middleware' : 'bin'}`);
             if (fs.existsSync(target)) {
                 fs.unlinkSync(target);
             }
@@ -466,7 +472,7 @@ export function write(): Promise<void> {
                     if (errWrite) {
                         return reject(errWrite);
                     }
-                    console.log(`[OK]\t[TS] File: ${target} has beed written.`);
+                    console.log(`[OK]\t[TS] File: ${target} has beed written: ${buf.byteLength} bytes.`);
                     resolve(undefined);
                 });
             });
@@ -482,6 +488,8 @@ export function write(): Promise<void> {
             return wr(usecase.name, usecase.entity);
         })).then(() => {
             wr('buffer', Buffer.concat(buffers)).then(resolve);
+        }).catch((e) => {
+            console.log(e);
         });
     });
 }

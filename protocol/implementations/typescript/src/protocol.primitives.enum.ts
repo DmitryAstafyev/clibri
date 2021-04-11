@@ -5,6 +5,7 @@ import * as Primitives from './protocol.primitives';
 
 import { ISigned } from './protocol.primitives.interface';
 import { u16 } from './protocol.primitives.u16';
+import { getPackingMiddleware, PackingMiddleware } from './packing.middleware';
 
 // injectable
 export class Option<T> {
@@ -84,7 +85,7 @@ export abstract class Enum<T> {
         }
     }
 
-    public pack(sequence: number): ArrayBufferLike {
+    public pack(sequence: number, uuid?: string): ArrayBufferLike {
         const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
         const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
         const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
@@ -102,7 +103,17 @@ export abstract class Enum<T> {
         if (timestamp instanceof Error) {
             throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
         }
-        const buffer: ArrayBufferLike = this.encode();
+        const buffer: ArrayBufferLike | Error = (() => {
+            const middleware: PackingMiddleware | undefined = getPackingMiddleware();
+            if (middleware instanceof PackingMiddleware) {
+                return middleware.encode(this.encode(), this.getId(), sequence, uuid);
+            } else {
+                return this.encode();
+            }
+        })();
+        if (buffer instanceof Error) {
+            throw buffer;
+        }
         const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
         if (len instanceof Error) {
             throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);

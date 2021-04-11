@@ -58,7 +58,7 @@ where
     }
 
     #[allow(clippy::ptr_arg)]
-    pub fn chunk(&mut self, buf: &Vec<u8>) -> Result<(), ReadError> {
+    pub fn chunk(&mut self, buf: &Vec<u8>, uuid: Option<String>) -> Result<(), ReadError> {
         // Add data into buffer
         self.buffer.append(&mut buf.clone());
         if !has_buffer_header(&self.buffer) {
@@ -74,7 +74,7 @@ where
         if !has_buffer_body(&self.buffer, &header) {
             return Ok(());
         }
-        let (body, rest) = match get_body_from_buffer(&self.buffer, &header) {
+        let (body, rest) = match get_body_from_buffer(&self.buffer, &header, uuid.clone()) {
             Ok(v) => v,
             Err(e) => {
                 return Err(ReadError::Parsing(e));
@@ -85,7 +85,7 @@ where
             Ok(msg) => {
                 self.queue.push(IncomeMessage { header, msg });
                 if !self.buffer.is_empty() {
-                    self.chunk(&vec![])
+                    self.chunk(&vec![], uuid)
                 } else {
                     Ok(())
                 }

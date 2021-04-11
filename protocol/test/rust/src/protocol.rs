@@ -1110,6 +1110,28 @@ const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
                                 sizes::U64_LEN + // {u64} body size
                                 sizes::U64_LEN;  // {u64} timestamp
 
+pub trait PackingMiddlewareInterface {
+    fn decode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+        Ok(buffer)
+    }
+    fn encode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+        Ok(buffer)
+    }
+}
+
+pub struct PackingMiddleware {
+    
+}
+
+impl PackingMiddlewareInterface for PackingMiddleware {
+    fn decode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+        Ok(buffer)
+    }
+    fn encode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+        Ok(buffer)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PackageHeader {
     pub id: u32,
@@ -1152,7 +1174,7 @@ pub fn has_buffer_body(buf: &[u8], header: &PackageHeader) -> bool {
     buf.len() >= header.len_usize + MSG_HEADER_LEN
 }
 
-pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader, uuid: Option<String>) -> Result<(Vec<u8>, Vec<u8>), String> {
     if buf.len() < header.len_usize + MSG_HEADER_LEN {
         return Err(format!("Cannot extract body of package because size in header {} bytes, but size of buffer {} bytes.", header.len, buf.len() - MSG_HEADER_LEN));
     }
@@ -1161,17 +1183,26 @@ pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader) -> Result<(Vec<u
     body.copy_from_slice(&buf[MSG_HEADER_LEN..(MSG_HEADER_LEN + header.len_usize)]);
     let mut rest = vec![0; buf.len() - MSG_HEADER_LEN - header.len_usize];
     rest.copy_from_slice(&buf[(MSG_HEADER_LEN + header.len_usize)..]);
-    Ok((body, rest))
-}
-
-pub fn pack<T>(mut msg: T, sequence: u32) -> Result<Vec<u8>, String> where T: StructEncode {
-    match msg.abduct() {
-        Ok(buffer) => pack_buffer(msg.get_id(), msg.get_signature(), sequence, buffer),
+    match PackingMiddleware::decode(body, header.id, header.sequence, uuid) {
+        Ok(buffer) => Ok((buffer, rest)),
         Err(e) => Err(e),
     }
 }
 
-pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>) -> Result<Vec<u8>, String> {
+pub fn pack<T>(mut msg: T, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String> where T: StructEncode {
+    match msg.abduct() {
+        Ok(buffer) => pack_buffer(msg.get_id(), msg.get_signature(), sequence, buffer, uuid),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>, uuid: Option<String>) -> Result<Vec<u8>, String> {
+    let buffer = match PackingMiddleware::encode(msg_buf, msg_id, sequence, uuid) {
+        Ok(buffer) => buffer,
+        Err(e) => {
+            return Err(e);
+        }
+    };
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(duration) => {
             let mut buf: Vec<u8> = vec!();
@@ -1179,8 +1210,8 @@ pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>)
             buf.append(&mut signature.to_le_bytes().to_vec());
             buf.append(&mut sequence.to_le_bytes().to_vec());
             buf.append(&mut duration.as_secs().to_le_bytes().to_vec());
-            buf.append(&mut (msg_buf.len() as u64).to_le_bytes().to_vec());
-            buf.append(&mut msg_buf.to_vec());
+            buf.append(&mut (buffer.len() as u64).to_le_bytes().to_vec());
+            buf.append(&mut buffer.to_vec());
             Ok(buf)
         },
         Err(e) => Err(e.to_string()),
@@ -1189,9 +1220,9 @@ pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>)
 
 pub trait PackingStruct: StructEncode {
 
-    fn pack(&mut self, sequence: u32) -> Result<Vec<u8>, String> {
+    fn pack(&mut self, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String> {
         match self.abduct() {
-            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), sequence, buf),
+            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), sequence, buf, uuid),
             Err(e) => Err(e),
         }
     }
@@ -1200,9 +1231,9 @@ pub trait PackingStruct: StructEncode {
 
 pub trait PackingEnum: EnumEncode {
 
-    fn pack(&mut self, sequence: u32) -> Result<Vec<u8>, String> {
+    fn pack(&mut self, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String> {
         match self.abduct() {
-            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), sequence, buf),
+            Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), sequence, buf, uuid),
             Err(e) => Err(e),
         }
     }
@@ -1264,7 +1295,7 @@ where
     }
 
     #[allow(clippy::ptr_arg)]
-    pub fn chunk(&mut self, buf: &Vec<u8>) -> Result<(), ReadError> {
+    pub fn chunk(&mut self, buf: &Vec<u8>, uuid: Option<String>) -> Result<(), ReadError> {
         // Add data into buffer
         self.buffer.append(&mut buf.clone());
         if !has_buffer_header(&self.buffer) {
@@ -1280,7 +1311,7 @@ where
         if !has_buffer_body(&self.buffer, &header) {
             return Ok(());
         }
-        let (body, rest) = match get_body_from_buffer(&self.buffer, &header) {
+        let (body, rest) = match get_body_from_buffer(&self.buffer, &header, uuid.clone()) {
             Ok(v) => v,
             Err(e) => {
                 return Err(ReadError::Parsing(e));
@@ -1291,7 +1322,7 @@ where
             Ok(msg) => {
                 self.queue.push(IncomeMessage { header, msg });
                 if !self.buffer.is_empty() {
-                    self.chunk(&vec![])
+                    self.chunk(&vec![], uuid)
                 } else {
                     Ok(())
                 }

@@ -8,4 +8,6 @@ edition = "2018"
 
 [dependencies]
 bytes = "*"
+lazy_static = "*"
+
 

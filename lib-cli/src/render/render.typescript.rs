@@ -1644,7 +1644,7 @@ impl TypescriptRender {
 
     fn includes(&self) -> String {
         if self.embedded {
-            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
+            format!("{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}\n",
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.injection.embedded.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/index.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/tools/tools.arraybuffer.ts")),
@@ -1678,9 +1678,10 @@ impl TypescriptRender {
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.validator.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.primitives.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.storage.ts")),
-                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/packing.header.ts")),
+                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/packing.middleware.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/packing.ts")),
+                self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/protocol.convertor.ts")),
                 self.get_injectable(include_str!("../../../protocol/implementations/typescript/src/index.ts")),
             )
         } else {

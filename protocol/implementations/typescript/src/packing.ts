@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 import { MessageHeader } from './packing.header';
-
+import { getPackingMiddleware, PackingMiddleware } from './packing.middleware';
 // injectable
 
 export interface IAvailableMessage<T> {
@@ -22,7 +22,7 @@ export abstract class BufferReader<T> {
 
     public abstract getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): T | Error;
 
-    public chunk(buffer: Buffer | ArrayBuffer | ArrayBufferLike): Error[] | undefined {
+    public chunk(buffer: Buffer | ArrayBuffer | ArrayBufferLike, uuid?: string): Error[] | undefined {
         const errors: Error[] = [];
         this._buffer = Buffer.concat([this._buffer, buffer instanceof Buffer ? buffer : Buffer.from(buffer)]);
         do {
@@ -36,11 +36,23 @@ export abstract class BufferReader<T> {
             if (header.signature !== this.signature()) {
                 errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
             } else {
-                const msg = this.getMessage(header, this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len));
-                if (msg instanceof Error) {
-                    errors.push(msg);
+                const body: ArrayBufferLike | Error = (() => {
+                    const middleware: PackingMiddleware | undefined = getPackingMiddleware();
+                    if (middleware instanceof PackingMiddleware) {
+                        return middleware.decode(this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len), header.id, header.sequence, uuid);
+                    } else {
+                        return this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len);
+                    }
+                })();
+                if (body instanceof Error) {
+                    errors.push(body);
                 } else {
-                    this._queue.push(msg);
+                    const msg = this.getMessage(header, body);
+                    if (msg instanceof Error) {
+                        errors.push(msg);
+                    } else {
+                        this._queue.push(msg);
+                    }
                 }
                 this._buffer = this._buffer.slice(MessageHeader.SIZE + header.len);
             }
