@@ -14,19 +14,19 @@ pub mod consumer_identification;
 pub mod consumer_context;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.UserLoginRequest.rs"]
+#[path = "./declarations/observer.UserLogin.rs"]
 pub mod UserLoginObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.UsersRequest.rs"]
+#[path = "./declarations/observer.Users.rs"]
 pub mod UsersObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.MessageRequest.rs"]
+#[path = "./declarations/observer.Message.rs"]
 pub mod MessageObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.MessagesRequest.rs"]
+#[path = "./declarations/observer.Messages.rs"]
 pub mod MessagesObserver;
 /*
 #[allow(non_snake_case)]

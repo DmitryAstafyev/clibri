@@ -101,6 +101,25 @@ group UserLogin {
 
 }
 
+group UserInfo {
+
+    struct Request {
+    }
+
+    struct Accepted {
+        str browser;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
+
 group Users {
 
     struct User {
