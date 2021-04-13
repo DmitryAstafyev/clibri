@@ -14,23 +14,23 @@ pub mod consumer_identification;
 pub mod consumer_context;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.UserLogin.rs"]
+#[path = "./observers/observer.UserLogin.rs"]
 pub mod UserLoginObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.Users.rs"]
+#[path = "./observers/observer.Users.rs"]
 pub mod UsersObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.Message.rs"]
+#[path = "./observers/observer.Message.rs"]
 pub mod MessageObserver;
 
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.Messages.rs"]
+#[path = "./observers/observer.Messages.rs"]
 pub mod MessagesObserver;
 /*
 #[allow(non_snake_case)]
-#[path = "./declarations/observer.event.Disconnected.rs"]
+#[path = "./observers/observer.event.Disconnected.rs"]
 pub mod EventDisconnected;
 */
 use super::{ tools };
