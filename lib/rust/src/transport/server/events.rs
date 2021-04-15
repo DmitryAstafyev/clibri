@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-pub enum ServerEvents {
+pub enum Events {
     Connected(Uuid),
     Disconnected(Uuid),
     Received(Uuid, Vec<u8>),

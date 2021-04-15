@@ -8,9 +8,11 @@ edition = "2018"
 
 [dependencies]
 fiber = { path = "../../../../lib/rust" }
-log = "0.4.8"
-log4rs = "0.11.0"
-bytes = "0.5.5"
+bytes = "*"
 uuid = { version = "0.8.1", features = ["v4"] }
-tungstenite = "0.11.0"
 lazy_static = "*"
+async-tungstenite = "0.13.1"
+async-std = { version = "1.6", features = ["attributes"] }
+async-channel = "1.6.1"
+futures = { version = "0.3.14" }
+
