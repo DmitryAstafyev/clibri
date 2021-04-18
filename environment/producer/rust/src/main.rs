@@ -6,7 +6,7 @@ pub mod producer;
 
 use fiber::logger::LogLevel;
 use fiber_transport_server::server::Server;
-use fiber_transport_server::{ErrorResponse, Request, Response};
+use fiber_transport_server::{ ErrorResponse, Request, Response};
 use producer::UserLoginObserver::{
     Observer as UserLoginObserver,
     ObserverRequest as UserLoginObserverRequest,
@@ -31,7 +31,9 @@ use std::sync::{Arc, RwLock};
 use regex::Regex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
-
+use futures::{
+    executor,
+};
 // use std::thread::spawn;
 
 #[allow(non_upper_case_globals)]
@@ -75,9 +77,10 @@ impl CustomContext {}
 
 type WrappedCustomContext = Arc<RwLock<CustomContext>>;
 
-struct ProducerInstance {}
+struct ProducerInstance {
+}
 
-impl Producer<Server, WrappedCustomContext> for ProducerInstance {
+impl Producer<WrappedCustomContext> for ProducerInstance {
 
     fn disconnected(uuid: Uuid, _ucx: WrappedCustomContext) -> Result<producer::EventDisconnectedBroadcasting, String> {
         match store::users.write() {
@@ -131,10 +134,10 @@ impl Producer<Server, WrappedCustomContext> for ProducerInstance {
 }
 
 #[allow(unused_variables)]
-impl UserLoginObserver for UserLoginObserverRequest {
+impl UserLoginObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::UserLogin::Request,
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: WrappedCustomContext,
     ) -> Result<producer::UserLoginObserver::Conclusion, producer::protocol::UserLogin::Err> {
         Ok(producer::UserLoginObserver::Conclusion::Accept(
@@ -145,7 +148,7 @@ impl UserLoginObserver for UserLoginObserverRequest {
     }
 
     fn Accept<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: UCX,
         request: producer::protocol::UserLogin::Request,
     ) -> Result<UserLoginAcceptBroadcasting, String> {
@@ -155,12 +158,13 @@ impl UserLoginObserver for UserLoginObserverRequest {
                     name: request.username.clone(),
                     uuid: cx.uuid(),
                 });
+                /*
                 if let Err(e) = cx.assign(producer::protocol::Identification::AssignedKey {
                     uuid: Some(cx.uuid().to_string()),
                     auth: Some(true),
                 }, true) {
                     return Err(format!("Fail to assign client due error: {}", e));
-                }
+                }*/
                 let start = SystemTime::now();
                 let tm = start
                     .duration_since(UNIX_EPOCH)
@@ -203,10 +207,10 @@ impl UserLoginObserver for UserLoginObserverRequest {
 
 
 #[allow(unused_variables)]
-impl UsersObserver for UsersObserverRequest {
+impl UsersObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::Users::Request,
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: WrappedCustomContext,
     ) -> Result<producer::protocol::Users::Response, producer::protocol::Users::Err> {
         match store::users.read() {
@@ -229,10 +233,10 @@ impl UsersObserver for UsersObserverRequest {
 }
 
 #[allow(unused_variables)]
-impl MessageObserver for MessageObserverRequest {
+impl MessageObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::Message::Request,
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: WrappedCustomContext,
     ) -> Result<producer::MessageObserver::Conclusion, producer::protocol::Message::Err> {
         let re = Regex::new(r"[<>]").unwrap();
@@ -252,7 +256,7 @@ impl MessageObserver for MessageObserverRequest {
     }
 
     fn Accept<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: UCX,
         request: producer::protocol::Message::Request,
     ) -> Result<MessageAcceptBroadcasting, String> {
@@ -292,10 +296,10 @@ impl MessageObserver for MessageObserverRequest {
 }
 
 #[allow(unused_variables)]
-impl MessagesObserver for MessagesObserverRequest {
+impl MessagesObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::Messages::Request,
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: WrappedCustomContext,
     ) -> Result<producer::protocol::Messages::Response, producer::protocol::Messages::Err> {
         match store::messages.read() {
@@ -322,7 +326,7 @@ impl MessagesObserver for MessagesObserverRequest {
     }
 
     fn Response<UCX: 'static + Sync + Send + Clone>(
-        cx: &dyn producer::consumer_context::Context,
+        cx: &producer::consumer::Cx,
         ucx: UCX,
         request: producer::protocol::Messages::Request,
     ) -> Result<(), String> {
@@ -330,7 +334,7 @@ impl MessagesObserver for MessagesObserverRequest {
         // Remove
     }
 }
-        /*
+/*
 
 #[allow(unused_variables)]
 impl EventDisconnectedController for EventDisconnectedObserver {
@@ -412,63 +416,64 @@ fn main() {
         };
     });
     */
-    let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
-    if let Err(e) = server
-        .handshake(|_: &Request, res: Response| -> Result<Response, ErrorResponse> { Ok(res) })
-    {
-        println!("Fail to assign handshake hadler due error: {}", e);
-    }
-    let ucx = CustomContext {};
-    let producer: ProducerInstance = ProducerInstance {};
-    let _feedback = match producer.listen(server, Arc::new(RwLock::new(ucx))) {
-        Ok(feedback) => loop {
-            match feedback.events.recv() {
-                Ok(m) => match m {
-                    producer::ProducerEvents::Connected((_uuid, _ucx)) => {
-                        println!(">>>>>> Connected");
+    if let Err(e) = executor::block_on(async move {
+        let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
+        let ucx = CustomContext {};
+        let producer: ProducerInstance = ProducerInstance {};
+        let _feedback = match producer.listen(server, Arc::new(RwLock::new(ucx))) {
+            Ok(feedback) => loop {
+                match feedback.events.recv().await {
+                    Ok(m) => match m {
+                        producer::ProducerEvents::Connected((_uuid, _ucx)) => {
+                            println!(">>>>>> Connected");
+                        }
+                        producer::ProducerEvents::ServerDown => {
+                            println!(">>>>>> ServerDown");
+                        }
+                        producer::ProducerEvents::Disconnected(_uuid) => {
+                            println!(">>>>>> Disconnected");
+                        }
+                        producer::ProducerEvents::InternalError(e) => {
+                            println!(">>>>>> InternalError: {}", e);
+                        }
+                        producer::ProducerEvents::EmitError(e) => {
+                            println!(">>>>>> EmitError: {}", e);
+                        }
+                        producer::ProducerEvents::EventError(e) => {
+                            println!(">>>>>> EventError: {}", e);
+                        }
+                        producer::ProducerEvents::EventChannelError(e) => {
+                            println!(">>>>>> EventChannelError: {}", e);
+                        }
+                        producer::ProducerEvents::ConnectionError(e) => {
+                            println!(">>>>>> ConnectionError: {}", e);
+                        }
+                        producer::ProducerEvents::ServerError(e) => {
+                            println!("ServerError: {}", e);
+                        }
+                        producer::ProducerEvents::BroadcastingError(e) => {
+                            println!("BroadcastingError: {}", e);
+                        }
+                        producer::ProducerEvents::Reading(e) => {
+                            println!("Reading: {}", e);
+                        }
+                        producer::ProducerEvents::EventListenError(e) => {
+                            println!("EventListenError: {}", e);
+                        }
+                        producer::ProducerEvents::NotAssignedConsumer(e) => {
+                            println!("NotAssignedConsumer: {}", e);
+                        }
+                    },
+                    Err(e) => {
+                        panic!("Error on events: {:?}", e);
                     }
-                    producer::ProducerEvents::ServerDown => {
-                        println!(">>>>>> ServerDown");
-                    }
-                    producer::ProducerEvents::Disconnected(_uuid) => {
-                        println!(">>>>>> Disconnected");
-                    }
-                    producer::ProducerEvents::InternalError(e) => {
-                        println!(">>>>>> InternalError: {}", e);
-                    }
-                    producer::ProducerEvents::EmitError(e) => {
-                        println!(">>>>>> EmitError: {}", e);
-                    }
-                    producer::ProducerEvents::EventError(e) => {
-                        println!(">>>>>> EventError: {}", e);
-                    }
-                    producer::ProducerEvents::EventChannelError(e) => {
-                        println!(">>>>>> EventChannelError: {}", e);
-                    }
-                    producer::ProducerEvents::ConnectionError(e) => {
-                        println!(">>>>>> ConnectionError: {}", e);
-                    }
-                    producer::ProducerEvents::ServerError(e) => {
-                        println!("ServerError: {}", e);
-                    }
-                    producer::ProducerEvents::BroadcastingError(e) => {
-                        println!("BroadcastingError: {}", e);
-                    }
-                    producer::ProducerEvents::Reading(e) => {
-                        println!("Reading: {}", e);
-                    }
-                    producer::ProducerEvents::EventListenError(e) => {
-                        println!("EventListenError: {}", e);
-                    }
-                    producer::ProducerEvents::NotAssignedConsumer(e) => {
-                        println!("NotAssignedConsumer: {}", e);
-                    }
-                },
-                Err(e) => {
-                    panic!("Error on events: {:?}", e);
                 }
-            }
-        },
-        Err(e) => panic!(e),
-    };
+            },
+            Err(e) => panic!(e),
+        };
+        Ok::<(), String>(())
+    }) {
+        // Error message
+    }
+
 }

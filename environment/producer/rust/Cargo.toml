@@ -8,6 +8,9 @@ fiber = { path = "../../../lib/rust" }
 fiber_transport_server = { path = "../../transport/server/rust" }
 fiber_protocol_rs = { path = "../../../protocol/implementations/rust" }
 uuid = { version = "0.8.1", features = ["v4"] }
-bytes = "0.5.5"
+bytes = "*"
 lazy_static = "*"
 regex = "1"
+async-std = { version = "1.6", features = ["attributes"] }
+async-channel = "1.6.1"
+futures = { version = "0.3.14" }

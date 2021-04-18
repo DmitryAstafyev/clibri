@@ -1,6 +1,16 @@
 #[macro_use]
 extern crate lazy_static;
 
+pub use async_tungstenite::{
+    tungstenite::{
+        handshake::server::{
+            Request,
+            Response,
+            ErrorResponse,
+        },
+        protocol::frame::coding::CloseCode
+    }
+};
 
 #[path = "./server.rs"]
 pub mod server;

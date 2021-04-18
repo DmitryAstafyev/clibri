@@ -47,6 +47,7 @@ use async_tungstenite::{
 };
 use futures::{
     executor,
+    join,
 };
 use std::{
     collections::{
@@ -62,17 +63,27 @@ pub struct Handshake;
 impl HandshakeInterface for Handshake {
 
 }
+#[derive(Clone)]
+pub enum Heartbeat {
+    Stop,
+    Error(String),
+}
 
 pub struct Server {
     addr: String,
     connections: Arc<RwLock<HashMap<Uuid, Connection>>>,
+    heartbeat: (Sender<Heartbeat>, Receiver<Heartbeat>),
 }
 
 impl Interface for Server {
 
-    fn listen(&'static mut self, events: Sender<Events>, messages: Receiver<(Vec<u8>, Option<Uuid>)>) -> Result<(), String> {
+    fn listen(&mut self, events: Sender<Events>, messages: Receiver<(Vec<u8>, Option<Uuid>)>) -> Result<(), String> {
         let addr: String = self.addr.clone();
         let connections = self.connections.clone();
+        let heartbeat = self.heartbeat.1.clone();
+        let (tx_shutdown, rx_shutdown): (Sender<Heartbeat>, Receiver<Heartbeat>) = async_channel::unbounded();
+        let (tx_connection, rx_connection): (Sender<TcpStream>, Receiver<TcpStream>) = async_channel::unbounded();
+        let evns = events.clone();
         spawn(move || {
             if let Err(e) = executor::block_on(async {
                 let listener = match TcpListener::bind(addr).await {
@@ -85,11 +96,11 @@ impl Interface for Server {
                 while let Some(stream) = incoming.next().await {
                     match stream {
                         Ok(stream) => {
-                            match self.add(events.clone(), stream).await {
-                                Ok(uuid) => if let Err(e) = events.send(Events::Connected(uuid)).await {
-                                    tools::logger.err(&format!("Fail to send Events::Connected due error: {}", e));
-                                },
-                                Err(e) => if let Err(e) = events.send(Events::Error(None, format!("{:?}", e).to_string())).await {
+                            if let Err(e) = tx_connection.send(stream).await {
+                                if let Err(e) = events.send(Events::Error(
+                                    None,
+                                    format!("{:?}", e).to_string(),
+                                )).await {
                                     tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
                                 }
                             }
@@ -146,12 +157,89 @@ impl Interface for Server {
                 tools::logger.err(&format!("Fail to start messages channel due error: {:?}", e));
             }
         });
-        Ok(())
+        let heartbeat_loop = async move {
+            loop {
+                if let Ok(reason) = heartbeat.recv().await {
+                    if let Err(e) = tx_shutdown.send(reason.clone()).await {
+                        tools::logger.err(&format!("Fail to send shutdown signal due error: {}", e));
+                    }
+                    match reason {
+                        Heartbeat::Stop => {
+                            return Ok::<(), String>(());
+                        }
+                        Heartbeat::Error(e) => {
+                            return Err::<(), String>(e);
+                        }
+                    }
+                };
+            }
+        };
+        let connections_loop = async move {
+            loop {
+                if let Ok(stream) = rx_connection.recv().await {
+                    match self.add(evns.clone(), stream).await {
+                        Ok(uuid) => if let Err(e) = evns.send(Events::Connected(uuid)).await {
+                            tools::logger.err(&format!("Fail to send Events::Connected due error: {}", e));
+                        },
+                        Err(e) => if let Err(e) = evns.send(Events::Error(None, format!("{:?}", e).to_string())).await {
+                            tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
+                        }
+                    }
+                }
+            }
+            //Ok::<(), String>(())
+        };
+        match executor::block_on(async {
+            join!(heartbeat_loop, connections_loop);
+            Ok::<(), String>(())
+        }) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)
+        }
+        /*
+        match executor::block_on(async move {
+            loop {
+                if let Ok(reason) = heartbeat.recv().await {
+                    if let Err(e) = tx_shutdown.send(reason.clone()).await {
+                        tools::logger.err(&format!("Fail to send shutdown signal due error: {}", e));
+                    }
+                    match reason {
+                        Heartbeat::Stop => {
+                            return Ok::<(), String>(());
+                        }
+                        Heartbeat::Error(e) => {
+                            return Err::<(), String>(e);
+                        }
+                    }
+                };
+                if let Ok(stream) = rx_connection.recv().await {
+                    match self.add(evns.clone(), stream).await {
+                        Ok(uuid) => if let Err(e) = evns.send(Events::Connected(uuid)).await {
+                            tools::logger.err(&format!("Fail to send Events::Connected due error: {}", e));
+                        },
+                        Err(e) => if let Err(e) = evns.send(Events::Error(None, format!("{:?}", e).to_string())).await {
+                            tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
+                        }
+                    }
+                }
+            }
+        }) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e)
+        }*/
     }
 
 }
 
 impl Server {
+
+    pub fn new(addr: String) -> Self {
+        Self {
+            addr,
+            connections: Arc::new(RwLock::new(HashMap::new())),
+            heartbeat: async_channel::unbounded()
+        }
+    }
 
     async fn accept(&self, stream: TcpStream) -> Result<WebSocketStream<TcpStream>, String> {
         match accept_hdr_async(stream, |req: &Request, response: Response|{

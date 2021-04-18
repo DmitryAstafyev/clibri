@@ -1,19 +1,23 @@
-use super::consumer_context::Context;
 use super::consumer_identification::{Identification, Filter};
 use super::{ Protocol, ConsumersChannel };
-use std::sync::mpsc::{Sender};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
-
+use async_channel::{
+    Sender,
+};
+use futures::{
+    executor,
+    Future,
+};
 pub struct Cx {
     uuid: Uuid,
     consumers: Arc<Mutex<Sender<ConsumersChannel>>>,
 }
 
-impl Context for Cx {
-    fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
+impl Cx {
+    pub async fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         match self.consumers.lock() {
-            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendTo((self.uuid.clone(), buffer))) {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendTo((self.uuid.clone(), buffer))).await {
                 Err(e.to_string())
             } else {
                 Ok(())
@@ -22,13 +26,13 @@ impl Context for Cx {
         }
     }
 
-    fn send_to(
+    pub async fn send_to(
         &self,
         buffer: Vec<u8>,
         filter: Filter,
     ) -> Result<(), String> {
         match self.consumers.lock() {
-            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))).await {
                 Err(e.to_string())
             } else {
                 Ok(())
@@ -37,13 +41,13 @@ impl Context for Cx {
         }
     }
 
-    fn uuid(&self) -> Uuid {
+    pub fn uuid(&self) -> Uuid {
         self.uuid.clone()
     }
 
-    fn assign(&self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String> {
+    pub async fn assign(&self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String> {
         match self.consumers.lock() {
-            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Assign((self.uuid.clone(), assigned, overwrite))) {
+            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Assign((self.uuid.clone(), assigned, overwrite))).await {
                 Err(e.to_string())
             } else {
                 Ok(())
@@ -92,9 +96,9 @@ impl Consumer {
         }
     }
 
-    pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
+    pub async fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         match self.sender.lock() {
-            Ok(sender) => if let Err(e) = sender.send((buffer, Some(self.uuid))) {
+            Ok(sender) => if let Err(e) = sender.send((buffer, Some(self.uuid))).await {
                     Err(e.to_string())
                 } else {
                     Ok(())
@@ -103,13 +107,13 @@ impl Consumer {
         }
     }
 
-    pub fn send_if(
+    pub async fn send_if(
         &self,
         buffer: Vec<u8>,
         filter: Filter,
     ) -> Result<bool, String> {
         if self.identification.filter(filter.clone()) {
-            if let Err(e) = self.send(buffer) {
+            if let Err(e) = self.send(buffer).await {
                 Err(e)
             } else {
                 Ok(true)
@@ -119,7 +123,7 @@ impl Consumer {
         }
     }
 
-    pub fn get_cx(&mut self) -> &impl Context {
+    pub fn get_cx(&mut self) -> &Cx {
         &self.cx
     }
 

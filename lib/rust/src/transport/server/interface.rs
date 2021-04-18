@@ -6,6 +6,6 @@ use async_channel::{
 };
 pub trait Interface: Send {
 
-    fn listen(&'static mut self, channel: Sender<Events>, messages: Receiver<(Vec<u8>, Option<Uuid>)>) -> Result<(), String>;
+    fn listen(&mut self, channel: Sender<Events>, messages: Receiver<(Vec<u8>, Option<Uuid>)>) -> Result<(), String>;
 
 }
