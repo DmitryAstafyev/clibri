@@ -1,5 +1,6 @@
 use super::consumer_identification::{Identification, Filter};
-use super::{ Protocol, ConsumersChannel };
+use super::{ Protocol, ConsumersChannel, tools };
+use fiber::logger::{ Logger };
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 use async_channel::{
@@ -97,10 +98,12 @@ impl Consumer {
     }
 
     pub async fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
+        let len = buffer.len();
         match self.sender.lock() {
             Ok(sender) => if let Err(e) = sender.send((buffer, Some(self.uuid))).await {
-                    Err(e.to_string())
+                    Err(tools::logger.err(&format!("{}:: Fail to send buffer {} bytes, due error: {}", self.get_uuid(), len, e)))
                 } else {
+                    tools::logger.debug(&format!("{}:: Has been sent a buffer {} bytes", self.get_uuid(), len));
                     Ok(())
             },
             Err(e) => Err(e.to_string()),

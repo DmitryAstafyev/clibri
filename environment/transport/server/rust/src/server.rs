@@ -1,376 +1,242 @@
 use super::{
+    channel::{Control, Messages},
+    connection::Connection,
+    handshake::Handshake as HandshakeInterface,
     tools,
-    handshake::{
-        Handshake as HandshakeInterface
-    },
-    connection::{
-        Connection
-    },
-    channel::{
-        Messages
-    }
 };
-use fiber:: {
-    server::{
-        interface::Interface,
-        events::Events,
-        errors::Errors,
-    },
+use fiber::{
     logger::Logger,
+    server::{errors::Errors, events::Events, interface::Interface},
 };
-use std::sync::{
-    Arc,
-    RwLock,
-};
-use async_std::{
-    prelude::*,
-    net::{
-        TcpListener,
-        TcpStream
-    }
-};
-use async_channel::{
-    self,
-    Sender,
-    Receiver,
-};
-use async_tungstenite::{
-    accept_hdr_async,
-    WebSocketStream,
-    tungstenite::{
-        handshake::server::{
-            Request,
-            Response,
-        },
-        protocol::frame::coding::CloseCode
-    }
-};
-use futures::{
-    executor,
+use futures::{executor, StreamExt};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use tokio::{
+    io::{
+        AsyncRead,
+        AsyncWrite, //AsyncReadExt,
+                    //AsyncWriteExt
+    },
+    net::{TcpListener, TcpStream},
+    sync::mpsc::{unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
+    task::{spawn, JoinHandle},
     join,
+    runtime::{Runtime},
 };
-use std::{
-    collections::{
-        HashMap
-    }
+use tokio_tungstenite::{
+    accept_hdr_async,
+    tungstenite::{
+        handshake::server::{Request, Response},
+        protocol::frame::coding::CloseCode,
+    },
+    WebSocketStream,
 };
-
 use uuid::Uuid;
-use std::thread::spawn;
 
 pub struct Handshake;
 
-impl HandshakeInterface for Handshake {
-
-}
-#[derive(Clone)]
-pub enum Heartbeat {
-    Stop,
-    Error(String),
-}
+impl HandshakeInterface for Handshake {}
 
 pub struct Server {
     addr: String,
-    connections: Arc<RwLock<HashMap<Uuid, Connection>>>,
-    heartbeat: (Sender<Heartbeat>, Receiver<Heartbeat>),
-}
-
-impl Interface for Server {
-
-    fn listen(&mut self, events: Sender<Events>, messages: Receiver<(Vec<u8>, Option<Uuid>)>) -> Result<(), String> {
-        let addr: String = self.addr.clone();
-        let connections = self.connections.clone();
-        let heartbeat = self.heartbeat.1.clone();
-        let (tx_shutdown, rx_shutdown): (Sender<Heartbeat>, Receiver<Heartbeat>) = async_channel::unbounded();
-        let (tx_connection, rx_connection): (Sender<TcpStream>, Receiver<TcpStream>) = async_channel::unbounded();
-        let evns = events.clone();
-        spawn(move || {
-            if let Err(e) = executor::block_on(async {
-                let listener = match TcpListener::bind(addr).await {
-                    Ok(listener) => listener,
-                    Err(e) => {
-                        return Err(Errors::Create(format!("Fail to start server due error {}", e)));
-                    }
-                };
-                let mut incoming = listener.incoming();
-                while let Some(stream) = incoming.next().await {
-                    match stream {
-                        Ok(stream) => {
-                            if let Err(e) = tx_connection.send(stream).await {
-                                if let Err(e) = events.send(Events::Error(
-                                    None,
-                                    format!("{:?}", e).to_string(),
-                                )).await {
-                                    tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
-                                }
-                            }
-                        },
-                        Err(e) => {
-                            tools::logger.err(&format!("Fail to get stream from incoming due error: {}", e));
-                        }
-                    }
-                }
-                Ok::<(), Errors>(())
-            }) {
-                tools::logger.err(&format!("Error during running TcpListener: {:?}", e));
-            }
-        });
-        spawn(move || {
-            if let Err(e) = executor::block_on(async {
-                loop {
-                    // if shutdown_rx_channel.try_recv().is_ok() {
-                        // We don't care about reasons here
-                    //    break;
-                    //};
-                    match messages.recv().await {
-                        Ok((buffer, uuid)) => match connections.write() {
-                            Ok(mut connections) => {
-                                let len = buffer.len();
-                                if let Some(uuid) = uuid {
-                                    if let Some(connection) = connections.get_mut(&uuid) {
-                                        if let Err(e) = connection.send(buffer).await {
-                                            tools::logger.err(&format!("{}:: fail to send buffer ({} bytes) due error: {}", uuid, len, e));
-                                        } else {
-                                            tools::logger.debug(&format!("{}:: has been sent {} bytes", uuid, len));
-                                        }
-                                    } else {
-                                        tools::logger.warn(&format!("Fail to find connection {} to send buffer ({} bytes) outside", uuid, len));
-                                    }
-                                } else {
-                                    for (uuid, connection) in connections.iter_mut() {
-                                        if let Err(e) = connection.send(buffer.clone()).await {
-                                            tools::logger.err(&format!("Fail to send buffer to {} due error: {}", uuid, e));
-                                        };
-                                    }
-                                }
-                            },
-                            Err(e) => { tools::logger.err(&format!("Fail to extract connections to send buffer due error: {}", e)); },
-                        },
-                        Err(e) => {
-                            tools::logger.warn(&format!("Messages channel empty and closed: {}", e));
-                            break;
-                        }
-                    };
-                }
-                Ok::<(), String>(())
-            }) {
-                tools::logger.err(&format!("Fail to start messages channel due error: {:?}", e));
-            }
-        });
-        let heartbeat_loop = async move {
-            loop {
-                if let Ok(reason) = heartbeat.recv().await {
-                    if let Err(e) = tx_shutdown.send(reason.clone()).await {
-                        tools::logger.err(&format!("Fail to send shutdown signal due error: {}", e));
-                    }
-                    match reason {
-                        Heartbeat::Stop => {
-                            return Ok::<(), String>(());
-                        }
-                        Heartbeat::Error(e) => {
-                            return Err::<(), String>(e);
-                        }
-                    }
-                };
-            }
-        };
-        let connections_loop = async move {
-            loop {
-                if let Ok(stream) = rx_connection.recv().await {
-                    match self.add(evns.clone(), stream).await {
-                        Ok(uuid) => if let Err(e) = evns.send(Events::Connected(uuid)).await {
-                            tools::logger.err(&format!("Fail to send Events::Connected due error: {}", e));
-                        },
-                        Err(e) => if let Err(e) = evns.send(Events::Error(None, format!("{:?}", e).to_string())).await {
-                            tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
-                        }
-                    }
-                }
-            }
-            //Ok::<(), String>(())
-        };
-        match executor::block_on(async {
-            join!(heartbeat_loop, connections_loop);
-            Ok::<(), String>(())
-        }) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e)
-        }
-        /*
-        match executor::block_on(async move {
-            loop {
-                if let Ok(reason) = heartbeat.recv().await {
-                    if let Err(e) = tx_shutdown.send(reason.clone()).await {
-                        tools::logger.err(&format!("Fail to send shutdown signal due error: {}", e));
-                    }
-                    match reason {
-                        Heartbeat::Stop => {
-                            return Ok::<(), String>(());
-                        }
-                        Heartbeat::Error(e) => {
-                            return Err::<(), String>(e);
-                        }
-                    }
-                };
-                if let Ok(stream) = rx_connection.recv().await {
-                    match self.add(evns.clone(), stream).await {
-                        Ok(uuid) => if let Err(e) = evns.send(Events::Connected(uuid)).await {
-                            tools::logger.err(&format!("Fail to send Events::Connected due error: {}", e));
-                        },
-                        Err(e) => if let Err(e) = evns.send(Events::Error(None, format!("{:?}", e).to_string())).await {
-                            tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
-                        }
-                    }
-                }
-            }
-        }) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e)
-        }*/
-    }
-
+    controlls: Arc<RwLock<HashMap<Uuid, UnboundedSender<Control>>>>,
 }
 
 impl Server {
 
     pub fn new(addr: String) -> Self {
-        Self {
-            addr,
-            connections: Arc::new(RwLock::new(HashMap::new())),
-            heartbeat: async_channel::unbounded()
-        }
+        Self { addr, controlls: Arc::new(RwLock::new(HashMap::new()))}
     }
+}
 
-    async fn accept(&self, stream: TcpStream) -> Result<WebSocketStream<TcpStream>, String> {
-        match accept_hdr_async(stream, |req: &Request, response: Response|{
-            Handshake::accept(req, response)
-        }).await {
-            Ok(ws) => Ok(ws),
-            Err(e) => Err(format!("Fail to accept stream due error: {:?}", e)),
-        }
-    }
+impl Interface for Server {
 
-    async fn add(&mut self, events: Sender<Events>, stream: TcpStream) -> Result<Uuid, String> {
-        match self.accept(stream).await {
-            Ok(ws) => {
-                let conn = Connection::new(ws);
-                let uuid = conn.get_uuid();
-                match self.connections.write() {
-                    Ok(mut connections) => {
-                        // Register
-                        let conn = connections.entry(uuid).or_insert(conn);
-                        let (tx_channel, rx_channel): (
-                            Sender<Messages>,
-                            Receiver<Messages>,
-                        ) = async_channel::unbounded();
-                        // Listen
-                        match conn.attach(tx_channel).await {
-                            Ok(_) => {
-                                match self.messages(events, rx_channel, uuid).await {
-                                    Ok(_) => {
-                                        tools::logger.debug(&format!("Active connections: {}", connections.len()));
-                                        Ok(uuid)
-                                    },
-                                    Err(e) => Err(tools::logger.err(&format!("Fail to start listening messages of client {} due error: {}", uuid, e))),
-                                }
-                            }
-                            Err(e) => {
-                                tools::logger.err(&format!("{}:: error on attaching {}", uuid, e));
-                                if conn.close().await.is_err() {
-                                    tools::logger.err(&format!("{}:: fail close connection", uuid));
-                                }
-                                connections.remove(&uuid);
-                                Err(tools::logger.err(&format!("Fail to start listening client {} due error: {}", uuid, e)))
-                            }
-                        }
-                    },
-                    Err(e) => Err(tools::logger.err(&format!("Fail get connections due error: {}", e))),
-                }
+    fn listen(
+        &mut self,
+        events: UnboundedSender<Events>,
+        mut sending: UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
+    ) -> Result<(), String> {
+        let rt  = match Runtime::new() {
+            Ok(rt) => rt,
+            Err(e) => {
+                return Err(tools::logger.err(&format!("Fail to create runtime executor. Error: {}", e)))
             },
-            Err(e) => Err(tools::logger.err(&format!("Fail accept connection due error: {}", e)))
-        }
-    }
-
-    async fn messages(&self, events: Sender<Events>, messages: Receiver<Messages>, uuid: Uuid) -> Result<(), String> {
-        let connections = self.connections.clone();
-        spawn(move || {
-            if let Err(e) = executor::block_on(async {
-                let mut disconnected: Option<(Uuid, Option<CloseCode>)> = None;
+        };
+        rt.block_on(async move {
+            tools::logger.verb("Runtime is created");
+            let addr: String = self.addr.clone();
+            let events_cl = events.clone();
+            let send_event = move |event: Events| {
+                if let Err(e) = events_cl.send(event) {
+                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                }
+            };
+            let (tx_tcp_stream, mut rx_tcp_stream): (
+                UnboundedSender<TcpStream>,
+                UnboundedReceiver<TcpStream>,
+            ) = unbounded_channel();
+            let streams_task: JoinHandle<Result<(), Errors>> = spawn(async move {
+                tools::logger.verb("[task: streams]:: started");
+                let listener = match TcpListener::bind(addr).await {
+                    Ok(listener) => listener,
+                    Err(e) => {
+                        return Err(Errors::Create(format!(
+                            "Fail to start server due error {}",
+                            e
+                        )));
+                    }
+                };
+                send_event(Events::Ready);
                 loop {
-                    let close = |uuid: Uuid, code: Option<CloseCode>| {
-                        Self::close(connections.clone(), uuid, code)
+                    let stream = match listener.accept().await {
+                        Ok((stream, _addr)) => {
+                            // TODO: middleware to confirm acception
+                            stream
+                        }
+                        Err(e) => {
+                            send_event(Events::ServerError(Errors::AcceptStream(
+                                tools::logger.warn(&format!("Cannot accept connection. Error: {}", e)),
+                            )));
+                            continue;
+                        }
                     };
-                    match messages.recv().await {
-                        Ok(msg) => match msg {
-                            Messages::Binary { uuid, buffer } => if let Err(e) = events.send(Events::Received(uuid, buffer)).await {
-                                tools::logger.err(&format!("Fail to send Events::Received due error: {}", e));
-                            } else {
-                                tools::logger.debug(&format!("{}:: [Messages::Binary] event is gotten", uuid));
-                            },
-                            Messages::Error { uuid, error } => if let Err(e) = events.send(Events::Error(
-                                Some(uuid),
-                                format!("{:?}", error).to_string(),
-                            )).await {
-                                tools::logger.err(&format!("Fail to send Events::Error due error: {}", e));
-                            } else {
-                                tools::logger.debug(&format!("{}:: [Messages::Error] event is gotten", uuid));
-                            },
-                            Messages::Disconnect { uuid, code } => {
-                                disconnected = Some((uuid, code));
-                                if let Err(e) = events.send(Events::Disconnected(uuid)).await {
-                                    tools::logger.err(&format!("{}:: Fail to send Events::Disconnected due error: {}", uuid, e));
-                                } else {
-                                    tools::logger.debug(&format!("{}:: [Messages::Disconnect] event is gotten", uuid));
-                                }
-                                if close(uuid, code).await.is_err() {
-                                    tools::logger.err(&format!("{}:: connection isn't closed", uuid));
-                                }
-                            },
+                    if let Err(e) = tx_tcp_stream.send(stream) {
+                        send_event(Events::ServerError(Errors::AcceptStream(
+                            tools::logger.warn(&format!("Cannot share stream. Error: {}", e)),
+                        )));
+                    }
+                    break;
+                }
+                Ok(())
+            });
+            let events_cl = events.clone();
+            let send_event = move |event: Events| {
+                if let Err(e) = events_cl.send(event) {
+                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                }
+            };
+            let controlls = self.controlls.clone();
+            let connection_events = events.clone();
+            let (tx_messages, mut rx_messages): (
+                UnboundedSender<Messages>,
+                UnboundedReceiver<Messages>,
+            ) = unbounded_channel();
+            let accepting_task: JoinHandle<Result<(), Errors>> = spawn(async move {
+                tools::logger.verb("[task: accepting]:: started");
+                while let Some(stream) = rx_tcp_stream.recv().await {
+                    tools::logger.debug("New stream has been gotten");
+                    let ws = match accept_hdr_async(stream, |req: &Request, response: Response| {
+                        Handshake::accept(req, response)
+                    })
+                    .await
+                    {
+                        Ok(ws) => ws,
+                        Err(e) => {
+                            tools::logger.warn(&format!("Fail to accept stream due error: {:?}", e));
+                            continue;
+                        }
+                    };
+                    tools::logger.debug("Connection has been accepted");
+                    let uuid = Uuid::new_v4();
+                    let control = match Connection::new(uuid).attach(ws, connection_events.clone(), tx_messages.clone()).await {
+                        Ok(control) => control,
+                        Err(e) => {
+                            send_event(Events::ServerError(Errors::CreateWS(
+                                tools::logger
+                                    .warn(&format!("Cannot create ws connection. Error: {}", e)),
+                            )));
+                            continue;
+                        }
+                    };
+                    match controlls.write() {
+                        Ok(mut controlls) => {
+                            controlls.entry(uuid).or_insert(control);
+                            tools::logger.debug("Controll of connection has been added");
+                            send_event(Events::Connected(uuid.clone()));
                         },
                         Err(e) => {
-                            if let Some((uuid, code)) = disconnected {
-                                tools::logger.debug(&format!("{}:: closing receiver thread. Code: {:?}", uuid, code));
-                            } else {
-                                tools::logger.err(&format!("Fail to receive connection message due error: {}", e));
-                                if close(uuid, None).await.is_err() {
-                                    tools::logger.err(&format!("{}:: connection isn't closed", uuid));
-                                }
-                            }
-                            break;
+                            send_event(Events::ServerError(Errors::CreateWS(
+                                tools::logger.err(&format!("Fail get controlls due error: {}", e)),
+                            )));
+                            continue;
                         }
+                    };
+                }
+                Ok(())
+            });
+            let controlls = self.controlls.clone();
+            let events_cl = events.clone();
+            let send_event = move |event: Events| {
+                if let Err(e) = events_cl.send(event) {
+                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                }
+            };
+            let messages_task: JoinHandle<Result<(), Errors>> = spawn(async move {
+                tools::logger.verb("[task: messages]:: started");
+                while let Some(msg) = rx_messages.recv().await {
+                    match msg {
+                        Messages::Binary { uuid, buffer } => send_event(Events::Received(uuid, buffer)),
+                        Messages::Disconnect { uuid, code } => {
+                            match controlls.write() {
+                                Ok(mut controlls) => {
+                                    if let Some(_control) = controlls.remove(&uuid) {
+                                        tools::logger.debug(&format!("{}:: Channel of connection has been removed", uuid));
+                                        send_event(Events::Disconnected(uuid.clone()));
+                                    } else {
+                                        tools::logger.err(&format!("{}:: Fail to find channel of connection to remove it", uuid));
+                                    }
+                                },
+                                Err(e) => send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Cannot get access to controllers. Error: {}", uuid, e)))),
+                            };
+                        },
+                        Messages::Error { uuid, error } => send_event(Events::Error(Some(uuid), format!("{:?}", error).to_string()))
                     }
                 }
-                Ok::<(), String>(())
-            }) {
-                tools::logger.err(&format!("Fail to start listen messages of connection {} message due error: {}", uuid, e));
-            }
+                Ok(())
+            });
+            let controlls = self.controlls.clone();
+            let events_cl = events.clone();
+            let send_event = move |event: Events| {
+                if let Err(e) = events_cl.send(event) {
+                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                }
+            };
+            let sender_task: JoinHandle<Result<(), Errors>> = spawn(async move {
+                tools::logger.verb("[task: sender]:: started");
+                while let Some((buffer, uuid)) = sending.recv().await {
+                    match controlls.write() {
+                        Ok(mut controlls) => {
+                            if let Some(uuid) = uuid {
+                                if let Some(control) = controlls.get_mut(&uuid) {
+                                    if let Err(e) = control.send(Control::Send(buffer)) {
+                                        send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e))))
+                                    }
+                                }
+                            } else {
+                                for (uuid, control) in controlls.iter_mut() {
+                                    if let Err(e) = control.send(Control::Send(buffer.clone())) {
+                                        send_event(Events::Error(Some(*uuid), tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e))))
+                                    }
+                                }
+                            }               
+                        },
+                        Err(e) => {
+                            send_event(Events::Error(None, tools::logger.err(&format!("Cannot get access to controllers. Error: {}", e))));
+                            break;
+                        },
+                    };
+                }
+                Ok(())
+            });
+
+
+            join!(
+                streams_task,
+                accepting_task,
+                messages_task,
+                sender_task
+            );
         });
         Ok(())
     }
-
-    async fn close(connections: Arc<RwLock<HashMap<Uuid, Connection>>>, uuid: Uuid, code: Option<CloseCode>) -> Result<(), String> {
-        match connections.write() {
-            Ok(mut connections) => {
-                if let Some(mut connection) = connections.remove(&uuid) {
-                    if if let Some(code) = code {
-                        code != CloseCode::Away
-                    } else {
-                        true
-                    } {
-                        if let Err(e) = connection.close().await {
-                            return Err(tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e)));
-                        } else {
-                            tools::logger.debug(&format!("{}:: connection is closed", uuid));
-                        }
-                    }
-                } else {
-                    return Err(tools::logger.warn(&format!("{}:: Fail to find connection to close it", uuid)));
-                }
-                tools::logger.debug(&format!("Active connections: {}", connections.len()));
-                Ok(())
-            },
-            Err(e) => Err(tools::logger.err(&format!("{}:: Fail to close connection. No access to connections: {}", uuid, e))),
-        }
-    }
-
 }

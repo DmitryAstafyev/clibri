@@ -1,181 +1,202 @@
 use super::{
-    channel::{self},
-    channel::{
-        Messages
-    },
-    tools
+    channel::{Control, Messages, Error as ChannelError},
+    tools,
 };
-use async_tungstenite::{
-    WebSocketStream,
-    tungstenite::{
-        protocol::{
-            Message
-        },
-        protocol::{
-            CloseFrame
-        },
-        error::{
-            Error
-        }
-    }
+use fiber::{
+    logger::Logger,
+    server::{errors::Errors, events::Events, interface::Interface},
 };
-use async_std::{
-    prelude::*,
+use futures::{ SinkExt, StreamExt};
+use tokio::{
     net::{
         TcpStream
-    }
+    },
+    sync::mpsc::{
+        unbounded_channel,
+        Receiver,
+        Sender,
+        UnboundedReceiver,
+        UnboundedSender
+    },
+    task::{
+        spawn,
+        JoinHandle
+    },
+    select,
 };
-use std::sync::{
-    Arc,
-    RwLock,
-};
-use async_channel::{
-    Sender,
-};
-use fiber:: {
-    logger::Logger,
+use tokio_tungstenite::{
+    tungstenite::{
+        error::{
+            Error,
+            ProtocolError,
+        },
+        protocol::CloseFrame,
+        protocol::Message
+    },
+    WebSocketStream,
 };
 use uuid::Uuid;
-use std::io::{self};
-use futures::{
-    SinkExt
-};
+
+enum State {
+    DisconnectByClient(CloseFrame<'static>),
+    DisconnectByClientWithError(String),
+    DisconnectByServer,
+    Error(ChannelError),
+}
 
 pub struct Connection {
     uuid: Uuid,
-    socket: Arc<RwLock<WebSocketStream<TcpStream>>>,
+    // socket: Arc<RwLock<WebSocketStream<TcpStream>>>,
+    // control: Option<Sender<Control>>,
 }
 
 impl Connection {
-
-    pub fn new(socket: WebSocketStream<TcpStream>) -> Self {
-        Connection {
-            uuid: Uuid::new_v4(),
-            socket: Arc::new(RwLock::new(socket))
-        }
+    pub fn new(uuid: Uuid) -> Self {
+        Self { uuid }
     }
 
-    pub fn get_uuid(&self) -> Uuid {
-        self.uuid
-    }
-
-    pub async fn attach (
+    pub async fn attach(
         &mut self,
-        channel: Sender<Messages>,
-    ) -> Result<(), String> {
-        let socket = self.socket.clone();
+        mut ws: WebSocketStream<TcpStream>,
+        events: UnboundedSender<Events>,
+        messages: UnboundedSender<Messages>,
+    ) -> Result<UnboundedSender<Control>, String> {
+        let (tx_control, mut rx_control): (UnboundedSender<Control>, UnboundedReceiver<Control>) =
+            unbounded_channel();
         let uuid = self.uuid.clone();
-        tools::logger.debug(&format!("{}:: start listening client", uuid));
-        match socket.write() {
-            Ok(mut socket) => {
-                let mut connection_error: Option<channel::Error> = None;
-                let mut disconnect_frame: Option<CloseFrame> = None;
-                while let Some(msg) = socket.next().await {
-                    match msg {
-                        Ok(msg) => {
-                            if msg.is_binary() {
-                                tools::logger.verb(&format!("{}:: binary data {:?}", uuid, msg));
-                            }
-                            match msg {
-                                Message::Binary(buffer) => {
-                                    match channel.send(Messages::Binary {
-                                        uuid,
-                                        buffer,
-                                    }).await {
-                                        Ok(_) => {},
-                                        Err(e) => {
-                                            tools::logger.err(&format!("{}:: fail to send data to session due error: {}", uuid, e));
-                                            connection_error = Some(channel::Error::Channel(format!("{}", e)));
-                                        },
-                                    };
-                                },
-                                Message::Close(close_frame) => {
-                                    if let Some(frame) = close_frame {
-                                        disconnect_frame = Some(frame);
-                                    }
-                                },
-                                _ => { 
-                                    tools::logger.err(&format!("{}:: expected only binary data", uuid));
-                                    // break;
-                                },
-                            }
-
-                        },
-                        Err(e) => match e {
-                            Error::Io(ref err) if err.kind() == io::ErrorKind::WouldBlock => {
-                                // No need to do something. There are just no data to read
-                                // ????
-                            },
-                            err => {
-                                connection_error = Some(channel::Error::ReadSocket(err.to_string()));
-                                tools::logger.err(&format!("{}:: fail read message due error: {}", uuid, err));
+        let mut state: Option<State> = None;
+        let incomes_task_events = events.clone();
+        let send_event = move |event: Events| {
+            if let Err(e) = incomes_task_events.send(event) {
+                tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+            }
+        };
+        let send_message = move |msg: Messages| {
+            match messages.send(msg) {
+                Ok(_) => {},
+                Err(e) => {
+                    if let Err(e) = events.send(Events::ConnectionError(
+                        Some(uuid.clone()),
+                        Errors::FailSendBack(
+                            tools::logger.warn(&format!("{}:: Fail to send data back to server. Error: {}", uuid, e))
+                        ),
+                    )) {
+                        tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                    }
+                },
+            };
+        };
+        let incomes_task = spawn(async move {
+            loop {
+                select! {
+                    msg = ws.next() => {
+                        let msg = if let Some(msg) = msg {
+                            msg
+                        } else {
+                            continue;
+                        };
+                        let msg = match msg {
+                            Ok(msg) => msg,
+                            Err(e) => {
+                                match e {
+                                    Error::Protocol(ref e) if e == &ProtocolError::ResetWithoutClosingHandshake => {
+                                        state = Some(State::DisconnectByClientWithError(tools::logger.debug(&format!("{}:: Client disconnected without closing handshake", uuid))));
+                                    },
+                                    _ => {
+                                        let e = tools::logger.warn(&format!("{}:: Cannot get message. Error: {:?}", uuid, e));
+                                        send_event(Events::ConnectionError(
+                                            Some(uuid.clone()),
+                                            Errors::InvalidMessage(e.clone()),
+                                        ));
+                                        state = Some(State::Error(ChannelError::ReadSocket(e)));
+                                    },
+                                };
                                 break;
                             }
+                        };
+                        match msg {
+                            Message::Text(_) => {
+                                tools::logger.warn(&format!("{}:: has been gotten not binnary data", uuid));
+                                send_event(Events::ConnectionError(
+                                    Some(uuid.clone()),
+                                    Errors::NonBinaryData,
+                                ));
+                                continue;
+                            },
+                            Message::Binary(buffer) => {
+                                tools::logger.verb(&format!("{}:: binary data {:?}", uuid, buffer));
+                                send_message(Messages::Binary {
+                                    uuid,
+                                    buffer,
+                                });
+                            },
+                            Message::Ping(_) | Message::Pong(_) => {
+                                tools::logger.warn(&format!("{}:: Ping / Pong", uuid));
+                            },
+                            Message::Close(close_frame) => {
+                                if let Some(frame) = close_frame {
+                                    state = Some(State::DisconnectByClient(frame));
+                                    break;
+                                }
+                            }
+                        }
+                    },
+                    cmd = rx_control.recv() => {
+                        let cmd = if let Some(cmd) = cmd {
+                            cmd
+                        } else {
+                            continue;
+                        };
+                        match cmd {
+                            Control::Send(buffer) => {
+                                if let Err(e) = ws.send(Message::from(buffer)).await {
+                                    state = Some(State::Error(ChannelError::WriteSocket(tools::logger.err(&format!("{}:: Cannot send data to client. Error: {}", uuid, e)))));
+                                    break;
+                                }
+                            },
+                            Control::Disconnect => {
+                                state = Some(State::DisconnectByServer);
+                                break;
+                            },
+                        }
+                    } 
+                };
+            }
+            tools::logger.debug(&format!("{}:: exit from socket listening loop.", uuid));
+            if let Some(state) = state {
+                match state {
+                    State::DisconnectByServer => {
+                        send_message(Messages::Disconnect { uuid, code: None });
+                    },
+                    State::DisconnectByClient(frame) => {
+                        send_message(Messages::Disconnect { uuid, code: Some(frame.code) });
+                    },
+                    State::DisconnectByClientWithError(e) => {
+                        send_message(Messages::Disconnect { uuid, code: None });
+                    },
+                    State::Error(error) => {
+                        send_message(Messages::Error { uuid, error });
+                    },
+                };
+            }
+            match ws.close(None).await {
+                Ok(()) => {},
+                Err(e) => {
+                    match e {
+                        Error::AlreadyClosed | Error::ConnectionClosed => {
+                            tools::logger.debug(&format!("{}:: connection is already closed", uuid));
+                        },
+                        _ => {
+                            send_event(Events::ConnectionError(
+                                Some(uuid.clone()),
+                                Errors::CannotClose(tools::logger.err(&format!("{}:: fail to close connection", uuid))),
+                            ));
                         }
                     }
                 }
-                tools::logger.debug(&format!("{}:: exit from socket listening loop.", uuid));
-                if let Some(error) = connection_error {
-                    match channel.send(Messages::Error { uuid, error }).await {
-                        Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
-                        Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
-                    };
-                }
-                let code = if let Some(f) = disconnect_frame {
-                    Some(f.code)
-                } else {
-                    None
-                };
-                match channel.send(Messages::Disconnect { uuid, code }).await {
-                    Ok(_) => tools::logger.debug(&format!("{}:: client would be disconnected", uuid)),
-                    Err(e) => tools::logger.err(&format!("{}:: fail to notify server about disconnecting due error: {}", uuid, e)),
-                };
-                tools::logger.debug(&format!("{}:: closing socket thread", uuid));
-            },
-            Err(e) => {
-                tools::logger.warn(&format!("{}:: probably socket is busy; cannot get access due error: {}", uuid, e));
-            }
-        };
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub async fn send(&mut self, buffer: Vec<u8>) -> Result<(), String> {
-        let socket = self.socket.clone();
-        tools::logger.debug(&format!("{}:: try to get access to socket", self.uuid));
-        let result = match socket.write() {
-            Ok(mut socket) => {
-                tools::logger.debug(&format!("{}:: access to socket has been gotten", self.uuid));
-                match socket.send(Message::from(buffer)).await {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(format!("{}:: fail to send message due error: {}", self.uuid, e)),
-                }
-            },
-            Err(e) => {
-                tools::logger.err(&format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e));   
-                Err(format!("{}:: probably socket is busy; cannot get access due error: {}", self.uuid, e))
-            }
-        };
-        result
-    }
-
-    pub async fn close(&mut self) -> Result<(), String> {
-        match self.socket.write() {
-            Ok(mut socket) => {
-                tools::logger.debug(&format!("{}:: would close connection", self.uuid));
-                match socket.close(None).await {
-                    Ok(()) => Ok(()),
-                    Err(_) => {
-                        tools::logger.err(&format!("{}:: fail to close connection", self.uuid));   
-                        Err("Fail to close connection".to_owned())
-                    }
-                }
-            },
-            Err(e) => {
-                tools::logger.err(&format!("{}:: probably socket is busy; fail to close connection due error: {}", self.uuid, e));   
-                Err(format!("{}:: probably socket is busy; cannot fail to close connection due error: {}", self.uuid, e))
-            }
-        }
+            };
+        });
+        Ok(tx_control)
     }
 
 }

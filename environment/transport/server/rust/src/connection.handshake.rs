@@ -1,4 +1,4 @@
-use async_tungstenite::{
+use tokio_tungstenite::{
     tungstenite::{
         handshake::server::{
             Request,

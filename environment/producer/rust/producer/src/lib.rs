@@ -272,19 +272,28 @@ where
         });
         let feedback = tx_feedback.clone();
         spawn(move || {
-            if let Err(e) = executor::block_on(async move {
-                match server.listen(tx_channel, sender_rx_channel) {
-                    Ok(()) => if let Err(e) = feedback.send(ProducerEvents::ServerDown).await {
-                        tools::logger.warn(&format!("{}", e));
-                    },
-                    Err(e) => if let Err(e) = feedback.send(ProducerEvents::ServerError(e)).await {
-                        tools::logger.err(&format!("{}", e));
+            match server.listen(tx_channel, sender_rx_channel) {
+                Ok(()) => {
+                    if let Err(e) = executor::block_on(async move {
+                        if let Err(e) = feedback.send(ProducerEvents::ServerDown).await {
+                            tools::logger.warn(&format!("{}", e));
+                        }
+                        Ok::<(), String>(())
+                    }) {
+                        // TODO: Error message
                     }
-                };
-                Ok::<(), String>(())
-            }) {
-                // TODO: Error message
-            }
+                },
+                Err(e) => {
+                    if let Err(e) = executor::block_on(async move {
+                        if let Err(e) = feedback.send(ProducerEvents::ServerError(e)).await {
+                            tools::logger.err(&format!("{}", e));
+                        }
+                        Ok::<(), String>(())
+                    }) {
+                        // TODO: Error message
+                    }
+                }
+            };
         });
         let feedback = tx_feedback.clone();
         let ucx = ucx.clone();
@@ -450,6 +459,7 @@ where
                                                             Ok(buffer) => if let Err(e) = consumer.send(buffer).await {
                                                                 Err(e)
                                                             } else {
+                                                                tools::logger.debug(&format!("{}:: identification response has been sent", uuid));
                                                                 Ok(())
                                                             },
                                                             Err(e) => Err(e),
