@@ -90,6 +90,7 @@ impl Interface for Server {
                 loop {
                     let stream = match listener.accept().await {
                         Ok((stream, _addr)) => {
+                            tools::logger.warn(&format!("Getting request to connect from: {}", _addr));
                             // TODO: middleware to confirm acception
                             stream
                         }
@@ -104,8 +105,8 @@ impl Interface for Server {
                         send_event(Events::ServerError(Errors::AcceptStream(
                             tools::logger.warn(&format!("Cannot share stream. Error: {}", e)),
                         )));
+                        break;
                     }
-                    break;
                 }
                 Ok(())
             });
