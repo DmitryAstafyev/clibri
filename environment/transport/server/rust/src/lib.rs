@@ -283,7 +283,7 @@ mod test {
             tx_client_starter
         };
         let mut starters: Vec<mpsc::Sender<()>> = vec![];
-        let clients: u32 = 10;
+        let clients: u32 = 100;
         for n in 0..clients {
             // std::thread::sleep(Duration::from_millis(1000));
             starters.push(client_factory());
