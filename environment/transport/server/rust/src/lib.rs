@@ -15,6 +15,9 @@ pub use tokio_tungstenite::{
 #[path = "./server.rs"]
 pub mod server;
 
+#[path = "./server.stat.rs"]
+pub mod stat;
+
 #[path = "./connection.handshake.rs"]
 pub mod handshake;
 
@@ -29,7 +32,7 @@ pub mod tools {
     use fiber::logger::{ DefaultLogger };
 
     lazy_static! {
-        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(5 /* VERBOSE */));
+        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(5 /* 5 VERBOSE */));
     }
 
 }
@@ -40,7 +43,7 @@ mod test {
     use std::sync::{Arc, RwLock};
     use fiber::{
         logger::Logger,
-        server::{errors::Errors, events::Events, interface::Interface},
+        server::{errors::Errors, events::Events, interface::Interface, control::Control},
     };
     use tokio::{
         io::{
@@ -95,6 +98,10 @@ mod test {
             UnboundedSender<(Vec<u8>, Option<Uuid>)>,
             UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
         ) = unbounded_channel();
+        let (tx_control, mut rx_control): (
+            UnboundedSender<Control>,
+            UnboundedReceiver<Control>,
+        ) = unbounded_channel();
         let (tx_status, mut rx_status): (
             mpsc::Sender<ClientStatus>,
             mpsc::Receiver<ClientStatus>,
@@ -115,9 +122,10 @@ mod test {
             executor::block_on(async move {
                 tools::logger.verb("[T] starting server");
                 let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
-                if let Err(e) = server.listen(tx_events, rx_sender) {
+                if let Err(e) = server.listen(tx_events, rx_sender, Some(rx_control)) {
                     tools::logger.verb(&format!("[T] fail to create server: {}", e));
                 }
+                server.print_stat();
             });
         });
         let stat_sr = stat.clone();
@@ -154,7 +162,7 @@ mod test {
                             if let Err(e) = tx_sender.send((buffer, Some(uuid.clone()))) {
                                 tools::logger.err(&format!("[T] fail to send data to connection {}", uuid));
                             } else {
-                                tools::logger.err(&format!("[T] has been sent data to {}", uuid));
+                                tools::logger.verb(&format!("[T] has been sent data to {}", uuid));
                             }
                         },
                         Events::Error(uuid, err) => {
@@ -283,7 +291,7 @@ mod test {
             tx_client_starter
         };
         let mut starters: Vec<mpsc::Sender<()>> = vec![];
-        let clients: u32 = 100;
+        let clients: u32 = 2;
         for n in 0..clients {
             // std::thread::sleep(Duration::from_millis(1000));
             starters.push(client_factory());
@@ -299,7 +307,7 @@ mod test {
                 break;
             }
         }
-        std::thread::sleep(Duration::from_millis(1000));
+        // std::thread::sleep(Duration::from_millis(500));
 
         println!("==========================================================================");
         match stat.read() {
@@ -314,6 +322,14 @@ mod test {
             Err(e) => {}
         };
         println!("==========================================================================");
+        std::thread::sleep(Duration::from_millis(1000));
+        thread::spawn(move || {
+            executor::block_on(async move {
+                tx_control.send(Control::Shutdown);
+            });
+        });
+        std::thread::sleep(Duration::from_millis(1000));
+
         Ok(())
     }
 
