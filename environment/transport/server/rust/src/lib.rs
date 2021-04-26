@@ -32,7 +32,7 @@ pub mod tools {
     use fiber::logger::{ DefaultLogger };
 
     lazy_static! {
-        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(5 /* 5 VERBOSE */));
+        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(1 /* 5 VERBOSE */));
     }
 
 }
@@ -292,7 +292,7 @@ mod test {
         };
         let mut starters: Vec<mpsc::Sender<()>> = vec![];
         let clients: u32 = 2;
-        for n in 0..clients {
+        for _ in 0..clients {
             // std::thread::sleep(Duration::from_millis(1000));
             starters.push(client_factory());
         }

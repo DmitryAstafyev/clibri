@@ -67,7 +67,19 @@ impl Stat {
 
 impl fmt::Display for Stat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "- connecting: {}\n- connected: {}\n- disconnected: {}\n- errors,: {}\n- recieved_bytes: {}\n- recieved_packages: {}\n- sent_bytes: {}\n- sent_packages: {}\n- alive: {}",
+        write!(f, "\
+==== Server Stat ==========================
+- connecting:       {} attempts
+- connected:        {} clients
+- disconnected:     {} clients
+- errors:           {} has been gotten
+- recieved:         {} bytes
+- recieved:         {} packages
+- sent:             {} bytes
+- sent:             {} packages
+- alive:            {} clients
+===========================================
+",
             self.connecting,
             self.connected,
             self.disconnected,
