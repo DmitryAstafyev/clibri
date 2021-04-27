@@ -5,17 +5,12 @@ use fiber_transport_server::server::Server;
 use std::sync::{Arc, RwLock};
 use fiber::{
     logger::Logger,
-    server::{errors::Errors, events::Events, interface::Interface, control::Control},
+    server::{events::Events, interface::Interface, control::Control},
 };
 use tokio::{
-    io::{
-        AsyncRead,
-        AsyncWrite,
-    },
-    net::{TcpListener, TcpStream},
-    sync::mpsc::{unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
-    join,
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
     select,
+    join,
     runtime::{Runtime},
     task::spawn,
     time::{sleep, Duration},
@@ -58,35 +53,183 @@ pub mod tools {
     use fiber::logger::{ DefaultLogger };
 
     lazy_static! {
-        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(1 /* 5 VERBOSE */));
+        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(2 /* 5 VERBOSE */));
     }
 
 }
 
+const CLIENTS: usize = 1;
+
+async fn create_client(
+    status: mpsc::Sender<ClientStatus>,
+    stat: Arc<RwLock<Stat>>,
+    starter: mpsc::Receiver<()>
+) {
+    tools::logger.verb("[T] client: starting client");
+    let (ws_stream, _) = match connect_async("ws://127.0.0.1:8080").await {
+        Ok(res) => res,
+        Err(e) => {
+            status.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: failed to connect: {}", e)))).expect("ClientStatus should be sent");
+            return;
+        }
+    };
+    tools::logger.verb("[T] handshake has been successfully completed");
+    let (tx_shutdown_writer, mut rx_shutdown_writer): (
+        UnboundedSender<()>,
+        UnboundedReceiver<()>,
+    ) = unbounded_channel();
+    let (tx_shutdown_sender, mut rx_shutdown_sender): (
+        UnboundedSender<()>,
+        UnboundedReceiver<()>,
+    ) = unbounded_channel();
+    let client_status_rd = status.clone();
+    let (mut write, mut read) = ws_stream.split();
+    let reader = spawn(async move {
+        tools::logger.verb("[T] client: reader is created");
+        while let Some(msg) = read.next().await {
+            let data = msg.unwrap().into_data();
+            tools::logger.verb(&format!("[T] income data: {:?}", data));
+            break;
+        }
+        tx_shutdown_writer.send(()).expect("Shutdown writer should be sent");
+        tx_shutdown_sender.send(()).expect("Shutdown sender should be sent");
+        tools::logger.verb("[T] client: reader is destroyed");
+    });
+    let (tx_sender_from_client, mut rx_sender_from_client): (
+        UnboundedSender<Vec<u8>>,
+        UnboundedReceiver<Vec<u8>>,
+    ) = unbounded_channel();
+    let client_status_wr = status.clone();
+    let writer = spawn(async move {
+        tools::logger.verb("[T] client: writer is created");
+        while let Some(buffer) = rx_sender_from_client.recv().await {
+            if let Err(e) = write.send(Message::Binary(buffer)).await {
+                client_status_wr.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: fail to send data: {}", e)))).expect("ClientStatus should be sent");
+                return;
+            }
+        }
+        rx_shutdown_writer.recv().await;
+        tools::logger.verb("[T] client: writer is destroyed");
+    });
+    let client_status_sd = status.clone();
+    let stat_sw = stat.clone();
+    let sender_from_client = spawn(async move {
+        if let Err(e) = starter.recv() {
+            client_status_sd.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: fail recieve from starter channel: {}", e)))).expect("ClientStatus should be sent");
+            return;
+        }
+        tools::logger.verb("[T] client: sender is created");
+        let buffer: Vec<u8> = vec![0u8, 1u8, 2u8, 3u8, 4u8];
+        if let Err(e) = tx_sender_from_client.send(buffer) {
+            client_status_sd.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: failed to send data: {}", e)))).expect("ClientStatus should be sent");
+            return;
+        } else {
+            tools::logger.verb("[T] client: data has been sent");
+            match stat_sw.write() {
+                Ok(mut stat) => stat.sent += 1,
+                Err(_) => { tools::logger.err("[T] cannot write stat"); },
+            };
+        }
+        rx_shutdown_sender.recv().await;
+        tools::logger.verb("[T] client: sender is destroyed");
+    });
+    match stat.write() {
+        Ok(mut stat) => stat.created += 1,
+        Err(_) => { tools::logger.err("[T] cannot write stat"); },
+    };
+    let _res = join!(
+        reader,
+        writer,
+        sender_from_client,
+    );
+    match stat.write() {
+        Ok(mut stat) => stat.destroyed += 1,
+        Err(_) => { tools::logger.err("[T] cannot write stat"); },
+    };
+    client_status_rd.send(ClientStatus::Done).expect("ClientStatus should be sent");
+    tools::logger.verb("[T] client: done");
+}
+
+async fn create_events_listener(
+    mut rx_events: UnboundedReceiver<Events>,
+    tx_server_state: mpsc::Sender<ServerState>,
+    tx_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
+    stat: Arc<RwLock<Stat>>
+) {
+    tools::logger.verb("[T] starting event listener");
+    while let Some(event) = rx_events.recv().await {
+        match event {
+            Events::Ready => {
+                tools::logger.verb("[T][EventsLoop] server is ready");
+                if let Err(e) = tx_server_state.send(ServerState::Ready) {
+                    tools::logger.err(&format!("[T] cannot send server state: {}", e));
+                }
+            },
+            Events::Connected(uuid) => {
+                tools::logger.verb(&format!("[T][EventsLoop] {} connected", uuid.clone()));
+                match stat.write() {
+                    Ok(mut stat) => stat.connected += 1,
+                    Err(_) => { tools::logger.err("[T] cannot write stat"); },
+                };
+            },
+            Events::Disconnected(uuid) => {
+                tools::logger.verb(&format!("[T][EventsLoop] {} disconnected", uuid));
+                match stat.write() {
+                    Ok(mut stat) => stat.disconnected += 1,
+                    Err(_) => { tools::logger.err("[T] cannot write stat"); },
+                };
+            },
+            Events::Received(uuid, buffer) => {
+                tools::logger.verb(&format!("[T][EventsLoop] {} data has been received: {:?}", uuid, buffer));
+                match stat.write() {
+                    Ok(mut stat) => stat.recieved += 1,
+                    Err(_) => { tools::logger.err("[T] cannot write stat"); },
+                };
+                let buffer: Vec<u8> = vec![5u8, 6u8, 7u8, 8u8, 9u8];
+                if let Err(e) = tx_sender.send((buffer, Some(uuid))) {
+                    tools::logger.err(&format!("[T] fail to send data to connection {}: {}", uuid, e));
+                } else {
+                    tools::logger.verb(&format!("[T] has been sent data to {}", uuid));
+                }
+            },
+            Events::Error(uuid, err) => {
+                tools::logger.err(&format!("[T] Error ({:?}): {:?}", uuid, err));
+            },
+            Events::ConnectionError(uuid, err) => {
+                tools::logger.err(&format!("[T] ConnectionError ({:?}): {:?}", uuid, err));
+            },
+            Events::ServerError(err) => {
+                tools::logger.err(&format!("[T] ServerError: {:?}", err));
+            },
+        }
+    }
+}
+
+
 fn main() {
     // std::thread::sleep(Duration::from_millis(60000 * 3));
     tools::logger.verb("[T] starting");
-    let (tx_events, mut rx_events): (
+    let (tx_events, rx_events): (
         UnboundedSender<Events>,
         UnboundedReceiver<Events>,
     ) = unbounded_channel();
-    let (tx_sender, mut rx_sender): (
+    let (tx_sender, rx_sender): (
         UnboundedSender<(Vec<u8>, Option<Uuid>)>,
         UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
     ) = unbounded_channel();
-    let (tx_control, mut rx_control): (
+    let (tx_control, rx_control): (
         UnboundedSender<Control>,
         UnboundedReceiver<Control>,
     ) = unbounded_channel();
-    let (tx_status, mut rx_status): (
+    let (tx_status, rx_status): (
         mpsc::Sender<ClientStatus>,
         mpsc::Receiver<ClientStatus>,
     ) = mpsc::channel();
-    let (tx_server_state, mut rx_server_state): (
+    let (tx_server_state, rx_server_state): (
         mpsc::Sender<ServerState>,
         mpsc::Receiver<ServerState>,
     ) = mpsc::channel();
-    let mut stat: Arc<RwLock<Stat>> = Arc::new(RwLock::new(Stat {
+    let stat: Arc<RwLock<Stat>> = Arc::new(RwLock::new(Stat {
         created: 0,
         destroyed: 0,
         connected: 0,
@@ -109,53 +252,12 @@ fn main() {
     });
     let stat_sr = stat.clone();
     thread::spawn(move || {
-        executor::block_on(async move {
-            tools::logger.verb("[T] starting event listener");
-            while let Some(event) = rx_events.recv().await {
-                match event {
-                    Events::Ready => {
-                        tools::logger.verb("[T][EventsLoop] server is ready");
-                        tx_server_state.send(ServerState::Ready);
-                    },
-                    Events::Connected(uuid) => {
-                        tools::logger.verb(&format!("[T][EventsLoop] {} connected", uuid.clone()));
-                        match stat_sr.write() {
-                            Ok(mut stat) => stat.connected += 1,
-                            Err(e) => { tools::logger.err("[T] cannot write stat"); },
-                        };
-                    },
-                    Events::Disconnected(uuid) => {
-                        tools::logger.verb(&format!("[T][EventsLoop] {} disconnected", uuid));
-                        match stat_sr.write() {
-                            Ok(mut stat) => stat.disconnected += 1,
-                            Err(e) => { tools::logger.err("[T] cannot write stat"); },
-                        };
-                    },
-                    Events::Received(uuid, buffer) => {
-                        tools::logger.verb(&format!("[T][EventsLoop] {} data has been received: {:?}", uuid, buffer));
-                        match stat_sr.write() {
-                            Ok(mut stat) => stat.recieved += 1,
-                            Err(e) => { tools::logger.err("[T] cannot write stat"); },
-                        };
-                        let buffer: Vec<u8> = vec![5u8, 6u8, 7u8, 8u8, 9u8];
-                        if let Err(e) = tx_sender.send((buffer, Some(uuid.clone()))) {
-                            tools::logger.err(&format!("[T] fail to send data to connection {}", uuid));
-                        } else {
-                            tools::logger.verb(&format!("[T] has been sent data to {}", uuid));
-                        }
-                    },
-                    Events::Error(uuid, err) => {
-                        tools::logger.err(&format!("[T] Error ({:?}): {:?}", uuid, err));
-                    },
-                    Events::ConnectionError(uuid, err) => {
-                        tools::logger.err(&format!("[T] ConnectionError ({:?}): {:?}", uuid, err));
-                    },
-                    Events::ServerError(err) => {
-                        tools::logger.err(&format!("[T] ServerError: {:?}", err));
-                    },
-                }
-            }
-        });
+        executor::block_on(create_events_listener(
+            rx_events,
+            tx_server_state.clone(),
+            tx_sender.clone(),
+            stat_sr
+        ));
     });
     tools::logger.verb("[T] Waiting for server");
     match rx_server_state.recv() {
@@ -166,122 +268,26 @@ fn main() {
         },
         Err(e) => panic!(e)
     };
-    let client_factory = || {
-        let client_status = tx_status.clone();
-        let stat_cl = stat.clone();
-        let (tx_client_starter, mut rx_client_starter): (
+
+    let mut starters: Vec<mpsc::Sender<()>> = vec![];
+    let mut connections = vec![];
+    let start = Instant::now();
+    for _ in 0..CLIENTS {
+        let (tx_client_starter, rx_client_starter): (
             mpsc::Sender<()>,
             mpsc::Receiver<()>,
         ) = mpsc::channel();
-        (async move {
-            tools::logger.verb("[T] client: starting client");
-            let (ws_stream, _) = match connect_async("ws://127.0.0.1:8080").await {
-                Ok(res) => res,
-                Err(e) => {
-                    client_status.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: failed to connect: {}", e)))).expect("ClientStatus should be sent");
-                    return;
-                }
-            };
-            tools::logger.verb("[T] handshake has been successfully completed");
-            let (tx_shutdown_writer, mut rx_shutdown_writer): (
-                UnboundedSender<()>,
-                UnboundedReceiver<()>,
-            ) = unbounded_channel();
-            let (tx_shutdown_sender, mut rx_shutdown_sender): (
-                UnboundedSender<()>,
-                UnboundedReceiver<()>,
-            ) = unbounded_channel();
-            let client_status_rd = client_status.clone();
-            let (mut write, mut read) = ws_stream.split();
-            let reader = spawn(async move {
-                tools::logger.verb("[T] client: reader is created");
-                while let Some(msg) = read.next().await {
-                    let data = msg.unwrap().into_data();
-                    tools::logger.verb(&format!("[T] income data: {:?}", data));
-                    break;
-                }
-                tx_shutdown_writer.send(()).expect("Shutdown writer should be sent");
-                tx_shutdown_sender.send(()).expect("Shutdown sender should be sent");
-                tools::logger.verb("[T] client: reader is destroyed");
-            });
-            let (tx_sender_from_client, mut rx_sender_from_client): (
-                UnboundedSender<Vec<u8>>,
-                UnboundedReceiver<Vec<u8>>,
-            ) = unbounded_channel();
-            let client_status_wr = client_status.clone();
-            let writer = spawn(async move {
-                tools::logger.verb("[T] client: writer is created");
-                while let Some(buffer) = rx_sender_from_client.recv().await {
-                    if let Err(e) = write.send(Message::Binary(buffer)).await {
-                        client_status_wr.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: fail to send data: {}", e)))).expect("ClientStatus should be sent");
-                        return;
-                    }
-                }
-                rx_shutdown_writer.recv().await;
-                tools::logger.verb("[T] client: writer is destroyed");
-            });
-            let client_status_sd = client_status.clone();
-            let stat = stat_cl.clone();
-            let sender_from_client = spawn(async move {
-                if let Err(e) = rx_client_starter.recv() {
-                    client_status_sd.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: fail recieve from starter channel: {}", e)))).expect("ClientStatus should be sent");
-                    return;
-                }
-                tools::logger.verb("[T] client: sender is created");
-                let buffer: Vec<u8> = vec![0u8, 1u8, 2u8, 3u8, 4u8];
-                if let Err(e) = tx_sender_from_client.send(buffer) {
-                    client_status_sd.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: failed to send data: {}", e)))).expect("ClientStatus should be sent");
-                    return;
-                } else {
-                    tools::logger.verb("[T] client: data has been sent");
-                    match stat.write() {
-                        Ok(mut stat) => stat.sent += 1,
-                        Err(e) => { tools::logger.err("[T] cannot write stat"); },
-                    };
-                }
-                rx_shutdown_sender.recv().await;
-                tools::logger.verb("[T] client: sender is destroyed");
-            });
-            match stat_cl.write() {
-                Ok(mut stat) => stat.created += 1,
-                Err(e) => { tools::logger.err("[T] cannot write stat"); },
-            };
-            select! {
-                _ = reader => { }
-                _ = writer => { }
-                _ = sender_from_client => { }
-            };
-            match stat_cl.write() {
-                Ok(mut stat) => stat.destroyed += 1,
-                Err(e) => { tools::logger.err("[T] cannot write stat"); },
-            };
-            client_status_rd.send(ClientStatus::Done).expect("ClientStatus should be sent");
-            tools::logger.verb("[T] client: done");
-        }, tx_client_starter)
-        // thread::spawn(move || {
-        //     let rt  = match Runtime::new() {
-        //         Ok(rt) => rt,
-        //         Err(e) => {
-        //             return Err(tools::logger.err(&format!("Fail to create runtime executor. Error: {}", e)))
-        //         },
-        //     };
-        //     rt.block_on();
-        //     Ok(())
-        // });
-    };
-    let mut starters: Vec<mpsc::Sender<()>> = vec![];
-    let mut connections = vec![];
-    let clients: u32 = 50000;
-    let start = Instant::now();
-    for _ in 0..clients {
-        // std::thread::sleep(Duration::from_millis(1000));
-        let client = client_factory();
-        connections.push(client.0);
-        starters.push(client.1);
+        let client = create_client(
+            tx_status.clone(),
+            stat.clone(),
+            rx_client_starter,
+        );
+        connections.push(client);
+        starters.push(tx_client_starter);
     }
     match stat.write() {
         Ok(mut stat) => stat.created_in = start.elapsed().as_millis(),
-        Err(e) => { tools::logger.err("[T] cannot write stat"); },
+        Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
     thread::spawn(move || {
         let rt  = match Runtime::new() {
@@ -302,42 +308,41 @@ fn main() {
     }
     match stat.write() {
         Ok(mut stat) => stat.sent_in = start.elapsed().as_millis(),
-        Err(e) => { tools::logger.err("[T] cannot write stat"); },
+        Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
-    let mut done: u32 = 0;
-    while let Ok(msg) = rx_status.recv() {
+    let mut done: usize = 0;
+    while let Ok(_msg) = rx_status.recv() {
         done += 1;
         println!("Done: {}", done);
-        if done == clients {
+        if done == CLIENTS {
             break;
         }
     }
     match stat.write() {
         Ok(mut stat) => stat.done_in = start_wf.elapsed().as_millis(),
-        Err(e) => { tools::logger.err("[T] cannot write stat"); },
+        Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
-    std::thread::sleep(Duration::from_millis(60000));
+    std::thread::sleep(Duration::from_millis(1000));
 
     println!("==========================================================================");
-    match stat.read() {
-        Ok(stat) => {
-            println!("Clients created:      {}", stat.created);
-            println!("Clients destroyed:    {}", stat.destroyed);
-            println!("Clients connected:    {}", stat.connected);
-            println!("Clients disconnected: {}", stat.disconnected);
-            println!("Packages sent:        {}", stat.sent);
-            println!("Packages recieved:    {}", stat.recieved);
-            println!("Created in:           {}ms", stat.created_in);
-            println!("Sent in:              {}ms", stat.sent_in);
-            println!("Done in:              {}ms", stat.done_in);
-        },
-        Err(e) => {}
+    if let Ok(stat) = stat.read() {
+        println!("Clients created:      {}", stat.created);
+        println!("Clients destroyed:    {}", stat.destroyed);
+        println!("Clients connected:    {}", stat.connected);
+        println!("Clients disconnected: {}", stat.disconnected);
+        println!("Packages sent:        {}", stat.sent);
+        println!("Packages recieved:    {}", stat.recieved);
+        println!("Created in:           {}ms", stat.created_in);
+        println!("Sent in:              {}ms", stat.sent_in);
+        println!("Done in:              {}ms", stat.done_in);
     };
     println!("==========================================================================");
     //std::thread::sleep(Duration::from_millis(1000));
     thread::spawn(move || {
         executor::block_on(async move {
-            tx_control.send(Control::Shutdown);
+            if let Err(e) = tx_control.send(Control::Shutdown) {
+                tools::logger.err(&format!("Fail send Control::Shutdown. Error: {}", e));
+            }
         });
     });
     std::thread::sleep(Duration::from_millis(1000));
