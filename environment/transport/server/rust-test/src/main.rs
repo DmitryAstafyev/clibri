@@ -13,7 +13,7 @@ use tokio::{
     join,
     runtime::{Runtime},
     task::spawn,
-    time::{sleep, Duration},
+    time::{Duration},
 };
 pub use tokio_tungstenite::{
     connect_async,
@@ -24,7 +24,8 @@ use std::thread;
 use std::sync::mpsc;
 use futures::{StreamExt, SinkExt, executor, future::{ join_all } };
 use std::time::{Instant};
-
+use console::{style};
+use indicatif::{ ProgressBar };
 #[derive(Debug, Clone)]
 enum ServerState {
     Ready,
@@ -58,7 +59,7 @@ pub mod tools {
 
 }
 
-const CLIENTS: usize = 1;
+const CLIENTS: usize = 10000;
 
 async fn create_client(
     status: mpsc::Sender<ClientStatus>,
@@ -242,10 +243,13 @@ fn main() {
     }));
     thread::spawn(move || {
         executor::block_on(async move {
-            tools::logger.verb("[T] starting server");
+            println!(
+                "{} starting server...",
+                style("[test]").bold().dim(),
+            );
             let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
             if let Err(e) = server.listen(tx_events, rx_sender, Some(rx_control)) {
-                tools::logger.verb(&format!("[T] fail to create server: {}", e));
+                tools::logger.err(&format!("[T] fail to create server: {}", e));
             }
             server.print_stat();
         });
@@ -259,11 +263,17 @@ fn main() {
             stat_sr
         ));
     });
-    tools::logger.verb("[T] Waiting for server");
+    println!(
+        "{} waiting for server...",
+        style("[test]").bold().dim(),
+    );
     match rx_server_state.recv() {
         Ok(state) => match state {
             ServerState::Ready => {
-                tools::logger.verb("[T] Server is ready");
+                println!(
+                    "{} server is ready",
+                    style("[test]").bold().dim(),
+                );
             },
         },
         Err(e) => panic!(e)
@@ -271,6 +281,10 @@ fn main() {
 
     let mut starters: Vec<mpsc::Sender<()>> = vec![];
     let mut connections = vec![];
+    println!(
+        "{} creating clients executors...",
+        style("[test]").bold().dim(),
+    );
     let start = Instant::now();
     for _ in 0..CLIENTS {
         let (tx_client_starter, rx_client_starter): (
@@ -297,12 +311,20 @@ fn main() {
             },
         };
         rt.block_on(async {
+            println!(
+                "{} starting clients...",
+                style("[test]").bold().dim(),
+            );
             join_all(connections).await;
         });
         Ok(())
     });
     let start = Instant::now();
     let start_wf = Instant::now();
+    println!(
+        "{} send messages to clients into queue",
+        style("[test]").bold().dim(),
+    );
     for starter in starters {
         starter.send(()).expect("Client should be started");
     }
@@ -310,19 +332,25 @@ fn main() {
         Ok(mut stat) => stat.sent_in = start.elapsed().as_millis(),
         Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
+    println!(
+        "{} waiting for clients...",
+        style("[test]").bold().dim(),
+    );
     let mut done: usize = 0;
+    let pb = ProgressBar::new(CLIENTS as u64);
     while let Ok(_msg) = rx_status.recv() {
         done += 1;
-        println!("Done: {}", done);
+        pb.inc(1);
         if done == CLIENTS {
             break;
         }
     }
+    pb.finish_and_clear();
     match stat.write() {
         Ok(mut stat) => stat.done_in = start_wf.elapsed().as_millis(),
         Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
-    std::thread::sleep(Duration::from_millis(1000));
+    // std::thread::sleep(Duration::from_millis(1000));
 
     println!("==========================================================================");
     if let Ok(stat) = stat.read() {

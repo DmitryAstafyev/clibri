@@ -119,7 +119,7 @@ impl Interface for Server {
                         loop {
                             let stream = match listener.accept().await {
                                 Ok((stream, _addr)) => {
-                                    tools::logger.warn(&format!("Getting request to connect from: {}", _addr));
+                                    tools::logger.debug(&format!("Getting request to connect from: {}", _addr));
                                     if let Ok(mut stat) = stat.write() { stat.connecting(); }
                                     // TODO: middleware to confirm acception
                                     stream
@@ -240,7 +240,10 @@ impl Interface for Server {
                     _ = async {
                         while let Some(msg) = rx_messages.recv().await {
                             match msg {
-                                Messages::Binary { uuid, buffer } => send_event(Events::Received(uuid, buffer)),
+                                Messages::Binary { uuid, buffer } => {
+                                    if let Ok(mut stat) = stat.write() { stat.recieved_bytes(buffer.len()); }
+                                    send_event(Events::Received(uuid, buffer))
+                                },
                                 Messages::Disconnect { uuid, code } => {
                                     if let Ok(mut stat) = stat.write() { stat.disconnected(); }
                                     match controlls.write() {

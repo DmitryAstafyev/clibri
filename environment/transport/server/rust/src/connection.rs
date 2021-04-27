@@ -60,7 +60,7 @@ impl Connection {
     ) -> Result<UnboundedSender<Control>, String> {
         let (tx_control, mut rx_control): (UnboundedSender<Control>, UnboundedReceiver<Control>) =
             unbounded_channel();
-        let uuid = self.uuid.clone();
+        let uuid = self.uuid;
         let mut state: Option<State> = None;
         let incomes_task_events = events.clone();
         let send_event = move |event: Events| {
@@ -73,7 +73,7 @@ impl Connection {
                 Ok(_) => {},
                 Err(e) => {
                     if let Err(e) = events.send(Events::ConnectionError(
-                        Some(uuid.clone()),
+                        Some(uuid),
                         Errors::FailSendBack(
                             tools::logger.warn(&format!("{}:: Fail to send data back to server. Error: {}", uuid, e))
                         ),
