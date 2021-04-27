@@ -339,15 +339,13 @@ impl Interface for Server {
                 }
                 tools::logger.verb("[task: control]:: finished");
             });
-
-            join!(
-                streams_task,
-                accepting_task,
-                messages_task,
-                sender_task,
-                control_task
-            );
-
+            select! {
+                _ = streams_task => {},
+                _ = accepting_task => {},
+                _ = messages_task => {},
+                _ = sender_task => {},
+                _ = control_task => {},
+            };
             tools::logger.verb("[main]:: finished");
         });
         Ok(())

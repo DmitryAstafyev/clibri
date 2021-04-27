@@ -13,14 +13,11 @@ use tokio::{
     },
     sync::mpsc::{
         unbounded_channel,
-        Receiver,
-        Sender,
         UnboundedReceiver,
         UnboundedSender
     },
     task::{
         spawn,
-        JoinHandle
     },
     select,
 };
@@ -86,7 +83,7 @@ impl Connection {
                 },
             };
         };
-        let incomes_task = spawn(async move {
+        spawn(async move {
             loop {
                 select! {
                     msg = ws.next() => {
@@ -105,7 +102,7 @@ impl Connection {
                                     _ => {
                                         let e = tools::logger.warn(&format!("{}:: Cannot get message. Error: {:?}", uuid, e));
                                         send_event(Events::ConnectionError(
-                                            Some(uuid.clone()),
+                                            Some(uuid),
                                             Errors::InvalidMessage(e.clone()),
                                         ));
                                         state = Some(State::Error(ChannelError::ReadSocket(e)));
