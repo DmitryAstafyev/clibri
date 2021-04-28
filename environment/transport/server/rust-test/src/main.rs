@@ -257,17 +257,24 @@ fn main() {
         done_in: 0,
     }));
     thread::spawn(move || {
-        executor::block_on(async move {
+        let rt  = match Runtime::new() {
+            Ok(rt) => rt,
+            Err(e) => {
+                return Err(tools::logger.err(&format!("Fail to create runtime executor. Error: {}", e)))
+            },
+        };
+        rt.block_on(async {
             println!(
                 "{} starting server...",
                 style("[test]").bold().dim(),
             );
             let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
-            if let Err(e) = server.listen(tx_events, rx_sender, Some(rx_control)) {
+            if let Err(e) = server.listen(tx_events, rx_sender, Some(rx_control)).await {
                 tools::logger.err(&format!("[T] fail to create server: {}", e));
             }
             server.print_stat();
         });
+        Ok(())
     });
     let stat_sr = stat.clone();
     thread::spawn(move || {

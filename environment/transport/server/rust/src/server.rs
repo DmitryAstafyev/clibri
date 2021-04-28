@@ -53,6 +53,8 @@ use tokio_tungstenite::{
         },
     },
 };
+use futures::Future;
+use std::pin::Pin;
 use uuid::Uuid;
 
 pub struct Handshake;
@@ -85,23 +87,21 @@ impl Server {
 
 impl Interface for Server {
 
+    type Output = Pin<Box<dyn Future<Output = Result<(), String>>>>;
+
     fn listen(
         &mut self,
         events: UnboundedSender<Events>,
         mut sending: UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
         control: Option<UnboundedReceiver<ServerControl>>,
-    ) -> Result<(), String> {
-        let rt  = match Runtime::new() {
-            Ok(rt) => rt,
-            Err(e) => {
-                return Err(tools::logger.err(&format!("Fail to create runtime executor. Error: {}", e)))
-            },
-        };
-        rt.block_on(async move {
+    ) -> Self::Output {
+        let addr: String = self.addr.clone();
+        let stat_ref = self.stat.clone();
+        let controlls_ref = self.controlls.clone();
+        let task = async move {
             tools::logger.verb("[main]: runtime is created");
-            let addr: String = self.addr.clone();
             let events_cl = events.clone();
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let send_event = move |event: Events| {
                 match event {
                     Events::Error(_, _) | Events::ConnectionError(_, _) | Events::ServerError(_) =>
@@ -120,7 +120,7 @@ impl Interface for Server {
                 Sender<()>,
                 Receiver<()>,
             ) = channel();
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let streams_task: JoinHandle<()> = spawn(async move {
                 tools::logger.verb("[task: streams]:: started");
                 let listener = match TcpListener::bind(addr).await {
@@ -163,7 +163,7 @@ impl Interface for Server {
                 tools::logger.verb("[task: streams]:: finished");
             });
             let events_cl = events.clone();
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let send_event = move |event: Events| {
                 match event {
                     Events::Error(_, _) | Events::ConnectionError(_, _) | Events::ServerError(_) =>
@@ -174,9 +174,9 @@ impl Interface for Server {
                     tools::logger.warn(&format!("Cannot send event. Error: {}", e));
                 }
             };
-            let controlls = self.controlls.clone();
+            let controlls = controlls_ref.clone();
             let connection_events = events.clone();
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let (tx_messages, mut rx_messages): (
                 UnboundedSender<Messages>,
                 UnboundedReceiver<Messages>,
@@ -235,9 +235,9 @@ impl Interface for Server {
                 };
                 tools::logger.verb("[task: accepting]:: finished");
             });
-            let controlls = self.controlls.clone();
+            let controlls = controlls_ref.clone();
             let events_cl = events.clone();
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let send_event = move |event: Events| {
                 match event {
                     Events::Error(_, _) | Events::ConnectionError(_, _) | Events::ServerError(_) =>
@@ -248,7 +248,7 @@ impl Interface for Server {
                     tools::logger.warn(&format!("Cannot send event. Error: {}", e));
                 }
             };
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let (tx_messages_task_sd, rx_messages_task_sd): (
                 Sender<()>,
                 Receiver<()>,
@@ -287,9 +287,9 @@ impl Interface for Server {
                 };
                 tools::logger.verb("[task: messages]:: finished");
             });
-            let controlls = self.controlls.clone();
+            let controlls = controlls_ref.clone();
             let events_cl = events.clone();
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let send_event = move |event: Events| {
                 match event {
                     Events::Error(_, _) | Events::ConnectionError(_, _) | Events::ServerError(_) =>
@@ -300,7 +300,7 @@ impl Interface for Server {
                     tools::logger.warn(&format!("Cannot send event. Error: {}", e));
                 }
             };
-            let stat = self.stat.clone();
+            let stat = stat_ref.clone();
             let (tx_sender_task_sd, rx_sender_task_sd): (
                 Sender<()>,
                 Receiver<()>,
@@ -365,8 +365,9 @@ impl Interface for Server {
                 _ = control_task => {},
             };
             tools::logger.verb("[main]:: finished");
-        });
-        Ok(())
+            Ok(())
+        };
+        Box::pin(task)
     }
 
 }

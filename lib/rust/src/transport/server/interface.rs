@@ -1,21 +1,16 @@
-use super::events::{ Events };
-use super::control::{ Control };
+use super::control::Control;
+use super::events::Events;
+use futures::Future;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
-use tokio::{
-    sync::{
-        mpsc::{
-            UnboundedSender,
-            UnboundedReceiver
-        }
-    }
-};
+
 pub trait Interface: Send {
+    type Output: Future<Output = Result<(), String>>;
 
     fn listen(
         &mut self,
         channel: UnboundedSender<Events>,
         messages: UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
         controll: Option<UnboundedReceiver<Control>>,
-    ) -> Result<(), String>;
-
+    ) -> Self::Output;
 }
