@@ -12,6 +12,14 @@ pub struct Stat {
     alive: usize,
 }
 
+impl Default for Stat {
+
+    fn default() -> Self {
+        Self::new()
+    }
+
+}
+
 impl Stat {
 
     pub fn new() -> Self {
@@ -28,37 +36,37 @@ impl Stat {
         }
     }
 
-    pub fn connecting(&mut self) -> () {
+    pub fn connecting(&mut self) {
         self.connecting += 1;
     }
 
-    pub fn connected(&mut self) -> () {
+    pub fn connected(&mut self) {
         self.connected += 1;
     }
 
-    pub fn disconnected(&mut self) -> () {
+    pub fn disconnected(&mut self) {
         self.disconnected += 1;
     }
 
-    pub fn errors(&mut self) -> () {
+    pub fn errors(&mut self) {
         self.errors += 1;
     }
 
-    pub fn recieved_bytes(&mut self, bytes: usize) -> () {
+    pub fn recieved_bytes(&mut self, bytes: usize) {
         self.recieved_bytes += bytes;
         self.recieved_packages += 1;
     }
 
-    pub fn sent_bytes(&mut self, bytes: usize) -> () {
+    pub fn sent_bytes(&mut self, bytes: usize) {
         self.sent_bytes += bytes;
         self.sent_packages += 1;
     }
 
-    pub fn alive(&mut self, alive: usize) -> () {
+    pub fn alive(&mut self, alive: usize) {
         self.alive = alive;
     }
 
-    pub fn print(&self) -> () {
+    pub fn print(&self) {
         println!("{}", self);
     }
 

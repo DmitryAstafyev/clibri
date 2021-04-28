@@ -1,44 +1,63 @@
 use super::{
-    channel::{Control, Messages},
-    stat::{Stat},
+    channel::{
+        Control,
+        Messages
+    },
+    stat::Stat,
     connection::Connection,
     handshake::Handshake as HandshakeInterface,
     tools,
 };
 use fiber::{
     logger::Logger,
-    server::{errors::Errors, events::Events, interface::Interface, control::Control as ServerControl},
-};
-use futures::{executor, StreamExt};
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use tokio::{
-    io::{
-        AsyncRead,
-        AsyncWrite,
+    server::{
+        errors::Errors,
+        events::Events,
+        interface::Interface,
+        control::Control as ServerControl
     },
-    net::{TcpListener, TcpStream},
-    sync::oneshot::{channel, Receiver, Sender},
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    task::{spawn, JoinHandle},
-    join,
+};
+use std::collections::HashMap;
+use std::sync::{
+    Arc,
+    RwLock
+};
+use tokio::{
+    net::{
+        TcpListener,
+        TcpStream
+    },
+    sync::oneshot::{
+        channel,
+        Receiver,
+        Sender
+    },
+    sync::mpsc::{
+        unbounded_channel,
+        UnboundedReceiver,
+        UnboundedSender
+    },
+    task::{
+        spawn,
+        JoinHandle
+    },
     select,
-    runtime::{Runtime},
+    runtime::Runtime,
 };
 use tokio_tungstenite::{
     accept_hdr_async,
     tungstenite::{
-        handshake::server::{Request, Response},
-        protocol::frame::coding::CloseCode,
+        handshake::server::{
+            Request,
+            Response
+        },
     },
-    WebSocketStream,
 };
 use uuid::Uuid;
 
 pub struct Handshake;
 
 impl HandshakeInterface for Handshake {}
-
 
 pub struct Server {
     addr: String,
@@ -56,7 +75,7 @@ impl Server {
         }
     }
 
-    pub fn print_stat(&self) -> () {
+    pub fn print_stat(&self) {
         if let Ok(stat) = self.stat.write() {
             stat.print();
         }
@@ -70,7 +89,7 @@ impl Interface for Server {
         &mut self,
         events: UnboundedSender<Events>,
         mut sending: UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
-        mut control: Option<UnboundedReceiver<ServerControl>>,
+        control: Option<UnboundedReceiver<ServerControl>>,
     ) -> Result<(), String> {
         let rt  = match Runtime::new() {
             Ok(rt) => rt,
@@ -97,7 +116,7 @@ impl Interface for Server {
                 UnboundedSender<TcpStream>,
                 UnboundedReceiver<TcpStream>,
             ) = unbounded_channel();
-            let (tx_streams_task_sd, mut rx_streams_task_sd): (
+            let (tx_streams_task_sd, rx_streams_task_sd): (
                 Sender<()>,
                 Receiver<()>,
             ) = channel();
@@ -162,7 +181,7 @@ impl Interface for Server {
                 UnboundedSender<Messages>,
                 UnboundedReceiver<Messages>,
             ) = unbounded_channel();
-            let (tx_accepting_task_sd, mut rx_accepting_task_sd): (
+            let (tx_accepting_task_sd, rx_accepting_task_sd): (
                 Sender<()>,
                 Receiver<()>,
             ) = channel();
@@ -201,7 +220,7 @@ impl Interface for Server {
                                     controlls.entry(uuid).or_insert(control);
                                     if let Ok(mut stat) = stat.write() { stat.alive(controlls.len()); }
                                     tools::logger.debug("Controll of connection has been added");
-                                    send_event(Events::Connected(uuid.clone()));
+                                    send_event(Events::Connected(uuid));
                                 },
                                 Err(e) => {
                                     send_event(Events::ServerError(Errors::CreateWS(
@@ -230,7 +249,7 @@ impl Interface for Server {
                 }
             };
             let stat = self.stat.clone();
-            let (tx_messages_task_sd, mut rx_messages_task_sd): (
+            let (tx_messages_task_sd, rx_messages_task_sd): (
                 Sender<()>,
                 Receiver<()>,
             ) = channel();
@@ -245,13 +264,14 @@ impl Interface for Server {
                                     send_event(Events::Received(uuid, buffer))
                                 },
                                 Messages::Disconnect { uuid, code } => {
+                                    tools::logger.debug(&format!("{}:: Client wants to disconnect (code: {:?})", uuid, code));
                                     if let Ok(mut stat) = stat.write() { stat.disconnected(); }
                                     match controlls.write() {
                                         Ok(mut controlls) => {
                                             if let Some(_control) = controlls.remove(&uuid) {
                                                 tools::logger.debug(&format!("{}:: Channel of connection has been removed", uuid));
                                                 if let Ok(mut stat) = stat.write() { stat.alive(controlls.len()); }
-                                                send_event(Events::Disconnected(uuid.clone()));
+                                                send_event(Events::Disconnected(uuid));
                                             } else {
                                                 tools::logger.err(&format!("{}:: Fail to find channel of connection to remove it", uuid));
                                             }
@@ -281,7 +301,7 @@ impl Interface for Server {
                 }
             };
             let stat = self.stat.clone();
-            let (tx_sender_task_sd, mut rx_sender_task_sd): (
+            let (tx_sender_task_sd, rx_sender_task_sd): (
                 Sender<()>,
                 Receiver<()>,
             ) = channel();
@@ -325,19 +345,14 @@ impl Interface for Server {
             let control_task: JoinHandle<()> = spawn(async move {
                 tools::logger.verb("[task: control]:: started");
                 if let Some(mut control) = control {
-                    match control.recv().await {
-                        Some(msg) => match msg {
-                            ServerControl::Shutdown => {
-                                if let Err(e) = tx_streams_task_sd.send(()) { tools::logger.err("fail call shutdown for streams task"); }
-                                if let Err(e) = tx_accepting_task_sd.send(()) { tools::logger.err("fail call shutdown for accepting task"); }
-                                if let Err(e) = tx_messages_task_sd.send(()) { tools::logger.err("fail call shutdown for messages task"); }
-                                if let Err(e) = tx_sender_task_sd.send(()) { tools::logger.err("fail call shutdown for sender task"); }
-                            }
-                        },
-                        _ => {
-
-                        },
-                    }
+                    if let Some(msg) = control.recv().await { match msg {
+                        ServerControl::Shutdown => {
+                            if let Err(e) = tx_streams_task_sd.send(()) { tools::logger.err(&format!("fail call shutdown for streams task. Error: {:?}", e)); }
+                            if let Err(e) = tx_accepting_task_sd.send(()) { tools::logger.err(&format!("fail call accepting for streams task. Error: {:?}", e)); }
+                            if let Err(e) = tx_messages_task_sd.send(()) { tools::logger.err(&format!("fail call messages for streams task. Error: {:?}", e)); }
+                            if let Err(e) = tx_sender_task_sd.send(()) { tools::logger.err(&format!("fail call sender for streams task. Error: {:?}", e)); }
+                        }
+                    } }
                     
                 }
                 tools::logger.verb("[task: control]:: finished");

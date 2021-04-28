@@ -1,15 +1,5 @@
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use uuid::Uuid;
-use tokio_tungstenite::{
-    tungstenite::{
-        protocol::{
-            frame::{
-                coding::{
-                    CloseCode
-                }
-            }
-        },
-    }
-};
 
 #[derive(Debug, Clone)]
 pub enum Error {

@@ -1,12 +1,22 @@
 use super::{
-    channel::{Control, Messages, Error as ChannelError},
+    channel::{
+        Control,
+        Messages,
+        Error as ChannelError
+    },
     tools,
 };
 use fiber::{
     logger::Logger,
-    server::{errors::Errors, events::Events, interface::Interface},
+    server::{
+        errors::Errors,
+        events::Events
+    },
 };
-use futures::{ SinkExt, StreamExt};
+use futures::{
+    SinkExt,
+    StreamExt
+};
 use tokio::{
     net::{
         TcpStream
@@ -43,8 +53,6 @@ enum State {
 
 pub struct Connection {
     uuid: Uuid,
-    // socket: Arc<RwLock<WebSocketStream<TcpStream>>>,
-    // control: Option<Sender<Control>>,
 }
 
 impl Connection {
@@ -115,7 +123,7 @@ impl Connection {
                             Message::Text(_) => {
                                 tools::logger.warn(&format!("{}:: has been gotten not binnary data", uuid));
                                 send_event(Events::ConnectionError(
-                                    Some(uuid.clone()),
+                                    Some(uuid),
                                     Errors::NonBinaryData,
                                 ));
                                 continue;
@@ -169,6 +177,7 @@ impl Connection {
                         send_message(Messages::Disconnect { uuid, code: Some(frame.code) });
                     },
                     State::DisconnectByClientWithError(e) => {
+                        tools::logger.debug(&format!("{}:: client error: {}", uuid, e));
                         send_message(Messages::Disconnect { uuid, code: None });
                     },
                     State::Error(error) => {
@@ -185,7 +194,7 @@ impl Connection {
                         },
                         _ => {
                             send_event(Events::ConnectionError(
-                                Some(uuid.clone()),
+                                Some(uuid),
                                 Errors::CannotClose(tools::logger.err(&format!("{}:: fail to close connection", uuid))),
                             ));
                         }

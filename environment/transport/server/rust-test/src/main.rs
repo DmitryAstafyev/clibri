@@ -2,18 +2,28 @@
 extern crate lazy_static;
 
 use fiber_transport_server::server::Server;
-use std::sync::{Arc, RwLock};
+use std::sync::{
+    Arc,
+    RwLock
+};
 use fiber::{
     logger::Logger,
-    server::{events::Events, interface::Interface, control::Control},
+    server::{
+        events::Events,
+        interface::Interface,
+        control::Control
+    },
 };
 use tokio::{
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    select,
+    sync::mpsc::{
+        unbounded_channel,
+        UnboundedReceiver,
+        UnboundedSender
+    },
     join,
-    runtime::{Runtime},
+    runtime::Runtime,
     task::spawn,
-    time::{Duration},
+    time::Duration,
 };
 pub use tokio_tungstenite::{
     connect_async,
@@ -22,10 +32,16 @@ pub use tokio_tungstenite::{
 use uuid::Uuid;
 use std::thread;
 use std::sync::mpsc;
-use futures::{StreamExt, SinkExt, executor, future::{ join_all } };
-use std::time::{Instant};
-use console::{style};
-use indicatif::{ ProgressBar };
+use futures::{
+    StreamExt,
+    SinkExt,
+    executor,
+    future::join_all 
+};
+use std::time::Instant;
+use console::style;
+use indicatif::ProgressBar;
+
 #[derive(Debug, Clone)]
 enum ServerState {
     Ready,
@@ -59,7 +75,7 @@ pub mod tools {
 
 }
 
-const CLIENTS: usize = 10000;
+const CLIENTS: usize = 5000;
 
 async fn create_client(
     status: mpsc::Sender<ClientStatus>,
@@ -87,10 +103,9 @@ async fn create_client(
     let (mut write, mut read) = ws_stream.split();
     let reader = spawn(async move {
         tools::logger.verb("[T] client: reader is created");
-        while let Some(msg) = read.next().await {
+        if let Some(msg) = read.next().await {
             let data = msg.unwrap().into_data();
             tools::logger.verb(&format!("[T] income data: {:?}", data));
-            break;
         }
         tx_shutdown_writer.send(()).expect("Shutdown writer should be sent");
         tx_shutdown_sender.send(()).expect("Shutdown sender should be sent");
