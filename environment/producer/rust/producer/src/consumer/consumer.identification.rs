@@ -1,7 +1,7 @@
 use super::{tools, Protocol};
 use fiber::logger::Logger;
 use std::cmp::{Eq, PartialEq};
-use std::sync::{Arc};
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -10,10 +10,12 @@ pub enum Condition {
     NotEqual,
 }
 pub type FilterCallback = dyn Fn(
-    Uuid,
-    Option<Protocol::Identification::SelfKey>,
-    Option<Protocol::Identification::AssignedKey>,
-) -> bool + Send + Sync;
+        Uuid,
+        Option<Protocol::Identification::SelfKey>,
+        Option<Protocol::Identification::AssignedKey>,
+    ) -> bool
+    + Send
+    + Sync;
 
 #[derive(Clone)]
 pub struct Filter {
@@ -72,7 +74,7 @@ impl Identification {
             return match condition {
                 Condition::Equal => uuid == self.uuid,
                 Condition::NotEqual => uuid != self.uuid,
-            }
+            };
         }
         if let Some(assign) = filter.assign {
             return assign == self.assigned();

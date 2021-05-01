@@ -1,44 +1,35 @@
-use super::consumer_identification::{Identification, Filter};
-use super::{ Protocol, ConsumersChannel, tools };
-use fiber::logger::{ Logger };
+use super::consumer_identification::{Filter, Identification};
+use super::{tools, ConsumersChannel, Protocol};
+use fiber::logger::Logger;
+use futures::{executor, Future};
 use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
-use async_channel::{
-    Sender,
-};
-use futures::{
-    executor,
-    Future,
-};
 pub struct Cx {
     uuid: Uuid,
-    consumers: Arc<Mutex<Sender<ConsumersChannel>>>,
+    consumers: UnboundedSender<ConsumersChannel>,
 }
 
 impl Cx {
-    pub async fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
-        match self.consumers.lock() {
-            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendTo((self.uuid.clone(), buffer))).await {
-                Err(e.to_string())
-            } else {
-                Ok(())
-            },
-            Err(e) => Err(e.to_string()),
+    pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
+        if let Err(e) = self
+            .consumers
+            .send(ConsumersChannel::SendTo((self.uuid.clone(), buffer)))
+        {
+            Err(e.to_string())
+        } else {
+            Ok(())
         }
     }
 
-    pub async fn send_to(
-        &self,
-        buffer: Vec<u8>,
-        filter: Filter,
-    ) -> Result<(), String> {
-        match self.consumers.lock() {
-            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))).await {
-                Err(e.to_string())
-            } else {
-                Ok(())
-            },
-            Err(e) => Err(e.to_string()),
+    pub fn send_to(&self, buffer: Vec<u8>, filter: Filter) -> Result<(), String> {
+        if let Err(e) = self
+            .consumers
+            .send(ConsumersChannel::SendByFilter((filter, buffer)))
+        {
+            Err(e.to_string())
+        } else {
+            Ok(())
         }
     }
 
@@ -46,17 +37,21 @@ impl Cx {
         self.uuid.clone()
     }
 
-    pub async fn assign(&self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String> {
-        match self.consumers.lock() {
-            Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Assign((self.uuid.clone(), assigned, overwrite))).await {
-                Err(e.to_string())
-            } else {
-                Ok(())
-            },
-            Err(e) => Err(e.to_string()),
+    pub fn assign(
+        &self,
+        assigned: Protocol::Identification::AssignedKey,
+        overwrite: bool,
+    ) -> Result<(), String> {
+        if let Err(e) = self.consumers.send(ConsumersChannel::Assign((
+            self.uuid.clone(),
+            assigned,
+            overwrite,
+        ))) {
+            Err(e.to_string())
+        } else {
+            Ok(())
         }
     }
-
 }
 
 pub struct Consumer {
@@ -64,19 +59,20 @@ pub struct Consumer {
     buffer: Protocol::Buffer<Protocol::AvailableMessages>,
     identification: Identification,
     cx: Cx,
-    sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>,
+    sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
 }
 
 impl Consumer {
-    pub fn new(uuid: Uuid, consumers: Arc<Mutex<Sender<ConsumersChannel>>>, sender: Arc<Mutex<Sender<(Vec<u8>, Option<Uuid>)>>>) -> Self {
+    pub fn new(
+        uuid: Uuid,
+        consumers: UnboundedSender<ConsumersChannel>,
+        sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
+    ) -> Self {
         Consumer {
             uuid,
             buffer: Protocol::Buffer::new(),
             identification: Identification::new(uuid.clone()),
-            cx: Cx {
-                uuid,
-                consumers,
-            },
+            cx: Cx { uuid, consumers },
             sender,
         }
     }
@@ -97,26 +93,28 @@ impl Consumer {
         }
     }
 
-    pub async fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
+    pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         let len = buffer.len();
-        match self.sender.lock() {
-            Ok(sender) => if let Err(e) = sender.send((buffer, Some(self.uuid))).await {
-                    Err(tools::logger.err(&format!("{}:: Fail to send buffer {} bytes, due error: {}", self.get_uuid(), len, e)))
-                } else {
-                    tools::logger.debug(&format!("{}:: Has been sent a buffer {} bytes", self.get_uuid(), len));
-                    Ok(())
-            },
-            Err(e) => Err(e.to_string()),
+        if let Err(e) = self.sender.send((buffer, Some(self.uuid))) {
+            Err(tools::logger.err(&format!(
+                "{}:: Fail to send buffer {} bytes, due error: {}",
+                self.get_uuid(),
+                len,
+                e
+            )))
+        } else {
+            tools::logger.debug(&format!(
+                "{}:: Has been sent a buffer {} bytes",
+                self.get_uuid(),
+                len
+            ));
+            Ok(())
         }
     }
 
-    pub async fn send_if(
-        &self,
-        buffer: Vec<u8>,
-        filter: Filter,
-    ) -> Result<bool, String> {
+    pub fn send_if(&self, buffer: Vec<u8>, filter: Filter) -> Result<bool, String> {
         if self.identification.filter(filter.clone()) {
-            if let Err(e) = self.send(buffer).await {
+            if let Err(e) = self.send(buffer) {
                 Err(e)
             } else {
                 Ok(true)
