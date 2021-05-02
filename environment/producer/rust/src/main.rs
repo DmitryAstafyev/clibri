@@ -401,18 +401,17 @@ fn main() {
     };
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
     let ucx = CustomContext {};
-
-    let rt  = match Runtime::new() {
-        Ok(rt) => rt,
-        Err(e) => {
-            panic!(e);
-        },
-    };
-    rt.block_on(async move {
-        let control = producer::listen(server, ucx);
-        select! {
-            //_ = listener => {},
-            _ = control.listener => {}
-        };
-    });
+    producer::init_and_start(server, ucx, None);
+    // let rt  = match Runtime::new() {
+    //     Ok(rt) => rt,
+    //     Err(e) => {
+    //         panic!(e);
+    //     },
+    // };
+    // rt.block_on(async move {
+    //     let mut control = producer::init(server, ucx);
+    //     if let Some(thread) = control.thread() {
+    //         thread.await;
+    //     }
+    // });
 }

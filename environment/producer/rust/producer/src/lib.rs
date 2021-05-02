@@ -70,6 +70,7 @@ use tokio::{
         spawn,
         JoinHandle
     },
+    runtime::Runtime,
 };
 use uuid::Uuid;
 use futures::Future;
@@ -153,7 +154,7 @@ pub struct ProducerEventsHolder;
 impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 pub struct Control {
-    pub listener: Pin<Box<dyn Future<Output = ()>>>,
+    thread: Option<Pin<Box<dyn Future<Output = ()>>>>,
     server_control: UnboundedSender<ServerControl>,
     consumers: UnboundedSender<ConsumersChannel>,
 }
@@ -172,9 +173,45 @@ impl Control {
         self.consumers.send(ConsumersChannel::SendByFilter((filter, buffer)))
     }
 
-} 
+    pub fn thread(&mut self) -> Option<Pin<Box<dyn Future<Output = ()>>>> {
+        self.thread.take()
+    }
+}
 
-pub fn listen<
+pub enum StartError {
+    Runtime()
+}
+
+pub fn init_and_start<
+    S: 'static + Interface + Sync + Send,
+    UCX: 'static + Sync + Send + Clone,
+>(
+    mut server: S,
+    ucx: UCX,
+    control: Option<std::sync::mpsc::Sender<Control>>,
+) -> Result<(), std::io::Error> {
+    let rt  = match Runtime::new() {
+        Ok(rt) => rt,
+        Err(e) => {
+            return Err(e);
+        },
+    };
+    rt.block_on(async move {
+        let mut controller = init(server, ucx);
+        let thread = if let Some(thread) = controller.thread() {
+            thread
+        } else {
+            panic!("Cannot get producer thread");
+        };
+        if let Some(sender) = control {
+            sender.send(controller);
+        }
+        thread.await;
+    });
+    Ok(())
+}
+
+pub fn init<
     S: 'static + Interface + Sync + Send,
     UCX: 'static + Sync + Send + Clone,
 >(
@@ -233,8 +270,7 @@ pub fn listen<
         };
     };
     Control {
-        // events: rx_producer_events,
-        listener: Box::pin(task),
+        thread: Some(Box::pin(task)),
         server_control: tx_server_control,
         consumers: tx_consumers,
     }
