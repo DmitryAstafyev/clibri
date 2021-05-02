@@ -1,9 +1,7 @@
 use super::consumer_identification::{Filter, Identification};
 use super::{tools, ConsumersChannel, Protocol};
 use fiber::logger::Logger;
-use futures::{executor, Future};
-use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 pub struct Cx {
     uuid: Uuid,

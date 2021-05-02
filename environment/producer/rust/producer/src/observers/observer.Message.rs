@@ -3,7 +3,6 @@ use super::consumer_identification::Filter;
 use super::observer::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
-use futures::Future;
 #[derive(Debug, Clone)]
 pub enum Conclusion {
     Accept(Protocol::Message::Accepted),

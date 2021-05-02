@@ -3,7 +3,7 @@ use super::consumer_identification::Filter;
 use super::observer::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
-use futures::Future;
+
 #[allow(unused_variables)]
 pub trait Observer {
     fn conclusion<UCX: 'static + Sync + Send + Clone>(
@@ -37,7 +37,7 @@ impl ObserverRequest {
         ucx: UCX,
         sequence: u32,
         request: Protocol::Messages::Request,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        _broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         match Self::conclusion(request, cx, ucx) {
             Ok(mut response) => match response.pack(sequence, Some(cx.uuid().to_string())) {

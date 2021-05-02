@@ -48,20 +48,34 @@ use fiber::{
 };
 use protocol as Protocol;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{
+    Arc,
+    RwLock
+};
 use std::pin::Pin;
 use tokio::{
     select,
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    sync::oneshot::{channel, Receiver, Sender},
-    task::{spawn, JoinHandle},
-    runtime::Runtime,
+    sync::mpsc::{
+        unbounded_channel,
+        UnboundedReceiver,
+        UnboundedSender,
+        error::SendError
+    },
+    sync::oneshot::{
+        channel,
+        Receiver,
+        Sender
+    },
+    task::{
+        spawn,
+        JoinHandle
+    },
 };
 use uuid::Uuid;
 use futures::Future;
 use Protocol::PackingStruct;
 
-pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
+pub enum ProducerError {
     InternalError(String),
     EmitError(String),
     EventError(String),
@@ -69,12 +83,16 @@ pub enum ProducerEvents<UCX: 'static + Sync + Send + Clone> {
     EventListenError(String),
     ConnectionError(String),
     BroadcastingError(String),
-    NotAssignedConsumer(String),
     ServerError(String),
-    ServerDown,
+    NotAssignedConsumer(String),
     Reading(String),
-    Connected((Uuid, UCX)),
-    Disconnected(Uuid),
+}
+pub enum ProducerEvents {
+    Shutdown,
+    ServerReady,
+    ConsumerConnected(Uuid),
+    ConsumerDisconnected(Uuid),
+    Error(ProducerError),
 }
 
 #[derive(Clone)]
@@ -105,51 +123,56 @@ pub fn broadcasting(
     }
 }
 
-pub struct Controlaa<UCX>
-where
-    UCX: 'static + Sync + Send + Clone,
-{
-    pub events: UnboundedReceiver<ProducerEvents<UCX>>,
-    pub server: Pin<Box<dyn Future<Output = ()>>>,
+#[allow(non_snake_case)]
+trait ProducerEventsHolderTrait {
+
+    fn ConsumerConnected(_uuid: Uuid) {
+        tools::logger.debug("[producer event: ConsumerConnected] doesn't have handler");
+    }
+
+    fn ConsumerDisconnected(_uuid: Uuid) {
+        tools::logger.debug("[producer event: ConsumerDisconnected] doesn't have handler");
+    }
+
+    fn Shutdown() {
+        tools::logger.debug("[producer event: Shutdown] doesn't have handler");
+    }
+
+    fn ServerReady() {
+        tools::logger.debug("[producer event: ServerReady] doesn't have handler");
+    }
+
+    fn Error(_err: ProducerError) {
+        tools::logger.debug("[producer event: InternalError] doesn't have handler");
+    }
+
+}
+
+pub struct ProducerEventsHolder;
+
+impl ProducerEventsHolderTrait for ProducerEventsHolder {}
+
+pub struct Control {
+    pub listener: Pin<Box<dyn Future<Output = ()>>>,
+    server_control: UnboundedSender<ServerControl>,
     consumers: UnboundedSender<ConsumersChannel>,
 }
 
-// impl<UCX: 'static + Sync + Send + Clone> Channel<UCX> {
+impl Control {
 
-//     pub fn send(&self, filter: Filter, buffer: Vec<u8>) -> Result<(), String> {
-//         Err(String::from(""))
-//         /*
-//         match self.consumers.lock() {
-//             Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
-//                 Err(e.to_string())
-//             } else {
-//                 Ok(())
-//             },
-//             Err(e) => Err(e.to_string()),
-//         }
-//         */
-//     }
+    pub fn shutdown(&self) -> Result<(), SendError<ServerControl>> {
+        self.server_control.send(ServerControl::Shutdown)
+    }
 
-//     pub fn assign(&self, uuid: Uuid, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), String> {
-//         Err(String::from(""))
-//         /*
-//         match self.consumers.lock() {
-//             Ok(consumers) => if let Err(e) = consumers.send(ConsumersChannel::Assign((uuid, assigned, overwrite))) {
-//                 Err(e.to_string())
-//             } else {
-//                 Ok(())
-//             },
-//             Err(e) => Err(e.to_string()),
-//         }
-//         */
-//     }
+    pub fn assign(&self, uuid: Uuid, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), SendError<ConsumersChannel>> {
+        self.consumers.send(ConsumersChannel::Assign((uuid, assigned, overwrite)))
+    }
 
-//     pub fn drop(&self, uuid: Uuid) -> Result<(), String> {
-//         // TODO: drop connection of consumer
-//         Ok(())
-//     }
-// }
+    pub fn send(&self, filter: Filter, buffer: Vec<u8>) -> Result<(), SendError<ConsumersChannel>> {
+        self.consumers.send(ConsumersChannel::SendByFilter((filter, buffer)))
+    }
 
+} 
 
 pub fn listen<
     S: 'static + Interface + Sync + Send,
@@ -157,7 +180,7 @@ pub fn listen<
 >(
     mut server: S,
     ucx: UCX,
-) -> (impl Future<Output = ()>, UnboundedReceiver<ProducerEvents<UCX>>, UnboundedSender<ServerControl>) {
+) -> Control {
     let (tx_server_events, rx_server_events): (
         UnboundedSender<Events>,
         UnboundedReceiver<Events>) =
@@ -167,8 +190,8 @@ pub fn listen<
         UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
     ) = unbounded_channel();
     let (tx_producer_events, rx_producer_events): (
-        UnboundedSender<ProducerEvents<UCX>>,
-        UnboundedReceiver<ProducerEvents<UCX>>,
+        UnboundedSender<ProducerEvents>,
+        UnboundedReceiver<ProducerEvents>,
     ) = unbounded_channel();
     let (tx_consumers, rx_consumers): (
         UnboundedSender<ConsumersChannel>,
@@ -183,14 +206,11 @@ pub fn listen<
         tx_consumers.clone(),
         tx_producer_events.clone(),
     );
-    // let server_rt_tast : JoinHandle<Result<(), String>> = spawn_server(
-    //     server,
-    //     tx_server_events,
-    //     rx_sender,
-    //     rx_server_control,
-    // );
+    let producer_events_holder_task: JoinHandle<Result<(), String>> = spawn_producer_events_holder(
+        rx_producer_events,
+    );
     let consumers_task: JoinHandle<Result<(), String>> = spawn_consumers(
-        tx_consumers,
+        tx_consumers.clone(),
         rx_consumers,
         tx_sender,
         tx_producer_events,
@@ -204,24 +224,30 @@ pub fn listen<
             _ = server.listen(tx_server_events, rx_sender, Some(rx_server_control)) => {
                 tools::logger.debug("Server is finished");
             },
+            _ = producer_events_holder_task => {
+                tools::logger.debug("Producer events holder tasks is finished");
+            },
             _ = consumers_task => {
                 tools::logger.debug("Consumers tasks is finished");
             },
         };
     };
-    (task, rx_producer_events, tx_server_control)
+    Control {
+        // events: rx_producer_events,
+        listener: Box::pin(task),
+        server_control: tx_server_control,
+        consumers: tx_consumers,
+    }
 }
 
-fn spawn_server_listener<
-    UCX: 'static + Sync + Send + Clone,
->(
+fn spawn_server_listener(
     mut rx_server_events: UnboundedReceiver<Events>,
     tx_consumers: UnboundedSender<ConsumersChannel>,
-    tx_producer_events: UnboundedSender<ProducerEvents<UCX>>,
+    tx_producer_events: UnboundedSender<ProducerEvents>,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
         tools::logger.verb("[task: server listener]:: started");
-        let (tx_streams_task_sd, rx_streams_task_sd): (
+        let (_tx_streams_task_sd, rx_streams_task_sd): (
             Sender<()>,
             Receiver<()>,
         ) = channel();
@@ -236,40 +262,40 @@ fn spawn_server_listener<
 
                         },
                         Events::Connected(uuid) => if let Err(e) = consumers.send(ConsumersChannel::Add(uuid)) {
-                            if let Err(e) = producer_events.send(ProducerEvents::InternalError(
+                            if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                                 tools::logger.err(&format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e)),
-                            )) {
+                            ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
                         Events::Disconnected(uuid) => if let Err(e) = consumers.send(ConsumersChannel::Remove(uuid)) {
-                            if let Err(e) = producer_events.send(ProducerEvents::InternalError(
+                            if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                                 tools::logger.err(&format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e)),
-                            )) {
+                            ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
                         Events::Received(uuid, buffer) => if let Err(e) = consumers.send(ConsumersChannel::Chunk((uuid, buffer))) {
-                            if let Err(e) = producer_events.send(ProducerEvents::InternalError(
+                            if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                                 tools::logger.err(&format!("ConsumersChannel::Chunk: Fail to access to consumers due error: {}", e)),
-                            )) {
+                            ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
-                        Events::Error(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::ConnectionError(
+                        Events::Error(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
                             tools::logger.err(&format!("Error {:?}: {}", uuid, e)),
-                        )) {
+                        ))) {
                             tools::logger.err(&format!("{}", e));
                         },
-                        Events::ConnectionError(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::ConnectionError(
+                        Events::ConnectionError(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
                             tools::logger.err(&format!("ConnectionError {:?}: {:?}", uuid, e)),
-                        )) {
+                        ))) {
                             tools::logger.err(&format!("{}", e));
                         },
                         Events::ServerError(e) => {
-                            if let Err(e) = producer_events.send(ProducerEvents::ConnectionError(
+                            if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
                                 tools::logger.err(&format!("ServerError {:?}", e)),
-                            )) {
+                            ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                             break;
@@ -284,37 +310,31 @@ fn spawn_server_listener<
     })
 }
 
-fn spawn_server<
-    S: 'static + Interface + Sync + Send,
->(
-    mut server: S,
-    tx_server_events: UnboundedSender<Events>,
-    rx_sender: UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
-    rx_server_control: UnboundedReceiver<ServerControl>,
+fn spawn_producer_events_holder(
+    mut rx_producer_events: UnboundedReceiver<ProducerEvents>,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
-        let rt  = match Runtime::new() {
-            Ok(rt) => rt,
-            Err(e) => {
-                return Err(tools::logger.err(&format!("Fail to create runtime executor. Error: {}", e)))
-            },
-        };
-        rt.block_on(async move {
-            if let Err(e) = server.listen(tx_server_events, rx_sender, Some(rx_server_control)).await {
-                tools::logger.err(&format!("[T] fail to create server: {}", e));
+        while let Some(event) = rx_producer_events.recv().await {
+            match event {
+                ProducerEvents::ConsumerConnected(uuid) => ProducerEventsHolder::ConsumerConnected(uuid),
+                ProducerEvents::ConsumerDisconnected(uuid) => ProducerEventsHolder::ConsumerDisconnected(uuid),
+                ProducerEvents::ServerReady => ProducerEventsHolder::ServerReady(),
+                ProducerEvents::Shutdown => ProducerEventsHolder::Shutdown(),
+                ProducerEvents::Error(e) => ProducerEventsHolder::Error(e),
             }
-        });
+        };
         Ok(())
     })
 }
 
+#[allow(non_snake_case)]
 fn spawn_consumers<
     UCX: 'static + Sync + Send + Clone,
 >(
     tx_consumers: UnboundedSender<ConsumersChannel>,
     mut rx_consumers: UnboundedReceiver<ConsumersChannel>,
     tx_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
-    tx_producer_events: UnboundedSender<ProducerEvents<UCX>>,
+    tx_producer_events: UnboundedSender<ProducerEvents>,
     ucx: UCX,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
@@ -344,53 +364,63 @@ fn spawn_consumers<
                             )
                         });
                         tools::logger.debug(&format!("New Consumer added; uuid: {}", uuid));
-                        if let Err(e) = tx_producer_events.send(ProducerEvents::Connected((uuid, ucx.clone()))) {
+                        if let Err(e) = tx_producer_events.send(ProducerEvents::ConsumerConnected(uuid)) {
                             tools::logger.err(&format!("{}", e));
                         }
                         match Connected.write() {
                             Ok(Connected) => {
-                                use ConnectedEvent::Observer;
                                 Connected.emit(
                                     uuid.clone(),
                                     ucx.clone(),
                                     &broadcast,
                                 );
                             }
-                            Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(format!("Fail to access to Connected event handler due error: {}", e).to_owned())) {
+                            Err(e) => if let Err(e) = tx_producer_events.send(
+                                ProducerEvents::Error(ProducerError::InternalError(
+                                    format!("Fail to access to Connected event handler due error: {}", e).to_owned()
+                                ))
+                            ) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         }
                     }
-                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(
-                        format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e),
-                    )) {
+                    Err(e) => if let Err(e) = tx_producer_events.send(
+                        ProducerEvents::Error(ProducerError::InternalError(
+                            format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e)
+                        ))
+                    ) {
                         tools::logger.err(&format!("{}", e));
                     }
                 },
                 ConsumersChannel::Remove(uuid) => match store.write() {
                     Ok(mut store) => {
                         store.remove(&uuid);
-                        if let Err(e) = tx_producer_events.send(ProducerEvents::Disconnected(uuid)) {
+                        if let Err(e) = tx_producer_events.send(ProducerEvents::ConsumerDisconnected(uuid)) {
                             tools::logger.err(&format!("{}", e));
                         }
                         tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
                         match Disconnected.write() {
                             Ok(Disconnected) => {
-                                use DisconnectedEvent::Observer;
                                 Disconnected.emit(
                                     uuid.clone(),
                                     ucx.clone(),
                                     &broadcast,
                                 );
                             }
-                            Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(format!("Fail to access to Connected event handler due error: {}", e).to_owned())) {
+                            Err(e) => if let Err(e) = tx_producer_events.send(
+                                ProducerEvents::Error(ProducerError::InternalError(
+                                    format!("Fail to access to Connected event handler due error: {}", e).to_owned()
+                                ))
+                            ) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         }
                     },
-                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(
-                        format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e),
-                    )) {
+                    Err(e) => if let Err(e) = tx_producer_events.send(
+                        ProducerEvents::Error(ProducerError::InternalError(
+                            format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e)
+                        ))
+                    ) {
                         tools::logger.err(&format!("{}", e));
                     }
                 },
@@ -407,9 +437,11 @@ fn spawn_consumers<
                             tools::logger.err(&errors.join("\n"));
                         }
                     }
-                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(
-                        format!("ConsumersChannel::SendByFilter: Fail to access to consumers due error: {}", e),
-                    )) {
+                    Err(e) => if let Err(e) = tx_producer_events.send(
+                        ProducerEvents::Error(ProducerError::InternalError(
+                            format!("ConsumersChannel::SendByFilter: Fail to access to consumers due error: {}", e)
+                        ))
+                    ) {
                         tools::logger.err(&format!("{}", e));
                     },
                 },
@@ -423,9 +455,11 @@ fn spawn_consumers<
                             tools::logger.err(&format!("ConsumersChannel::SendTo: Fail to find consumer {}", uuid));
                         }
                     },
-                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(
-                        format!("ConsumersChannel::SendTo: Fail to access to consumers due error: {}", e),
-                    )) {
+                    Err(e) => if let Err(e) = tx_producer_events.send(
+                        ProducerEvents::Error(ProducerError::InternalError(
+                            format!("ConsumersChannel::SendTo: Fail to access to consumers due error: {}", e)
+                        ))
+                    ) {
                         tools::logger.err(&format!("{}", e));
                     },
                 },
@@ -437,9 +471,11 @@ fn spawn_consumers<
                             tools::logger.err(&format!("ConsumersChannel::Assign: Fail to find consumer {}", uuid));
                         }
                     },
-                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(
-                        format!("ConsumersChannel::Assign: Fail to access to consumers due error: {}", e),
-                    )) {
+                    Err(e) => if let Err(e) = tx_producer_events.send(
+                        ProducerEvents::Error(ProducerError::InternalError(
+                            format!("ConsumersChannel::Assign: Fail to access to consumers due error: {}", e)
+                        ))
+                    ) {
                         tools::logger.err(&format!("{}", e));
                     },
                 },
@@ -448,9 +484,9 @@ fn spawn_consumers<
                         tools::logger.debug(&format!("New message has been received; uuid: {}; length: {}", uuid, buffer.len()));
                         if let Some(consumer) = consumers.get_mut(&uuid) {
                             if let Err(e) = consumer.chunk(&buffer) {
-                                if let Err(e) = tx_producer_events.send(ProducerEvents::Reading(
+                                if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::Reading(
                                     tools::logger.err(&format!("Fail to read connection buffer due error: {}", e))
-                                )) {
+                                ))) {
                                     tools::logger.err(&format!("{}", e));
                                 }
                             }
@@ -468,13 +504,21 @@ fn spawn_consumers<
                                             },
                                             Err(e) => Err(e),
                                         } {
-                                            if let Err(e) = tx_producer_events.send(ProducerEvents::ConnectionError(format!("Fail to response for Identification due error: {:?}", e).to_owned())) {
+                                            if let Err(e) = tx_producer_events.send(
+                                                ProducerEvents::Error(ProducerError::ConnectionError(
+                                                    format!("Fail to response for Identification due error: {:?}", e).to_owned()
+                                                ))
+                                            ) {
                                                 tools::logger.err(&format!("{}", e));
                                             }
                                         }
                                     },
                                     message => if !consumer.assigned() {
-                                        if let Err(e) = tx_producer_events.send(ProducerEvents::NotAssignedConsumer(tools::logger.err(&format!("Consumer ({}) didn't apply Identification", consumer.get_uuid()).to_owned()))) {
+                                        if let Err(e) = tx_producer_events.send(
+                                            ProducerEvents::Error(ProducerError::NotAssignedConsumer(
+                                                tools::logger.err(&format!("Consumer ({}) didn't apply Identification", consumer.get_uuid()).to_owned())
+                                            ))
+                                        ) {
                                             tools::logger.err(&format!("{}", e));
                                         }
                                         // TODO: Consumer should be disconnected or some tx_producer_events should be to consumer
@@ -485,7 +529,6 @@ fn spawn_consumers<
                                                 tools::logger.debug(&format!("Protocol::AvailableMessages::UserLogin::Request {:?}", request));
                                                 match UserLogin.write() {
                                                     Ok(UserLogin) => {
-                                                        use UserLoginObserver::Observer;
                                                         if let Err(e) = UserLogin.emit(
                                                             consumer.get_cx(),
                                                             ucx.clone(),
@@ -493,12 +536,20 @@ fn spawn_consumers<
                                                             request,
                                                             &broadcast,
                                                         ) {
-                                                            if let Err(e) = tx_producer_events.send(ProducerEvents::EmitError(format!("Fail to emit UserLogin due error: {:?}", e).to_owned())) {
+                                                            if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(
+                                                                    ProducerError::EmitError(format!("Fail to emit UserLogin due error: {:?}", e).to_owned())
+                                                                )
+                                                            ) {
                                                                 tools::logger.err(&format!("{}", e));
                                                             }
                                                         }
                                                     }
-                                                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(format!("Fail to access to UserLogin due error: {}", e).to_owned())) {
+                                                    Err(e) => if let Err(e) = tx_producer_events.send(
+                                                        ProducerEvents::Error(ProducerError::InternalError(
+                                                            format!("Fail to access to UserLogin due error: {}", e).to_owned()
+                                                        ))
+                                                    ) {
                                                         tools::logger.err(&format!("{}", e));
                                                     }
                                                 }
@@ -507,7 +558,6 @@ fn spawn_consumers<
                                                 tools::logger.debug(&format!("Protocol::AvailableMessages::Users::Request {:?}", request));
                                                 match Users.write() {
                                                     Ok(Users) => {
-                                                        use UsersObserver::Observer;
                                                         if let Err(e) = Users.emit(
                                                             consumer.get_cx(),
                                                             ucx.clone(),
@@ -515,12 +565,20 @@ fn spawn_consumers<
                                                             request,
                                                             &broadcast,
                                                         ) {
-                                                            if let Err(e) = tx_producer_events.send(ProducerEvents::EmitError(format!("Fail to emit Protocol::Users::Request due error: {:?}", e).to_owned())) {
+                                                            if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(ProducerError::EmitError(
+                                                                    format!("Fail to emit Protocol::Users::Request due error: {:?}", e).to_owned()
+                                                                ))
+                                                            ) {
                                                                 tools::logger.err(&format!("{}", e));
                                                             }
                                                         }
                                                     }
-                                                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(format!("Fail to access to Users due error: {}", e).to_owned())) {
+                                                    Err(e) => if let Err(e) = tx_producer_events.send(
+                                                        ProducerEvents::Error(ProducerError::InternalError(
+                                                            format!("Fail to access to Users due error: {}", e).to_owned()
+                                                        ))
+                                                    ) {
                                                         tools::logger.err(&format!("{}", e));
                                                     }
                                                 }
@@ -529,7 +587,6 @@ fn spawn_consumers<
                                                 tools::logger.debug(&format!("Protocol::AvailableMessages::Message::Request {:?}", request));
                                                 match Message.write() {
                                                     Ok(Message) => {
-                                                        use MessageObserver::Observer;
                                                         if let Err(e) = Message.emit(
                                                             consumer.get_cx(),
                                                             ucx.clone(),
@@ -537,12 +594,20 @@ fn spawn_consumers<
                                                             request,
                                                             &broadcast,
                                                         ) {
-                                                            if let Err(e) = tx_producer_events.send(ProducerEvents::EmitError(format!("Fail to emit Message due error: {:?}", e).to_owned())) {
+                                                            if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(
+                                                                    ProducerError::EmitError(format!("Fail to emit Message due error: {:?}", e).to_owned())
+                                                                )
+                                                            ) {
                                                                 tools::logger.err(&format!("{}", e));
                                                             }
                                                         }
                                                     }
-                                                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(format!("Fail to access to Message due error: {}", e).to_owned())) {
+                                                    Err(e) => if let Err(e) = tx_producer_events.send(
+                                                        ProducerEvents::Error(
+                                                            ProducerError::InternalError(format!("Fail to access to Message due error: {}", e).to_owned())
+                                                        )
+                                                    ) {
                                                         tools::logger.err(&format!("{}", e));
                                                     }
                                                 }
@@ -551,7 +616,6 @@ fn spawn_consumers<
                                                 tools::logger.debug(&format!("Protocol::AvailableMessages::Messages::Request {:?}", request));
                                                 match Messages.write() {
                                                     Ok(Messages) => {
-                                                        use MessagesObserver::Observer;
                                                         if let Err(e) = Messages.emit(
                                                             consumer.get_cx(),
                                                             ucx.clone(),
@@ -559,12 +623,12 @@ fn spawn_consumers<
                                                             request,
                                                             &broadcast,
                                                         ) {
-                                                            if let Err(e) = tx_producer_events.send(ProducerEvents::EmitError(format!("Fail to emit Messages due error: {:?}", e).to_owned())) {
+                                                            if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::EmitError(format!("Fail to emit Messages due error: {:?}", e).to_owned()))) {
                                                                 tools::logger.err(&format!("{}", e));
                                                             }
                                                         }
                                                     }
-                                                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(format!("Fail to access to Messages due error: {}", e).to_owned())) {
+                                                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::InternalError(format!("Fail to access to Messages due error: {}", e).to_owned()))) {
                                                         tools::logger.err(&format!("{}", e));
                                                     }
                                                 }
@@ -573,16 +637,15 @@ fn spawn_consumers<
                                             },
                                         }
                                     },
-                                    _ => {}
                                 }
                             }
                         } else {
                             tools::logger.err(&format!("Fail to find consumer uuid: {}", uuid));
                         }
                     },
-                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::InternalError(
+                    Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                         tools::logger.err(&format!("ConsumersChannel::Chunk: Fail to access to consumers due error: {}", e)),
-                    )) {
+                    ))) {
                         tools::logger.err(&format!("{}", e));
                     }
                 },

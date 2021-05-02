@@ -6,49 +6,49 @@ pub mod producer;
 
 use fiber::{
     logger::{
-        Logger,
         LogLevel,
     },
-    server::{
-        control::Control as ServerControl
-    },
 };
-use fiber_transport_server::server::Server;
-use fiber_transport_server::{ ErrorResponse, Request, Response};
+use fiber_transport_server::{
+    server::Server,
+};
 use producer::UserLoginObserver::{
-    Observer as UserLoginObserver,
     ObserverRequest as UserLoginObserverRequest,
     AcceptBroadcasting as UserLoginAcceptBroadcasting,
 };
-use producer::UsersObserver::{Observer as UsersObserver, ObserverRequest as UsersObserverRequest};
+use producer::UsersObserver::{
+    Observer as UsersObserver,
+    ObserverRequest as UsersObserverRequest
+};
 use producer::MessageObserver::{
-    Observer as MessageObserver,
     ObserverRequest as MessageObserverRequest,
     AcceptBroadcasting as MessageAcceptBroadcasting,
 };
 use producer::MessagesObserver::{
-    Observer as MessagesObserver, ObserverRequest as MessagesObserverRequest,
+    ObserverRequest as MessagesObserverRequest,
 };
 use producer::ConnectedEvent::{
-    Observer as ConnectedEvent, ObserverEvent as ConnectedEventImpl,
+    ObserverEvent as ConnectedEventImpl,
 };
 use producer::DisconnectedEvent::{
-    Observer as DisconnectedEvent, ObserverEvent as DisconnectedEventImpl,
+    ObserverEvent as DisconnectedEventImpl,
 };
 use producer::consumer_identification::Filter;
-use producer::Producer;
-use std::sync::{Arc, RwLock};
+use std::sync::{
+    Arc,
+    RwLock
+};
 use regex::Regex;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH
+};
 use uuid::Uuid;
 use futures::{
     executor,
 };
 use tokio::{
     select,
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
-    sync::oneshot::{channel, Receiver, Sender},
-    task::{spawn, JoinHandle},
     runtime::Runtime,
 };
 
@@ -94,6 +94,7 @@ impl CustomContext {}
 type WrappedCustomContext = Arc<RwLock<CustomContext>>;
 
 #[allow(unused_variables)]
+#[allow(non_snake_case)]
 impl UserLoginObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::UserLogin::Request,
@@ -171,6 +172,7 @@ impl UserLoginObserverRequest {
 
 
 #[allow(unused_variables)]
+#[allow(non_snake_case)]
 impl UsersObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::Users::Request,
@@ -197,6 +199,7 @@ impl UsersObserverRequest {
 }
 
 #[allow(unused_variables)]
+#[allow(non_snake_case)]
 impl MessageObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::Message::Request,
@@ -260,6 +263,7 @@ impl MessageObserverRequest {
 }
 
 #[allow(unused_variables)]
+#[allow(non_snake_case)]
 impl MessagesObserverRequest {
     fn conclusion<WrappedCustomContext>(
         request: producer::protocol::Messages::Request,
@@ -290,9 +294,9 @@ impl MessagesObserverRequest {
     }
 
     fn Response<UCX: 'static + Sync + Send + Clone>(
-        cx: &producer::consumer::Cx,
-        ucx: UCX,
-        request: producer::protocol::Messages::Request,
+        _cx: &producer::consumer::Cx,
+        _ucx: UCX,
+        _request: producer::protocol::Messages::Request,
     ) -> Result<(), String> {
         Ok(())
         // Remove
@@ -301,9 +305,9 @@ impl MessagesObserverRequest {
 
 impl ConnectedEventImpl {
     fn handler<WrappedCustomContext>(
-        uuid: Uuid,
-        ucx: WrappedCustomContext,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        _uuid: Uuid,
+        _ucx: WrappedCustomContext,
+        _broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> () {
         
     }
@@ -312,7 +316,7 @@ impl ConnectedEventImpl {
 impl DisconnectedEventImpl {
     fn handler<WrappedCustomContext>(
         uuid: Uuid,
-        ucx: WrappedCustomContext,
+        _ucx: WrappedCustomContext,
         broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> () {
         match store::users.write() {
@@ -381,12 +385,21 @@ impl DisconnectedEventImpl {
     }
 }
 
+#[allow(non_snake_case)]
+impl producer::ProducerEventsHolder {
+
+    fn Connected(uuid: Uuid) {
+        println!("=========> {} has been connected!", uuid);
+    }
+
+}
+
 fn main() {
     match fiber::tools::LOGGER_SETTINGS.lock() {
         Ok(mut settings) => settings.set_level(LogLevel::Verb),
         Err(e) => println!("Fail set log level due error: {}", e),
     };
-    let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
+    let server: Server = Server::new(String::from("127.0.0.1:8080"));
     let ucx = CustomContext {};
 
     let rt  = match Runtime::new() {
@@ -396,56 +409,10 @@ fn main() {
         },
     };
     rt.block_on(async move {
-        let (producer_task, mut producer_events, tx_server_control) = producer::listen(server, ucx);
-        let listener = spawn(async move { 
-            while let Some(m) = producer_events.recv().await {
-                match m {
-                    producer::ProducerEvents::Connected((_uuid, _ucx)) => {
-                        println!(">>>>>> Connected");
-                    }
-                    producer::ProducerEvents::ServerDown => {
-                        println!(">>>>>> ServerDown");
-                    }
-                    producer::ProducerEvents::Disconnected(_uuid) => {
-                        println!(">>>>>> Disconnected");
-                    }
-                    producer::ProducerEvents::InternalError(e) => {
-                        println!(">>>>>> InternalError: {}", e);
-                    }
-                    producer::ProducerEvents::EmitError(e) => {
-                        println!(">>>>>> EmitError: {}", e);
-                    }
-                    producer::ProducerEvents::EventError(e) => {
-                        println!(">>>>>> EventError: {}", e);
-                    }
-                    producer::ProducerEvents::EventChannelError(e) => {
-                        println!(">>>>>> EventChannelError: {}", e);
-                    }
-                    producer::ProducerEvents::ConnectionError(e) => {
-                        println!(">>>>>> ConnectionError: {}", e);
-                    }
-                    producer::ProducerEvents::ServerError(e) => {
-                        tx_server_control.send(ServerControl::Shutdown);
-                        println!("ServerError: {}", e);
-                    }
-                    producer::ProducerEvents::BroadcastingError(e) => {
-                        println!("BroadcastingError: {}", e);
-                    }
-                    producer::ProducerEvents::Reading(e) => {
-                        println!("Reading: {}", e);
-                    }
-                    producer::ProducerEvents::EventListenError(e) => {
-                        println!("EventListenError: {}", e);
-                    }
-                    producer::ProducerEvents::NotAssignedConsumer(e) => {
-                        println!("NotAssignedConsumer: {}", e);
-                    }
-                }
-            }
-        });
+        let control = producer::listen(server, ucx);
         select! {
-            _ = listener => {},
-            _ = producer_task => {}
+            //_ = listener => {},
+            _ = control.listener => {}
         };
     });
 }

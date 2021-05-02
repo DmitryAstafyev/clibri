@@ -3,7 +3,7 @@ use super::consumer_identification::Filter;
 use super::observer::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
-use futures::Future;
+
 #[derive(Debug, Clone)]
 pub enum Conclusion {
     Accept(Protocol::UserLogin::Accepted),
@@ -58,20 +58,6 @@ impl ObserverRequest {
         request: Protocol::UserLogin::Request,
         broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
-        /*
-        let error = |mut error: Protocol::UserLogin::Err| {
-            async {
-                match error.pack(sequence, Some(cx.uuid().to_string())) {
-                    Ok(buffer) => if let Err(e) = cx.send(buffer).await {
-                        Err(RequestObserverErrors::ResponsingError(e))
-                    } else {
-                        Ok(())
-                    },
-                    Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
-                }
-            }
-        };
-        */
         match Self::conclusion(request.clone(), cx, ucx.clone()) {
             Ok(conclusion) => {
                 match conclusion {

@@ -1,8 +1,4 @@
-use super::consumer::Cx;
 use super::consumer_identification::Filter;
-use super::observer::RequestObserverErrors;
-use super::protocol::PackingStruct;
-use super::Protocol;
 use uuid::Uuid;
 #[allow(unused_variables)]
 pub trait Observer {

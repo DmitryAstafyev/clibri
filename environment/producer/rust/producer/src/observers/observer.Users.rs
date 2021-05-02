@@ -3,7 +3,7 @@ use super::consumer_identification::Filter;
 use super::observer::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
-use futures::Future;
+
 #[allow(unused_variables)]
 pub trait Observer {
     fn conclusion<UCX: 'static + Sync + Send + Clone>(
@@ -29,7 +29,7 @@ impl ObserverRequest {
         ucx: UCX,
         sequence: u32,
         request: Protocol::Users::Request,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        _broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> Result<(), RequestObserverErrors> {
         /*
         let error = |mut error: Protocol::Users::Err| {
