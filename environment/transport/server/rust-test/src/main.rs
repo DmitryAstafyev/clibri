@@ -7,7 +7,10 @@ use std::sync::{
     RwLock
 };
 use fiber::{
-    logger::Logger,
+    logger::{
+        Logger,
+        LogLevel,
+    },
     server::{
         events::Events,
         interface::Interface,
@@ -70,7 +73,7 @@ pub mod tools {
     use fiber::logger::{ DefaultLogger };
 
     lazy_static! {
-        pub static ref logger: DefaultLogger = DefaultLogger::new("Server".to_owned(), Some(2 /* 5 VERBOSE */));
+        pub static ref logger: DefaultLogger = DefaultLogger::new("Server test".to_owned(), None);
     }
 
 }
@@ -223,7 +226,10 @@ async fn create_events_listener(
 
 
 fn main() {
-    // std::thread::sleep(Duration::from_millis(60000 * 3));
+    match fiber::tools::LOGGER_SETTINGS.lock() {
+        Ok(mut settings) => settings.set_level(LogLevel::Error),
+        Err(e) => println!("Fail set log level due error: {}", e),
+    };
     tools::logger.verb("[T] starting");
     let (tx_events, rx_events): (
         UnboundedSender<Events>,

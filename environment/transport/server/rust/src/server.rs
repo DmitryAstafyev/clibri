@@ -97,6 +97,7 @@ impl Interface for Server {
         let addr: String = self.addr.clone();
         let stat_ref = self.stat.clone();
         let controlls_ref = self.controlls.clone();
+        tools::logger.verb("[main]: will create main task");
         let task = async move {
             tools::logger.verb("[main]: runtime is created");
             let events_cl = events.clone();
@@ -229,8 +230,12 @@ impl Interface for Server {
                                 }
                             };
                         }
-                    } => {},
-                    _ = rx_accepting_task_sd => {}
+                    } => {
+                        tools::logger.verb("[task: accepting]:: natural finishing");
+                    },
+                    _ = rx_accepting_task_sd => {
+                        tools::logger.verb("[task: accepting]:: shutdown called");
+                    }
                 };
                 tools::logger.verb("[task: accepting]:: finished");
             });
@@ -281,8 +286,12 @@ impl Interface for Server {
                                 Messages::Error { uuid, error } => send_event(Events::Error(Some(uuid), format!("{:?}", error).to_string()))
                             }
                         }
-                    } => {},
-                    _ = rx_messages_task_sd => {}
+                    } => {
+                        tools::logger.verb("[task: messages]:: natural finishing");
+                    },
+                    _ = rx_messages_task_sd => {
+                        tools::logger.verb("[task: messages]:: shutdown called");
+                    }
                 };
                 tools::logger.verb("[task: messages]:: finished");
             });
@@ -336,8 +345,12 @@ impl Interface for Server {
                                 },
                             };
                         }                       
-                    } => {},
-                    _ = rx_sender_task_sd => {}
+                    } => {
+                        tools::logger.verb("[task: sender]:: natural finishing");
+                    },
+                    _ = rx_sender_task_sd => {
+                        tools::logger.verb("[task: sender]:: shutdown called");
+                    }
                 };
                 tools::logger.verb("[task: sender]:: finished");
             });
@@ -352,16 +365,25 @@ impl Interface for Server {
                             if let Err(e) = tx_sender_task_sd.send(()) { tools::logger.err(&format!("fail call sender for streams task. Error: {:?}", e)); }
                         }
                     } }
-                    
                 }
                 tools::logger.verb("[task: control]:: finished");
             });
             select! {
-                _ = streams_task => {},
-                _ = accepting_task => {},
-                _ = messages_task => {},
-                _ = sender_task => {},
-                _ = control_task => {},
+                _ = streams_task => {
+                    tools::logger.debug("[main]:: finished on streams_task");
+                },
+                _ = accepting_task => {
+                    tools::logger.debug("[main]:: finished on accepting_task");
+                },
+                _ = messages_task => {
+                    tools::logger.debug("[main]:: finished on messages_task");
+                },
+                _ = sender_task => {
+                    tools::logger.debug("[main]:: finished on sender_task");
+                },
+                _ = control_task => {
+                    tools::logger.debug("[main]:: finished on control_task");
+                },
             };
             tools::logger.verb("[main]:: finished");
             Ok(())
