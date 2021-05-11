@@ -1,6 +1,6 @@
 use super::packing;
-use packing::{has_buffer_header, get_header_from_buffer, has_buffer_body, get_body_from_buffer};
 use packing::PackageHeader;
+use packing::{get_body_from_buffer, get_header_from_buffer, has_buffer_body, has_buffer_header};
 
 // injectable
 #[derive(Debug)]

@@ -22,7 +22,7 @@ DIS: logic - send all broadcast messages with some conclusion has week point. Wh
 
 UserSignInRequest:UserSignInError
    : (Accept > UserSignInAccepted) > accept;
-                                    > broadcast: UserSignInBroadcast;
+                                   > broadcast: UserSignInBroadcast;
    : (Deny > UserSignInDenied)     > deny;
 
 UserSignInRequest : UserSignInError

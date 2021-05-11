@@ -408,17 +408,30 @@ fn main() {
         },
     };
     rt.block_on( async move {
-        let mut control = producer::init(server, ucx);
-        if let Some(thread) = control.thread() {
-            let b = async move {
-                tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
-                control.shutdown();
-                tokio::time::sleep(std::time::Duration::from_millis(3000)).await;
-            };
-            select! {
-                _ = thread => {},
-                _ = b => {}
-            };
-        }
+        let (thread, control) = producer::init(server, ucx);
+        thread.await;
+        // let shutdown_task_control = control.clone();
+        // let shutdown_task = async move {
+        //     tokio::time::sleep(std::time::Duration::from_millis(20000)).await;
+        //     shutdown_task_control.shutdown();
+        //     tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+        // };
+        // let disconnect_task_control = control.clone();
+        // let disconnect_task = async move {
+        //     tokio::time::sleep(std::time::Duration::from_millis(5000)).await;
+        //     match store::users.read() {
+        //         Ok(users) => {
+        //             println!("{:?}", users.keys().next())
+        //             //disconnect_task_control
+        //         },
+        //         Err(e) => { }
+        //     };
+        //     tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+        // };
+        // select! {
+        //     _ = thread => {},
+        //     _ = shutdown_task => {},
+        //     _ = disconnect_task => {},
+        // };
     });
 }

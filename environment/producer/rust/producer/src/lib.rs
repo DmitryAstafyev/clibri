@@ -34,6 +34,10 @@ pub mod ConnectedEvent;
 #[path = "./events/event.Disconnected.rs"]
 pub mod DisconnectedEvent;
 
+#[allow(non_snake_case)]
+#[path = "./events/event.KickOff.rs"]
+pub mod KickOffEvent;
+
 
 use super::tools;
 use consumer::Consumer;
@@ -55,6 +59,7 @@ use std::sync::{
 use std::pin::Pin;
 use tokio::{
     select,
+    join,
     sync::mpsc::{
         unbounded_channel,
         UnboundedReceiver,
@@ -153,8 +158,8 @@ pub struct ProducerEventsHolder;
 
 impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
+#[derive(Clone)]
 pub struct Control {
-    thread: Option<Pin<Box<dyn Future<Output = ()>>>>,
     server_control: UnboundedSender<ServerControl>,
     consumers: UnboundedSender<ConsumersChannel>,
 }
@@ -173,9 +178,10 @@ impl Control {
         self.consumers.send(ConsumersChannel::SendByFilter((filter, buffer)))
     }
 
-    pub fn thread(&mut self) -> Option<Pin<Box<dyn Future<Output = ()>>>> {
-        self.thread.take()
+    pub fn disconnect(filter: Filter) -> Result<(), String> {
+        Ok(())
     }
+
 }
 
 pub enum StartError {
@@ -197,12 +203,7 @@ pub fn init_and_start<
         },
     };
     rt.block_on(async move {
-        let mut controller = init(server, ucx);
-        let thread = if let Some(thread) = controller.thread() {
-            thread
-        } else {
-            panic!("Cannot get producer thread");
-        };
+        let (thread, controller) = init(server, ucx);
         if let Some(sender) = control {
             if let Err(e) = sender.send(controller) {
                 panic!("Cannot send control. Error: {}", e);
@@ -219,7 +220,7 @@ pub fn init<
 >(
     mut server: S,
     ucx: UCX,
-) -> Control {
+) -> (Pin<Box<dyn Future<Output = ()>>>, Control) {
     let (tx_server_events, rx_server_events): (
         UnboundedSender<Events>,
         UnboundedReceiver<Events>) =
@@ -267,8 +268,21 @@ pub fn init<
         rx_consumers,
         tx_sender,
         tx_producer_events,
-        ucx,
+        ucx.clone(),
         rx_consumers_task_sd,
+    );
+    let control = Control {
+        server_control: tx_server_control,
+        consumers: tx_consumers,
+    };
+    let (tx_events_task_sd, rx_events_task_sd): (
+        Sender<()>,
+        Receiver<()>,
+    ) = channel();
+    let events_task: JoinHandle<Result<(), String>> = spawn_events(
+        ucx,
+        control.clone(),
+        rx_events_task_sd,
     );
     let task = async move {
         tools::logger.debug("[task: main]:: started");
@@ -285,11 +299,15 @@ pub fn init<
             _ = consumers_task => {
                 tools::logger.debug("[task: consumers task]:: finished in chain");
             },
+            _ = events_task => {
+                tools::logger.debug("[task: events task]:: finished in chain");
+            },
         };
         for task in (vec![
             Some(("server listener", tx_server_listener_task_sd)),
             Some(("events holder", tx_producer_events_holder_task_sd)),
-            Some(("consumers", tx_consumers_task_sd))
+            Some(("consumers", tx_consumers_task_sd)),
+            Some(("events", tx_events_task_sd)),
         ]).iter_mut() {
             if let Some(task) = task.take() {
                 if let Err(_e) = task.1.send(()) {
@@ -299,11 +317,7 @@ pub fn init<
         }
         tools::logger.debug("[task: main]:: finished");
     };
-    Control {
-        thread: Some(Box::pin(task)),
-        server_control: tx_server_control,
-        consumers: tx_consumers,
-    }
+    (Box::pin(task), control)
 }
 
 fn spawn_server_listener(
@@ -748,6 +762,29 @@ fn spawn_consumers<
             },
         }
         tools::logger.verb("[task: consumers]:: finished");
+        Ok(())
+    })
+}
+
+#[allow(non_snake_case)]
+fn spawn_events<
+    UCX: 'static + Sync + Send + Clone,
+>(
+    ucx: UCX,
+    control: Control,
+    rx_shutdown: Receiver<()>,
+) -> JoinHandle<Result<(), String>> {
+    let (tx_event_kickoff, rx_event_kickoff): (
+        UnboundedSender<KickOffEvent::Event>,
+        UnboundedReceiver<KickOffEvent::Event>,
+    ) = unbounded_channel();
+    spawn(async move {
+        tools::logger.debug("[task: events]:: started");
+        join!(
+            KickOffEvent::ObserverEvent::listen(ucx.clone(), control.clone(), rx_event_kickoff),
+            rx_shutdown,
+        );
+        tools::logger.debug("[task: events]:: finished");
         Ok(())
     })
 }

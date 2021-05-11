@@ -1,4 +1,5 @@
 use super::consumer_identification::Filter;
+
 use uuid::Uuid;
 #[allow(unused_variables)]
 pub trait Observer {
