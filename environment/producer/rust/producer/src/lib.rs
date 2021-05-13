@@ -46,7 +46,7 @@ use fiber::{
     logger::Logger,
     server::{
         control::Control as ServerControl,
-        events::Events,
+        events::Events as ServerEvents,
         interface::Interface
     }
 };
@@ -159,12 +159,41 @@ pub struct ProducerEventsHolder;
 impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 #[derive(Clone)]
+pub struct Events {
+    pub tx_event_kickoff: UnboundedSender<KickOffEvent::Event>,
+}
+
+impl Events {
+    pub fn new(
+        tx_event_kickoff: UnboundedSender<KickOffEvent::Event>
+    ) -> Self {
+        Events {
+            tx_event_kickoff,
+        }
+    }
+
+}
+
+#[derive(Clone)]
 pub struct Control {
     server_control: UnboundedSender<ServerControl>,
     consumers: UnboundedSender<ConsumersChannel>,
+    pub events: Events,
 }
 
 impl Control {
+
+    pub fn new(
+        server_control: UnboundedSender<ServerControl>,
+        consumers: UnboundedSender<ConsumersChannel>,
+        events: Events,
+    ) -> Self {
+        Control {
+            server_control,
+            consumers,
+            events,
+        }
+    }
 
     pub fn shutdown(&self) -> Result<(), SendError<ServerControl>> {
         self.server_control.send(ServerControl::Shutdown)
@@ -222,8 +251,8 @@ pub fn init<
     ucx: UCX,
 ) -> (Pin<Box<dyn Future<Output = ()>>>, Control) {
     let (tx_server_events, rx_server_events): (
-        UnboundedSender<Events>,
-        UnboundedReceiver<Events>) =
+        UnboundedSender<ServerEvents>,
+        UnboundedReceiver<ServerEvents>) =
         unbounded_channel();
     let (tx_sender, rx_sender): (
         UnboundedSender<(Vec<u8>, Option<Uuid>)>,
@@ -271,10 +300,18 @@ pub fn init<
         ucx.clone(),
         rx_consumers_task_sd,
     );
-    let control = Control {
-        server_control: tx_server_control,
-        consumers: tx_consumers,
-    };
+    let (tx_event_kickoff, rx_event_kickoff): (
+        UnboundedSender<KickOffEvent::Event>,
+        UnboundedReceiver<KickOffEvent::Event>,
+    ) = unbounded_channel();
+    let events = Events::new(
+        tx_event_kickoff
+    );
+    let control = Control::new(
+        tx_server_control,
+        tx_consumers,
+        events,
+    );
     let (tx_events_task_sd, rx_events_task_sd): (
         Sender<()>,
         Receiver<()>,
@@ -282,6 +319,7 @@ pub fn init<
     let events_task: JoinHandle<Result<(), String>> = spawn_events(
         ucx,
         control.clone(),
+        rx_event_kickoff,
         rx_events_task_sd,
     );
     let task = async move {
@@ -321,7 +359,7 @@ pub fn init<
 }
 
 fn spawn_server_listener(
-    mut rx_server_events: UnboundedReceiver<Events>,
+    mut rx_server_events: UnboundedReceiver<ServerEvents>,
     tx_consumers: UnboundedSender<ConsumersChannel>,
     tx_producer_events: UnboundedSender<ProducerEvents>,
     rx_shutdown: Receiver<()>,
@@ -339,41 +377,41 @@ fn spawn_server_listener(
                     let consumers = tx_consumers.clone();
                     let producer_events = tx_producer_events.clone();
                     match event {
-                        Events::Ready => {
+                        ServerEvents::Ready => {
 
                         },
-                        Events::Connected(uuid) => if let Err(e) = consumers.send(ConsumersChannel::Add(uuid)) {
+                        ServerEvents::Connected(uuid) => if let Err(e) = consumers.send(ConsumersChannel::Add(uuid)) {
                             if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                                 tools::logger.err(&format!("ConsumersChannel::Add: Fail to access to consumers due error: {}", e)),
                             ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
-                        Events::Disconnected(uuid) => if let Err(e) = consumers.send(ConsumersChannel::Remove(uuid)) {
+                        ServerEvents::Disconnected(uuid) => if let Err(e) = consumers.send(ConsumersChannel::Remove(uuid)) {
                             if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                                 tools::logger.err(&format!("ConsumersChannel::Remove: Fail to access to consumers due error: {}", e)),
                             ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
-                        Events::Received(uuid, buffer) => if let Err(e) = consumers.send(ConsumersChannel::Chunk((uuid, buffer))) {
+                        ServerEvents::Received(uuid, buffer) => if let Err(e) = consumers.send(ConsumersChannel::Chunk((uuid, buffer))) {
                             if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
                                 tools::logger.err(&format!("ConsumersChannel::Chunk: Fail to access to consumers due error: {}", e)),
                             ))) {
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
-                        Events::Error(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
+                        ServerEvents::Error(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
                             tools::logger.err(&format!("Error {:?}: {}", uuid, e)),
                         ))) {
                             tools::logger.err(&format!("{}", e));
                         },
-                        Events::ConnectionError(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
+                        ServerEvents::ConnectionError(uuid, e) => if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
                             tools::logger.err(&format!("ConnectionError {:?}: {:?}", uuid, e)),
                         ))) {
                             tools::logger.err(&format!("{}", e));
                         },
-                        Events::ServerError(e) => {
+                        ServerEvents::ServerError(e) => {
                             if let Err(e) = producer_events.send(ProducerEvents::Error(ProducerError::ConnectionError(
                                 tools::logger.err(&format!("ServerError {:?}", e)),
                             ))) {
@@ -771,13 +809,10 @@ fn spawn_events<
     UCX: 'static + Sync + Send + Clone,
 >(
     ucx: UCX,
-    control: Control,
+    mut control: Control,
+    rx_event_kickoff: UnboundedReceiver<KickOffEvent::Event>,
     rx_shutdown: Receiver<()>,
 ) -> JoinHandle<Result<(), String>> {
-    let (tx_event_kickoff, rx_event_kickoff): (
-        UnboundedSender<KickOffEvent::Event>,
-        UnboundedReceiver<KickOffEvent::Event>,
-    ) = unbounded_channel();
     spawn(async move {
         tools::logger.debug("[task: events]:: started");
         join!(
