@@ -32,6 +32,9 @@ use producer::ConnectedEvent::{
 use producer::DisconnectedEvent::{
     ObserverEvent as DisconnectedEventImpl,
 };
+use producer::KickOffEvent::{
+    ObserverEvent as KickOffEventImpl,
+};
 use producer::consumer_identification::Filter;
 use std::sync::{
     Arc,
@@ -48,6 +51,7 @@ use futures::{
 };
 use tokio::{
     select,
+    join,
     runtime::Runtime,
 };
 
@@ -384,6 +388,50 @@ impl DisconnectedEventImpl {
     }
 }
 
+impl KickOffEventImpl {
+
+    fn handler<WrappedCustomContext>(
+        event: producer::KickOffEvent::Event,
+        _ucx: WrappedCustomContext,
+        control: producer::Control,
+    ) -> Option<Vec<(Filter, producer::KickOffEvent::Broadcast)>> {
+        match store::users.read() {
+            Ok(mut users) => {
+                if let Some(user) = users.values().next() {
+                    control.disconnect(Filter {
+                        uuid: Some((user.uuid.clone(), producer::consumer_identification::Condition::Equal)),
+                        assign: Some(true),
+                        filter: None,
+                    });
+                    let tm = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Time went backwards");
+                    Some(vec![
+                        (Filter {
+                            uuid: Some((user.uuid.clone(), producer::consumer_identification::Condition::NotEqual)),
+                            assign: Some(true),
+                            filter: None,
+                        },
+                        producer::KickOffEvent::Broadcast::Message(producer::protocol::Events::Message {
+                            user: "Admin".to_owned(),
+                            message: format!("User {} kicked off because {}", user.name, event.reason),
+                            timestamp: tm.as_secs(),
+                            uuid: user.uuid.to_string(),
+                        }))
+                    ])
+                } else {
+                    None
+                }
+            },
+            Err(err) => {
+                panic!("{}", err);
+            }
+        }
+        
+    }
+
+}
+
 #[allow(non_snake_case)]
 impl producer::ProducerEventsHolder {
 
@@ -409,7 +457,17 @@ fn main() {
     };
     rt.block_on( async move {
         let (thread, control) = producer::init(server, ucx);
-        thread.await;
+        let kickoff_task = async move {
+            tokio::time::sleep(std::time::Duration::from_millis(10000)).await;
+            control.events.KickOffEvent.send(producer::KickOffEvent::Event {
+                reason: String::from("Test")
+            });
+            tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+        };
+        join!(
+            thread,
+            kickoff_task,
+        );
         // let shutdown_task_control = control.clone();
         // let shutdown_task = async move {
         //     tokio::time::sleep(std::time::Duration::from_millis(20000)).await;

@@ -122,6 +122,10 @@ impl Consumer {
         }
     }
 
+    pub fn is_filtered(&self, filter: Filter) -> bool {
+        self.identification.filter(filter.clone())
+    }
+
     pub fn get_cx(&mut self) -> &Cx {
         &self.cx
     }

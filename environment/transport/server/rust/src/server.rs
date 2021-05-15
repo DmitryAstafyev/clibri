@@ -313,6 +313,7 @@ impl Interface for Server {
                 Sender<()>,
                 Receiver<()>,
             ) = channel();
+            let controlls = controlls_ref.clone();
             let sender_task: JoinHandle<()> = spawn(async move {
                 tools::logger.verb("[task: sender]:: started");
                 select! {
@@ -354,6 +355,20 @@ impl Interface for Server {
                 };
                 tools::logger.verb("[task: sender]:: finished");
             });
+
+            let controlls = controlls_ref.clone();
+            let events_cl = events.clone();
+            let stat = stat_ref.clone();
+            let send_event = move |event: Events| {
+                match event {
+                    Events::Error(_, _) | Events::ConnectionError(_, _) | Events::ServerError(_) =>
+                        if let Ok(mut stat) = stat.write() { stat.errors(); },
+                    _ => {}
+                };
+                if let Err(e) = events_cl.send(event) {
+                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                }
+            };
             let control_task: JoinHandle<()> = spawn(async move {
                 tools::logger.verb("[task: control]:: started");
                 if let Some(mut control) = control {
@@ -363,6 +378,24 @@ impl Interface for Server {
                             if let Err(e) = tx_accepting_task_sd.send(()) { tools::logger.err(&format!("fail call accepting for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_messages_task_sd.send(()) { tools::logger.err(&format!("fail call messages for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_sender_task_sd.send(()) { tools::logger.err(&format!("fail call sender for streams task. Error: {:?}", e)); }
+                        },
+                        ServerControl::Disconnect(uuid) => {
+                            match controlls.read() {
+                                Ok(mut controlls) => {
+                                    if let Some(control) = controlls.get(&uuid) {
+                                        if let Err(e) = control.send(Control::Disconnect) {
+                                            send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Fail to send close connection command due error: {}", uuid, e))))
+                                        }
+                                    } else {
+                                        send_event(Events::ServerError(Errors::CreateWS(
+                                            tools::logger.err(&format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)),
+                                        )))
+                                    }
+                                },
+                                Err(e) => send_event(Events::ServerError(Errors::CreateWS(
+                                    tools::logger.err(&format!("Fail get controlls due error: {}", e)),
+                                )))
+                            };
                         }
                     } }
                 }

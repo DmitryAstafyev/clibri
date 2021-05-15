@@ -109,6 +109,7 @@ pub enum ConsumersChannel {
     SendTo((Uuid, Vec<u8>)),
     Assign((Uuid, Protocol::Identification::AssignedKey, bool)),
     Chunk((Uuid, Vec<u8>)),
+    Disconnect(Filter),
 }
 
 #[allow(non_snake_case)]
@@ -160,15 +161,15 @@ impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 #[derive(Clone)]
 pub struct Events {
-    pub tx_event_kickoff: UnboundedSender<KickOffEvent::Event>,
+    pub KickOffEvent: UnboundedSender<KickOffEvent::Event>,
 }
 
 impl Events {
     pub fn new(
-        tx_event_kickoff: UnboundedSender<KickOffEvent::Event>
+        KickOffEvent: UnboundedSender<KickOffEvent::Event>
     ) -> Self {
         Events {
-            tx_event_kickoff,
+            KickOffEvent,
         }
     }
 
@@ -207,8 +208,8 @@ impl Control {
         self.consumers.send(ConsumersChannel::SendByFilter((filter, buffer)))
     }
 
-    pub fn disconnect(filter: Filter) -> Result<(), String> {
-        Ok(())
+    pub fn disconnect(&self, filter: Filter) -> Result<(), SendError<ConsumersChannel>> {
+        self.consumers.send(ConsumersChannel::Disconnect(filter))
     }
 
 }
@@ -295,6 +296,7 @@ pub fn init<
     let consumers_task: JoinHandle<Result<(), String>> = spawn_consumers(
         tx_consumers.clone(),
         rx_consumers,
+        tx_server_control.clone(),
         tx_sender,
         tx_producer_events,
         ucx.clone(),
@@ -471,6 +473,7 @@ fn spawn_consumers<
 >(
     tx_consumers: UnboundedSender<ConsumersChannel>,
     mut rx_consumers: UnboundedReceiver<ConsumersChannel>,
+    tx_server_control: UnboundedSender<ServerControl>,
     tx_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
     tx_producer_events: UnboundedSender<ProducerEvents>,
     ucx: UCX,
@@ -790,6 +793,26 @@ fn spawn_consumers<
                                 tools::logger.err(&format!("{}", e));
                             }
                         },
+                        ConsumersChannel::Disconnect(filter) => match store.read() {
+                            Ok(mut consumers) => {
+                                let mut errors: Vec<String> = vec![];
+                                for (uuid, consumer) in consumers.iter() {
+                                    if consumer.is_filtered(filter.clone()) {
+                                        if let Err(err) = tx_server_control.send(ServerControl::Disconnect(consumer.get_uuid())) {
+                                            errors.push(format!("Fail to Disconnect {}, due error: {}", consumer.get_uuid(), err));
+                                        }
+                                    }
+                                }
+                                if !errors.is_empty() {
+                                    tools::logger.err(&errors.join("\n"));
+                                }
+                            },
+                            Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::InternalError(
+                                tools::logger.err(&format!("ConsumersChannel::Disconnect: Fail to access to consumers due error: {}", e)),
+                            ))) {
+                                tools::logger.err(&format!("{}", e));
+                            }
+                        }
                     }
                 }
             } => {

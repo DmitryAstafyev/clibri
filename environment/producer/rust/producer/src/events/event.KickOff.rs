@@ -33,7 +33,7 @@ use fiber::{
 use uuid::Uuid;
 
 pub struct Event {
-    field_a: u32,
+    pub reason: String,
 }
 
 pub enum Broadcast {
