@@ -458,7 +458,7 @@ fn main() {
     rt.block_on( async move {
         let (thread, control) = producer::init(server, ucx);
         let kickoff_task = async move {
-            tokio::time::sleep(std::time::Duration::from_millis(10000)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(20000)).await;
             control.events.KickOffEvent.send(producer::KickOffEvent::Event {
                 reason: String::from("Test")
             });

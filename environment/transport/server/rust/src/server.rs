@@ -372,16 +372,17 @@ impl Interface for Server {
             let control_task: JoinHandle<()> = spawn(async move {
                 tools::logger.verb("[task: control]:: started");
                 if let Some(mut control) = control {
-                    if let Some(msg) = control.recv().await { match msg {
+                    while let Some(msg) = control.recv().await { match msg {
                         ServerControl::Shutdown => {
                             if let Err(e) = tx_streams_task_sd.send(()) { tools::logger.err(&format!("fail call shutdown for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_accepting_task_sd.send(()) { tools::logger.err(&format!("fail call accepting for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_messages_task_sd.send(()) { tools::logger.err(&format!("fail call messages for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_sender_task_sd.send(()) { tools::logger.err(&format!("fail call sender for streams task. Error: {:?}", e)); }
+                            break;
                         },
                         ServerControl::Disconnect(uuid) => {
                             match controlls.read() {
-                                Ok(mut controlls) => {
+                                Ok(controlls) => {
                                     if let Some(control) = controlls.get(&uuid) {
                                         if let Err(e) = control.send(Control::Disconnect) {
                                             send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Fail to send close connection command due error: {}", uuid, e))))
