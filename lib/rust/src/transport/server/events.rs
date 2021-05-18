@@ -6,6 +6,7 @@ use super::{
 };
 pub enum Events {
     Ready,
+    Shutdown,
     Connected(Uuid),
     Disconnected(Uuid),
     Received(Uuid, Vec<u8>),

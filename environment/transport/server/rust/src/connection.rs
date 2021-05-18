@@ -45,7 +45,7 @@ use tokio_tungstenite::{
 use uuid::Uuid;
 
 enum State {
-    DisconnectByClient(CloseFrame<'static>),
+    DisconnectByClient(Option<CloseFrame<'static>>),
     DisconnectByClientWithError(String),
     DisconnectByServer,
     Error(ChannelError),
@@ -103,19 +103,19 @@ impl Connection {
                         let msg = match msg {
                             Ok(msg) => msg,
                             Err(e) => {
-                                match e {
-                                    Error::Protocol(ref e) if e == &ProtocolError::ResetWithoutClosingHandshake => {
+                                if let Error::Protocol(ref e) = e {
+                                    if e == &ProtocolError::ResetWithoutClosingHandshake {
                                         state = Some(State::DisconnectByClientWithError(tools::logger.debug(&format!("{}:: Client disconnected without closing handshake", uuid))));
-                                    },
-                                    _ => {
-                                        let e = tools::logger.warn(&format!("{}:: Cannot get message. Error: {:?}", uuid, e));
-                                        send_event(Events::ConnectionError(
-                                            Some(uuid),
-                                            Errors::InvalidMessage(e.clone()),
-                                        ));
-                                        state = Some(State::Error(ChannelError::ReadSocket(e)));
-                                    },
-                                };
+                                    }
+                                }
+                                if state.is_none() {
+                                    let e = tools::logger.warn(&format!("{}:: Cannot get message. Error: {:?}", uuid, e));
+                                    send_event(Events::ConnectionError(
+                                        Some(uuid),
+                                        Errors::InvalidMessage(e.clone()),
+                                    ));
+                                    state = Some(State::Error(ChannelError::ReadSocket(e)));
+                                }
                                 break;
                             }
                         };
@@ -139,10 +139,8 @@ impl Connection {
                                 tools::logger.warn(&format!("{}:: Ping / Pong", uuid));
                             },
                             Message::Close(close_frame) => {
-                                if let Some(frame) = close_frame {
-                                    state = Some(State::DisconnectByClient(frame));
-                                    break;
-                                }
+                                state = Some(State::DisconnectByClient(close_frame));
+                                break;
                             }
                         }
                     },
@@ -174,7 +172,11 @@ impl Connection {
                         send_message(Messages::Disconnect { uuid, code: None });
                     },
                     State::DisconnectByClient(frame) => {
-                        send_message(Messages::Disconnect { uuid, code: Some(frame.code) });
+                        send_message(Messages::Disconnect { uuid, code: if let Some(frame) = frame {
+                            Some(frame.code)
+                        } else {
+                            None
+                        } });
                     },
                     State::DisconnectByClientWithError(e) => {
                         tools::logger.debug(&format!("{}:: client error: {}", uuid, e));
@@ -201,6 +203,7 @@ impl Connection {
                     }
                 }
             };
+            drop(ws);
         });
         Ok(tx_control)
     }

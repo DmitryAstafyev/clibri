@@ -157,9 +157,14 @@ impl Interface for Server {
                                 break;
                             }
                         }
-                    } => {},
-                    _ = rx_streams_task_sd => {}
+                    } => {
+                        tools::logger.warn("TcpListener listener task was finished by error");
+                    },
+                    _ = rx_streams_task_sd => {
+                        tools::logger.warn("TcpListener listener task was finished by shutdown");
+                    }
                 };
+                drop(listener);
                 tools::logger.verb("[task: streams]:: finished");
             });
             let events_cl = events.clone();
@@ -193,9 +198,7 @@ impl Interface for Server {
                             tools::logger.debug("New stream has been gotten");
                             let ws = match accept_hdr_async(stream, |req: &Request, response: Response| {
                                 Handshake::accept(req, response)
-                            })
-                            .await
-                            {
+                            }).await {
                                 Ok(ws) => ws,
                                 Err(e) => {
                                     tools::logger.warn(&format!("Fail to accept stream due error: {:?}", e));
@@ -209,8 +212,7 @@ impl Interface for Server {
                                 Ok(control) => control,
                                 Err(e) => {
                                     send_event(Events::ServerError(Errors::CreateWS(
-                                        tools::logger
-                                            .warn(&format!("Cannot create ws connection. Error: {}", e)),
+                                        tools::logger.warn(&format!("Cannot create ws connection. Error: {}", e)),
                                     )));
                                     continue;
                                 }
@@ -295,7 +297,6 @@ impl Interface for Server {
                 };
                 tools::logger.verb("[task: messages]:: finished");
             });
-            let controlls = controlls_ref.clone();
             let events_cl = events.clone();
             let stat = stat_ref.clone();
             let send_event = move |event: Events| {
@@ -374,6 +375,7 @@ impl Interface for Server {
                 if let Some(mut control) = control {
                     while let Some(msg) = control.recv().await { match msg {
                         ServerControl::Shutdown => {
+                            tools::logger.debug("ServerControl::Shutdown has been called");
                             if let Err(e) = tx_streams_task_sd.send(()) { tools::logger.err(&format!("fail call shutdown for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_accepting_task_sd.send(()) { tools::logger.err(&format!("fail call accepting for streams task. Error: {:?}", e)); }
                             if let Err(e) = tx_messages_task_sd.send(()) { tools::logger.err(&format!("fail call messages for streams task. Error: {:?}", e)); }
@@ -420,15 +422,12 @@ impl Interface for Server {
                 },
             };
             tools::logger.verb("[main]:: finished");
+            if let Err(e) = events.send(Events::Shutdown) {
+                tools::logger.warn(&format!("Cannot send Events::Shutdown . Error: {}", e));
+            }
             Ok(())
         };
         Box::pin(task)
     }
 
-}
-
-impl Drop for Server {
-    fn drop(&mut self) {
-        println!(" ====> Dropping Server!");
-    }
 }

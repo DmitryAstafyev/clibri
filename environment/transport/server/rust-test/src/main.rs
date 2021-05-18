@@ -25,12 +25,16 @@ use tokio::{
     },
     join,
     runtime::Runtime,
-    task::spawn,
+    task::{
+        spawn,
+        JoinHandle,
+    },
     time::Duration,
 };
 pub use tokio_tungstenite::{
     connect_async,
     tungstenite::Message,
+    WebSocketStream,
 };
 use uuid::Uuid;
 use std::thread;
@@ -61,6 +65,7 @@ struct Stat {
     pub destroyed: u32,
     pub connected: u32,
     pub disconnected: u32,
+    pub failed: u32,
     pub sent: u32,
     pub recieved: u32,
     pub created_in: u128,
@@ -78,7 +83,7 @@ pub mod tools {
 
 }
 
-const CLIENTS: usize = 5000;
+const CLIENTS: usize = 10000;
 
 async fn create_client(
     status: mpsc::Sender<ClientStatus>,
@@ -89,29 +94,24 @@ async fn create_client(
     let (ws_stream, _) = match connect_async("ws://127.0.0.1:8080").await {
         Ok(res) => res,
         Err(e) => {
-            status.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: failed to connect: {}", e)))).expect("ClientStatus should be sent");
+            status.send(ClientStatus::Err(tools::logger.err(&format!("[T] client [connect_async]: failed to connect: {}", e)))).expect("ClientStatus should be sent");
             return;
         }
     };
     tools::logger.verb("[T] handshake has been successfully completed");
-    let (tx_shutdown_writer, mut rx_shutdown_writer): (
-        UnboundedSender<()>,
-        UnboundedReceiver<()>,
-    ) = unbounded_channel();
-    let (tx_shutdown_sender, mut rx_shutdown_sender): (
-        UnboundedSender<()>,
-        UnboundedReceiver<()>,
-    ) = unbounded_channel();
+    // let (tx_shutdown_sender, mut rx_shutdown_sender): (
+    //     UnboundedSender<()>,
+    //     UnboundedReceiver<()>,
+    // ) = unbounded_channel();
     let client_status_rd = status.clone();
     let (mut write, mut read) = ws_stream.split();
+    // TODO: stream should be closed as well
     let reader = spawn(async move {
         tools::logger.verb("[T] client: reader is created");
         if let Some(msg) = read.next().await {
             let data = msg.unwrap().into_data();
             tools::logger.verb(&format!("[T] income data: {:?}", data));
         }
-        tx_shutdown_writer.send(()).expect("Shutdown writer should be sent");
-        tx_shutdown_sender.send(()).expect("Shutdown sender should be sent");
         tools::logger.verb("[T] client: reader is destroyed");
     });
     let (tx_sender_from_client, mut rx_sender_from_client): (
@@ -119,28 +119,31 @@ async fn create_client(
         UnboundedReceiver<Vec<u8>>,
     ) = unbounded_channel();
     let client_status_wr = status.clone();
-    let writer = spawn(async move {
+    let writer: JoinHandle<Result<
+        futures::stream::SplitSink<tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, tokio_tungstenite::tungstenite::Message>,
+        String
+    >> = spawn(async move {
         tools::logger.verb("[T] client: writer is created");
         while let Some(buffer) = rx_sender_from_client.recv().await {
             if let Err(e) = write.send(Message::Binary(buffer)).await {
-                client_status_wr.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: fail to send data: {}", e)))).expect("ClientStatus should be sent");
-                return;
+                client_status_wr.send(ClientStatus::Err(tools::logger.err(&format!("[T] client [writer]: fail to send data: {}", e)))).expect("ClientStatus should be sent");
+                return Err(String::from("Fail to write data"));
             }
         }
-        rx_shutdown_writer.recv().await;
         tools::logger.verb("[T] client: writer is destroyed");
+        Ok(write)
     });
     let client_status_sd = status.clone();
     let stat_sw = stat.clone();
     let sender_from_client = spawn(async move {
         if let Err(e) = starter.recv() {
-            client_status_sd.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: fail recieve from starter channel: {}", e)))).expect("ClientStatus should be sent");
+            client_status_sd.send(ClientStatus::Err(tools::logger.err(&format!("[T] client [sender_from_client]: fail recieve from starter channel: {}", e)))).expect("ClientStatus should be sent");
             return;
         }
         tools::logger.verb("[T] client: sender is created");
         let buffer: Vec<u8> = vec![0u8, 1u8, 2u8, 3u8, 4u8];
         if let Err(e) = tx_sender_from_client.send(buffer) {
-            client_status_sd.send(ClientStatus::Err(tools::logger.verb(&format!("[T] client: failed to send data: {}", e)))).expect("ClientStatus should be sent");
+            client_status_sd.send(ClientStatus::Err(tools::logger.err(&format!("[T] client [tx_sender_from_client]: failed to send data: {}", e)))).expect("ClientStatus should be sent");
             return;
         } else {
             tools::logger.verb("[T] client: data has been sent");
@@ -149,18 +152,28 @@ async fn create_client(
                 Err(_) => { tools::logger.err("[T] cannot write stat"); },
             };
         }
-        rx_shutdown_sender.recv().await;
         tools::logger.verb("[T] client: sender is destroyed");
     });
     match stat.write() {
         Ok(mut stat) => stat.created += 1,
         Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
-    let _res = join!(
+    let (_reader, write, _sender) = join!(
         reader,
         writer,
         sender_from_client,
     );
+    match match write {
+        Ok(write) => write,
+        Err(err) => panic!("Fail write data form client: {}", err)
+    } {
+        Ok(mut write) => if let Err(err) = write.close().await {
+            tools::logger.err(&format!("[T] cannot close stream: {}", err));
+        },
+        Err(_) => {
+            // Logs already done
+        }
+    }
     match stat.write() {
         Ok(mut stat) => stat.destroyed += 1,
         Err(_) => { tools::logger.err("[T] cannot write stat"); },
@@ -173,6 +186,7 @@ async fn create_events_listener(
     mut rx_events: UnboundedReceiver<Events>,
     tx_server_state: mpsc::Sender<ServerState>,
     tx_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
+    tx_server_shutdown: UnboundedSender<()>,
     stat: Arc<RwLock<Stat>>
 ) {
     tools::logger.verb("[T] starting event listener");
@@ -181,6 +195,11 @@ async fn create_events_listener(
             Events::Ready => {
                 tools::logger.verb("[T][EventsLoop] server is ready");
                 if let Err(e) = tx_server_state.send(ServerState::Ready) {
+                    tools::logger.err(&format!("[T] cannot send server state: {}", e));
+                }
+            },
+            Events::Shutdown => {
+                if let Err(e) = tx_server_shutdown.send(()) {
                     tools::logger.err(&format!("[T] cannot send server state: {}", e));
                 }
             },
@@ -235,6 +254,10 @@ fn main() {
         UnboundedSender<Events>,
         UnboundedReceiver<Events>,
     ) = unbounded_channel();
+    let (tx_server_shutdown, mut rx_server_shutdown): (
+        UnboundedSender<()>,
+        UnboundedReceiver<()>,
+    ) = unbounded_channel();
     let (tx_sender, rx_sender): (
         UnboundedSender<(Vec<u8>, Option<Uuid>)>,
         UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
@@ -256,6 +279,7 @@ fn main() {
         destroyed: 0,
         connected: 0,
         disconnected: 0,
+        failed: 0,
         sent: 0,
         recieved: 0,
         created_in: 0,
@@ -288,6 +312,7 @@ fn main() {
             rx_events,
             tx_server_state.clone(),
             tx_sender.clone(),
+            tx_server_shutdown,
             stat_sr
         ));
     });
@@ -306,7 +331,6 @@ fn main() {
         },
         Err(e) => panic!(e)
     };
-
     let mut starters: Vec<mpsc::Sender<()>> = vec![];
     let mut connections = vec![];
     println!(
@@ -361,31 +385,64 @@ fn main() {
         Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
     println!(
-        "{} waiting for clients...",
+        "{} waiting for clients are doing job...",
         style("[test]").bold().dim(),
     );
     let mut done: usize = 0;
     let pb = ProgressBar::new(CLIENTS as u64);
-    while let Ok(_msg) = rx_status.recv() {
-        done += 1;
-        pb.inc(1);
-        if done == CLIENTS {
-            break;
-        }
+    while let Ok(status) = rx_status.recv() {
+        //TODO: check state. it might be an error
+        match status {
+            ClientStatus::Done => {
+                done += 1;
+                pb.inc(1);
+                if done == CLIENTS {
+                    break;
+                }
+            },
+            ClientStatus::Err(e) => {
+                // panic!(e)
+                match stat.write() {
+                    Ok(mut stat) => stat.failed += 1,
+                    Err(_) => { tools::logger.err("[T] cannot write stat"); },
+                };
+                pb.inc(1);
+                tools::logger.err(&format!("[T] client status error: {}", e));
+            }
+        } 
+        
     }
     pb.finish_and_clear();
     match stat.write() {
         Ok(mut stat) => stat.done_in = start_wf.elapsed().as_millis(),
         Err(_) => { tools::logger.err("[T] cannot write stat"); },
     };
-    // std::thread::sleep(Duration::from_millis(1000));
-
+    println!(
+        "{} waiting for clients are disconnecting...",
+        style("[test]").bold().dim(),
+    );
+    let pb = ProgressBar::new(CLIENTS as u64);
+    loop {
+        if let Ok(stat) = stat.read() {
+            if (stat.disconnected - stat.failed) == stat.connected {
+                break;
+            } else {
+                pb.inc((stat.disconnected - stat.failed) as u64);
+                //println!("Waiting for: pending = {}; connected = {}; destroyed = {};", CLIENTS as u32 - stat.disconnected, stat.connected, stat.destroyed);
+            }
+        } else {
+            panic!("Fail to read stat");
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    pb.finish_and_clear();
     println!("==========================================================================");
     if let Ok(stat) = stat.read() {
         println!("Clients created:      {}", stat.created);
         println!("Clients destroyed:    {}", stat.destroyed);
         println!("Clients connected:    {}", stat.connected);
         println!("Clients disconnected: {}", stat.disconnected);
+        println!("Clients failed:       {}", stat.failed);
         println!("Packages sent:        {}", stat.sent);
         println!("Packages recieved:    {}", stat.recieved);
         println!("Created in:           {}ms", stat.created_in);
@@ -393,14 +450,18 @@ fn main() {
         println!("Done in:              {}ms", stat.done_in);
     };
     println!("==========================================================================");
-    //std::thread::sleep(Duration::from_millis(1000));
-    thread::spawn(move || {
-        executor::block_on(async move {
-            if let Err(e) = tx_control.send(Control::Shutdown) {
-                tools::logger.err(&format!("Fail send Control::Shutdown. Error: {}", e));
-            }
-        });
+    executor::block_on(async move {
+        if let Err(e) = tx_control.send(Control::Shutdown) {
+            tools::logger.err(&format!("Fail send Control::Shutdown. Error: {}", e));
+        }
+        println!(
+            "{} waiting for shutdown server...",
+            style("[test]").bold().dim(),
+        );
+        rx_server_shutdown.recv().await;
+        println!(
+            "{} server is shutdown",
+            style("[test]").bold().dim(),
+        );
     });
-    std::thread::sleep(Duration::from_millis(1000));
-
 }
