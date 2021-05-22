@@ -421,6 +421,9 @@ fn spawn_server_listener(
                             }
                             break;
                         },
+                        ServerEvents::Shutdown => {
+                            // TODO
+                        }
                     }
                 }
             } => {

@@ -20,6 +20,19 @@ DIS: logic - send all broadcast messages with some conclusion has week point. Wh
      user login and logined writer and only writers should get message. Also message should
      be sent only if logined user writer. Maybe Option?
 
+UserLogin.Request(UserLogin.Error) {
+    Accept > UserLogin.Accept: Events.UserConnected
+                             : Events.Message
+    Deny > UserLogin.Deny
+}
+
+KickOff {
+    reason: str
+} > Events::Message
+  > Events::UserConnected
+
+
+
 UserSignInRequest:UserSignInError
    : (Accept > UserSignInAccepted) > accept;
                                    > broadcast: UserSignInBroadcast;
