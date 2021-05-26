@@ -1,5 +1,5 @@
 use super::*;
-use super::parser::store::Store;
+use super::protocol::store::Store;
 
 #[path = "./render.rust.rs"]
 pub mod rust;
@@ -7,7 +7,8 @@ pub mod rust;
 #[path = "./render.typescript.rs"]
 pub mod typescript;
 
-pub enum ERender {
+#[derive(Debug, Clone, PartialEq)]
+pub enum Target {
     Rust,
     TypeScript,
 }

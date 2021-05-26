@@ -288,6 +288,8 @@ pub struct StructExampleA {
     pub field_f64: f64,
     pub field_bool: bool,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleA {
     fn get_id() -> u32 {
         4
@@ -360,6 +362,8 @@ impl StructDecode for StructExampleA {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleA {
     fn get_id(&self) -> u32 { 4 }
     fn get_signature(&self) -> u16 { 0 }
@@ -433,6 +437,8 @@ pub struct StructExampleB {
     pub field_f64: Vec<f64>,
     pub field_bool: Vec<bool>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleB {
     fn get_id() -> u32 {
         17
@@ -505,6 +511,8 @@ impl StructDecode for StructExampleB {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleB {
     fn get_id(&self) -> u32 { 17 }
     fn get_signature(&self) -> u16 { 0 }
@@ -578,6 +586,8 @@ pub struct StructExampleC {
     pub field_f64: Option<f64>,
     pub field_bool: Option<bool>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleC {
     fn get_id() -> u32 {
         30
@@ -650,6 +660,8 @@ impl StructDecode for StructExampleC {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleC {
     fn get_id(&self) -> u32 { 30 }
     fn get_signature(&self) -> u16 { 0 }
@@ -723,6 +735,8 @@ pub struct StructExampleD {
     pub field_f64: Option<Vec<f64>>,
     pub field_bool: Option<Vec<bool>>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleD {
     fn get_id() -> u32 {
         43
@@ -795,6 +809,8 @@ impl StructDecode for StructExampleD {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleD {
     fn get_id(&self) -> u32 { 43 }
     fn get_signature(&self) -> u16 { 0 }
@@ -859,6 +875,8 @@ pub struct StructExampleE {
     pub field_b: EnumExampleB,
     pub field_c: EnumExampleC,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleE {
     fn get_id() -> u32 {
         56
@@ -886,6 +904,8 @@ impl StructDecode for StructExampleE {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleE {
     fn get_id(&self) -> u32 { 56 }
     fn get_signature(&self) -> u16 { 0 }
@@ -914,6 +934,8 @@ pub struct StructExampleF {
     pub field_b: Option<EnumExampleB>,
     pub field_c: Option<EnumExampleC>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleF {
     fn get_id() -> u32 {
         60
@@ -965,6 +987,8 @@ impl StructDecode for StructExampleF {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleF {
     fn get_id(&self) -> u32 { 60 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1013,6 +1037,8 @@ pub struct StructExampleG {
     pub field_a: StructExampleA,
     pub field_b: StructExampleB,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleG {
     fn get_id() -> u32 {
         64
@@ -1032,8 +1058,7 @@ impl StructDecode for StructExampleG {
                 field_f32: 0.0,
                 field_f64: 0.0,
                 field_bool: true,
-            }
-,
+            },
             field_b: StructExampleB {
                 field_str: vec![],
                 field_u8: vec![],
@@ -1047,8 +1072,7 @@ impl StructDecode for StructExampleG {
                 field_f32: vec![],
                 field_f64: vec![],
                 field_bool: vec![],
-            }
-,
+            },
         }
     }
     fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -1063,6 +1087,8 @@ impl StructDecode for StructExampleG {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleG {
     fn get_id(&self) -> u32 { 64 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1086,6 +1112,8 @@ pub struct StructExampleJ {
     pub field_a: Option<StructExampleA>,
     pub field_b: Option<StructExampleB>,
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructDecode for StructExampleJ {
     fn get_id() -> u32 {
         67
@@ -1108,6 +1136,8 @@ impl StructDecode for StructExampleJ {
         Ok(())
     }
 }
+#[allow(unused_variables)]
+#[allow(unused_mut)]
 impl StructEncode for StructExampleJ {
     fn get_id(&self) -> u32 { 67 }
     fn get_signature(&self) -> u16 { 0 }
@@ -1193,6 +1223,8 @@ pub mod GroupA {
         pub field_u16: u16,
         pub opt: EnumExampleA,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleA {
         fn get_id() -> u32 {
             72
@@ -1220,6 +1252,8 @@ pub mod GroupA {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleA {
         fn get_id(&self) -> u32 { 72 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1248,6 +1282,8 @@ pub mod GroupA {
         pub field_u16: u16,
         pub strct: StructExampleA,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleB {
         fn get_id() -> u32 {
             76
@@ -1260,8 +1296,7 @@ pub mod GroupA {
                     field_u8: 0,
                     field_u16: 0,
                     opt: EnumExampleA::Defaults,
-                }
-,
+                },
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -1280,6 +1315,8 @@ pub mod GroupA {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleB {
         fn get_id(&self) -> u32 { 76 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1319,6 +1356,8 @@ pub mod GroupB {
         pub field_u8: u8,
         pub field_u16: u16,
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructDecode for StructExampleA {
         fn get_id() -> u32 {
             81
@@ -1341,6 +1380,8 @@ pub mod GroupB {
             Ok(())
         }
     }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
     impl StructEncode for StructExampleA {
         fn get_id(&self) -> u32 { 81 }
         fn get_signature(&self) -> u16 { 0 }
@@ -1374,6 +1415,8 @@ pub mod GroupB {
             pub field_u8: u8,
             pub field_u16: u16,
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructDecode for StructExampleA {
             fn get_id() -> u32 {
                 85
@@ -1396,6 +1439,8 @@ pub mod GroupB {
                 Ok(())
             }
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructEncode for StructExampleA {
             fn get_id(&self) -> u32 { 85 }
             fn get_signature(&self) -> u16 { 0 }
@@ -1420,6 +1465,8 @@ pub mod GroupB {
             pub field_u16: u16,
             pub strct: StructExampleA,
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructDecode for StructExampleB {
             fn get_id() -> u32 {
                 88
@@ -1431,8 +1478,7 @@ pub mod GroupB {
                     strct: StructExampleA {
                         field_u8: 0,
                         field_u16: 0,
-                    }
-,
+                    },
                 }
             }
             fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -1451,6 +1497,8 @@ pub mod GroupB {
                 Ok(())
             }
         }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
         impl StructEncode for StructExampleB {
             fn get_id(&self) -> u32 { 88 }
             fn get_signature(&self) -> u16 { 0 }
@@ -1478,7 +1526,7 @@ pub mod GroupB {
 }
 
 impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
-    fn get_msg(&self, id: u32, buf: &[u8]) -> Result<Messages, String> {
+    fn get_msg(&self, id: u32, buf: &[u8]) -> Result<AvailableMessages, String> {
         match id {
             1 => match EnumExampleA::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::EnumExampleA(m)),

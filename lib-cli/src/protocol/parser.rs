@@ -31,28 +31,24 @@ pub mod groups;
 #[path = "./parser.store.rs"]
 pub mod store;
 
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 enum ENext {
     Word((String, usize, Option<char>)),
     OpenStruct(usize),
     CloseStruct(usize),
     Semicolon(usize),
-    Space(usize),
     Repeated(usize),
     Optional(usize),
     PathSpliter(usize),
     End(),
 }
 
-#[allow(dead_code)]
 enum ENextErr {
     NotAscii(String),
     NumericFirst(),
     NotSupported(String),
 }
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 enum EExpectation {
     GroupDef,
@@ -73,16 +69,15 @@ enum EExpectation {
 }
 
 pub struct Parser {
-    _src: PathBuf,
-    _prev: Option<ENext>,
+    src: PathBuf,
+    prev: Option<ENext>,
 }
 
-#[allow(dead_code)]
 impl Parser {
     pub fn new(src: PathBuf) -> Parser {
         Parser {
-            _src: src,
-            _prev: None,
+            src,
+            prev: None,
         }
     }
 
@@ -90,7 +85,7 @@ impl Parser {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
-        let mut content: String = match self.get_content(self._src.clone()) {
+        let mut content: String = match self.get_content(self.src.clone()) {
             Ok(c) => c,
             Err(e) => return Err(vec![e]),
         };
@@ -104,7 +99,7 @@ impl Parser {
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
-                    self._prev = Some(enext.clone());
+                    self.prev = Some(enext.clone());
                     let offset: usize = match enext {
                         ENext::Word((word, offset, next_char)) => {
                             let next_char: char = if let Some(c) = next_char { c } else { '.' };
@@ -262,7 +257,6 @@ impl Parser {
                             ];
                             offset
                         }
-                        ENext::Space(offset) => offset,
                         ENext::Repeated(offset) => {
                             if !is_in(&expectation, &EExpectation::FieldRepeatedMark) {
                                 errs.push(format!(

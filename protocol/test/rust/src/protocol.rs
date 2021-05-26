@@ -1104,30 +1104,48 @@ impl Storage {
 
 }
 
-const MSG_HEADER_LEN: usize =   sizes::U32_LEN + // {u32} message ID
+const MSG_HEADER_LEN: usize = sizes::U32_LEN + // {u32} message ID
                                 sizes::U16_LEN + // {u16} signature
                                 sizes::U32_LEN + // {u32} sequence
                                 sizes::U64_LEN + // {u64} body size
-                                sizes::U64_LEN;  // {u64} timestamp
+                                sizes::U64_LEN; // {u64} timestamp
 
 pub trait PackingMiddlewareInterface {
-    fn decode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+    fn decode(
+        buffer: Vec<u8>,
+        _id: u32,
+        _sequence: u32,
+        _uuid: Option<String>,
+    ) -> Result<Vec<u8>, String> {
         Ok(buffer)
     }
-    fn encode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+    fn encode(
+        buffer: Vec<u8>,
+        _id: u32,
+        _sequence: u32,
+        _uuid: Option<String>,
+    ) -> Result<Vec<u8>, String> {
         Ok(buffer)
     }
 }
 
-pub struct PackingMiddleware {
-    
-}
+pub struct PackingMiddleware {}
 
 impl PackingMiddlewareInterface for PackingMiddleware {
-    fn decode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+    fn decode(
+        buffer: Vec<u8>,
+        _id: u32,
+        _sequence: u32,
+        _uuid: Option<String>,
+    ) -> Result<Vec<u8>, String> {
         Ok(buffer)
     }
-    fn encode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+    fn encode(
+        buffer: Vec<u8>,
+        _id: u32,
+        _sequence: u32,
+        _uuid: Option<String>,
+    ) -> Result<Vec<u8>, String> {
         Ok(buffer)
     }
 }
@@ -1167,14 +1185,25 @@ pub fn get_header_from_buffer(buf: &[u8]) -> Result<PackageHeader, String> {
             return Err(format!("{}", e));
         }
     };
-    Ok(PackageHeader { id, signature, sequence, ts, len, len_usize })
+    Ok(PackageHeader {
+        id,
+        signature,
+        sequence,
+        ts,
+        len,
+        len_usize,
+    })
 }
 
 pub fn has_buffer_body(buf: &[u8], header: &PackageHeader) -> bool {
     buf.len() >= header.len_usize + MSG_HEADER_LEN
 }
 
-pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader, uuid: Option<String>) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn get_body_from_buffer(
+    buf: &[u8],
+    header: &PackageHeader,
+    uuid: Option<String>,
+) -> Result<(Vec<u8>, Vec<u8>), String> {
     if buf.len() < header.len_usize + MSG_HEADER_LEN {
         return Err(format!("Cannot extract body of package because size in header {} bytes, but size of buffer {} bytes.", header.len, buf.len() - MSG_HEADER_LEN));
     }
@@ -1189,14 +1218,23 @@ pub fn get_body_from_buffer(buf: &[u8], header: &PackageHeader, uuid: Option<Str
     }
 }
 
-pub fn pack<T>(mut msg: T, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String> where T: StructEncode {
+pub fn pack<T>(mut msg: T, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String>
+where
+    T: StructEncode,
+{
     match msg.abduct() {
         Ok(buffer) => pack_buffer(msg.get_id(), msg.get_signature(), sequence, buffer, uuid),
         Err(e) => Err(e),
     }
 }
 
-pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>, uuid: Option<String>) -> Result<Vec<u8>, String> {
+pub fn pack_buffer(
+    msg_id: u32,
+    signature: u16,
+    sequence: u32,
+    msg_buf: Vec<u8>,
+    uuid: Option<String>,
+) -> Result<Vec<u8>, String> {
     let buffer = match PackingMiddleware::encode(msg_buf, msg_id, sequence, uuid) {
         Ok(buffer) => buffer,
         Err(e) => {
@@ -1205,7 +1243,7 @@ pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>,
     };
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(duration) => {
-            let mut buf: Vec<u8> = vec!();
+            let mut buf: Vec<u8> = vec![];
             buf.append(&mut msg_id.to_le_bytes().to_vec());
             buf.append(&mut signature.to_le_bytes().to_vec());
             buf.append(&mut sequence.to_le_bytes().to_vec());
@@ -1213,31 +1251,27 @@ pub fn pack_buffer(msg_id: u32, signature: u16, sequence: u32, msg_buf: Vec<u8>,
             buf.append(&mut (buffer.len() as u64).to_le_bytes().to_vec());
             buf.append(&mut buffer.to_vec());
             Ok(buf)
-        },
+        }
         Err(e) => Err(e.to_string()),
     }
 }
 
 pub trait PackingStruct: StructEncode {
-
     fn pack(&mut self, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), sequence, buf, uuid),
             Err(e) => Err(e),
         }
     }
-
 }
 
 pub trait PackingEnum: EnumEncode {
-
     fn pack(&mut self, sequence: u32, uuid: Option<String>) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => pack_buffer(self.get_id(), self.get_signature(), sequence, buf, uuid),
             Err(e) => Err(e),
         }
     }
-
 }
 
 #[derive(Debug)]

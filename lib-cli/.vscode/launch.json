@@ -20,11 +20,13 @@
                 }
             },
             "args": [
-                "--s",
-                "/Users/dmitryastafyev/projects/private/fiber/producer/protocol/src/protocol.prot",
+                "-s",
+                "/storage/projects/private/fiber/environment/protocol/prot/protocol.prot",
                 "-rs",
-                "/Users/dmitryastafyev/projects/private/fiber/producer/protocol/protocol.rs",
-                "-o"
+                "/storage/projects/private/fiber/environment/protocol/prot/protocol.rs",
+                "-o",
+                "-wf",
+                "/storage/projects/private/fiber/environment/protocol/prot/protocol.workflow"
             ],
             "cwd": "${workspaceFolder}"
         },

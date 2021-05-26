@@ -1,9 +1,9 @@
-use super::parser::enums::{Enum, EnumItem};
-use super::parser::fields::Field;
-use super::parser::groups::Group;
-use super::parser::store::Store;
-use super::parser::structs::Struct;
-use super::parser::types::PrimitiveTypes;
+use super::protocol::enums::{Enum, EnumItem};
+use super::protocol::fields::Field;
+use super::protocol::groups::Group;
+use super::protocol::store::Store;
+use super::protocol::structs::Struct;
+use super::protocol::types::PrimitiveTypes;
 use super::Render;
 use regex::Regex;
 use std::include_str;

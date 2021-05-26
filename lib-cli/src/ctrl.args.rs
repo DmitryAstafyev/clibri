@@ -3,8 +3,10 @@ use std::path::{ PathBuf, Path };
 use std::collections::{ HashMap };
 use super:: { helpers, stop };
 
-#[path = "./parser/parser.rs"]
-pub mod parser;
+#[path = "./protocol/parser.rs"]
+pub mod protocol;
+#[path = "./workflow/parser.rs"]
+pub mod workflow;
 #[path = "./render/render.rs"]
 pub mod render;
 #[path = "./arguments/ctrl.args.option.files.rs"]
