@@ -9,12 +9,12 @@
 UserLogin.Request !UserLogin.Err {
    (Accept    > UserLogin.Accepted) > Events.UserConnected;
                                     > Events.Message;
-                                    > Events.AdminConnected?;
+                                    > Events.AdminConnected;
    (Deny      > UserLogin.Denied);
 }
 
 Users.Request !Users.Err {
-   (Response);
+   (Users.Response);
 }
 
 Message.Request !Message.Err {
@@ -23,13 +23,26 @@ Message.Request !Message.Err {
 }
 
 Messages.Request !Messages.Err {
-   (Response);
+   (Messages.Response);
 }
 
-@KickOff {
-    reason: str
-} > Events::Message;
-  > Events::UserConnected;
+Event.UserDisconnected;
+
+Event.UserDisconnected {
+   > Events.Message;
+}
+
+Event.UserDisconnected {
+   > Events.Message;
+}
+
+
+@ServerEvents.KickOff {
+   > Events.Message;
+   > Events.UserConnected;
+}
+
+@ServerEvents.KickOff;
 
 # If messages are defined in group
 # UserLogin {

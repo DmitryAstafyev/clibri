@@ -5,12 +5,17 @@ pub mod config;
 #[path = "./parser.request.rs"]
 pub mod request;
 
+#[path = "./parser.event.rs"]
+pub mod event;
+
 use super::render::{Target};
 use std::fs;
 use std::path::PathBuf;
 use config::{Config};
+use request::{Request};
+use event::{Event};
 
-mod chars {
+pub mod chars {
     pub const DOT: char = '.';
     pub const SEMICOLON: char = ';';
     pub const OPEN: char = '{';
@@ -21,6 +26,11 @@ mod chars {
     pub const AT: char = '@';
     pub const UNDERLINE: char = '_';
     pub const NUMBER: char = '#';
+    pub const OPEN_BRACKET: char = '(';
+    pub const CLOSE_BRACKET: char = ')';
+    pub const ARROW: char = '>';
+    pub const EXCLAMATION: char = '!';
+    pub const CARET: char = '\n';
 }
 
 pub trait EntityParser {
@@ -37,6 +47,10 @@ pub enum ENext {
     Word((String, usize, Option<char>)),
     Open(usize),
     Close(usize),
+    OpenBracket(usize),
+    CloseBracket(usize),
+    Arrow(usize),
+    Exclamation(usize),
     Semicolon(usize),
     PathDelimiter(usize),
     ValueDelimiter(usize),
@@ -73,6 +87,10 @@ impl Parser {
                     let mut offset: usize = match enext.clone() {
                         ENext::Word((word, offset, _)) => if opened.is_none() {
                             if let Some(entity) = Config::open(word.clone()) {
+                                opened = Some(Box::new(entity));
+                            } else if let Some(entity) = Request::open(word.clone()) {
+                                opened = Some(Box::new(entity));
+                            } else if let Some(entity) = Event::open(word.clone()) {
                                 opened = Some(Box::new(entity));
                             }
                             if opened.is_none() {
@@ -150,6 +168,10 @@ impl Parser {
             chars::QUESTION,
             chars::SEMICOLON,
             chars::DOT,
+            chars::OPEN_BRACKET,
+            chars::CLOSE_BRACKET,
+            chars::ARROW,
+            chars::EXCLAMATION,
         ];
         let allowed_chars: Vec<char> = vec![
             chars::UNDERLINE,
@@ -159,8 +181,17 @@ impl Parser {
             chars::AMPERSAND,
         ];
         let mut limited: bool = false;
+        let mut comment: bool = false;
         for char in content.chars() {
             pass += 1;
+            if comment && char == chars::CARET {
+                comment = false;
+            } else if comment {
+                continue;
+            } else if char == chars::NUMBER {
+                comment = true;
+                continue;
+            }
             if !char.is_ascii() {
                 return Err(ENextErr::NotAscii(format!(
                     "found not ascii char: {}",
@@ -184,6 +215,10 @@ impl Parser {
                     chars::CLOSE => return Ok(ENext::Close(pass)),
                     chars::DOT => return Ok(ENext::PathDelimiter(pass)),
                     chars::COLON => return Ok(ENext::ValueDelimiter(pass)),
+                    chars::OPEN_BRACKET => return Ok(ENext::OpenBracket(pass)),
+                    chars::CLOSE_BRACKET => return Ok(ENext::CloseBracket(pass)),
+                    chars::ARROW => return Ok(ENext::Arrow(pass)),
+                    chars::EXCLAMATION => return Ok(ENext::Exclamation(pass)),
                     _ => {}
                 };
             }
