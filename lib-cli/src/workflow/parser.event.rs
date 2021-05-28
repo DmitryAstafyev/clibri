@@ -1,4 +1,4 @@
-use super::{chars, ENext, EntityParser};
+use super::{chars, ENext, EntityParser, EntityOut};
 
 #[derive(Debug, PartialEq, Clone)]
 enum EExpectation {
@@ -249,6 +249,10 @@ impl EntityParser for Event {
 
     fn print(&self) {
         println!("{:?}", self);
+    }
+
+    fn extract(&mut self) -> EntityOut {
+        EntityOut::Event(self.clone())
     }
 
 }

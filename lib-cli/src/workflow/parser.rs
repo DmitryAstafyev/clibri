@@ -37,12 +37,19 @@ pub mod chars {
     pub const CARET: char = '\n';
 }
 
+pub enum EntityOut {
+    Config(Config),
+    Event(Event),
+    Request(Request),
+}
+
 pub trait EntityParser {
     
     fn open(word: String) -> Option<Self> where Self: Sized;
     fn next(&mut self, entity: ENext) -> Result<usize, String>;
     fn closed(&self) -> bool;
     fn print(&self);
+    fn extract(&mut self) -> EntityOut;
 
 }
 
@@ -123,10 +130,15 @@ impl Parser {
                             match entity.next(enext.clone()) {
                                 Ok(offset) => {
                                     if entity.closed() {
-                                        entity.print();
-                                        // TODO: Save to store
-                                        opened = None;
-                                        println!("DROPPED");
+                                        if let Err(e) =  match entity.extract() {
+                                            EntityOut::Config(config) => self.store.set_config(config),
+                                            EntityOut::Event(event) => self.store.add_event(event),
+                                            EntityOut::Request(request) => self.store.add_request(request),
+                                        } {
+                                            return Err(self.err(&e));
+                                        } else {
+                                            opened = None;
+                                        }
                                     }
                                     offset
                                 },

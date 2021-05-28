@@ -1,4 +1,4 @@
-use super::{ Event, Request, Config };
+use super::{ Event, Request, Config, EntityOut, EntityParser };
 
 #[derive(Debug, Clone)]
 pub struct Store {

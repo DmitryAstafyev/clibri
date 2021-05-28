@@ -1,4 +1,4 @@
-use super::{Target, ENext, EntityParser};
+use super::{Target, ENext, EntityParser, EntityOut};
 
 mod key_words {
     pub const PRODUCER: &str = "Producer";
@@ -274,6 +274,10 @@ impl EntityParser for Config {
 
     fn print(&self) {
         println!("{:?}", self);
+    }
+
+    fn extract(&mut self) -> EntityOut {
+        EntityOut::Config(self.clone())
     }
 
 }
