@@ -16,10 +16,6 @@ enum EExpectation {
     Comma,
     PathDelimiter,
     Open,
-    Close,
-    OpenBracket,
-    CloseBracket,
-    Arrow,
 }
 
 #[derive(Debug, Clone)]

@@ -15,6 +15,8 @@ use config::{Config};
 use request::{Request};
 use event::{Event};
 
+const DEFAULT_ERR_OFFSET: usize = 10;
+
 pub mod chars {
     pub const DOT: char = '.';
     pub const SEMICOLON: char = ';';
@@ -99,7 +101,7 @@ impl Parser {
                                 opened = Some(Box::new(entity));
                             }
                             if opened.is_none() {
-                                return Err(format!("Unknown keyword {}", word));
+                                return Err(self.err(&format!("Unknown keyword {}", word)));
                             }
                             offset
                         } else {
@@ -125,22 +127,22 @@ impl Parser {
                                     offset
                                 },
                                 Err(err) => {
-                                    return Err(err);
+                                    return Err(self.err(&err));
                                 }
                             }
                         } else {
-                            return Err(format!("Fail to find any open entities. State: {:?}", enext));
+                            return Err(self.err(&format!("Fail to find any open entities. State: {:?}", enext)));
                         };
                     }
-                    self.cursor += offset;
                     content = String::from(&content[offset..]);
+                    self.cursor += offset;
                 }
                 Err(e) => {
                     return Err(match e {
-                        ENextErr::NotAscii(msg) => format!("ASCII error: {}", msg),
-                        ENextErr::NotSupported(msg) => format!("Not supported char(s) error: {}", msg),
-                        ENextErr::InvalidSyntax(msg) => format!("Invalid syntax error: {}", msg),
-                        ENextErr::NumericFirst() =>"Numeric symbols cannot be used as first in names.".to_string(),
+                        ENextErr::NotAscii(msg) => self.err(&format!("ASCII error: {}", msg)),
+                        ENextErr::NotSupported(msg) => self.err(&format!("Not supported char(s) error: {}", msg)),
+                        ENextErr::InvalidSyntax(msg) => self.err(&format!("Invalid syntax error: {}", msg)),
+                        ENextErr::NumericFirst() => self.err("Numeric symbols cannot be used as first in names."),
                     });
                 }
             };
@@ -161,10 +163,6 @@ impl Parser {
                 Err(e) => Err(e.to_string()),
             }
         }
-    }
-
-    fn err() {
-
     }
 
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
@@ -264,4 +262,19 @@ impl Parser {
             Ok(ENext::Word((str, pass - 1, None)))
         }
     }
+
+    fn err(&self, e: &str) -> String {
+        let cropped = format!("{}{}",
+            &self.content[0..self.cursor],
+            ">>> BREAK >>>"
+        );
+        let lines: Vec<&str> = cropped.split('\n').collect();
+        let spaces = lines.len().to_string().len();
+        for (n, l) in lines.iter().enumerate() {
+            let rate = n.to_string().len();
+            println!("{}{}: {}", n, " ".repeat(spaces - rate), l);
+        }
+        String::from(e)
+    }
+
 }

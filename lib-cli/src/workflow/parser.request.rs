@@ -423,7 +423,7 @@ impl EntityParser for Request {
                         _ => Err(format!("Incorrect position for close conclusion. Pending: {:?}", self.pending)),
                     }
                 } else {
-                    Err(format!("Symbol ( isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!("Symbol ) isn't expected. Expectation: {:?}", self.expectation))
                 }
             },
             ENext::Arrow(offset) => {
