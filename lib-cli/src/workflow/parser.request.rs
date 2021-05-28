@@ -18,7 +18,6 @@ enum Pending {
     Nothing,
     Error(String),
     Request(String),
-    Response(String),
     Action(Action),
     Broadcast(String),
 }
@@ -60,7 +59,6 @@ pub struct Request {
     pub actions: Vec<Action>,
     pub broadcasts: Vec<String>,
     expectation: Vec<EExpectation>,
-    prev: Option<ENext>,
     pending: Pending,
     closed: bool,
 }
@@ -74,7 +72,6 @@ impl Request {
             actions: vec![],
             broadcasts: vec![],
             expectation: vec![EExpectation::Word, EExpectation::PathDelimiter, EExpectation::Exclamation],
-            prev: None,
             pending: Pending::Request(request),
             closed: false,
         }
@@ -84,7 +81,6 @@ impl Request {
         self.closed = true;
         self.pending = Pending::Nothing;
         self.expectation = vec![];
-        self.prev = None;
     }
 }
 
@@ -102,7 +98,6 @@ impl EntityParser for Request {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
-        let prev = enext.clone();
         match enext {
             ENext::Open(offset) => {
                 if is_in(&self.expectation, &EExpectation::Open) {
@@ -157,18 +152,6 @@ impl EntityParser for Request {
                             EExpectation::Semicolon,
                             EExpectation::Exclamation,
                             EExpectation::Open,
-                        ];
-                    },
-                    Pending::Response(path_to_struct) => {
-                        self.pending = Pending::Response(format!("{}{}{}",
-                            path_to_struct,
-                            if path_to_struct.is_empty() { "" } else { "." },
-                            word
-                        ));
-                        self.expectation = vec![
-                            EExpectation::Word,
-                            EExpectation::PathDelimiter,
-                            EExpectation::CloseBracket,
                         ];
                     },
                     Pending::Error(path_to_struct) => {
@@ -260,7 +243,6 @@ impl EntityParser for Request {
                         ];
                     },
                 };
-                self.prev = Some(prev);
                 Ok(offset)
             },
             ENext::PathDelimiter(offset) => {

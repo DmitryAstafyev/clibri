@@ -22,7 +22,6 @@ pub struct Event {
     pub reference: Option<String>,
     pub broadcasts: Vec<String>,
     expectation: Vec<EExpectation>,
-    prev: Option<ENext>,
     pending: Pending,
     closed: bool,
 }
@@ -33,7 +32,6 @@ impl Event {
             reference: None,
             broadcasts: vec![],
             expectation: vec![EExpectation::Word, EExpectation::PathDelimiter],
-            prev: None,
             pending: Pending::Reference(reference),
             closed: false,
         }
@@ -43,7 +41,6 @@ impl Event {
         self.closed = true;
         self.pending = Pending::Nothing;
         self.expectation = vec![];
-        self.prev = None;
     }
 }
 
@@ -61,7 +58,6 @@ impl EntityParser for Event {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
-        let prev = enext.clone();
         match enext {
             ENext::Open(offset) => {
                 if is_in(&self.expectation, &EExpectation::Open) {

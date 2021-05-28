@@ -66,12 +66,17 @@ enum ENextErr {
 
 pub struct Parser {
     src: PathBuf,
-    prev: Option<ENext>,
+    cursor: usize,
+    content: String,
 }
 
 impl Parser {
     pub fn new(src: PathBuf) -> Parser {
-        Self { src, prev: None }
+        Self {
+            src,
+            cursor: 0,
+            content: String::new(),
+        }
     }
 
     pub fn parse(&mut self) -> Result<(), String> {
@@ -79,11 +84,11 @@ impl Parser {
             Ok(c) => c,
             Err(e) => return Err(e),
         };
+        self.content = content.clone();
         let mut opened: Option<Box<dyn EntityParser>> = None;
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
-                    println!("NEXT: {:?}", enext);
                     let mut offset: usize = match enext.clone() {
                         ENext::Word((word, offset, _)) => if opened.is_none() {
                             if let Some(entity) = Config::open(word.clone()) {
@@ -127,7 +132,7 @@ impl Parser {
                             return Err(format!("Fail to find any open entities. State: {:?}", enext));
                         };
                     }
-                    self.prev = Some(enext.clone());
+                    self.cursor += offset;
                     content = String::from(&content[offset..]);
                 }
                 Err(e) => {
@@ -156,6 +161,10 @@ impl Parser {
                 Err(e) => Err(e.to_string()),
             }
         }
+    }
+
+    fn err() {
+
     }
 
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
