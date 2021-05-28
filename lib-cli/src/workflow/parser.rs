@@ -8,14 +8,16 @@ pub mod request;
 #[path = "./parser.event.rs"]
 pub mod event;
 
+#[path = "./parser.store.rs"]
+pub mod store;
+
 use super::render::{Target};
 use std::fs;
 use std::path::PathBuf;
 use config::{Config};
 use request::{Request};
 use event::{Event};
-
-const DEFAULT_ERR_OFFSET: usize = 10;
+use store::{Store};
 
 pub mod chars {
     pub const DOT: char = '.';
@@ -70,6 +72,7 @@ pub struct Parser {
     src: PathBuf,
     cursor: usize,
     content: String,
+    store: Store,
 }
 
 impl Parser {
@@ -78,6 +81,7 @@ impl Parser {
             src,
             cursor: 0,
             content: String::new(),
+            store: Store::new(),
         }
     }
 
@@ -271,8 +275,8 @@ impl Parser {
         let lines: Vec<&str> = cropped.split('\n').collect();
         let spaces = lines.len().to_string().len();
         for (n, l) in lines.iter().enumerate() {
-            let rate = n.to_string().len();
-            println!("{}{}: {}", n, " ".repeat(spaces - rate), l);
+            let rate = (n + 1).to_string().len();
+            println!("{}{}: {}", n + 1, " ".repeat(spaces - rate), l);
         }
         String::from(e)
     }

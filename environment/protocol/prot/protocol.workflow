@@ -42,7 +42,7 @@ Event.UserDisconnected {
    > Events.UserConnected;
 }
 
-@ServerEvents.KickOff;
+@ServerEvents.KickOff;1
 
 # If messages are defined in group
 # UserLogin {
