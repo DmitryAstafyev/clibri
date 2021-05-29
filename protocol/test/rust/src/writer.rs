@@ -81,7 +81,7 @@ pub fn get_root_dir() -> Result<PathBuf, String> {
 pub fn write() -> Result<(), String> {
     let root = match get_root_dir() {
         Ok(root) => root,
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     };
     let middleware: bool = match state::state.lock() {
         Ok(state) => state.middleware,
@@ -94,7 +94,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleA.a.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -103,7 +103,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleA.b.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -112,7 +112,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.str.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -121,7 +121,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.u8.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -130,7 +130,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.u16.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -139,7 +139,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.u32.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -148,7 +148,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.u64.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -157,7 +157,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.i8.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -166,7 +166,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.i16.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -175,7 +175,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.i32.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -184,7 +184,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.i64.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -193,7 +193,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.f32.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -202,7 +202,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./EnumExampleB.f64.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -225,7 +225,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_a.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -258,7 +258,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_b.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -270,7 +270,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_c.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -282,7 +282,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupD.EnumExampleP.Option_d.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -306,7 +306,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleA.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -388,7 +388,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleB.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -410,7 +410,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleC.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -432,7 +432,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleD.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -445,7 +445,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleE.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -458,7 +458,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleF.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -557,7 +557,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleG.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -584,7 +584,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleJ.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -595,7 +595,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleEmpty.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -609,7 +609,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupAStructExampleA.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -626,7 +626,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupAStructExampleB.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -638,7 +638,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupBStructExampleA.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -650,7 +650,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupCStructExampleA.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -666,7 +666,7 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupCStructExampleB.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
@@ -699,13 +699,13 @@ pub fn write() -> Result<(), String> {
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./GroupDStructExampleP.prot.bin"), &buf) {
-                panic!(e);
+                std::panic::panic_any(e);
             }
         }
     }
     buffer.append(&mut usecase.pack(0, None).unwrap());
     if let Err(e) = write_file(root.join("./buffer.prot.bin"), &buffer) {
-        panic!(e);
+        std::panic::panic_any(e);
     }
     Ok(())
 }

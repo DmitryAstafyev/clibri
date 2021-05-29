@@ -182,15 +182,15 @@ group GroupD {
 
     struct StructExampleP {
         StructExampleA field_a;
-        GroupB:StructExampleA field_b;
-        GroupB:GroupC:StructExampleA field_c;
+        GroupB.StructExampleA field_b;
+        GroupB.GroupC.StructExampleA field_c;
     }
 
     enum EnumExampleP {
         StructExampleA Option_a;
         StructExampleP Option_b;
-        GroupB:StructExampleA Option_c;
-        GroupB:GroupC:StructExampleA Option_d;
+        GroupB.StructExampleA Option_c;
+        GroupB.GroupC.StructExampleA Option_d;
     }
 
 }

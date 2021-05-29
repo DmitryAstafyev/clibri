@@ -33,7 +33,7 @@ fn main() {
             Ok(_) => {
     
             },
-            Err(e) => panic!(e)
+            Err(e) => std::panic::panic_any(e)
         };
         match state::state.lock() {
             Ok(mut state) => {
@@ -47,14 +47,14 @@ fn main() {
             Ok(_) => {
     
             },
-            Err(e) => panic!(e)
+            Err(e) => std::panic::panic_any(e)
         };
     } else if args[0] == "read" {
         match read() {
             Ok(_) => {
     
             },
-            Err(e) => panic!(e)
+            Err(e) => std::panic::panic_any(e)
         };
         match state::state.lock() {
             Ok(mut state) => {
@@ -68,7 +68,7 @@ fn main() {
             Ok(_) => {
     
             },
-            Err(e) => panic!(e)
+            Err(e) => std::panic::panic_any(e)
         };
     }
 

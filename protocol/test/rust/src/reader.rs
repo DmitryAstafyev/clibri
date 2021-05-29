@@ -646,7 +646,7 @@ fn check_EnumExampleB_f64(entity: EnumExampleB) {
 pub fn read() -> Result<(), String> {
     let ts_bin = match get_ts_bin_dir() {
         Ok(root) => root,
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     };
     let middleware: bool = match state::state.lock() {
         Ok(state) => state.middleware,
@@ -661,11 +661,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleA_a(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.a.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleA.b.prot.bin")) {
         Ok(buf) => {
@@ -674,11 +674,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleA_b(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleA.b.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.str.prot.bin")) {
         Ok(buf) => {
@@ -687,11 +687,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_str(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.str.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.u8.prot.bin")) {
         Ok(buf) => {
@@ -700,11 +700,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_u8(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u8.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.u16.prot.bin")) {
         Ok(buf) => {
@@ -713,11 +713,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_u16(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u16.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.u32.prot.bin")) {
         Ok(buf) => {
@@ -726,11 +726,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_u32(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u32.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.u64.prot.bin")) {
         Ok(buf) => {
@@ -739,11 +739,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_u64(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.u64.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.i8.prot.bin")) {
         Ok(buf) => {
@@ -752,11 +752,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_i8(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i8.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.i16.prot.bin")) {
         Ok(buf) => {
@@ -765,11 +765,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_i16(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i16.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.i32.prot.bin")) {
         Ok(buf) => {
@@ -778,11 +778,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_i32(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i32.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.i64.prot.bin")) {
         Ok(buf) => {
@@ -791,11 +791,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_i64(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.i64.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.f32.prot.bin")) {
         Ok(buf) => {
@@ -804,11 +804,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_f32(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f32.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./EnumExampleB.f64.prot.bin")) {
         Ok(buf) => {
@@ -817,11 +817,11 @@ pub fn read() -> Result<(), String> {
                     check_EnumExampleB_f64(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./EnumExampleB.f64.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleA.prot.bin")) {
         Ok(buf) => {
@@ -830,11 +830,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleA(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleA.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleB.prot.bin")) {
         Ok(buf) => {
@@ -843,11 +843,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleB(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleB.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleC.prot.bin")) {
         Ok(buf) => {
@@ -856,11 +856,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleC(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleC.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleD.prot.bin")) {
         Ok(buf) => {
@@ -869,11 +869,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleD(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleD.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleE.prot.bin")) {
         Ok(buf) => {
@@ -882,11 +882,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleE(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleE.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleF.prot.bin")) {
         Ok(buf) => {
@@ -895,11 +895,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleF(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleF.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleG.prot.bin")) {
         Ok(buf) => {
@@ -908,11 +908,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleG(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleG.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleJ.prot.bin")) {
         Ok(buf) => {
@@ -921,11 +921,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleJ(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleJ.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./StructExampleEmpty.prot.bin")) {
         Ok(buf) => {
@@ -934,11 +934,11 @@ pub fn read() -> Result<(), String> {
                     check_StructExampleEmpty(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./StructExampleEmpty.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupAStructExampleA.prot.bin")) {
         Ok(buf) => {
@@ -947,11 +947,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupAStructExampleA(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleA.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupAStructExampleB.prot.bin")) {
         Ok(buf) => {
@@ -960,11 +960,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupAStructExampleB(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupAStructExampleB.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupBStructExampleA.prot.bin")) {
         Ok(buf) => {
@@ -973,11 +973,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupBStructExampleA(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupBStructExampleA.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupCStructExampleA.prot.bin")) {
         Ok(buf) => {
@@ -986,11 +986,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupCStructExampleA(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleA.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupCStructExampleB.prot.bin")) {
         Ok(buf) => {
@@ -999,11 +999,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupCStructExampleB(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./GroupCStructExampleB.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupDStructExampleP.prot.bin")) {
         Ok(buf) => {
@@ -1012,11 +1012,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupDStructExampleP(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDStructExampleP.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_a.prot.bin")) {
         Ok(buf) => {
@@ -1025,11 +1025,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupDEnumExamplePOption_a(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_a.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_b.prot.bin")) {
         Ok(buf) => {
@@ -1038,11 +1038,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupDEnumExamplePOption_b(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_b.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_c.prot.bin")) {
         Ok(buf) => {
@@ -1051,11 +1051,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupDEnumExamplePOption_c(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_c.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     if !middleware { match read_file(ts_bin.join("./GroupD.EnumExampleP.Option_d.prot.bin")) {
         Ok(buf) => {
@@ -1064,11 +1064,11 @@ pub fn read() -> Result<(), String> {
                     check_GroupDEnumExamplePOption_d(entity);
                     println!("[OK]\t[RS]: File {:?} has beed read.", ts_bin.join("./check_GroupDEnumExamplePOption_d.prot.bin"));
                 },
-                Err(e) => panic!(e)
+                Err(e) => std::panic::panic_any(e)
             }
             
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     } }
     let target = if !middleware { ts_bin.join("./buffer.prot.bin") } else { ts_bin.join("./buffer.prot.middleware") };
     let marker = if !middleware { "" } else { "[MID] " };
@@ -1275,7 +1275,7 @@ pub fn read() -> Result<(), String> {
             }
             println!("[OK]\tPackages: {}; done: {}", count, done);
         },
-        Err(e) => panic!(e),
+        Err(e) => std::panic::panic_any(e),
     }
     Ok(())
 }

@@ -327,7 +327,7 @@ impl Parser {
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
         let mut str: String = String::new();
         let mut pass: usize = 0;
-        let break_chars: Vec<char> = vec![';', '{', '}', '?', ':'];
+        let break_chars: Vec<char> = vec![';', '{', '}', '?', '.'];
         let special_chars: Vec<char> = vec!['[', ']'];
         let allowed_chars: Vec<char> = vec!['_'];
         for char in content.chars() {
@@ -354,7 +354,7 @@ impl Parser {
                     '{' => return Ok(ENext::OpenStruct(pass)),
                     '}' => return Ok(ENext::CloseStruct(pass)),
                     '?' => return Ok(ENext::Optional(pass)),
-                    ':' => return Ok(ENext::PathSpliter(pass)),
+                    '.' => return Ok(ENext::PathSpliter(pass)),
                     _ => {}
                 };
             }
