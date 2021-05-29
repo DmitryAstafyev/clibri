@@ -278,13 +278,13 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, store, TypescriptRender::new(embedded, 0)) {
+                        if let Err(e) = self.write(dest, store.clone(), TypescriptRender::new(embedded, 0)) {
                             return Err(e);
                         }
                     }
                     if let Some(workflow) = self.workflow.clone() {
                         // TODO: remove workflow dest folder
-                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow.clone());
+                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow.clone(), store);
                         match workflow.parse() {
                             Ok(_) => {
                                 // TODO

@@ -11,7 +11,14 @@ pub mod event;
 #[path = "./parser.store.rs"]
 pub mod store;
 
-use super::render::{Target};
+use super::{
+    render::{
+        Target
+    },
+    protocol::store::{
+        Store as Protocol
+    }
+};
 use std::fs;
 use std::path::PathBuf;
 use config::{Config};
@@ -83,12 +90,12 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(src: PathBuf) -> Parser {
+    pub fn new(src: PathBuf, protocol: Protocol) -> Parser {
         Self {
             src,
             cursor: 0,
             content: String::new(),
-            store: Store::new(),
+            store: Store::new(protocol),
         }
     }
 

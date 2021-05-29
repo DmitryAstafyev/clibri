@@ -494,7 +494,7 @@ impl RustRender {
         } else if let Some(enums) = store.get_enum(entity_id) {
             format!("{}::Defaults", enums.name)
         } else {
-            panic!(format!("Fail to find a struct/enum id: {}", entity_id));
+            panic!("Fail to find a struct/enum id: {}", entity_id);
         }
     }
 

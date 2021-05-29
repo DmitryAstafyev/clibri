@@ -1,25 +1,26 @@
-use super::{ Event, Request, Config, EntityOut, EntityParser };
+use super::{
+    Event,
+    Request,
+    Config,
+    Protocol,
+};
 
 #[derive(Debug, Clone)]
 pub struct Store {
     pub events: Vec<Event>,
     pub requests: Vec<Request>,
     pub config: Option<Config>,
-}
-
-impl Default for Store {
-    fn default() -> Self {
-        Self::new()
-    }
+    protocol: Protocol,
 }
 
 impl Store {
 
-    pub fn new() -> Self {
+    pub fn new(protocol: Protocol) -> Self {
         Self {
             events: vec![],
             requests: vec![],
             config: None,
+            protocol,
         }
     }
 
