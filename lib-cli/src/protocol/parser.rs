@@ -1,5 +1,5 @@
-use super::{ stop };
-
+use super::{ stop, helpers };
+use helpers::{chars};
 use entities::Entities;
 use enums::Enum;
 use fields::{ Field };
@@ -327,9 +327,20 @@ impl Parser {
     fn next(&mut self, content: String) -> Result<ENext, ENextErr> {
         let mut str: String = String::new();
         let mut pass: usize = 0;
-        let break_chars: Vec<char> = vec![';', '{', '}', '?', '.'];
-        let special_chars: Vec<char> = vec!['[', ']'];
-        let allowed_chars: Vec<char> = vec!['_'];
+        let break_chars: Vec<char> = vec![
+            chars::SEMICOLON,
+            chars::OPEN,
+            chars::CLOSE,
+            chars::QUESTION,
+            chars::DOT
+        ];
+        let special_chars: Vec<char> = vec![
+            chars::OPEN_SQ_BRACKET, 
+            chars::CLOSE_SQ_BRACKET,
+        ];
+        let allowed_chars: Vec<char> = vec![
+            chars::UNDERLINE
+        ];
         for char in content.chars() {
             pass += 1;
             if !char.is_ascii() {
@@ -350,25 +361,25 @@ impl Parser {
             }
             if breakable.is_some() && str.is_empty() {
                 match char {
-                    ';' => return Ok(ENext::Semicolon(pass)),
-                    '{' => return Ok(ENext::OpenStruct(pass)),
-                    '}' => return Ok(ENext::CloseStruct(pass)),
-                    '?' => return Ok(ENext::Optional(pass)),
-                    '.' => return Ok(ENext::PathSpliter(pass)),
+                    chars::SEMICOLON => return Ok(ENext::Semicolon(pass)),
+                    chars::OPEN => return Ok(ENext::OpenStruct(pass)),
+                    chars::CLOSE => return Ok(ENext::CloseStruct(pass)),
+                    chars::QUESTION => return Ok(ENext::Optional(pass)),
+                    chars::DOT => return Ok(ENext::PathSpliter(pass)),
                     _ => {}
                 };
             }
             let special: bool = special_chars.iter().any(|&c| c == char);
             if special {
                 match char {
-                    '[' => {
+                    chars::OPEN_SQ_BRACKET => {
                         if !str.is_empty() {
                             breakable = Some(char);
                         } else {
                             continue;
                         }
                     }
-                    ']' => {
+                    chars::CLOSE_SQ_BRACKET => {
                         if let Some(c) = str.chars().next() {
                             if c != '[' {
                                 return Err(ENextErr::NotSupported(format!(

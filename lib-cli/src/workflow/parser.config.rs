@@ -1,4 +1,10 @@
-use super::{Target, ENext, EntityParser, EntityOut};
+use super::{
+    Target,
+    ENext,
+    EntityParser,
+    EntityOut,
+    Protocol,
+};
 
 mod key_words {
     pub const PRODUCER: &str = "Producer";
@@ -37,12 +43,6 @@ pub struct Config {
     expectation: Vec<EExpectation>,
     pending: Pending,
     prev: Option<ENext>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Config {
@@ -110,15 +110,25 @@ impl Config {
         }
     }
 
-    fn close(&mut self) -> Result<(), String> {
+    fn close(&mut self, protocol: &Protocol) -> Result<(), String> {
+        if let Some(self_key) = self.self_key.as_ref() {
+            if protocol.find_by_str_path(0, self_key).is_none() {
+                return Err(format!("Self key {} isn't defined in protocol", self_key));
+            }
+        } else {
+            return Err(String::from("Self key isn't set"));
+        }
+        if let Some(assigned_key) = self.assigned_key.as_ref() {
+            if protocol.find_by_str_path(0, assigned_key).is_none() {
+                return Err(format!("Assigned key {} isn't defined in protocol", assigned_key));
+            }
+        } else {
+            return Err(String::from("Assigned key isn't set"))
+        }
         if self.producer.is_empty() {
             Err(String::from("No targets for producer has been found"))
         } else if self.consumer.is_empty() {
             Err(String::from("No targets for consumer has been found"))
-        } else if self.self_key.is_none() {
-            Err(String::from("Self key isn't set"))
-        } else if self.assigned_key.is_none() {
-            Err(String::from("Assigned key isn't set"))
         } else {
             self.closed = true;
             self.prev = None;
@@ -138,7 +148,7 @@ impl EntityParser for Config {
         }
     }
 
-    fn next(&mut self, enext: ENext) -> Result<usize, String> {
+    fn next(&mut self, enext: ENext, protocol: &Protocol) -> Result<usize, String> {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
@@ -257,7 +267,7 @@ impl EntityParser for Config {
             } else {
                 Err(format!("Symbol ; isn't expected. Expectation: {:?}", self.expectation))
             },
-            ENext::Close(offset) => if let Err(e) = self.close() {
+            ENext::Close(offset) => if let Err(e) = self.close(protocol) {
                 Err(e)
             } else {
                 Ok(offset)

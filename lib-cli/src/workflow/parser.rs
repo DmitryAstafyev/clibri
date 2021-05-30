@@ -17,7 +17,10 @@ use super::{
     },
     protocol::store::{
         Store as Protocol
-    }
+    },
+    helpers::{
+        chars,
+    },
 };
 use std::fs;
 use std::path::PathBuf;
@@ -25,24 +28,6 @@ use config::{Config};
 use request::{Request};
 use event::{Event};
 use store::{Store};
-
-pub mod chars {
-    pub const DOT: char = '.';
-    pub const SEMICOLON: char = ';';
-    pub const OPEN: char = '{';
-    pub const CLOSE: char = '}';
-    pub const QUESTION: char = '?';
-    pub const COLON: char = ':';
-    pub const AMPERSAND: char = '&';
-    pub const AT: char = '@';
-    pub const UNDERLINE: char = '_';
-    pub const NUMBER: char = '#';
-    pub const OPEN_BRACKET: char = '(';
-    pub const CLOSE_BRACKET: char = ')';
-    pub const ARROW: char = '>';
-    pub const EXCLAMATION: char = '!';
-    pub const CARET: char = '\n';
-}
 
 pub enum EntityOut {
     Config(Config),
@@ -53,7 +38,7 @@ pub enum EntityOut {
 pub trait EntityParser {
     
     fn open(word: String) -> Option<Self> where Self: Sized;
-    fn next(&mut self, entity: ENext) -> Result<usize, String>;
+    fn next(&mut self, entity: ENext, protocol: &Protocol) -> Result<usize, String>;
     fn closed(&self) -> bool;
     fn print(&self);
     fn extract(&mut self) -> EntityOut;
@@ -69,6 +54,7 @@ pub enum ENext {
     CloseBracket(usize),
     Arrow(usize),
     Exclamation(usize),
+    Question(usize),
     Semicolon(usize),
     PathDelimiter(usize),
     ValueDelimiter(usize),
@@ -87,6 +73,7 @@ pub struct Parser {
     cursor: usize,
     content: String,
     store: Store,
+    protocol: Protocol,
 }
 
 impl Parser {
@@ -95,7 +82,8 @@ impl Parser {
             src,
             cursor: 0,
             content: String::new(),
-            store: Store::new(protocol),
+            store: Store::new(protocol.clone()),
+            protocol,
         }
     }
 
@@ -134,7 +122,7 @@ impl Parser {
                     };
                     if offset == 0 {
                         offset = if let Some(entity) = opened.as_deref_mut() {
-                            match entity.next(enext.clone()) {
+                            match entity.next(enext.clone(), &self.protocol) {
                                 Ok(offset) => {
                                     if entity.closed() {
                                         if let Err(e) =  match entity.extract() {
@@ -249,6 +237,7 @@ impl Parser {
                     chars::CLOSE_BRACKET => return Ok(ENext::CloseBracket(pass)),
                     chars::ARROW => return Ok(ENext::Arrow(pass)),
                     chars::EXCLAMATION => return Ok(ENext::Exclamation(pass)),
+                    chars::QUESTION => return Ok(ENext::Question(pass)),
                     _ => {}
                 };
             }

@@ -1,4 +1,10 @@
-use super::{chars, ENext, EntityParser, EntityOut};
+use super::{
+    chars,
+    ENext,
+    EntityParser,
+    EntityOut,
+    Protocol
+};
 
 #[derive(Debug, PartialEq, Clone)]
 enum EExpectation {
@@ -37,10 +43,26 @@ impl Event {
         }
     }
 
-    fn close(&mut self) {
+    fn close(&mut self, protocol: &Protocol) -> Result<(), String> {
+        if let Some(reference) = self.reference.as_ref() {
+            if protocol.find_by_str_path(0, reference).is_none() {
+                return Err(format!("Reference to event object/struct {} isn't defined in protocol", reference));
+            }
+        } else {
+            return Err(String::from("Reference to event object/struct should be defined"));
+        }
+        if self.broadcasts.is_empty() {
+            return Err(String::from("Event without any broadcast messages doesn't make sense"))
+        }
+        for broadcast in self.broadcasts.iter() {
+            if protocol.find_by_str_path(0, broadcast).is_none() {
+                return Err(format!("Broadcast object/struct {} isn't defined in protocol", broadcast));
+            }
+        }
         self.closed = true;
         self.pending = Pending::Nothing;
         self.expectation = vec![];
+        Ok(())
     }
 }
 
@@ -54,7 +76,7 @@ impl EntityParser for Event {
         }
     }
 
-    fn next(&mut self, enext: ENext) -> Result<usize, String> {
+    fn next(&mut self, enext: ENext, protocol: &Protocol) -> Result<usize, String> {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
@@ -156,7 +178,9 @@ impl EntityParser for Event {
                                 Err(String::from("To create event, reference to event's object/struct should defined"))
                             } else {
                                 self.reference = Some(path_to_struct);
-                                self.close();
+                                if let Err(e) = self.close(protocol) {
+                                    return Err(e);
+                                }
                                 Ok(offset)
                             }
                         },
@@ -226,7 +250,9 @@ impl EntityParser for Event {
                             if self.reference.is_none() {
                                 return Err(String::from("Event cannot be create without reference to event object/struct"));
                             }
-                            self.close();
+                            if let Err(e) = self.close(protocol) {
+                                return Err(e);
+                            }
                             Ok(offset)
                         },
                         _ => {

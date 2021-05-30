@@ -6,15 +6,21 @@
    Consumer: typescript;
 }
 
+#UserLogin.Request !UserLogin.Err {
+#   (Accept    > UserLogin.Accepted) > Events.UserConnected;
+#                                    > Events.Message;
+#                                    > Events.AdminConnected?;
+#   (Deny      > UserLogin.Denied);
+#}
+
 UserLogin.Request !UserLogin.Err {
    (Accept    > UserLogin.Accepted) > Events.UserConnected;
                                     > Events.Message;
-                                    > Events.AdminConnected?;
    (Deny      > UserLogin.Denied);
 }
 
 Users.Request !Users.Err {
-   (Response);
+   (Users.Response);
 }
 
 Message.Request !Message.Err {
@@ -23,13 +29,13 @@ Message.Request !Message.Err {
 }
 
 Messages.Request !Messages.Err {
-   (Response);
+   (Messages.Response);
 }
 
-@ServerEvents.KickOff {
-   > Events::Message;
-   > Events::UserConnected;
-}
+#@ServerEvents.KickOff {
+#   > Events.Message;
+#   > Events.UserConnected;
+#}
 
 # If messages are defined in group
 # UserLogin {

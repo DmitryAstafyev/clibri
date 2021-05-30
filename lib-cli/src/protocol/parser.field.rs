@@ -74,7 +74,7 @@ impl Field {
     }
 
     pub fn accept_type(&mut self, store: &Store, own_group_id: usize) {
-        if self.type_path.len() == 0 {
+        if self.type_path.is_empty() {
             stop!("Fail to accept field type because no any type references were provided");
         }
         let first = self.type_path[0].clone();

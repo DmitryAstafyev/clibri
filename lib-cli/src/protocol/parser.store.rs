@@ -116,28 +116,31 @@ impl Store {
         self.c_field = Some(c_field);
     }
 
+    pub fn find_by_str_path(&self, from: usize, path: &str) -> Option<Vec<(String, usize)>> {
+        let parts: Vec<String> = path.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
+        self.find_by_path(from, &parts)
+    }
+
     pub fn find_by_path(&self, from: usize, path: &Vec<String>) -> Option<Vec<(String, usize)>> {
         let mut results: Vec<(String, usize)> = vec![];
         let last = path.len() - 1;
         let mut parent: usize = from;
         for (pos, type_str) in path.iter().enumerate() {
             if pos == last {
-                if let Some(enum_ref) = self.enums.iter().find(|i| i.name == String::from(type_str) && i.parent == parent) {
+                if let Some(enum_ref) = self.enums.iter().find(|i| i.name == *type_str && i.parent == parent) {
                     // Check enum in own group
                     results.push((String::from(type_str), enum_ref.id));
-                } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == String::from(type_str) && i.parent == parent) {
+                } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == *type_str && i.parent == parent) {
                     // Check struct in own group
                     results.push((String::from(type_str), struct_ref.id));
                 } else {
                     return None;
                 }
+            } else if let Some(group_ref) = self.groups.iter().find(|i| i.name == *type_str && i.parent == parent) {
+                results.push((String::from(type_str), group_ref.id));
+                parent = group_ref.id;
             } else {
-                if let Some(group_ref) = self.groups.iter().find(|i| i.name == String::from(type_str) && i.parent == parent) {
-                    results.push((String::from(type_str), group_ref.id));
-                    parent = group_ref.id;
-                } else {
-                    return None;
-                }
+                return None;
             }
         }
         Some(results)

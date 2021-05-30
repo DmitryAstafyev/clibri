@@ -1,4 +1,9 @@
-use super::{EntityOut, ENext, EntityParser};
+use super::{
+    EntityOut,
+    ENext,
+    EntityParser,
+    Protocol,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 enum EExpectation {
@@ -11,6 +16,7 @@ enum EExpectation {
     OpenBracket,
     CloseBracket,
     Exclamation,
+    Question,
 }
 
 #[derive(Debug, Clone)]
@@ -23,11 +29,35 @@ enum Pending {
 }
 
 #[derive(Debug, Clone)]
+pub struct ActionBroadcast {
+    pub reference: String,
+    pub optional: bool,
+}
+
+impl ActionBroadcast {
+
+    pub fn new(reference: String, optional: bool) -> Self {
+        Self {
+            reference,
+            optional,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Action {
     pub conclusion: Option<String>,
     pub response: Option<String>,
-    pub broadcast: Vec<String>,
+    /// (broadcast struct, is optional)
+    pub broadcast: Vec<ActionBroadcast>,
     current: String,
+    optional: bool,
+}
+
+impl Default for Action {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Action {
@@ -37,6 +67,16 @@ impl Action {
             response: None,
             broadcast: vec![],
             current: String::new(),
+            optional: false,
+        }
+    }
+
+    fn add_broadcast(&mut self, broadcast: ActionBroadcast) -> Result<(), String> {
+        if self.broadcast.iter().any(|b| b.reference == broadcast.reference) {
+            Err(format!("Broadcast {} has been already added", broadcast.reference))
+        } else {
+            self.broadcast.push(broadcast);
+            Ok(())
         }
     }
 
@@ -77,10 +117,47 @@ impl Request {
         }
     }
 
-    fn close(&mut self) {
+    fn close(&mut self, protocol: &Protocol) -> Result<(), String> {
+        if let Some(request) = self.request.as_ref() {
+            if protocol.find_by_str_path(0, request).is_none() {
+                return Err(format!("Request {} isn't defined in protocol", request));
+            }
+        } else {
+            return Err(String::from("For request should be defined at least reference to request object/struct"));
+        }
+        if let Some(error) = self.error.as_ref() {
+            if protocol.find_by_str_path(0, error).is_none() {
+                return Err(format!("Error {} isn't defined in protocol", error));
+            }
+        } else if !self.actions.is_empty() {
+            return Err(String::from("As soon as request has actions, error usecase should be defined."));
+        }
+        for broadcast in self.broadcasts.iter() {
+            if protocol.find_by_str_path(0, broadcast).is_none() {
+                return Err(format!("Broadcast object/struct {} isn't defined in protocol", broadcast));
+            }
+        }
+        for action in self.actions.iter() {
+            if action.conclusion.is_none() && self.actions.len() != 1 {
+                return Err(String::from("In case request has a multiple response, should be defined conclusion for each response"));
+            }
+            if let Some(response) = action.response.as_ref() {
+                if protocol.find_by_str_path(0, response).is_none() {
+                    return Err(format!("Response object/struct {} isn't defined in protocol", response));
+                }
+            } else {
+                return Err(String::from("Response should have reference to response object/struct"));
+            }
+            for broadcast in action.broadcast.iter() {
+                if protocol.find_by_str_path(0, &broadcast.reference).is_none() {
+                    return Err(format!("Response broadcast object/struct {} isn't defined in protocol", broadcast.reference));
+                }
+            }
+        }
         self.closed = true;
         self.pending = Pending::Nothing;
         self.expectation = vec![];
+        Ok(())
     }
 }
 
@@ -94,7 +171,7 @@ impl EntityParser for Request {
         }
     }
 
-    fn next(&mut self, enext: ENext) -> Result<usize, String> {
+    fn next(&mut self, enext: ENext, protocol: &Protocol) -> Result<usize, String> {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }
@@ -224,6 +301,7 @@ impl EntityParser for Request {
                                 EExpectation::PathDelimiter,
                                 EExpectation::Word,
                                 EExpectation::Semicolon,
+                                EExpectation::Question,
                             ];
                         } else {
                             return Err(format!("Unexpected place for {}", word));
@@ -245,6 +323,34 @@ impl EntityParser for Request {
                 };
                 Ok(offset)
             },
+            ENext::Question(offset) => {
+                if is_in(&self.expectation, &EExpectation::Question) {
+                    match self.pending.clone() {
+                        Pending::Action(mut action) => {
+                            if action.response.is_some() && action.conclusion.is_some() {
+                                /* USECASES:
+                                Message.Request !Message.Err {
+                                                                                   |
+                                    (Accept    > Message.Accepted) > Events.Message?;
+                                }
+                                */
+                                action.optional = true;
+                                self.pending = Pending::Action(action);
+                                self.expectation = vec![EExpectation::Semicolon];
+                                Ok(offset)
+                            } else {
+                                Err(format!("Symbol ? isn't expected. Expectation: {:?}", self.expectation))
+                            }
+                        },
+                        _ => {
+                            Err(format!("Symbol ? isn't expected. Expectation: {:?}", self.expectation))
+
+                        }
+                    }
+                } else {
+                    Err(format!("Symbol ? isn't expected. Expectation: {:?}", self.expectation))
+                }
+            },
             ENext::PathDelimiter(offset) => {
                 if is_in(&self.expectation, &EExpectation::PathDelimiter) {
                     self.expectation = vec![EExpectation::Word];
@@ -261,13 +367,17 @@ impl EntityParser for Request {
                                 return Err(String::from("Cannot close request as soon as request isn't defined"));
                             }
                             self.request = Some(path_to_struct);
-                            self.close();
+                            if let Err(e) = self.close(protocol) {
+                                return Err(e);
+                            }
                             Ok(offset)
                         },
                         Pending::Action(mut action) => {
                             if action.current.is_empty() {
                                 /* USECASES:
                                 Message.Request !Message.Err {
+                                                                                    |
+                                    (Accept    > Message.Accepted) > Events.Message?;
                                                                 |
                                     (Deny      > Message.Denied);
                                                        |
@@ -298,7 +408,10 @@ impl EntityParser for Request {
                                                         > Events.Message;
                                 }
                                 */
-                                action.broadcast.push(action.current);
+                                if let Err(e) = action.add_broadcast(ActionBroadcast::new(action.current.clone(), action.optional)) {
+                                    return Err(e);
+                                }
+                                action.optional = false;
                                 action.current = String::new();
                                 self.pending = Pending::Action(action);
                                 self.expectation = vec![
@@ -524,7 +637,9 @@ impl EntityParser for Request {
 
                         },
                     }
-                    self.close();
+                    if let Err(e) = self.close(protocol) {
+                        return Err(e);
+                    }
                     Ok(offset)
                 } else {
                     Err(format!("Symbol CLOSE isn't expected. Expectation: {:?}", self.expectation))
