@@ -1,27 +1,4 @@
-use super::{
-    helpers,
-    helpers::{
-        render as tools,
-    },
-    workflow::{
-        config::{
-            Config
-        },
-        store::{
-            Store as WorkflowStore
-        }
-    }
-};
-use std::{
-    fs,
-    path::{
-        Path,
-        PathBuf,
-    }
-};
 
-mod templates {
-    pub const MODULE: &str = r#"
 #[path = "./traits/observer.rs"]
 pub mod observer;
 
@@ -34,7 +11,14 @@ pub mod consumer;
 #[path = "./consumer/consumer_identification.rs"]
 pub mod consumer_identification;
 
-[[requests_declaration]]
+#[path = "./observers/userlogin_request.rs"]
+pub mod userlogin_request;
+#[path = "./observers/users_request.rs"]
+pub mod users_request;
+#[path = "./observers/message_request.rs"]
+pub mod message_request;
+#[path = "./observers/messages_request.rs"]
+pub mod messages_request;
 
 #[allow(non_snake_case)]
 #[path = "./events/deafault_event_connected.rs"]
@@ -44,7 +28,8 @@ pub mod default_connected_event;
 #[path = "./events/deafault_event_disconnected.rs"]
 pub mod default_disconnected_event;
 
-[[events_declaration]]
+#[path = "serverevents_userkickoff.rs"]
+pub mod serverevents_userkickoff;
 
 use super::tools;
 use consumer::Consumer;
@@ -881,90 +866,3 @@ pub struct Producer {
 impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {
 
 }    
-"#;
-    pub const REQUEST_DEC: &str = 
-r#"#[path = "./observers/[[filename]]"]
-pub mod [[module_name]];"#;
-
-    pub const EVENT_DEC: &str =
-r#"#[path = "[[filename]]"]
-pub mod [[module_name]];"#;
-
-}
-
-pub struct RenderLib {
-}
-
-impl Default for RenderLib {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RenderLib {
-    
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn render(
-        &self,
-        base: &Path,
-        store: &WorkflowStore,
-    ) -> Result<(), String> {
-        let dest: PathBuf = self.get_dest_file(base)?;
-        let mut output: String = templates::MODULE.to_owned();
-        output = output.replace("[[requests_declaration]]", &self.requests_declarations(store)?);
-        output = output.replace("[[events_declaration]]", &self.events_declarations(store)?);
-        helpers::fs::write(dest, output, true)
-    }
-
-    fn requests_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, request) in store.requests.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::REQUEST_DEC
-                    .replace("[[filename]]", &request.as_filename()?)
-                    .replace("[[module_name]]", &request.as_mod_name()?)
-            );
-            if pos < store.requests.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_DEC
-                    .replace("[[filename]]", &event.as_filename()?)
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
-        if !base.exists() {
-            if let Err(e) = fs::create_dir(&base) {
-                return Err(format!("Fail to create dest folder {}. Error: {}", base.to_string_lossy(), e));
-            }
-        }
-        Ok(base.join("lib.rs"))
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
-    }
-
-
-
-}
-

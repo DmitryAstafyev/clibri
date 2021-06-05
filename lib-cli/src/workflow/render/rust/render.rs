@@ -7,6 +7,9 @@ pub mod render_event;
 #[path = "./render.identification.rs"]
 pub mod render_identification;
 
+#[path = "./render.lib.rs"]
+pub mod render_lib;
+
 use super::{
     ImplementationRender,
     helpers,
@@ -20,6 +23,7 @@ use super::{
 use render_request::{ RenderRequest };
 use render_event::{ RenderEvent };
 use render_identification::{ RenderIdentification };
+use render_lib::{ RenderLib };
 use std::{
     path::{
         Path,
@@ -51,6 +55,7 @@ impl ImplementationRender for RustRender {
             render.render(base, &event)?;
         }
         (RenderIdentification::new()).render(base, store.get_config()?)?;
+        (RenderLib::new()).render(base, store)?;
         Ok(String::new())
     }
 }
