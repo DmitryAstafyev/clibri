@@ -1,3 +1,4 @@
+
 use super::{
     tools,
     Control,
@@ -14,23 +15,19 @@ use fiber::{
     logger::Logger,
 };
 
-pub struct Event {
-    pub reason: String,
-}
-
 pub enum Broadcast {
-    Message(Protocol::Events::Message),
-    User(Protocol::Events::UserConnected),
+    EventsMessage(Protocol::Events::Message),
+    EventsUserConnected(Protocol::Events::UserConnected),
 }
 
 #[allow(unused_variables)]
 pub trait Observer {
     fn handler<UCX: 'static + Sync + Send + Clone>(
-        event: Event,
+        event: &Protocol::ServerEvents::UserKickOff,
         ucx: UCX,
         control: Control,
     ) -> Option<Vec<(Filter, Broadcast)>> {
-        panic!("hanlder method for Connected isn't implemented");
+        panic!("hanlder method for ServerEvents::UserKickOff isn't implemented");
     }
 }
 
@@ -44,11 +41,11 @@ impl ObserverEvent {
     pub async fn listen<UCX: 'static + Sync + Send + Clone>(
         ucx: UCX,
         control: Control,
-        mut rx_event: UnboundedReceiver<Event>,
+        mut rx_event: UnboundedReceiver<Protocol::ServerEvents::UserKickOff>,
     ) {
         while let Some(event) = rx_event.recv().await {
             if let Some(mut messages) = Self::handler(
-                event,
+                &event,
                 ucx.clone(),
                 control.clone()
             ) {
@@ -58,16 +55,14 @@ impl ObserverEvent {
                     }
                     let (filter, message) = messages.remove(0);
                     match match message {
-                        Broadcast::Message(mut msg) => msg.pack(0, None),
-                        Broadcast::User(mut msg) => msg.pack(0, None),
+                        Broadcast::EventsMessage(mut msg) => msg.pack(0, None),
+                        Broadcast::EventsUserConnected(mut msg) => msg.pack(0, None),
                     } {
-                        Ok(buffer) => {
-                            if let Err(err) = control.send(filter, buffer) {
-                                tools::logger.err(&format!("[event: Event] fail to send message due error: {}", err));
-                            }
+                        Ok(buffer) => if let Err(err) = control.send(filter, buffer) {
+                            tools::logger.err(&format!("[event: ServerEvents::UserKickOff] fail to send message due error: {}", err));
                         },
                         Err(err) => {
-                            tools::logger.err(&format!("[event: Event] fail to get a buffer due error: {}", err));
+                            tools::logger.err(&format!("[event: ServerEvents::UserKickOff] fail to get a buffer due error: {}", err));
                         },
                     }
                 }
@@ -77,3 +72,4 @@ impl ObserverEvent {
 }
 
 impl Observer for ObserverEvent {}
+

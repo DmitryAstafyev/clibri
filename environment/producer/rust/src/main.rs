@@ -14,14 +14,12 @@ use fiber_transport_server::{
 };
 use producer::UserLoginObserver::{
     ObserverRequest as UserLoginObserverRequest,
-    AcceptBroadcasting as UserLoginAcceptBroadcasting,
 };
 use producer::UsersObserver::{
     ObserverRequest as UsersObserverRequest
 };
 use producer::MessageObserver::{
     ObserverRequest as MessageObserverRequest,
-    AcceptBroadcasting as MessageAcceptBroadcasting,
 };
 use producer::MessagesObserver::{
     ObserverRequest as MessagesObserverRequest,
@@ -115,7 +113,13 @@ impl UserLoginObserverRequest {
         cx: &producer::consumer::Cx,
         ucx: UCX,
         request: producer::protocol::UserLogin::Request,
-    ) -> Result<UserLoginAcceptBroadcasting, String> {
+    ) -> Result<
+        (
+            (Filter, producer::protocol::Events::UserConnected),
+            Option<(Filter, producer::protocol::Events::Message)>,
+        ),
+        String
+    > {
         match store::users.write() {
             Ok(mut users) => {
                 users.insert(cx.uuid(), store::User {
@@ -151,18 +155,18 @@ impl UserLoginObserverRequest {
                             assign: Some(true),
                             filter: None,
                         };
-                        Ok(UserLoginAcceptBroadcasting {
-                            UserConnected: (filter.clone(), producer::protocol::Events::UserConnected {
+                        Ok((
+                            (filter.clone(), producer::protocol::Events::UserConnected {
                                 uuid: cx.uuid().to_string(),
                                 username: "----".to_string(),
                             }),
-                            Message: Some((filter, producer::protocol::Events::Message {
+                            Some((filter, producer::protocol::Events::Message {
                                 user: "".to_owned(),
                                 message: msg,
                                 timestamp: tm.as_secs(),
                                 uuid: cx.uuid().to_string(),
                             })),
-                        })
+                        ))
                     },
                     Err(e) => Err(format!("Fail write message due error: {}", e)),
                 }
@@ -229,7 +233,7 @@ impl MessageObserverRequest {
         cx: &producer::consumer::Cx,
         ucx: UCX,
         request: producer::protocol::Message::Request,
-    ) -> Result<MessageAcceptBroadcasting, String> {
+    ) -> Result<(Filter, producer::protocol::Events::Message), String> {
         let start = SystemTime::now();
         let tm = start
             .duration_since(UNIX_EPOCH)
@@ -246,18 +250,16 @@ impl MessageObserverRequest {
                 let tm = start
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards");
-                Ok(MessageAcceptBroadcasting {
-                    Message: (Filter {
-                        uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
-                        assign: Some(true),
-                        filter: None,
-                    }, producer::protocol::Events::Message {
-                        user: request.user,
-                        message: request.message,
-                        timestamp: tm.as_secs(),
-                        uuid: cx.uuid().to_string(),
-                    })
-                })
+                Ok((Filter {
+                    uuid: Some((cx.uuid(), producer::consumer_identification::Condition::NotEqual)),
+                    assign: Some(true),
+                    filter: None,
+                }, producer::protocol::Events::Message {
+                    user: request.user,
+                    message: request.message,
+                    timestamp: tm.as_secs(),
+                    uuid: cx.uuid().to_string(),
+                }))
             },
             Err(e) => Err(format!("{}", e))
         }

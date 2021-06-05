@@ -64,13 +64,21 @@ impl Event {
         self.expectation = vec![];
         Ok(())
     }
+
+    pub fn get_reference(&self) -> Result<String, String> {
+        if let Some(reference) = self.reference.as_ref() {
+            Ok(String::from(reference))
+        } else {
+            Err(String::from("Reference to object/struct for event isn't defined"))
+        }
+    }
 }
 
 impl EntityParser for Event {
     
     fn open(word: String) -> Option<Self> {
         if word.starts_with(chars::AT) {
-            Some(Self::new(word[1..word.len() - 1].to_owned()))
+            Some(Self::new(word[1..word.len()].to_owned()))
         } else {
             None
         }

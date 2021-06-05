@@ -12,7 +12,7 @@ impl Cx {
     pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         if let Err(e) = self
             .consumers
-            .send(ConsumersChannel::SendTo((self.uuid.clone(), buffer)))
+            .send(ConsumersChannel::SendTo((self.uuid, buffer)))
         {
             Err(e.to_string())
         } else {
@@ -41,7 +41,7 @@ impl Cx {
         overwrite: bool,
     ) -> Result<(), String> {
         if let Err(e) = self.consumers.send(ConsumersChannel::Assign((
-            self.uuid.clone(),
+            self.uuid,
             assigned,
             overwrite,
         ))) {
@@ -69,7 +69,7 @@ impl Consumer {
         Consumer {
             uuid,
             buffer: Protocol::Buffer::new(),
-            identification: Identification::new(uuid.clone()),
+            identification: Identification::new(uuid),
             cx: Cx { uuid, consumers },
             sender,
         }
@@ -111,7 +111,7 @@ impl Consumer {
     }
 
     pub fn send_if(&self, buffer: Vec<u8>, filter: Filter) -> Result<bool, String> {
-        if self.identification.filter(filter.clone()) {
+        if self.identification.filter(filter) {
             if let Err(e) = self.send(buffer) {
                 Err(e)
             } else {
@@ -123,7 +123,7 @@ impl Consumer {
     }
 
     pub fn is_filtered(&self, filter: Filter) -> bool {
-        self.identification.filter(filter.clone())
+        self.identification.filter(filter)
     }
 
     pub fn get_cx(&mut self) -> &Cx {

@@ -32,10 +32,10 @@ Messages.Request !Messages.Err {
    (Messages.Response);
 }
 
-#@ServerEvents.KickOff {
-#   > Events.Message;
-#   > Events.UserConnected;
-#}
+@ServerEvents.UserKickOff {
+   > Events.Message;
+   > Events.UserConnected;
+}
 
 # If messages are defined in group
 # UserLogin {

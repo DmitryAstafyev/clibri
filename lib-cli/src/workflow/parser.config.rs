@@ -136,6 +136,22 @@ impl Config {
         }
     }
 
+    pub fn get_self(&self) -> Result<String, String> {
+        if let Some(self_key) = self.self_key.as_ref() {
+            Ok(String::from(self_key))
+        } else {
+            Err(String::from("Self key isn't defined for workflow"))
+        }
+    }
+
+    pub fn get_assigned(&self) -> Result<String, String> {
+        if let Some(assigned_key) = self.assigned_key.as_ref() {
+            Ok(String::from(assigned_key))
+        } else {
+            Err(String::from("Assigned key isn't defined for workflow"))
+        }
+    }
+
 }
 
 impl EntityParser for Config {

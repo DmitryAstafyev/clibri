@@ -801,25 +801,25 @@ impl RustRender {
             format!(
                 "{}{}{}{}{}{}{}\n",
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.uses.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.uses.rs"
                 )),
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.sizes.mod.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.sizes.mod.rs"
                 )),
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.decode.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.decode.rs"
                 )),
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.encode.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.encode.rs"
                 )),
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.storage.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.storage.rs"
                 )),
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.packing.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.packing.rs"
                 )),
                 self.get_injectable(include_str!(
-                    "../../../protocol/implementations/rust/src/protocol.buffer.rs"
+                    "../../../../protocol/implementations/rust/src/protocol.buffer.rs"
                 )),
             )
         } else {

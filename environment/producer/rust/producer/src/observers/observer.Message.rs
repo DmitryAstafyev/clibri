@@ -3,14 +3,11 @@ use super::consumer_identification::Filter;
 use super::observer::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
+
 #[derive(Debug, Clone)]
 pub enum Conclusion {
     Accept(Protocol::Message::Accepted),
     Deny(Protocol::Message::Denied),
-}
-
-pub struct AcceptBroadcasting {
-    pub Message: (Filter, Protocol::Events::Message),
 }
 
 #[allow(unused_variables)]
@@ -27,7 +24,10 @@ pub trait Observer {
         cx: &Cx,
         ucx: UCX,
         request: Protocol::Message::Request,
-    ) -> Result<AcceptBroadcasting, String> {
+    ) -> Result<
+        (Filter, Protocol::Events::Message),
+        String
+    > {
         Err(String::from("accept method isn't implemented"))
     }
 
@@ -59,14 +59,14 @@ impl ObserverRequest {
         match Self::conclusion(request.clone(), cx, ucx.clone()) {
             Ok(conclusion) => match conclusion {
                 Conclusion::Accept(mut response) => match Self::Accept(cx, ucx, request) {
-                    Ok(mut msgs) => match response.pack(sequence, Some(cx.uuid().to_string())) {
+                    Ok((filter, mut msg)) => match response.pack(sequence, Some(cx.uuid().to_string())) {
                         Ok(buffer) => {
                             if let Err(e) = cx.send(buffer) {
                                 Err(RequestObserverErrors::ResponsingError(e))
                             } else {
-                                match msgs.Message.1.pack(0, Some(cx.uuid().to_string())) {
+                                match msg.pack(0, Some(cx.uuid().to_string())) {
                                     Ok(buffer) => {
-                                        if let Err(e) = broadcast(msgs.Message.0, buffer) {
+                                        if let Err(e) = broadcast(filter, buffer) {
                                             return Err(RequestObserverErrors::BroadcastingError(
                                                 e,
                                             ));

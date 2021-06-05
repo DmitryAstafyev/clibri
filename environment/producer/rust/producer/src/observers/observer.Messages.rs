@@ -6,6 +6,7 @@ use super::Protocol;
 
 #[allow(unused_variables)]
 pub trait Observer {
+
     fn conclusion<UCX: 'static + Sync + Send + Clone>(
         request: Protocol::Messages::Request,
         cx: &Cx,
@@ -14,13 +15,6 @@ pub trait Observer {
         panic!("conclusion method isn't implemented");
     }
 
-    fn Response<UCX: 'static + Sync + Send + Clone>(
-        cx: &Cx,
-        ucx: UCX,
-        request: Protocol::Messages::Request,
-    ) -> Result<(), String> {
-        Err(String::from("accept method isn't implemented"))
-    }
 }
 
 #[derive(Clone)]

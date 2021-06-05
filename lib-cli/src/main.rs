@@ -10,8 +10,11 @@ pub mod protocol;
 #[path = "./workflow/parser.rs"]
 pub mod workflow;
 
-#[path = "./render/render.rs"]
+#[path = "./protocol/render/render.rs"]
 pub mod render;
+
+#[path = "./workflow/render/render.rs"]
+pub mod workflow_render;
 
 #[macro_export]
 macro_rules! stop {

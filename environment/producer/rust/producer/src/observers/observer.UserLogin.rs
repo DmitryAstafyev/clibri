@@ -10,11 +10,6 @@ pub enum Conclusion {
     Deny(Protocol::UserLogin::Denied),
 }
 
-pub struct AcceptBroadcasting {
-    pub UserConnected: (Filter, Protocol::Events::UserConnected),
-    pub Message: Option<(Filter, Protocol::Events::Message)>,
-}
-
 #[allow(unused_variables)]
 pub trait Observer {
     fn conclusion<UCX: 'static + Sync + Send + Clone>(
@@ -29,7 +24,13 @@ pub trait Observer {
         cx: &Cx,
         ucx: UCX,
         request: Protocol::UserLogin::Request,
-    ) -> Result<AcceptBroadcasting, String> {
+    ) -> Result<
+        (
+            (Filter, Protocol::Events::UserConnected),
+            Option<(Filter, Protocol::Events::Message)>,
+        ),
+        String
+    > {
         Err(String::from("accept method isn't implemented"))
     }
 
@@ -63,21 +64,20 @@ impl ObserverRequest {
                 match conclusion {
                     Conclusion::Accept(mut response) => {
                         match Self::Accept(cx, ucx.clone(), request.clone()) {
-                            Ok(mut msgs) => {
+                            Ok((
+                                user_connected_msg,
+                                message_msg,
+                            )) => {
                                 match response.pack(sequence, Some(cx.uuid().to_string())) {
                                     Ok(buffer) => {
                                         if let Err(e) = cx.send(buffer) {
                                             Err(RequestObserverErrors::ResponsingError(e))
                                         } else {
-                                            match msgs
-                                                .UserConnected
-                                                .1
-                                                .pack(0, Some(cx.uuid().to_string()))
+                                            let (filter, mut msg) = user_connected_msg;
+                                            match msg.pack(0, Some(cx.uuid().to_string()))
                                             {
                                                 Ok(buffer) => {
-                                                    if let Err(e) =
-                                                        broadcast(msgs.UserConnected.0, buffer)
-                                                    {
+                                                    if let Err(e) = broadcast(filter, buffer) {
                                                         return Err(RequestObserverErrors::BroadcastingError(e));
                                                     }
                                                 }
@@ -85,10 +85,10 @@ impl ObserverRequest {
                                                     return Err(RequestObserverErrors::EncodingResponseError(e));
                                                 }
                                             }
-                                            if let Some(mut msg) = msgs.Message {
-                                                match msg.1.pack(0, Some(cx.uuid().to_string())) {
+                                            if let Some((filter, mut msg)) = message_msg {
+                                                match msg.pack(0, Some(cx.uuid().to_string())) {
                                                     Ok(buffer) => {
-                                                        if let Err(e) = broadcast(msg.0, buffer) {
+                                                        if let Err(e) = broadcast(filter, buffer) {
                                                             return Err(RequestObserverErrors::BroadcastingError(e));
                                                         }
                                                     }
@@ -122,12 +122,10 @@ impl ObserverRequest {
                 }
             }
             Err(mut error) => match error.pack(sequence, Some(cx.uuid().to_string())) {
-                Ok(buffer) => {
-                    if let Err(e) = cx.send(buffer) {
-                        Err(RequestObserverErrors::ResponsingError(e))
-                    } else {
-                        Ok(())
-                    }
+                Ok(buffer) => if let Err(e) = cx.send(buffer) {
+                    Err(RequestObserverErrors::ResponsingError(e))
+                } else {
+                    Ok(())
                 }
                 Err(e) => Err(RequestObserverErrors::EncodingResponseError(e)),
             },

@@ -38,6 +38,13 @@ group Events {
     }
 }
 
+group ServerEvents {
+    struct UserKickOff {
+        str reason?;
+        str uuid;
+    }
+}
+
 group Message {
 
     struct Request {

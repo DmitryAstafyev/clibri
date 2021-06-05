@@ -5,6 +5,12 @@ use super::{
     Protocol,
 };
 
+use std::{
+    path::{
+        Path,
+    }
+};
+
 #[derive(Debug, PartialEq, Clone)]
 enum EExpectation {
     Word,
@@ -89,12 +95,25 @@ impl Action {
             Ok(())
         }
     }
+
+    pub fn get_conclusion(&self) -> Result<String, String> {
+        if let Some(conclusion) = self.conclusion.as_ref() {
+            Ok(String::from(conclusion))
+        } else {
+            Err(String::from("Conclusion name isn't defined"))
+        }
+    }
+
+    fn get_dest_file_declaration(&self, base: &Path, request: &Request) -> Result<String, String> {
+        let dest = base.join("observers");
+        let request = request.get_request()?;
+        Ok(String::from(dest.join(format!("{}.rs", request.to_lowercase().replace(".", "_"))).to_string_lossy()))
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct Request {
     pub request: Option<String>,
-    pub response: Option<String>,
     pub error: Option<String>,
     pub actions: Vec<Action>,
     pub broadcasts: Vec<String>,
@@ -107,7 +126,6 @@ impl Request {
     pub fn new(request: String) -> Self {
         Self {
             request: None,
-            response: None,
             error: None,
             actions: vec![],
             broadcasts: vec![],
@@ -159,6 +177,27 @@ impl Request {
         self.expectation = vec![];
         Ok(())
     }
+
+    pub fn get_request(&self) -> Result<String, String> {
+        if let Some(request) = self.request.as_ref() {
+            Ok(String::from(request))
+        } else {
+            Err(String::from("Reference to object/struct request isn't defined for action"))
+        }
+    }
+
+    pub fn get_response(&self) -> Result<String, String> {
+        if self.actions.is_empty() {
+            Err(String::from("No any actions/responses are defined for this request"))
+        } else {
+            if let Some(response) = self.actions[0].response.as_ref() {
+                Ok(response.to_string())
+            } else {
+                Err(String::from("Action doesn't have defined response"))
+            }
+        }
+    }
+
 }
 
 impl EntityParser for Request {

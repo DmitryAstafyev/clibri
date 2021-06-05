@@ -7,8 +7,10 @@ use super:: { helpers, stop };
 pub mod protocol;
 #[path = "./workflow/parser.rs"]
 pub mod workflow;
-#[path = "./render/render.rs"]
+#[path = "./protocol/render/render.rs"]
 pub mod render;
+#[path = "./workflow/render/render.rs"]
+pub mod workflow_render;
 #[path = "./arguments/ctrl.args.option.files.rs"]
 pub mod arg_option_files;
 #[path = "./arguments/ctrl.args.option.overwrite.rs"]

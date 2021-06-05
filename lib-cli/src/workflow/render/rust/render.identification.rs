@@ -1,4 +1,25 @@
 use super::{
+    helpers,
+    helpers::{
+        render as tools,
+    },
+    workflow::{
+        config::{
+            Config
+        }
+    }
+};
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    }
+};
+
+mod templates {
+    pub const MODULE: &str = r#"
+use super::{
     tools,
     Protocol
 };
@@ -19,8 +40,8 @@ pub enum Condition {
 }
 pub type FilterCallback = dyn Fn(
         Uuid,
-        Option<Protocol::Identification::SelfKey>,
-        Option<Protocol::Identification::AssignedKey>,
+        Option<Protocol::[[self_key]]>,
+        Option<Protocol::[[assigned_key]]>,
     ) -> bool
     + Send
     + Sync;
@@ -35,8 +56,8 @@ pub struct Filter {
 #[derive(Debug, Clone)]
 pub struct Identification {
     uuid: Uuid,
-    key: Option<Protocol::Identification::SelfKey>,
-    assigned: Option<Protocol::Identification::AssignedKey>,
+    key: Option<Protocol::[[self_key]]>,
+    assigned: Option<Protocol::[[assigned_key]]>,
 }
 
 impl Identification {
@@ -48,7 +69,7 @@ impl Identification {
         }
     }
 
-    pub fn key(&mut self, key: Protocol::Identification::SelfKey, overwrite: bool) {
+    pub fn key(&mut self, key: Protocol::[[self_key]], overwrite: bool) {
         if overwrite || self.key.is_none() {
             self.key = Some(key);
         } else if let Some(existing) = &mut self.key {
@@ -64,7 +85,7 @@ impl Identification {
         }
     }
 
-    pub fn assign(&mut self, assigned: Protocol::Identification::AssignedKey, overwrite: bool) {
+    pub fn assign(&mut self, assigned: Protocol::[[assigned_key]], overwrite: bool) {
         if overwrite || self.assigned.is_none() {
             self.assigned = Some(assigned);
         } else if let Some(existing) = &mut self.assigned {
@@ -100,3 +121,51 @@ impl Identification {
         self.key.is_some()
     }
 }
+"#;
+}
+
+pub struct RenderIdentification {
+}
+
+impl Default for RenderIdentification {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RenderIdentification {
+    
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn render(
+        &self,
+        base: &Path,
+        config: &Config,
+    ) -> Result<(), String> {
+        let dest: PathBuf = self.get_dest_file(base)?;
+        let mut output: String = templates::MODULE.to_owned();
+        output = output.replace("[[self_key]]", &self.into_rust_path(&config.get_self()?));
+        output = output.replace("[[assigned_key]]", &self.into_rust_path(&config.get_assigned()?));
+        helpers::fs::write(dest, output, true)
+    }
+
+    fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
+        let dest = base.join("consumer");
+        if !dest.exists() {
+            if let Err(e) = fs::create_dir(&dest) {
+                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+            }
+        }
+        Ok(dest.join("consumer_identification.rs"))
+    }
+
+    fn into_rust_path(&self, input: &str) -> String {
+        input.to_string().replace(".", "::")
+    }
+
+
+
+}
+

@@ -1,3 +1,24 @@
+use super::{
+    helpers,
+    helpers::{
+        render as tools,
+    },
+    workflow::{
+        config::{
+            Config
+        }
+    }
+};
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    }
+};
+
+mod templates {
+    pub const MODULE: &str = r#"
 #[path = "./traits/observer.rs"]
 pub mod observer;
 
@@ -7,24 +28,10 @@ pub mod protocol;
 #[path = "./consumer/consumer.rs"]
 pub mod consumer;
 
-#[path = "./consumer/consumer.identification.rs"]
+#[path = "./consumer/consumer_identification.rs"]
 pub mod consumer_identification;
 
-#[allow(non_snake_case)]
-#[path = "./observers/observer.UserLogin.rs"]
-pub mod UserLoginObserver;
-
-#[allow(non_snake_case)]
-#[path = "./observers/observer.Users.rs"]
-pub mod UsersObserver;
-
-#[allow(non_snake_case)]
-#[path = "./observers/observer.Message.rs"]
-pub mod MessageObserver;
-
-#[allow(non_snake_case)]
-#[path = "./observers/observer.Messages.rs"]
-pub mod MessagesObserver;
+[[requests_declaration]]
 
 #[allow(non_snake_case)]
 #[path = "./events/event.Connected.rs"]
@@ -873,4 +880,55 @@ pub struct Producer {
 
 impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {
 
+}    
+"#;
 }
+
+pub struct RenderLib {
+}
+
+impl Default for RenderLib {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RenderLib {
+    
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn render(
+        &self,
+        base: &Path,
+        config: &Config,
+    ) -> Result<(), String> {
+        let dest: PathBuf = self.get_dest_file(base)?;
+        let mut output: String = templates::MODULE.to_owned();
+        //output = output.replace("[[self_key]]", &self.into_rust_path(&config.get_self()?));
+        //helpers::fs::write(dest, output, true)
+        Ok(())
+    }
+
+    fn request_declarations(&self, store: &Store) -> Result<String, String> {
+        
+    }
+
+    fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
+        if !dest.exists() {
+            if let Err(e) = fs::create_dir(&dest) {
+                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+            }
+        }
+        Ok(dest.join("lib.rs"))
+    }
+
+    fn into_rust_path(&self, input: &str) -> String {
+        input.to_string().replace(".", "::")
+    }
+
+
+
+}
+

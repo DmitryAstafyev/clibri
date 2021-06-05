@@ -5,6 +5,10 @@ use super::workflow::{ Parser as WorkflowParser };
 use super::render::rust::RustRender;
 use super::render::typescript::TypescriptRender;
 use super::render::Render;
+use super::workflow_render::{
+    render as render_workflow,
+    ProtocolRefs,
+};
 use super::{CtrlArg, EArgumentsNames, EArgumentsValues};
 use std::collections::HashMap;
 use std::fs::{OpenOptions, remove_file};
@@ -286,8 +290,19 @@ impl CtrlArg for ArgsOptionFiles {
                         // TODO: remove workflow dest folder
                         let mut workflow: WorkflowParser = WorkflowParser::new(workflow.clone(), store);
                         match workflow.parse() {
-                            Ok(_) => {
-                                // TODO
+                            Ok(store) => {
+                                let protocol_refs: ProtocolRefs = ProtocolRefs {
+                                    typescript: None,
+                                    rust: None,
+                                };
+                                if let Err(err) = render_workflow(
+                                    protocol_refs, 
+                                    None,
+                                    None,
+                                    store,
+                                ) {
+                                    return Err(err);
+                                }
                             },
                             Err(err) => {
                                 return Err(err);

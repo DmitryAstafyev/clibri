@@ -87,7 +87,7 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<(), String> {
+    pub fn parse(&mut self) -> Result<Store, String> {
         let mut content: String = match self.get_content(self.src.clone()) {
             Ok(c) => c,
             Err(e) => return Err(e),
@@ -159,7 +159,7 @@ impl Parser {
             };
             // break;
         }
-        Err(String::from(""))
+        Ok(self.store.clone())
     }
 
     pub fn get_content(&self, target: PathBuf) -> Result<String, String> {

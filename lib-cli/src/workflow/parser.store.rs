@@ -66,4 +66,12 @@ impl Store {
         self.requests.push(request);
         Ok(())
     }
+
+    pub fn get_config(&self) -> Result<&Config, String> {
+        if let Some(config) = self.config.as_ref() {
+            Ok(config)
+        } else {
+            Err(String::from("Config isn't defined for workflow"))
+        }
+    }
 }
