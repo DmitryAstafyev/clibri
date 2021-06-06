@@ -4,8 +4,13 @@
 // use super::protocol::store::Store;
 // use super::protocol::structs::Struct;
 // use super::protocol::types::PrimitiveTypes;
-use super::workflow::{
-    store::{Store as WorkflowStore}
+use super::{
+    workflow::{
+        store::{
+            Store as WorkflowStore
+        },
+    },
+    Protocol,
 };
 use super::{ ImplementationRender, stop };
 use regex::Regex;
@@ -31,7 +36,7 @@ impl ImplementationRender for TypescriptRender {
         }
     }
 
-    fn render(&self, base: &Path, store: &WorkflowStore) -> Result<String, String> {
+    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String> {
         Ok(String::new())
     }
 }

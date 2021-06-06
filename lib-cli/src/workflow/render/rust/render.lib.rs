@@ -10,7 +10,8 @@ use super::{
         store::{
             Store as WorkflowStore
         }
-    }
+    },
+    Protocol,
 };
 use std::{
     fs,
@@ -672,114 +673,7 @@ fn spawn_consumers<
                                                 // it might be some option of producer like NonAssignedStratagy
                                             } else {
                                                 match message {
-                                                    Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(request)) => {
-                                                        tools::logger.debug(&format!("Protocol::AvailableMessages::UserLogin::Request {:?}", request));
-                                                        match UserLogin.write() {
-                                                            Ok(UserLogin) => {
-                                                                if let Err(e) = UserLogin.emit(
-                                                                    consumer.get_cx(),
-                                                                    ucx.clone(),
-                                                                    header.sequence,
-                                                                    request,
-                                                                    &broadcast,
-                                                                ) {
-                                                                    if let Err(e) = tx_producer_events.send(
-                                                                        ProducerEvents::Error(
-                                                                            ProducerError::EmitError(format!("Fail to emit UserLogin due error: {:?}", e).to_owned())
-                                                                        )
-                                                                    ) {
-                                                                        tools::logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(e) => if let Err(e) = tx_producer_events.send(
-                                                                ProducerEvents::Error(ProducerError::InternalError(
-                                                                    format!("Fail to access to UserLogin due error: {}", e).to_owned()
-                                                                ))
-                                                            ) {
-                                                                tools::logger.err(&format!("{}", e));
-                                                            }
-                                                        }
-                                                    },
-                                                    Protocol::AvailableMessages::Users(Protocol::Users::AvailableMessages::Request(request)) => {
-                                                        tools::logger.debug(&format!("Protocol::AvailableMessages::Users::Request {:?}", request));
-                                                        match Users.write() {
-                                                            Ok(Users) => {
-                                                                if let Err(e) = Users.emit(
-                                                                    consumer.get_cx(),
-                                                                    ucx.clone(),
-                                                                    header.sequence,
-                                                                    request,
-                                                                    &broadcast,
-                                                                ) {
-                                                                    if let Err(e) = tx_producer_events.send(
-                                                                        ProducerEvents::Error(ProducerError::EmitError(
-                                                                            format!("Fail to emit Protocol::Users::Request due error: {:?}", e).to_owned()
-                                                                        ))
-                                                                    ) {
-                                                                        tools::logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(e) => if let Err(e) = tx_producer_events.send(
-                                                                ProducerEvents::Error(ProducerError::InternalError(
-                                                                    format!("Fail to access to Users due error: {}", e).to_owned()
-                                                                ))
-                                                            ) {
-                                                                tools::logger.err(&format!("{}", e));
-                                                            }
-                                                        }
-                                                    },
-                                                    Protocol::AvailableMessages::Message(Protocol::Message::AvailableMessages::Request(request)) => {
-                                                        tools::logger.debug(&format!("Protocol::AvailableMessages::Message::Request {:?}", request));
-                                                        match Message.write() {
-                                                            Ok(Message) => {
-                                                                if let Err(e) = Message.emit(
-                                                                    consumer.get_cx(),
-                                                                    ucx.clone(),
-                                                                    header.sequence,
-                                                                    request,
-                                                                    &broadcast,
-                                                                ) {
-                                                                    if let Err(e) = tx_producer_events.send(
-                                                                        ProducerEvents::Error(
-                                                                            ProducerError::EmitError(format!("Fail to emit Message due error: {:?}", e).to_owned())
-                                                                        )
-                                                                    ) {
-                                                                        tools::logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(e) => if let Err(e) = tx_producer_events.send(
-                                                                ProducerEvents::Error(
-                                                                    ProducerError::InternalError(format!("Fail to access to Message due error: {}", e).to_owned())
-                                                                )
-                                                            ) {
-                                                                tools::logger.err(&format!("{}", e));
-                                                            }
-                                                        }
-                                                    },
-                                                    Protocol::AvailableMessages::Messages(Protocol::Messages::AvailableMessages::Request(request)) => {
-                                                        tools::logger.debug(&format!("Protocol::AvailableMessages::Messages::Request {:?}", request));
-                                                        match Messages.write() {
-                                                            Ok(Messages) => {
-                                                                if let Err(e) = Messages.emit(
-                                                                    consumer.get_cx(),
-                                                                    ucx.clone(),
-                                                                    header.sequence,
-                                                                    request,
-                                                                    &broadcast,
-                                                                ) {
-                                                                    if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::EmitError(format!("Fail to emit Messages due error: {:?}", e).to_owned()))) {
-                                                                        tools::logger.err(&format!("{}", e));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(e) => if let Err(e) = tx_producer_events.send(ProducerEvents::Error(ProducerError::InternalError(format!("Fail to access to Messages due error: {}", e).to_owned()))) {
-                                                                tools::logger.err(&format!("{}", e));
-                                                            }
-                                                        }
-                                                    },
+[[requests_emitters]]
                                                     _ => {
                                                     },
                                                 }
@@ -896,7 +790,36 @@ r#"let (tx_[[module_name]], rx_[[module_name]]): (
 "[[module_name]]::ObserverEvent::listen(ucx.clone(), control.clone(), rx_[[module_name]])";
     pub const REQUEST_DEF: &str = 
 "let arc_[[module_name]] = Arc::new(RwLock::new([[module_name]]::ObserverRequest::new()));";
-
+    pub const REQUEST_EMITTER: &str =
+r#"[[message_enum_path]](Protocol::UserLogin::AvailableMessages::Request(request)) => {
+    tools::logger.debug(&format!("Protocol::UserLogin::AvailableMessages::Request {:?}", request));
+    match arc_[[emitter]].write() {
+        Ok([[emitter]]) => {
+            if let Err(e) = [[emitter]].emit(
+                consumer.get_cx(),
+                ucx.clone(),
+                header.sequence,
+                request,
+                &broadcast,
+            ) {
+                if let Err(e) = tx_producer_events.send(
+                    ProducerEvents::Error(
+                        ProducerError::EmitError(format!("Fail to emit UserLogin due error: {:?}", e).to_owned())
+                    )
+                ) {
+                    tools::logger.err(&format!("{}", e));
+                }
+            }
+        }
+        Err(e) => if let Err(e) = tx_producer_events.send(
+            ProducerEvents::Error(ProducerError::InternalError(
+                format!("Fail to access to UserLogin due error: {}", e).to_owned()
+            ))
+        ) {
+            tools::logger.err(&format!("{}", e));
+        }
+    }
+},"#;
 }
 
 pub struct RenderLib {
@@ -918,11 +841,13 @@ impl RenderLib {
         &self,
         base: &Path,
         store: &WorkflowStore,
+        protocol: &Protocol,
     ) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = templates::MODULE.to_owned();
         output = output.replace("[[requests_declaration]]", &self.requests_declarations(store)?);
         output = output.replace("[[requests_definitions]]", &tools::inject_tabs(2, self.requests_definitions(store)?));
+        output = output.replace("[[requests_emitters]]", &tools::inject_tabs(0, self.requests_emitters(store)?));
         output = output.replace("[[events_declaration]]", &self.events_declarations(store)?);
         output = output.replace("[[events_struct_declaration]]", &tools::inject_tabs(1, self.events_struct_declarations(store)?));
         output = output.replace("[[events_struct_args]]", &tools::inject_tabs(2, self.events_struct_args(store)?));
@@ -965,6 +890,22 @@ impl RenderLib {
         }
         Ok(output)
     }
+
+    fn requests_emitters(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, request) in store.requests.iter().enumerate() {
+            let mut emitter: String = String::from(templates::REQUEST_EMITTER);
+            emitter = emitter.replace("[[emitter]]", &request.as_mod_name()?);
+            output = format!("{}{}",
+                output,
+                emitter,
+            );
+            if pos < store.requests.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }    
 
     fn events_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
         let mut output: String = String::new();

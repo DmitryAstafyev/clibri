@@ -288,9 +288,9 @@ impl CtrlArg for ArgsOptionFiles {
                     }
                     if let Some(workflow) = self.workflow.clone() {
                         // TODO: remove workflow dest folder
-                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow.clone(), store);
+                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow.clone(), store.clone());
                         match workflow.parse() {
-                            Ok(store) => {
+                            Ok(workflow_store) => {
                                 let protocol_refs: ProtocolRefs = ProtocolRefs {
                                     typescript: None,
                                     rust: None,
@@ -299,7 +299,8 @@ impl CtrlArg for ArgsOptionFiles {
                                     protocol_refs, 
                                     None,
                                     None,
-                                    store,
+                                    workflow_store,
+                                    &store
                                 ) {
                                     return Err(err);
                                 }

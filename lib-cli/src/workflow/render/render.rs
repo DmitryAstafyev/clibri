@@ -12,7 +12,10 @@ use super::{
         store::{
             Store as WorkflowStore
         }
-    }
+    },
+    protocol::store::{
+        Store as Protocol
+    },
 };
 use rust::{
     RustRender,
@@ -33,7 +36,7 @@ pub enum Target {
 pub trait ImplementationRender {
 
     fn new(signature: u16) -> Self;
-    fn render(&self, base: &Path, store: &WorkflowStore) -> Result<String, String>;
+    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String>;
 
 }
 
@@ -47,8 +50,9 @@ pub fn render(
     consumer_dest: Option<PathBuf>,
     provider_dest: Option<PathBuf>,
     store: WorkflowStore,
+    protocol: &Protocol,
 ) -> Result<(), String> {
     let render: RustRender = RustRender::new(1);
-    render.render(Path::new("/storage/projects/private/fiber/lib-cli/tmp"), &store)?;
+    render.render(Path::new("/Users/dmitryastafyev/projects/private/fiber/lib-cli/tmp"), &store, protocol)?;
     Ok(())
 }

@@ -18,7 +18,8 @@ use super::{
         store::{
             Store as WorkflowStore
         }
-    }
+    },
+    Protocol,
 };
 use render_request::{ RenderRequest };
 use render_event::{ RenderEvent };
@@ -45,7 +46,7 @@ impl ImplementationRender for RustRender {
         }
     }
 
-    fn render(&self, base: &Path, store: &WorkflowStore) -> Result<String, String> {
+    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String> {
         for request in &store.requests {
             let render = RenderRequest::new();
             render.render(base, &request)?;
@@ -55,7 +56,7 @@ impl ImplementationRender for RustRender {
             render.render(base, &event)?;
         }
         (RenderIdentification::new()).render(base, store.get_config()?)?;
-        (RenderLib::new()).render(base, store)?;
+        (RenderLib::new()).render(base, store, protocol)?;
         Ok(String::new())
     }
 }
