@@ -638,7 +638,7 @@ fn spawn_consumers<
                                     }
                                     while let Some((message, header)) = consumer.next() {
                                         match message {
-                                            Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::SelfKey(request) = message {
+                                            Protocol::AvailableMessages::Identification(Protocol::Identification::AvailableMessages::SelfKey(request)) => {
                                                 let uuid = consumer.key(request, true);
                                                 tools::logger.debug(&format!("{}:: identification is done", uuid));
                                                 if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {

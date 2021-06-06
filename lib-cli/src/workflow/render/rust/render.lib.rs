@@ -640,7 +640,7 @@ fn spawn_consumers<
                                     }
                                     while let Some((message, header)) = consumer.next() {
                                         match message {
-                                            Protocol::AvailableMessages::Identification(message) => if let Protocol::Identification::AvailableMessages::SelfKey(request) = message {
+                                            [[indentification_self_enum_ref]] => {
                                                 let uuid = consumer.key(request, true);
                                                 tools::logger.debug(&format!("{}:: identification is done", uuid));
                                                 if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
@@ -791,8 +791,8 @@ r#"let (tx_[[module_name]], rx_[[module_name]]): (
     pub const REQUEST_DEF: &str = 
 "let arc_[[module_name]] = Arc::new(RwLock::new([[module_name]]::ObserverRequest::new()));";
     pub const REQUEST_EMITTER: &str =
-r#"[[message_enum_path]](Protocol::UserLogin::AvailableMessages::Request(request)) => {
-    tools::logger.debug(&format!("Protocol::UserLogin::AvailableMessages::Request {:?}", request));
+r#"[[message_enum_ref]] => {
+    tools::logger.debug(&format!("[[debug_ref]] {:?}", request));
     match arc_[[emitter]].write() {
         Ok([[emitter]]) => {
             if let Err(e) = [[emitter]].emit(
@@ -804,7 +804,7 @@ r#"[[message_enum_path]](Protocol::UserLogin::AvailableMessages::Request(request
             ) {
                 if let Err(e) = tx_producer_events.send(
                     ProducerEvents::Error(
-                        ProducerError::EmitError(format!("Fail to emit UserLogin due error: {:?}", e).to_owned())
+                        ProducerError::EmitError(format!("Fail to emit [[debug_ref]] due error: {:?}", e).to_owned())
                     )
                 ) {
                     tools::logger.err(&format!("{}", e));
@@ -813,7 +813,7 @@ r#"[[message_enum_path]](Protocol::UserLogin::AvailableMessages::Request(request
         }
         Err(e) => if let Err(e) = tx_producer_events.send(
             ProducerEvents::Error(ProducerError::InternalError(
-                format!("Fail to access to UserLogin due error: {}", e).to_owned()
+                format!("Fail to access to [[debug_ref]] due error: {}", e).to_owned()
             ))
         ) {
             tools::logger.err(&format!("{}", e));
@@ -847,7 +847,8 @@ impl RenderLib {
         let mut output: String = templates::MODULE.to_owned();
         output = output.replace("[[requests_declaration]]", &self.requests_declarations(store)?);
         output = output.replace("[[requests_definitions]]", &tools::inject_tabs(2, self.requests_definitions(store)?));
-        output = output.replace("[[requests_emitters]]", &tools::inject_tabs(0, self.requests_emitters(store)?));
+        output = output.replace("[[requests_emitters]]", &tools::inject_tabs(13, self.requests_emitters(store)?));
+        output = output.replace("[[indentification_self_enum_ref]]", &self.indentification_self_enum_ref(store)?);
         output = output.replace("[[events_declaration]]", &self.events_declarations(store)?);
         output = output.replace("[[events_struct_declaration]]", &tools::inject_tabs(1, self.events_struct_declarations(store)?));
         output = output.replace("[[events_struct_args]]", &tools::inject_tabs(2, self.events_struct_args(store)?));
@@ -895,7 +896,26 @@ impl RenderLib {
         let mut output: String = String::new();
         for (pos, request) in store.requests.iter().enumerate() {
             let mut emitter: String = String::from(templates::REQUEST_EMITTER);
+            let parts: Vec<String> = request.get_request()?.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
+            let enum_ref: String = if parts.len() == 1 {
+                format!("Protocol::AvailableMessages::{}(Protocol::{}(request))", parts[0], parts[0])
+            } else {
+                //Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(Protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
+                //Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(request))
+                let mut chain: String = String::from("");
+                for (pos, part) in parts.iter().enumerate() {
+                    let mut step: String = String::from("Protocol");
+                    for n in 0..pos {
+                        step = format!("{}::{}", step, parts[n]);
+                    }
+                    step = format!("{}::AvailableMessages::{}(", step, part);
+                    chain = format!("{}{}", chain, step);
+                }
+                format!("{}request{}", chain, ")".repeat(parts.len()))
+            };
             emitter = emitter.replace("[[emitter]]", &request.as_mod_name()?);
+            emitter = emitter.replace("[[message_enum_ref]]", &enum_ref);
+            emitter = emitter.replace("[[debug_ref]]", &request.get_request()?);
             output = format!("{}{}",
                 output,
                 emitter,
@@ -905,7 +925,27 @@ impl RenderLib {
             }
         }
         Ok(output)
-    }    
+    }
+
+    fn indentification_self_enum_ref(&self, store: &WorkflowStore) -> Result<String, String> {
+        let parts: Vec<String> = store.get_config()?.get_self()?.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
+        if parts.len() == 1 {
+            Ok(format!("Protocol::AvailableMessages::{}(Protocol::{}(request))", parts[0], parts[0]))
+        } else {
+            let mut chain: String = String::from("");
+            for (pos, part) in parts.iter().enumerate() {
+                let mut step: String = String::from("Protocol");
+                for n in 0..pos {
+                    step = format!("{}::{}", step, parts[n]);
+                }
+                step = format!("{}::AvailableMessages::{}(", step, part);
+                chain = format!("{}{}", chain, step);
+            }
+            Ok(format!("{}request{}", chain, ")".repeat(parts.len())))
+        }
+    }
+
+    // TODO: Protocol::Identification::SelfKeyResponse
 
     fn events_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
         let mut output: String = String::new();

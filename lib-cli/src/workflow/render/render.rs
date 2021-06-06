@@ -53,6 +53,6 @@ pub fn render(
     protocol: &Protocol,
 ) -> Result<(), String> {
     let render: RustRender = RustRender::new(1);
-    render.render(Path::new("/Users/dmitryastafyev/projects/private/fiber/lib-cli/tmp"), &store, protocol)?;
+    render.render(Path::new("/storage/projects/private/fiber/lib-cli/tmp"), &store, protocol)?;
     Ok(())
 }
