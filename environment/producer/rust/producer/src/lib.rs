@@ -172,7 +172,6 @@ impl Events {
             KickOffEvent,
         }
     }
-
 }
 
 #[derive(Clone)]

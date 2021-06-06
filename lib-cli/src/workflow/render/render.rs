@@ -49,6 +49,6 @@ pub fn render(
     store: WorkflowStore,
 ) -> Result<(), String> {
     let render: RustRender = RustRender::new(1);
-    render.render(Path::new("/Users/dmitryastafyev/projects/private/fiber/lib-cli/tmp"), &store)?;
+    render.render(Path::new("/storage/projects/private/fiber/lib-cli/tmp"), &store)?;
     Ok(())
 }

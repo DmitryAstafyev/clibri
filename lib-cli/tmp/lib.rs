@@ -153,18 +153,17 @@ impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 #[derive(Clone)]
 pub struct Events {
-    pub KickOffEvent: UnboundedSender<KickOffEvent::Event>,
+    pub serverevents_userkickoff: UnboundedSender<serverevents_userkickoff::Event>,
 }
 
 impl Events {
     pub fn new(
-        KickOffEvent: UnboundedSender<KickOffEvent::Event>
+        serverevents_userkickoff: UnboundedSender<serverevents_userkickoff::Event>
     ) -> Self {
         Events {
-            KickOffEvent,
+            serverevents_userkickoff
         }
     }
-
 }
 
 #[derive(Clone)]
@@ -294,12 +293,12 @@ pub fn init<
         ucx.clone(),
         rx_consumers_task_sd,
     );
-    let (tx_event_kickoff, rx_event_kickoff): (
-        UnboundedSender<KickOffEvent::Event>,
-        UnboundedReceiver<KickOffEvent::Event>,
+    let (tx_serverevents_userkickoff, rx_serverevents_userkickoff): (
+        UnboundedSender<serverevents_userkickoff::Event>,
+        UnboundedReceiver<serverevents_userkickoff::Event>,
     ) = unbounded_channel();
     let events = Events::new(
-        tx_event_kickoff
+        tx_serverevents_userkickoff
     );
     let control = Control::new(
         tx_server_control,
@@ -313,7 +312,7 @@ pub fn init<
     let events_task: JoinHandle<Result<(), String>> = spawn_events(
         ucx,
         control.clone(),
-        rx_event_kickoff,
+        rx_serverevents_userkickoff,
         rx_events_task_sd,
     );
     let task = async move {
@@ -477,12 +476,12 @@ fn spawn_consumers<
     spawn(async move {
         tools::logger.verb("[task: consumers]:: started");
         let store: Arc<RwLock<HashMap<Uuid, Consumer>>> = Arc::new(RwLock::new(HashMap::new()));
-        let UserLogin = Arc::new(RwLock::new(UserLoginObserver::ObserverRequest::new()));
-        let Users = Arc::new(RwLock::new(UsersObserver::ObserverRequest::new()));
-        let Message = Arc::new(RwLock::new(MessageObserver::ObserverRequest::new()));
-        let Messages = Arc::new(RwLock::new(MessagesObserver::ObserverRequest::new()));
-        let Connected = Arc::new(RwLock::new(default_connected_event::ObserverEvent::new()));
-        let Disconnected = Arc::new(RwLock::new(default_disconnected_event::ObserverEvent::new()));
+        let arc_userlogin_request = Arc::new(RwLock::new(userlogin_request::ObserverRequest::new()));
+        let arc_users_request = Arc::new(RwLock::new(users_request::ObserverRequest::new()));
+        let arc_message_request = Arc::new(RwLock::new(message_request::ObserverRequest::new()));
+        let arc_messages_request = Arc::new(RwLock::new(messages_request::ObserverRequest::new()));
+        let arc_connected = Arc::new(RwLock::new(default_connected_event::ObserverEvent::new()));
+        let arc_disconnected = Arc::new(RwLock::new(default_disconnected_event::ObserverEvent::new()));
         select! {
             _ = async {
                 while let Some(event) = rx_consumers.recv().await {
@@ -506,9 +505,9 @@ fn spawn_consumers<
                                 if let Err(e) = tx_producer_events.send(ProducerEvents::ConsumerConnected(uuid)) {
                                     tools::logger.err(&format!("{}", e));
                                 }
-                                match Connected.write() {
-                                    Ok(Connected) => {
-                                        Connected.emit(
+                                match arc_connected.write() {
+                                    Ok(connected) => {
+                                        connected.emit(
                                             uuid,
                                             ucx.clone(),
                                             &broadcast,
@@ -516,7 +515,7 @@ fn spawn_consumers<
                                     }
                                     Err(e) => if let Err(e) = tx_producer_events.send(
                                         ProducerEvents::Error(ProducerError::InternalError(
-                                            format!("Fail to access to Connected event handler due error: {}", e).to_owned()
+                                            format!("Fail to access to connected event handler due error: {}", e).to_owned()
                                         ))
                                     ) {
                                         tools::logger.err(&format!("{}", e));
@@ -538,9 +537,9 @@ fn spawn_consumers<
                                     tools::logger.err(&format!("{}", e));
                                 }
                                 tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
-                                match Disconnected.write() {
-                                    Ok(Disconnected) => {
-                                        Disconnected.emit(
+                                match arc_disconnected.write() {
+                                    Ok(disconnected) => {
+                                        disconnected.emit(
                                             uuid,
                                             ucx.clone(),
                                             &broadcast,
@@ -548,7 +547,7 @@ fn spawn_consumers<
                                     }
                                     Err(e) => if let Err(e) = tx_producer_events.send(
                                         ProducerEvents::Error(ProducerError::InternalError(
-                                            format!("Fail to access to Connected event handler due error: {}", e).to_owned()
+                                            format!("Fail to access to connected event handler due error: {}", e).to_owned()
                                         ))
                                     ) {
                                         tools::logger.err(&format!("{}", e));
@@ -828,13 +827,13 @@ fn spawn_events<
 >(
     ucx: UCX,
     control: Control,
-    rx_event_kickoff: UnboundedReceiver<KickOffEvent::Event>,
+    rx_serverevents_userkickoff: UnboundedReceiver<serverevents_userkickoff::Event>,
     rx_shutdown: Receiver<()>,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
         tools::logger.debug("[task: events]:: started");
         join!(
-            KickOffEvent::ObserverEvent::listen(ucx.clone(), control.clone(), rx_event_kickoff),
+            serverevents_userkickoff::ObserverEvent::listen(ucx.clone(), control.clone(), rx_serverevents_userkickoff),
             rx_shutdown,
         );
         tools::logger.debug("[task: events]:: finished");

@@ -168,18 +168,17 @@ impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 #[derive(Clone)]
 pub struct Events {
-    pub KickOffEvent: UnboundedSender<KickOffEvent::Event>,
+[[events_struct_declaration]],
 }
 
 impl Events {
     pub fn new(
-        KickOffEvent: UnboundedSender<KickOffEvent::Event>
+[[events_struct_args]]
     ) -> Self {
         Events {
-            KickOffEvent,
+[[events_struct_props]]
         }
     }
-
 }
 
 #[derive(Clone)]
@@ -309,12 +308,9 @@ pub fn init<
         ucx.clone(),
         rx_consumers_task_sd,
     );
-    let (tx_event_kickoff, rx_event_kickoff): (
-        UnboundedSender<KickOffEvent::Event>,
-        UnboundedReceiver<KickOffEvent::Event>,
-    ) = unbounded_channel();
+[[events_channels]]
     let events = Events::new(
-        tx_event_kickoff
+[[events_senders]]
     );
     let control = Control::new(
         tx_server_control,
@@ -328,7 +324,7 @@ pub fn init<
     let events_task: JoinHandle<Result<(), String>> = spawn_events(
         ucx,
         control.clone(),
-        rx_event_kickoff,
+[[events_receivers]],
         rx_events_task_sd,
     );
     let task = async move {
@@ -492,12 +488,9 @@ fn spawn_consumers<
     spawn(async move {
         tools::logger.verb("[task: consumers]:: started");
         let store: Arc<RwLock<HashMap<Uuid, Consumer>>> = Arc::new(RwLock::new(HashMap::new()));
-        let UserLogin = Arc::new(RwLock::new(UserLoginObserver::ObserverRequest::new()));
-        let Users = Arc::new(RwLock::new(UsersObserver::ObserverRequest::new()));
-        let Message = Arc::new(RwLock::new(MessageObserver::ObserverRequest::new()));
-        let Messages = Arc::new(RwLock::new(MessagesObserver::ObserverRequest::new()));
-        let Connected = Arc::new(RwLock::new(default_connected_event::ObserverEvent::new()));
-        let Disconnected = Arc::new(RwLock::new(default_disconnected_event::ObserverEvent::new()));
+[[requests_definitions]]
+        let arc_connected = Arc::new(RwLock::new(default_connected_event::ObserverEvent::new()));
+        let arc_disconnected = Arc::new(RwLock::new(default_disconnected_event::ObserverEvent::new()));
         select! {
             _ = async {
                 while let Some(event) = rx_consumers.recv().await {
@@ -521,9 +514,9 @@ fn spawn_consumers<
                                 if let Err(e) = tx_producer_events.send(ProducerEvents::ConsumerConnected(uuid)) {
                                     tools::logger.err(&format!("{}", e));
                                 }
-                                match Connected.write() {
-                                    Ok(Connected) => {
-                                        Connected.emit(
+                                match arc_connected.write() {
+                                    Ok(connected) => {
+                                        connected.emit(
                                             uuid,
                                             ucx.clone(),
                                             &broadcast,
@@ -531,7 +524,7 @@ fn spawn_consumers<
                                     }
                                     Err(e) => if let Err(e) = tx_producer_events.send(
                                         ProducerEvents::Error(ProducerError::InternalError(
-                                            format!("Fail to access to Connected event handler due error: {}", e).to_owned()
+                                            format!("Fail to access to connected event handler due error: {}", e).to_owned()
                                         ))
                                     ) {
                                         tools::logger.err(&format!("{}", e));
@@ -553,9 +546,9 @@ fn spawn_consumers<
                                     tools::logger.err(&format!("{}", e));
                                 }
                                 tools::logger.debug(&format!("Consumer uuid: {} disconnected and destroyed", uuid));
-                                match Disconnected.write() {
-                                    Ok(Disconnected) => {
-                                        Disconnected.emit(
+                                match arc_disconnected.write() {
+                                    Ok(disconnected) => {
+                                        disconnected.emit(
                                             uuid,
                                             ucx.clone(),
                                             &broadcast,
@@ -563,7 +556,7 @@ fn spawn_consumers<
                                     }
                                     Err(e) => if let Err(e) = tx_producer_events.send(
                                         ProducerEvents::Error(ProducerError::InternalError(
-                                            format!("Fail to access to Connected event handler due error: {}", e).to_owned()
+                                            format!("Fail to access to connected event handler due error: {}", e).to_owned()
                                         ))
                                     ) {
                                         tools::logger.err(&format!("{}", e));
@@ -843,13 +836,13 @@ fn spawn_events<
 >(
     ucx: UCX,
     control: Control,
-    rx_event_kickoff: UnboundedReceiver<KickOffEvent::Event>,
+[[events_receiver_declaration]],
     rx_shutdown: Receiver<()>,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
         tools::logger.debug("[task: events]:: started");
         join!(
-            KickOffEvent::ObserverEvent::listen(ucx.clone(), control.clone(), rx_event_kickoff),
+[[events_tasks]],
             rx_shutdown,
         );
         tools::logger.debug("[task: events]:: finished");
@@ -885,10 +878,24 @@ impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {
     pub const REQUEST_DEC: &str = 
 r#"#[path = "./observers/[[filename]]"]
 pub mod [[module_name]];"#;
-
     pub const EVENT_DEC: &str =
 r#"#[path = "[[filename]]"]
 pub mod [[module_name]];"#;
+    pub const EVENT_STRUCT_DEC: &str =
+"pub [[module_name]]: UnboundedSender<[[module_name]]::Event>";
+    pub const EVENT_ARG_DEC: &str =
+"[[module_name]]: UnboundedSender<[[module_name]]::Event>";
+    pub const EVENT_CHANNEL: &str =
+r#"let (tx_[[module_name]], rx_[[module_name]]): (
+    UnboundedSender<[[module_name]]::Event>,
+    UnboundedReceiver<[[module_name]]::Event>,
+) = unbounded_channel();"#;
+    pub const EVENT_RECEIVER_DEC: &str =
+"rx_[[module_name]]: UnboundedReceiver<[[module_name]]::Event>";
+    pub const EVENT_TASK: &str = 
+"[[module_name]]::ObserverEvent::listen(ucx.clone(), control.clone(), rx_[[module_name]])";
+    pub const REQUEST_DEF: &str = 
+"let arc_[[module_name]] = Arc::new(RwLock::new([[module_name]]::ObserverRequest::new()));";
 
 }
 
@@ -915,7 +922,16 @@ impl RenderLib {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = templates::MODULE.to_owned();
         output = output.replace("[[requests_declaration]]", &self.requests_declarations(store)?);
+        output = output.replace("[[requests_definitions]]", &tools::inject_tabs(2, self.requests_definitions(store)?));
         output = output.replace("[[events_declaration]]", &self.events_declarations(store)?);
+        output = output.replace("[[events_struct_declaration]]", &tools::inject_tabs(1, self.events_struct_declarations(store)?));
+        output = output.replace("[[events_struct_args]]", &tools::inject_tabs(2, self.events_struct_args(store)?));
+        output = output.replace("[[events_struct_props]]", &tools::inject_tabs(3, self.events_struct_props(store)?));
+        output = output.replace("[[events_channels]]", &tools::inject_tabs(1, self.events_channels(store)?));
+        output = output.replace("[[events_senders]]", &tools::inject_tabs(2, self.events_senders(store)?));
+        output = output.replace("[[events_receivers]]", &tools::inject_tabs(2, self.events_receivers(store)?));
+        output = output.replace("[[events_receiver_declaration]]", &tools::inject_tabs(1, self.events_receiver_declaration(store)?));
+        output = output.replace("[[events_tasks]]", &tools::inject_tabs(3, self.events_tasks(store)?));
         helpers::fs::write(dest, output, true)
     }
 
@@ -926,6 +942,21 @@ impl RenderLib {
                 output,
                 templates::REQUEST_DEC
                     .replace("[[filename]]", &request.as_filename()?)
+                    .replace("[[module_name]]", &request.as_mod_name()?)
+            );
+            if pos < store.requests.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn requests_definitions(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, request) in store.requests.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                templates::REQUEST_DEF
                     .replace("[[module_name]]", &request.as_mod_name()?)
             );
             if pos < store.requests.len() - 1 {
@@ -946,6 +977,123 @@ impl RenderLib {
             );
             if pos < store.events.len() - 1 {
                 output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_struct_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                templates::EVENT_STRUCT_DEC 
+                    .replace("[[module_name]]", &event.as_mod_name()?)
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_struct_args(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                templates::EVENT_ARG_DEC 
+                    .replace("[[module_name]]", &event.as_mod_name()?)
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_struct_props(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                event.as_mod_name()?,
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_channels(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                templates::EVENT_CHANNEL 
+                    .replace("[[module_name]]", &event.as_mod_name()?)
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_senders(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}tx_{}",
+                output,
+                event.as_mod_name()?,
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_receivers(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}rx_{}",
+                output,
+                event.as_mod_name()?,
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{},\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_receiver_declaration(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                templates::EVENT_RECEIVER_DEC 
+                    .replace("[[module_name]]", &event.as_mod_name()?)
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{},\n", output);
+            }
+        }
+        Ok(output)
+    }
+
+    fn events_tasks(&self, store: &WorkflowStore) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!("{}{}",
+                output,
+                templates::EVENT_TASK 
+                    .replace("[[module_name]]", &event.as_mod_name()?)
+            );
+            if pos < store.events.len() - 1 {
+                output = format!("{},\n", output);
             }
         }
         Ok(output)
