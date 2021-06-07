@@ -37,6 +37,27 @@ impl Field {
         }
     }
 
+    pub fn create_not_assigned_primitive(name: String, kind: PrimitiveTypes::ETypes, optional: bool) -> Self {
+        let kind = if let Some(primitive) = PrimitiveTypes::get_entity_as_string(kind) {
+            primitive
+        } else {
+            stop!("Unknown type");
+        };
+        Field {
+            id: 0,
+            parent: 0,
+            name,
+            kind: kind.clone(),
+            ref_type: None,
+            ref_type_id: None,
+            ref_type_path: vec![],
+            repeated: false,
+            optional,
+            type_path: vec![kind],
+        }
+    }
+
+
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }

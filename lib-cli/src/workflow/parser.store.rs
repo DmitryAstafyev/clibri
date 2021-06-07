@@ -10,17 +10,15 @@ pub struct Store {
     pub events: Vec<Event>,
     pub requests: Vec<Request>,
     pub config: Option<Config>,
-    protocol: Protocol,
 }
 
 impl Store {
 
-    pub fn new(protocol: Protocol) -> Self {
+    pub fn new() -> Self {
         Self {
             events: vec![],
             requests: vec![],
             config: None,
-            protocol,
         }
     }
 

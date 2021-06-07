@@ -108,7 +108,7 @@ impl EntityParser for Event {
         }
     }
 
-    fn next(&mut self, enext: ENext, protocol: &Protocol) -> Result<usize, String> {
+    fn next(&mut self, enext: ENext, protocol: &mut Protocol) -> Result<usize, String> {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }

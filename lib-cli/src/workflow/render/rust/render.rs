@@ -55,7 +55,7 @@ impl ImplementationRender for RustRender {
             let render = RenderEvent::new();
             render.render(base, &event)?;
         }
-        (RenderIdentification::new()).render(base, store.get_config()?)?;
+        (RenderIdentification::new()).render(base, store.get_config()?, protocol)?;
         (RenderLib::new()).render(base, store, protocol)?;
         Ok(String::new())
     }

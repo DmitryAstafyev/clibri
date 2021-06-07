@@ -15,8 +15,13 @@ use super::{
     render::{
         Target
     },
-    protocol::store::{
-        Store as Protocol
+    protocol::{
+        store::{
+            Store as Protocol,
+            INTERNAL_SERVICE_GROUP,
+        },
+        fields::Field,
+        types::PrimitiveTypes,
     },
     helpers::{
         chars,
@@ -38,7 +43,7 @@ pub enum EntityOut {
 pub trait EntityParser {
     
     fn open(word: String) -> Option<Self> where Self: Sized;
-    fn next(&mut self, entity: ENext, protocol: &Protocol) -> Result<usize, String>;
+    fn next(&mut self, entity: ENext, protocol: &mut Protocol) -> Result<usize, String>;
     fn closed(&self) -> bool;
     fn print(&self);
     fn extract(&mut self) -> EntityOut;
@@ -73,21 +78,19 @@ pub struct Parser {
     cursor: usize,
     content: String,
     store: Store,
-    protocol: Protocol,
 }
 
 impl Parser {
-    pub fn new(src: PathBuf, protocol: Protocol) -> Parser {
+    pub fn new(src: PathBuf) -> Parser {
         Self {
             src,
             cursor: 0,
             content: String::new(),
-            store: Store::new(protocol.clone()),
-            protocol,
+            store: Store::new(),
         }
     }
 
-    pub fn parse(&mut self) -> Result<Store, String> {
+    pub fn parse(&mut self, protocol: &mut Protocol) -> Result<Store, String> {
         let mut content: String = match self.get_content(self.src.clone()) {
             Ok(c) => c,
             Err(e) => return Err(e),
@@ -122,7 +125,7 @@ impl Parser {
                     };
                     if offset == 0 {
                         offset = if let Some(entity) = opened.as_deref_mut() {
-                            match entity.next(enext.clone(), &self.protocol) {
+                            match entity.next(enext.clone(), protocol) {
                                 Ok(offset) => {
                                     if entity.closed() {
                                         if let Err(e) =  match entity.extract() {

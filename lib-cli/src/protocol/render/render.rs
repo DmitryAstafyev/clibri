@@ -16,6 +16,6 @@ pub enum Target {
 pub trait Render {
 
     fn new(embedded: bool, signature: u16) -> Self;
-    fn render(&self, store: Store) -> String;
+    fn render(&self, store: &mut Store) -> String;
 
 }

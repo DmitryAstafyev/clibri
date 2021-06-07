@@ -10,6 +10,7 @@ pub enum AvailableMessages {
     UserLogin(UserLogin::AvailableMessages),
     UserInfo(UserInfo::AvailableMessages),
     Users(Users::AvailableMessages),
+    InternalServiceGroup(InternalServiceGroup::AvailableMessages),
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum UserRole {
@@ -1337,6 +1338,56 @@ pub mod Users {
 
 }
 
+pub mod InternalServiceGroup {
+    use super::*;
+    use std::io::Cursor;
+    use bytes::{ Buf };
+    #[derive(Debug, Clone)]
+    pub enum AvailableMessages {
+        SelfKeyResponse(SelfKeyResponse),
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct SelfKeyResponse {
+        pub uuid: String,
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for SelfKeyResponse {
+        fn get_id() -> u32 {
+            76
+        }
+        fn defaults() -> SelfKeyResponse {
+            SelfKeyResponse {
+                uuid: String::from(""),
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(77)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for SelfKeyResponse {
+        fn get_id(&self) -> u32 { 76 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.uuid.get_buf_to_store(Some(77)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for SelfKeyResponse { }
+
+}
+
 impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
     fn get_msg(&self, id: u32, buf: &[u8]) -> Result<AvailableMessages, String> {
         match id {
@@ -1450,6 +1501,10 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
             },
             73 => match Users::Err::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Users(Users::AvailableMessages::Err(m))),
+                Err(e) => Err(e),
+            },
+            76 => match InternalServiceGroup::SelfKeyResponse::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::SelfKeyResponse(m))),
                 Err(e) => Err(e),
             },
             _ => Err(String::from("No message has been found"))

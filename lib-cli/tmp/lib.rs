@@ -633,7 +633,7 @@ fn spawn_consumers<
                                             Protocol::AvailableMessages::Identification(Protocol::Identification::AvailableMessages::SelfKey(request)) => {
                                                 let uuid = consumer.key(request, true);
                                                 tools::logger.debug(&format!("{}:: identification is done", uuid));
-                                                if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
+                                                if let Err(e) = match (Protocol::InternalServiceGroup::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
                                                     Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                         Err(e)
                                                     } else {

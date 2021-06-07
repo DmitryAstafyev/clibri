@@ -115,7 +115,7 @@ pub enum ConsumersChannel {
     Remove(Uuid),
     SendByFilter((Filter, Vec<u8>)),
     SendTo((Uuid, Vec<u8>)),
-    Assign((Uuid, Protocol::Identification::AssignedKey, bool)),
+    Assign((Uuid, [[indentification_assigned_key]], bool)),
     Chunk((Uuid, Vec<u8>)),
     Disconnect(Filter),
 }
@@ -207,7 +207,7 @@ impl Control {
         self.server_control.send(ServerControl::Shutdown)
     }
 
-    pub fn assign(&self, uuid: Uuid, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), SendError<ConsumersChannel>> {
+    pub fn assign(&self, uuid: Uuid, assigned: [[indentification_assigned_key]], overwrite: bool) -> Result<(), SendError<ConsumersChannel>> {
         self.consumers.send(ConsumersChannel::Assign((uuid, assigned, overwrite)))
     }
 
@@ -643,7 +643,7 @@ fn spawn_consumers<
                                             [[indentification_self_enum_ref]] => {
                                                 let uuid = consumer.key(request, true);
                                                 tools::logger.debug(&format!("{}:: identification is done", uuid));
-                                                if let Err(e) = match (Protocol::Identification::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
+                                                if let Err(e) = match ([[indentification_self_response]] { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
                                                     Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                         Err(e)
                                                     } else {
@@ -841,7 +841,7 @@ impl RenderLib {
         &self,
         base: &Path,
         store: &WorkflowStore,
-        protocol: &Protocol,
+        _protocol: &Protocol,
     ) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = templates::MODULE.to_owned();
@@ -849,6 +849,8 @@ impl RenderLib {
         output = output.replace("[[requests_definitions]]", &tools::inject_tabs(2, self.requests_definitions(store)?));
         output = output.replace("[[requests_emitters]]", &tools::inject_tabs(13, self.requests_emitters(store)?));
         output = output.replace("[[indentification_self_enum_ref]]", &self.indentification_self_enum_ref(store)?);
+        output = output.replace("[[indentification_self_response]]", &format!("Protocol::{}", self.into_rust_path(&store.get_config()?.self_key_response)));
+        output = output.replace("[[indentification_assigned_key]]", &format!("Protocol::{}", self.into_rust_path(&store.get_config()?.get_assigned()?)));
         output = output.replace("[[events_declaration]]", &self.events_declarations(store)?);
         output = output.replace("[[events_struct_declaration]]", &tools::inject_tabs(1, self.events_struct_declarations(store)?));
         output = output.replace("[[events_struct_args]]", &tools::inject_tabs(2, self.events_struct_args(store)?));
@@ -944,8 +946,6 @@ impl RenderLib {
             Ok(format!("{}request{}", chain, ")".repeat(parts.len())))
         }
     }
-
-    // TODO: Protocol::Identification::SelfKeyResponse
 
     fn events_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
         let mut output: String = String::new();

@@ -1,5 +1,7 @@
 use super::{ Field, Enum, Struct, Group, stop };
 
+pub const INTERNAL_SERVICE_GROUP: &str = "InternalServiceGroup";
+
 #[derive(Debug, Clone)]
 pub struct Store {
     sequence: usize,
@@ -27,6 +29,24 @@ impl Store {
             c_field: None,
             c_group: None,
             path: vec![],
+        }
+    }
+
+    pub fn add_service_struct(&mut self, name: String, mut fields: Vec<Field>) {
+        if (self.groups.iter().find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0)).is_none() {
+            self.sequence += 1;
+            self.groups.push(Group::new(self.sequence, 0, String::from(INTERNAL_SERVICE_GROUP)));
+        }
+        if let Some(service_group) = self.groups.iter_mut().find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0) {
+            self.sequence += 1;
+            let mut strct: Struct = Struct::new(self.sequence, service_group.id, name);
+            for field in fields.iter_mut() {
+                self.sequence += 1;
+                field.id = self.sequence;
+            }
+            strct.set_fields(fields);
+            service_group.bind_struct(strct.id);
+            self.structs.push(strct);
         }
     }
 
@@ -144,6 +164,27 @@ impl Store {
             }
         }
         Some(results)
+    }
+
+    pub fn get_struct_by_str_path(&self, from: usize, path: &str) -> Option<&Struct> {
+        let path: Vec<String> = path.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
+        let mut struct_reference: Option<&Struct> = None;
+        let last = path.len() - 1;
+        let mut parent: usize = from;
+        for (pos, type_str) in path.iter().enumerate() {
+            if pos == last {
+                if let Some(struct_ref) = self.structs.iter().find(|i| i.name == *type_str && i.parent == parent) {
+                    return Some(struct_ref);
+                } else {
+                    return None;
+                }
+            } else if let Some(group_ref) = self.groups.iter().find(|i| i.name == *type_str && i.parent == parent) {
+                parent = group_ref.id;
+            } else {
+                return None;
+            }
+        }
+        return None;
     }
 
     pub fn set_field_type_as_repeated(&mut self) {

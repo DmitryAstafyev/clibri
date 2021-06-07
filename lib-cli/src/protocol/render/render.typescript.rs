@@ -1708,7 +1708,7 @@ impl Render for TypescriptRender {
         }
     }
 
-    fn render(&self, store: Store) -> String {
+    fn render(&self, store: &mut Store) -> String {
         let mut body = format!("{}\n", self.includes());
         body = format!(
             "{}{}",

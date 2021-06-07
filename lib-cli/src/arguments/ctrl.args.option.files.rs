@@ -125,9 +125,9 @@ impl ArgsOptionFiles {
         }
     }
 
-    fn write(&self, dest: PathBuf, store: Store, render: impl Render) -> Result<(), String> {
+    fn write(&self, dest: PathBuf, protocol_store: &mut Store, render: impl Render) -> Result<(), String> {
         let t_render = Instant::now();
-        let content: String = render.render(store);
+        let content: String = render.render(protocol_store);
         match OpenOptions::new()
             .write(true)
             .create(true)
@@ -238,12 +238,37 @@ impl CtrlArg for ArgsOptionFiles {
             let embedded: bool = self.get_embedded_flag(ctrls);
             let mut protocol: ProtocolParser = ProtocolParser::new(src.clone());
             match protocol.parse() {
-                Ok(store) => {
+                Ok(mut protocol_store) => {
                     println!(
                         "[OK][{}ms] parsed {:?}",
                         t_parsing.elapsed().as_millis(),
                         src
                     );
+                    if let Some(workflow_path) = self.workflow.as_ref() {
+                        // TODO: remove workflow dest folder
+                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow_path.to_owned());
+                        match workflow.parse(&mut protocol_store) {
+                            Ok(workflow_store) => {
+                                let protocol_refs: ProtocolRefs = ProtocolRefs {
+                                    typescript: None,
+                                    rust: None,
+                                };
+                                
+                                if let Err(err) = render_workflow(
+                                    protocol_refs, 
+                                    None,
+                                    None,
+                                    workflow_store,
+                                    &protocol_store
+                                ) {
+                                    return Err(err);
+                                }
+                            },
+                            Err(err) => {
+                                return Err(err);
+                            }
+                        };
+                    }
                     if let Some(dest) = self.dest_rs.clone() {
                         if dest.exists() && !overwrite {
                             return Err(format!("File {:?} exists. Use key \"overwrite\" to overwrite file. -h to get more info", dest));
@@ -261,7 +286,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, store.clone(), RustRender::new(embedded, 0)) {
+                        if let Err(e) = self.write(dest, &mut protocol_store, RustRender::new(embedded, 0)) {
                             return Err(e);
                         }
                     }
@@ -282,33 +307,9 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, store.clone(), TypescriptRender::new(embedded, 0)) {
+                        if let Err(e) = self.write(dest, &mut protocol_store, TypescriptRender::new(embedded, 0)) {
                             return Err(e);
                         }
-                    }
-                    if let Some(workflow) = self.workflow.clone() {
-                        // TODO: remove workflow dest folder
-                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow.clone(), store.clone());
-                        match workflow.parse() {
-                            Ok(workflow_store) => {
-                                let protocol_refs: ProtocolRefs = ProtocolRefs {
-                                    typescript: None,
-                                    rust: None,
-                                };
-                                if let Err(err) = render_workflow(
-                                    protocol_refs, 
-                                    None,
-                                    None,
-                                    workflow_store,
-                                    &store
-                                ) {
-                                    return Err(err);
-                                }
-                            },
-                            Err(err) => {
-                                return Err(err);
-                            }
-                        };
                     }
                     Ok(())
                 }

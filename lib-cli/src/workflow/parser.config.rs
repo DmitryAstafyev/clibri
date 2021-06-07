@@ -4,6 +4,9 @@ use super::{
     EntityParser,
     EntityOut,
     Protocol,
+    INTERNAL_SERVICE_GROUP,
+    Field,
+    PrimitiveTypes,
 };
 
 mod key_words {
@@ -12,6 +15,12 @@ mod key_words {
     pub const SELF_KEY: &str = "SelfKey";
     pub const ASSIGNED_KEY: &str = "AssignedKey";
     pub const ALIAS: &str = "&config";
+}
+
+pub mod names {
+    pub const DEFAULT_SELF_KEY_REQUEST_STRUCT: &str = "SelfKeyRequest";
+    pub const DEFAULT_SELF_KEY_RESPONSE_STRUCT: &str = "SelfKeyResponse";
+    pub const DEFAULT_ASSIGNED_KEY_STRUCT: &str = "AssignedKey";
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -38,11 +47,18 @@ pub struct Config {
     pub producer: Vec<Target>,
     pub consumer: Vec<Target>,
     pub self_key: Option<String>,
+    pub self_key_response: String,
     pub assigned_key: Option<String>,
     closed: bool,
     expectation: Vec<EExpectation>,
     pending: Pending,
     prev: Option<ENext>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Config {
@@ -52,6 +68,7 @@ impl Config {
             producer: vec![],
             consumer: vec![],
             self_key: None,
+            self_key_response: format!("{}.{}", INTERNAL_SERVICE_GROUP, names::DEFAULT_SELF_KEY_RESPONSE_STRUCT),
             assigned_key: None,
             closed: false,
             expectation: vec![EExpectation::Open],
@@ -110,20 +127,32 @@ impl Config {
         }
     }
 
-    fn close(&mut self, protocol: &Protocol) -> Result<(), String> {
+    fn close(&mut self, protocol: &mut Protocol) -> Result<(), String> {
         if let Some(self_key) = self.self_key.as_ref() {
             if protocol.find_by_str_path(0, self_key).is_none() {
                 return Err(format!("Self key {} isn't defined in protocol", self_key));
             }
+            protocol.add_service_struct(names::DEFAULT_SELF_KEY_RESPONSE_STRUCT.to_owned(), vec![
+                Field::create_not_assigned_primitive(String::from("uuid"), PrimitiveTypes::ETypes::Estr, false),
+            ]);
         } else {
-            return Err(String::from("Self key isn't set"));
+            println!("Self Key for consumer isn't defined. Basic implementation would be included.");
+            protocol.add_service_struct(names::DEFAULT_SELF_KEY_REQUEST_STRUCT.to_owned(), vec![
+                Field::create_not_assigned_primitive(String::from("uuid"), PrimitiveTypes::ETypes::Estr, true),
+            ]);
+            protocol.add_service_struct(names::DEFAULT_SELF_KEY_RESPONSE_STRUCT.to_owned(), vec![
+                Field::create_not_assigned_primitive(String::from("uuid"), PrimitiveTypes::ETypes::Estr, false),
+            ]);
+            self.self_key = Some(format!("{}.{}", INTERNAL_SERVICE_GROUP, names::DEFAULT_SELF_KEY_REQUEST_STRUCT));
         }
         if let Some(assigned_key) = self.assigned_key.as_ref() {
             if protocol.find_by_str_path(0, assigned_key).is_none() {
                 return Err(format!("Assigned key {} isn't defined in protocol", assigned_key));
             }
         } else {
-            return Err(String::from("Assigned key isn't set"))
+            protocol.add_service_struct(names::DEFAULT_ASSIGNED_KEY_STRUCT.to_owned(), vec![]);
+            self.assigned_key = Some(format!("{}.{}", INTERNAL_SERVICE_GROUP, names::DEFAULT_ASSIGNED_KEY_STRUCT));
+            println!("Assigned Key for consumer isn't defined. Basic implementation would be included.");
         }
         if self.producer.is_empty() {
             Err(String::from("No targets for producer has been found"))
@@ -164,7 +193,7 @@ impl EntityParser for Config {
         }
     }
 
-    fn next(&mut self, enext: ENext, protocol: &Protocol) -> Result<usize, String> {
+    fn next(&mut self, enext: ENext, protocol: &mut Protocol) -> Result<usize, String> {
         fn is_in(src: &[EExpectation], target: &EExpectation) -> bool {
             src.iter().any(|e| e == target)
         }

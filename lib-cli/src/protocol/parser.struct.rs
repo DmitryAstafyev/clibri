@@ -27,6 +27,11 @@ impl Struct {
         self.fields.push(field);
     }
 
-    
+    pub fn set_fields(&mut self, mut fields: Vec<Field>) {
+        for field in fields.iter_mut() {
+            field.parent = self.id;
+        }
+        self.fields = fields;
+    }
 
 }
