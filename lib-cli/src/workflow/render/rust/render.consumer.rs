@@ -1,3 +1,25 @@
+use super::{
+    helpers,
+    helpers::{
+        render as tools,
+    },
+    workflow::{
+        config::{
+            Config
+        }
+    },
+    Protocol,
+};
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    }
+};
+
+mod templates {
+    pub const MODULE: &str = r#"
 use super::consumer_identification::{Filter, Identification};
 use super::{tools, ConsumersChannel, Protocol};
 use fiber::logger::Logger;
@@ -37,7 +59,7 @@ impl Cx {
 
     pub fn assign(
         &self,
-        assigned: Protocol::Identification::AssignedKey,
+        assigned: [[assigned_key]],
         overwrite: bool,
     ) -> Result<(), String> {
         if let Err(e) = self.consumers.send(ConsumersChannel::Assign((
@@ -134,12 +156,12 @@ impl Consumer {
         self.uuid
     }
 
-    pub fn key(&mut self, key: Protocol::Identification::SelfKey, overwrite: bool) -> String {
+    pub fn key(&mut self, key: [[self_key]], overwrite: bool) -> String {
         self.identification.key(key, overwrite);
         self.uuid.to_string()
     }
 
-    pub fn assign(&mut self, key: Protocol::Identification::AssignedKey, overwrite: bool) {
+    pub fn assign(&mut self, key: [[assigned_key]], overwrite: bool) {
         self.identification.assign(key, overwrite);
     }
 
@@ -147,3 +169,52 @@ impl Consumer {
         self.identification.assigned()
     }
 }
+"#;
+}
+
+pub struct RenderConsumer {
+}
+
+impl Default for RenderConsumer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl RenderConsumer {
+    
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn render(
+        &self,
+        base: &Path,
+        config: &Config,
+        protocol: &Protocol,
+    ) -> Result<(), String> {
+        let dest: PathBuf = self.get_dest_file(base)?;
+        let mut output: String = templates::MODULE.to_owned();
+        output = output.replace("[[self_key]]", &self.into_rust_path(&config.get_self()?));
+        output = output.replace("[[assigned_key]]", &self.into_rust_path(&config.get_assigned()?));
+        helpers::fs::write(dest, output, true)
+    }
+
+    fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
+        let dest = base.join("consumer");
+        if !dest.exists() {
+            if let Err(e) = fs::create_dir(&dest) {
+                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+            }
+        }
+        Ok(dest.join("consumer.rs"))
+    }
+
+    fn into_rust_path(&self, input: &str) -> String {
+        input.to_string().replace(".", "::")
+    }
+
+
+
+}
+

@@ -1,28 +1,4 @@
-use super::{
-    helpers,
-    helpers::{
-        render as tools,
-    },
-    workflow::{
-        config::{
-            Config
-        },
-        store::{
-            Store as WorkflowStore
-        }
-    },
-    Protocol,
-};
-use std::{
-    fs,
-    path::{
-        Path,
-        PathBuf,
-    }
-};
 
-mod templates {
-    pub const MODULE: &str = r#"
 #[path = "./traits/observer.rs"]
 pub mod observer;
 
@@ -35,17 +11,23 @@ pub mod consumer;
 #[path = "./consumer/consumer_identification.rs"]
 pub mod consumer_identification;
 
-[[requests_declaration]]
+#[path = "./observers/userlogin_request.rs"]
+pub mod userlogin_request;
+#[path = "./observers/users_request.rs"]
+pub mod users_request;
+#[path = "./observers/message_request.rs"]
+pub mod message_request;
+#[path = "./observers/messages_request.rs"]
+pub mod messages_request;
 
-#[allow(non_snake_case)]
 #[path = "./events/deafault_event_connected.rs"]
 pub mod default_connected_event;
 
-#[allow(non_snake_case)]
 #[path = "./events/deafault_event_disconnected.rs"]
 pub mod default_disconnected_event;
 
-[[events_declaration]]
+#[path = "serverevents_userkickoff.rs"]
+pub mod serverevents_userkickoff;
 
 use super::tools;
 use consumer::Consumer;
@@ -89,6 +71,18 @@ use uuid::Uuid;
 use futures::Future;
 use Protocol::PackingStruct;
 
+#[derive(Debug)]
+pub enum RequestObserverErrors {
+    ResponsingError(String),
+    GettingResponseError(String),
+    EncodingResponseError(String),
+    BeforeResponseActionFail(String),
+    ErrorOnEventsEmit(String),
+    GettingConclusionError(String),
+    AfterConclusionError(String),
+    BroadcastingError(String),
+}
+
 pub enum ProducerError {
     InternalError(String),
     EmitError(String),
@@ -101,6 +95,7 @@ pub enum ProducerError {
     NotAssignedConsumer(String),
     Reading(String),
 }
+
 pub enum ProducerEvents {
     Shutdown,
     ServerReady,
@@ -115,7 +110,7 @@ pub enum ConsumersChannel {
     Remove(Uuid),
     SendByFilter((Filter, Vec<u8>)),
     SendTo((Uuid, Vec<u8>)),
-    Assign((Uuid, [[indentification_assigned_key]], bool)),
+    Assign((Uuid, Protocol::Identification::AssignedKey, bool)),
     Chunk((Uuid, Vec<u8>)),
     Disconnect(Filter),
 }
@@ -169,15 +164,15 @@ impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 #[derive(Clone)]
 pub struct Events {
-[[events_struct_declaration]],
+    pub serverevents_userkickoff: UnboundedSender<serverevents_userkickoff::Event>,
 }
 
 impl Events {
     pub fn new(
-[[events_struct_args]]
+        serverevents_userkickoff: UnboundedSender<serverevents_userkickoff::Event>
     ) -> Self {
         Events {
-[[events_struct_props]]
+            serverevents_userkickoff
         }
     }
 }
@@ -207,7 +202,7 @@ impl Control {
         self.server_control.send(ServerControl::Shutdown)
     }
 
-    pub fn assign(&self, uuid: Uuid, assigned: [[indentification_assigned_key]], overwrite: bool) -> Result<(), SendError<ConsumersChannel>> {
+    pub fn assign(&self, uuid: Uuid, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), SendError<ConsumersChannel>> {
         self.consumers.send(ConsumersChannel::Assign((uuid, assigned, overwrite)))
     }
 
@@ -309,9 +304,12 @@ pub fn init<
         ucx.clone(),
         rx_consumers_task_sd,
     );
-[[events_channels]]
+    let (tx_serverevents_userkickoff, rx_serverevents_userkickoff): (
+        UnboundedSender<serverevents_userkickoff::Event>,
+        UnboundedReceiver<serverevents_userkickoff::Event>,
+    ) = unbounded_channel();
     let events = Events::new(
-[[events_senders]]
+        tx_serverevents_userkickoff
     );
     let control = Control::new(
         tx_server_control,
@@ -325,7 +323,7 @@ pub fn init<
     let events_task: JoinHandle<Result<(), String>> = spawn_events(
         ucx,
         control.clone(),
-[[events_receivers]],
+        rx_serverevents_userkickoff,
         rx_events_task_sd,
     );
     let task = async move {
@@ -489,7 +487,10 @@ fn spawn_consumers<
     spawn(async move {
         tools::logger.verb("[task: consumers]:: started");
         let store: Arc<RwLock<HashMap<Uuid, Consumer>>> = Arc::new(RwLock::new(HashMap::new()));
-[[requests_definitions]]
+        let arc_userlogin_request = Arc::new(RwLock::new(userlogin_request::ObserverRequest::new()));
+        let arc_users_request = Arc::new(RwLock::new(users_request::ObserverRequest::new()));
+        let arc_message_request = Arc::new(RwLock::new(message_request::ObserverRequest::new()));
+        let arc_messages_request = Arc::new(RwLock::new(messages_request::ObserverRequest::new()));
         let arc_connected = Arc::new(RwLock::new(default_connected_event::ObserverEvent::new()));
         let arc_disconnected = Arc::new(RwLock::new(default_disconnected_event::ObserverEvent::new()));
         select! {
@@ -640,10 +641,10 @@ fn spawn_consumers<
                                     }
                                     while let Some((message, header)) = consumer.next() {
                                         match message {
-                                            [[indentification_self_enum_ref]] => {
+                                            Protocol::AvailableMessages::Identification(Protocol::Identification::AvailableMessages::SelfKey(request)) => {
                                                 let uuid = consumer.key(request, true);
                                                 tools::logger.debug(&format!("{}:: identification is done", uuid));
-                                                if let Err(e) = match ([[indentification_self_response]] { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
+                                                if let Err(e) = match (Protocol::InternalServiceGroup::SelfKeyResponse { uuid: uuid.clone() }).pack(header.sequence, Some(uuid.to_string())) {
                                                     Ok(buffer) => if let Err(e) = consumer.send(buffer) {
                                                         Err(e)
                                                     } else {
@@ -673,7 +674,122 @@ fn spawn_consumers<
                                                 // it might be some option of producer like NonAssignedStratagy
                                             } else {
                                                 match message {
-[[requests_emitters]]
+                                                    Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(request)) => {
+                                                        tools::logger.debug(&format!("UserLogin.Request {:?}", request));
+                                                        match arc_userlogin_request.write() {
+                                                            Ok(userlogin_request) => {
+                                                                if let Err(e) = userlogin_request.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    header.sequence,
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = tx_producer_events.send(
+                                                                        ProducerEvents::Error(
+                                                                            ProducerError::EmitError(format!("Fail to emit UserLogin.Request due error: {:?}", e).to_owned())
+                                                                        )
+                                                                    ) {
+                                                                        tools::logger.err(&format!("{}", e));
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(ProducerError::InternalError(
+                                                                    format!("Fail to access to UserLogin.Request due error: {}", e).to_owned()
+                                                                ))
+                                                            ) {
+                                                                tools::logger.err(&format!("{}", e));
+                                                            }
+                                                        }
+                                                    },
+                                                    Protocol::AvailableMessages::Users(Protocol::Users::AvailableMessages::Request(request)) => {
+                                                        tools::logger.debug(&format!("Users.Request {:?}", request));
+                                                        match arc_users_request.write() {
+                                                            Ok(users_request) => {
+                                                                if let Err(e) = users_request.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    header.sequence,
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = tx_producer_events.send(
+                                                                        ProducerEvents::Error(
+                                                                            ProducerError::EmitError(format!("Fail to emit Users.Request due error: {:?}", e).to_owned())
+                                                                        )
+                                                                    ) {
+                                                                        tools::logger.err(&format!("{}", e));
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(ProducerError::InternalError(
+                                                                    format!("Fail to access to Users.Request due error: {}", e).to_owned()
+                                                                ))
+                                                            ) {
+                                                                tools::logger.err(&format!("{}", e));
+                                                            }
+                                                        }
+                                                    },
+                                                    Protocol::AvailableMessages::Message(Protocol::Message::AvailableMessages::Request(request)) => {
+                                                        tools::logger.debug(&format!("Message.Request {:?}", request));
+                                                        match arc_message_request.write() {
+                                                            Ok(message_request) => {
+                                                                if let Err(e) = message_request.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    header.sequence,
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = tx_producer_events.send(
+                                                                        ProducerEvents::Error(
+                                                                            ProducerError::EmitError(format!("Fail to emit Message.Request due error: {:?}", e).to_owned())
+                                                                        )
+                                                                    ) {
+                                                                        tools::logger.err(&format!("{}", e));
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(ProducerError::InternalError(
+                                                                    format!("Fail to access to Message.Request due error: {}", e).to_owned()
+                                                                ))
+                                                            ) {
+                                                                tools::logger.err(&format!("{}", e));
+                                                            }
+                                                        }
+                                                    },
+                                                    Protocol::AvailableMessages::Messages(Protocol::Messages::AvailableMessages::Request(request)) => {
+                                                        tools::logger.debug(&format!("Messages.Request {:?}", request));
+                                                        match arc_messages_request.write() {
+                                                            Ok(messages_request) => {
+                                                                if let Err(e) = messages_request.emit(
+                                                                    consumer.get_cx(),
+                                                                    ucx.clone(),
+                                                                    header.sequence,
+                                                                    request,
+                                                                    &broadcast,
+                                                                ) {
+                                                                    if let Err(e) = tx_producer_events.send(
+                                                                        ProducerEvents::Error(
+                                                                            ProducerError::EmitError(format!("Fail to emit Messages.Request due error: {:?}", e).to_owned())
+                                                                        )
+                                                                    ) {
+                                                                        tools::logger.err(&format!("{}", e));
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => if let Err(e) = tx_producer_events.send(
+                                                                ProducerEvents::Error(ProducerError::InternalError(
+                                                                    format!("Fail to access to Messages.Request due error: {}", e).to_owned()
+                                                                ))
+                                                            ) {
+                                                                tools::logger.err(&format!("{}", e));
+                                                            }
+                                                        }
+                                                    },
                                                     _ => {
                                                     },
                                                 }
@@ -730,13 +846,13 @@ fn spawn_events<
 >(
     ucx: UCX,
     control: Control,
-[[events_receiver_declaration]],
+    rx_serverevents_userkickoff: UnboundedReceiver<serverevents_userkickoff::Event>,
     rx_shutdown: Receiver<()>,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
         tools::logger.debug("[task: events]:: started");
         join!(
-[[events_tasks]],
+            serverevents_userkickoff::ObserverEvent::listen(ucx.clone(), control.clone(), rx_serverevents_userkickoff),
             rx_shutdown,
         );
         tools::logger.debug("[task: events]:: finished");
@@ -768,332 +884,3 @@ pub struct Producer {
 impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {
 
 }    
-"#;
-    pub const REQUEST_DEC: &str = 
-r#"#[path = "./observers/[[filename]]"]
-pub mod [[module_name]];"#;
-    pub const EVENT_DEC: &str =
-r#"#[path = "[[filename]]"]
-pub mod [[module_name]];"#;
-    pub const EVENT_STRUCT_DEC: &str =
-"pub [[module_name]]: UnboundedSender<[[module_name]]::Event>";
-    pub const EVENT_ARG_DEC: &str =
-"[[module_name]]: UnboundedSender<[[module_name]]::Event>";
-    pub const EVENT_CHANNEL: &str =
-r#"let (tx_[[module_name]], rx_[[module_name]]): (
-    UnboundedSender<[[module_name]]::Event>,
-    UnboundedReceiver<[[module_name]]::Event>,
-) = unbounded_channel();"#;
-    pub const EVENT_RECEIVER_DEC: &str =
-"rx_[[module_name]]: UnboundedReceiver<[[module_name]]::Event>";
-    pub const EVENT_TASK: &str = 
-"[[module_name]]::ObserverEvent::listen(ucx.clone(), control.clone(), rx_[[module_name]])";
-    pub const REQUEST_DEF: &str = 
-"let arc_[[module_name]] = Arc::new(RwLock::new([[module_name]]::ObserverRequest::new()));";
-    pub const REQUEST_EMITTER: &str =
-r#"[[message_enum_ref]] => {
-    tools::logger.debug(&format!("[[debug_ref]] {:?}", request));
-    match arc_[[emitter]].write() {
-        Ok([[emitter]]) => {
-            if let Err(e) = [[emitter]].emit(
-                consumer.get_cx(),
-                ucx.clone(),
-                header.sequence,
-                request,
-                &broadcast,
-            ) {
-                if let Err(e) = tx_producer_events.send(
-                    ProducerEvents::Error(
-                        ProducerError::EmitError(format!("Fail to emit [[debug_ref]] due error: {:?}", e).to_owned())
-                    )
-                ) {
-                    tools::logger.err(&format!("{}", e));
-                }
-            }
-        }
-        Err(e) => if let Err(e) = tx_producer_events.send(
-            ProducerEvents::Error(ProducerError::InternalError(
-                format!("Fail to access to [[debug_ref]] due error: {}", e).to_owned()
-            ))
-        ) {
-            tools::logger.err(&format!("{}", e));
-        }
-    }
-},"#;
-}
-
-pub struct RenderLib {
-}
-
-impl Default for RenderLib {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RenderLib {
-    
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn render(
-        &self,
-        base: &Path,
-        store: &WorkflowStore,
-        _protocol: &Protocol,
-    ) -> Result<(), String> {
-        let dest: PathBuf = self.get_dest_file(base)?;
-        let mut output: String = templates::MODULE.to_owned();
-        output = output.replace("[[requests_declaration]]", &self.requests_declarations(store)?);
-        output = output.replace("[[requests_definitions]]", &tools::inject_tabs(2, self.requests_definitions(store)?));
-        output = output.replace("[[requests_emitters]]", &tools::inject_tabs(13, self.requests_emitters(store)?));
-        output = output.replace("[[indentification_self_enum_ref]]", &self.indentification_self_enum_ref(store)?);
-        output = output.replace("[[indentification_self_response]]", &format!("Protocol::{}", self.into_rust_path(&store.get_config()?.self_key_response)));
-        output = output.replace("[[indentification_assigned_key]]", &format!("Protocol::{}", self.into_rust_path(&store.get_config()?.get_assigned()?)));
-        output = output.replace("[[events_declaration]]", &self.events_declarations(store)?);
-        output = output.replace("[[events_struct_declaration]]", &tools::inject_tabs(1, self.events_struct_declarations(store)?));
-        output = output.replace("[[events_struct_args]]", &tools::inject_tabs(2, self.events_struct_args(store)?));
-        output = output.replace("[[events_struct_props]]", &tools::inject_tabs(3, self.events_struct_props(store)?));
-        output = output.replace("[[events_channels]]", &tools::inject_tabs(1, self.events_channels(store)?));
-        output = output.replace("[[events_senders]]", &tools::inject_tabs(2, self.events_senders(store)?));
-        output = output.replace("[[events_receivers]]", &tools::inject_tabs(2, self.events_receivers(store)?));
-        output = output.replace("[[events_receiver_declaration]]", &tools::inject_tabs(1, self.events_receiver_declaration(store)?));
-        output = output.replace("[[events_tasks]]", &tools::inject_tabs(3, self.events_tasks(store)?));
-        helpers::fs::write(dest, output, true)
-    }
-
-    fn requests_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, request) in store.requests.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::REQUEST_DEC
-                    .replace("[[filename]]", &request.as_filename()?)
-                    .replace("[[module_name]]", &request.as_mod_name()?)
-            );
-            if pos < store.requests.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn requests_definitions(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, request) in store.requests.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::REQUEST_DEF
-                    .replace("[[module_name]]", &request.as_mod_name()?)
-            );
-            if pos < store.requests.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn requests_emitters(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, request) in store.requests.iter().enumerate() {
-            let mut emitter: String = String::from(templates::REQUEST_EMITTER);
-            let parts: Vec<String> = request.get_request()?.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
-            let enum_ref: String = if parts.len() == 1 {
-                format!("Protocol::AvailableMessages::{}(Protocol::{}(request))", parts[0], parts[0])
-            } else {
-                //Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(Protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
-                //Protocol::AvailableMessages::UserLogin(Protocol::UserLogin::AvailableMessages::Request(request))
-                let mut chain: String = String::from("");
-                for (pos, part) in parts.iter().enumerate() {
-                    let mut step: String = String::from("Protocol");
-                    for n in 0..pos {
-                        step = format!("{}::{}", step, parts[n]);
-                    }
-                    step = format!("{}::AvailableMessages::{}(", step, part);
-                    chain = format!("{}{}", chain, step);
-                }
-                format!("{}request{}", chain, ")".repeat(parts.len()))
-            };
-            emitter = emitter.replace("[[emitter]]", &request.as_mod_name()?);
-            emitter = emitter.replace("[[message_enum_ref]]", &enum_ref);
-            emitter = emitter.replace("[[debug_ref]]", &request.get_request()?);
-            output = format!("{}{}",
-                output,
-                emitter,
-            );
-            if pos < store.requests.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn indentification_self_enum_ref(&self, store: &WorkflowStore) -> Result<String, String> {
-        let parts: Vec<String> = store.get_config()?.get_self()?.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
-        if parts.len() == 1 {
-            Ok(format!("Protocol::AvailableMessages::{}(Protocol::{}(request))", parts[0], parts[0]))
-        } else {
-            let mut chain: String = String::from("");
-            for (pos, part) in parts.iter().enumerate() {
-                let mut step: String = String::from("Protocol");
-                for n in 0..pos {
-                    step = format!("{}::{}", step, parts[n]);
-                }
-                step = format!("{}::AvailableMessages::{}(", step, part);
-                chain = format!("{}{}", chain, step);
-            }
-            Ok(format!("{}request{}", chain, ")".repeat(parts.len())))
-        }
-    }
-
-    fn events_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_DEC
-                    .replace("[[filename]]", &event.as_filename()?)
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_struct_declarations(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_STRUCT_DEC 
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_struct_args(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_ARG_DEC 
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_struct_props(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                event.as_mod_name()?,
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_channels(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_CHANNEL 
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_senders(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}tx_{}",
-                output,
-                event.as_mod_name()?,
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_receivers(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}rx_{}",
-                output,
-                event.as_mod_name()?,
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{},\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_receiver_declaration(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_RECEIVER_DEC 
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{},\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn events_tasks(&self, store: &WorkflowStore) -> Result<String, String> {
-        let mut output: String = String::new();
-        for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
-                output,
-                templates::EVENT_TASK 
-                    .replace("[[module_name]]", &event.as_mod_name()?)
-            );
-            if pos < store.events.len() - 1 {
-                output = format!("{},\n", output);
-            }
-        }
-        Ok(output)
-    }
-
-    fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
-        if !base.exists() {
-            if let Err(e) = fs::create_dir(&base) {
-                return Err(format!("Fail to create dest folder {}. Error: {}", base.to_string_lossy(), e));
-            }
-        }
-        Ok(base.join("lib.rs"))
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
-    }
-
-
-
-}
-

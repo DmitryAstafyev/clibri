@@ -1,7 +1,7 @@
 
 use super::consumer::Cx;
 use super::consumer_identification::Filter;
-use super::observer::RequestObserverErrors;
+use super::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
 

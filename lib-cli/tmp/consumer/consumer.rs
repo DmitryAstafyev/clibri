@@ -1,3 +1,4 @@
+
 use super::consumer_identification::{Filter, Identification};
 use super::{tools, ConsumersChannel, Protocol};
 use fiber::logger::Logger;
@@ -37,7 +38,7 @@ impl Cx {
 
     pub fn assign(
         &self,
-        assigned: Protocol::Identification::AssignedKey,
+        assigned: Identification::AssignedKey,
         overwrite: bool,
     ) -> Result<(), String> {
         if let Err(e) = self.consumers.send(ConsumersChannel::Assign((
@@ -134,12 +135,12 @@ impl Consumer {
         self.uuid
     }
 
-    pub fn key(&mut self, key: Protocol::Identification::SelfKey, overwrite: bool) -> String {
+    pub fn key(&mut self, key: Identification::SelfKey, overwrite: bool) -> String {
         self.identification.key(key, overwrite);
         self.uuid.to_string()
     }
 
-    pub fn assign(&mut self, key: Protocol::Identification::AssignedKey, overwrite: bool) {
+    pub fn assign(&mut self, key: Identification::AssignedKey, overwrite: bool) {
         self.identification.assign(key, overwrite);
     }
 

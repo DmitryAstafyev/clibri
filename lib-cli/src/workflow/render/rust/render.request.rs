@@ -21,7 +21,7 @@ mod templates {
     pub const MODULE: &str = r#"
 use super::consumer::Cx;
 use super::consumer_identification::Filter;
-use super::observer::RequestObserverErrors;
+use super::RequestObserverErrors;
 use super::protocol::PackingStruct;
 use super::Protocol;
 [[conclutions_enum]]

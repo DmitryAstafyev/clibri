@@ -202,6 +202,14 @@ impl Request {
         }
     }
 
+    pub fn as_struct_name(&self) -> Result<String, String> {
+        if let Some(request) = self.request.as_ref() {
+            Ok(String::from(request).replace(".", ""))
+        } else {
+            Err(String::from("Reference to object/struct request isn't defined for action"))
+        }
+    }
+
     pub fn as_mod_name(&self) -> Result<String, String> {
         if let Some(request) = self.request.as_ref() {
             Ok(String::from(request).to_lowercase().replace(".", "_"))
