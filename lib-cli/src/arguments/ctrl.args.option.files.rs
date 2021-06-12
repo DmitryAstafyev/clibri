@@ -6,7 +6,7 @@ use super::render::rust::RustRender;
 use super::render::typescript::TypescriptRender;
 use super::render::Render;
 use super::workflow_render::{
-    render as render_workflow,
+    render as workflow_render,
     ProtocolRefs,
 };
 use super::{CtrlArg, EArgumentsNames, EArgumentsValues};
@@ -254,10 +254,10 @@ impl CtrlArg for ArgsOptionFiles {
                                     rust: None,
                                 };
                                 
-                                if let Err(err) = render_workflow(
+                                if let Err(err) = workflow_render(
                                     protocol_refs, 
-                                    None,
-                                    None,
+                                    Some(Path::new("/storage/projects/private/fiber/lib-cli/tmp/consumer").to_path_buf()),
+                                    Some(Path::new("/storage/projects/private/fiber/lib-cli/tmp/producer").to_path_buf()),
                                     workflow_store,
                                     &protocol_store
                                 ) {

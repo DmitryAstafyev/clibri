@@ -13,9 +13,6 @@ pub mod workflow;
 #[path = "./protocol/render/render.rs"]
 pub mod render;
 
-#[path = "./workflow/render/render.rs"]
-pub mod workflow_render;
-
 #[macro_export]
 macro_rules! stop {
     ($($arg:tt)*) => {{

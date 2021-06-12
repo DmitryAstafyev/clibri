@@ -230,6 +230,14 @@ impl Request {
         }
     }
 
+    pub fn get_err(&self) -> Result<String, String> {
+        if let Some(error) = self.error.as_ref() {
+            Ok(error.to_string())
+        } else {
+            Err(String::from("Action doesn't have defined error"))
+        }
+    }
+
 }
 
 impl EntityParser for Request {

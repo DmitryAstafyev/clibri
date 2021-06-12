@@ -1,13 +1,13 @@
-#[path = "./rust/render.rs"]
-pub mod rust;
+#[path = "./producer/render.rs"]
+pub mod producer;
 
-#[path = "./typescript/render.rs"]
-pub mod typescript;
+#[path = "./consumer/render.rs"]
+pub mod consumer;
 
 use super::{
     stop,
     helpers,
-    workflow::self,
+    workflow,
     workflow::{
         store::{
             Store as WorkflowStore
@@ -16,22 +16,24 @@ use super::{
     protocol::store::{
         Store as Protocol
     },
+    render::Target,
 };
-use rust::{
-    RustRender,
+use producer::{
+    rust::{ RustRender as ProducerRustRender },
+    typescript::{ TypescriptRender as ProducerTypescriptRender },
 };
+use consumer::{
+    rust::{ RustRender as ConsumerRustRender },
+    typescript::{ TypescriptRender as ConsumerTypescriptRender },
+};
+
 use std::{
+    fs,
     path::{
         Path,
         PathBuf,
     }
 };
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Target {
-    Rust,
-    TypeScript,
-}
 
 pub trait ImplementationRender {
 
@@ -47,12 +49,65 @@ pub struct ProtocolRefs {
 
 pub fn render(
     protocol_refs: ProtocolRefs,
-    consumer_dest: Option<PathBuf>,
-    provider_dest: Option<PathBuf>,
+    mut consumer_dest: Option<PathBuf>,
+    mut producer_dest: Option<PathBuf>,
     store: WorkflowStore,
     protocol: &Protocol,
 ) -> Result<(), String> {
-    let render: RustRender = RustRender::new(1);
-    render.render(Path::new("/storage/projects/private/fiber/lib-cli/tmp"), &store, protocol)?;
+    if let Some(consumer_dest) = consumer_dest.take() {
+        mkdir(&consumer_dest)?;
+        let outs = &(store.get_config()?.consumer);
+        for out in outs {
+            let mut dest = consumer_dest.clone();
+            match out {
+                Target::Rust => {
+                    if outs.len() > 1 {
+                        dest = dest.join("rust");
+                        mkdir(&dest)?;
+                    }
+                    (ConsumerRustRender::new(0)).render(&dest, &store, protocol)?;
+                },
+                Target::TypeScript => {
+                    if outs.len() > 1 {
+                        dest = dest.join("typescript");
+                        mkdir(&dest)?;
+                    }
+                    (ConsumerTypescriptRender::new(0)).render(&dest, &store, protocol)?;
+                },
+            }
+        }
+    }
+    if let Some(producer_dest) = producer_dest.take() {
+        mkdir(&producer_dest)?;
+        let outs = &(store.get_config()?.producer);
+        for out in outs {
+            let mut dest = producer_dest.clone();
+            match out {
+                Target::Rust => {
+                    if outs.len() > 1 {
+                        dest = dest.join("rust");
+                        mkdir(&dest)?;
+                    }
+                    (ProducerRustRender::new(0)).render(&dest, &store, protocol)?;
+                },
+                Target::TypeScript => {
+                    if outs.len() > 1 {
+                        dest = dest.join("typescript");
+                        mkdir(&dest)?;
+                    }
+                    (ProducerTypescriptRender::new(0)).render(&dest, &store, protocol)?;
+                },
+            }
+        }
+    }
+    Ok(())
+}
+
+fn mkdir(dest: &Path) -> Result<(), String> {
+    if !dest.exists() {
+        if let Err(e) = fs::create_dir(&dest) {
+            return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+        }
+    }
     Ok(())
 }
