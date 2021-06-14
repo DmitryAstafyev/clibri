@@ -1,13 +1,16 @@
-
-use super::consumer_identification::Filter;
+use super::{
+    Filter,
+    Broadcast,
+};
 
 use uuid::Uuid;
+
 #[allow(unused_variables)]
 pub trait Observer {
     fn handler<UCX: 'static + Sync + Send + Clone>(
         uuid: Uuid,
         ucx: UCX,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Broadcast) -> Result<(), String>,
     ) -> () {
         panic!("hanlder method for Connected isn't implemented");
     }
@@ -25,7 +28,7 @@ impl ObserverEvent {
         &self,
         uuid: Uuid,
         ucx: UCX,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Broadcast) -> Result<(), String>,
     ) -> () {
         Self::handler(uuid, ucx, broadcast);
     }

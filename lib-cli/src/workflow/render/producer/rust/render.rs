@@ -16,6 +16,9 @@ pub mod render_event_connected;
 #[path = "./render.event.disconnected.rs"]
 pub mod render_event_disconnected;
 
+#[path = "./render.broadcast.rs"]
+pub mod render_broadcast;
+
 #[path = "./render.producer.rs"]
 pub mod render_producer;
 
@@ -39,26 +42,24 @@ use render_identification::{ RenderIdentification };
 use render_producer::{ RenderProducer };
 use render_consumer::{ RenderConsumer };
 use render_event_connected::{ RenderEventConnected };
+use render_broadcast::{ RenderBroadcast };
 use render_event_disconnected::{ RenderEventDisconnected };
 use render_app::{ RenderApp };
 use std::{
     path::{
         Path,
-        PathBuf,
     }
 };
 
 pub struct RustRender {
-    signature: u16,
 }
 
 impl RustRender {
 }
 
 impl ImplementationRender for RustRender {
-    fn new(signature: u16) -> Self {
+    fn new() -> Self {
         RustRender {
-            signature,
         }
     }
 
@@ -71,6 +72,7 @@ impl ImplementationRender for RustRender {
         }
         (RenderEventConnected::new()).render(base)?;
         (RenderEventDisconnected::new()).render(base)?;
+        (RenderBroadcast::new()).render(base, &store.broadcast)?;
         (RenderIdentification::new()).render(base, store.get_config()?, protocol)?;
         (RenderConsumer::new()).render(base, store.get_config()?, protocol)?;
         (RenderProducer::new()).render(base, store, protocol)?;

@@ -2,13 +2,15 @@ use super::{
     Event,
     Request,
     Config,
-    Protocol,
+    Broadcast,
+    Broadcasts,
 };
 
 #[derive(Debug, Clone)]
 pub struct Store {
     pub events: Vec<Event>,
     pub requests: Vec<Request>,
+    pub broadcast: Vec<Broadcast>,
     pub config: Option<Config>,
 }
 
@@ -18,6 +20,7 @@ impl Store {
         Self {
             events: vec![],
             requests: vec![],
+            broadcast: vec![],
             config: None,
         }
     }
@@ -62,6 +65,18 @@ impl Store {
             }
         }
         self.requests.push(request);
+        Ok(())
+    }
+
+    pub fn add_broadcast(&mut self, mut broadcasts: Broadcasts) -> Result<(), String> {
+        while let Some(broadcast) = broadcasts.next_broadcast() {
+            for stored in &self.broadcast {
+                if stored.reference == broadcast.reference {
+                    return Err(format!("Broadcast with reference {} has been added already.", broadcast.reference));
+                }   
+            }
+            self.broadcast.push(broadcast.clone());
+        }
         Ok(())
     }
 

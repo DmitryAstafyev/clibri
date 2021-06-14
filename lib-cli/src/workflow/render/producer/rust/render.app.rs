@@ -12,7 +12,6 @@ use super::{
     Protocol,
 };
 use std::{
-    fs,
     path::{
         Path,
         PathBuf,

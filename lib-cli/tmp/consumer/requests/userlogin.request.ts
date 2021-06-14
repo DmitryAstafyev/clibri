@@ -1,7 +1,7 @@
 import * as Protocol from '../protocol/protocol';
 
 import { Consumer } from '../index';
-import { ERequestState } from '../interfaces/request.states';
+import { ERequestState } from '../interfaces/request';
 
 export type TUserLoginRequestResolver = Protocol.UserLogin.Err | Protocol.UserLogin.Accepted | Protocol.UserLogin.Denied;
 export type TAcceptHandler = (response: Protocol.UserLogin.Accepted) => void
@@ -11,11 +11,11 @@ export type TErrHandler = (response: Protocol.UserLogin.Err) => void
 export class UserLoginRequest extends Protocol.UserLogin.Request {
 
     private _state: ERequestState = ERequestState.Ready;
-    private _handlers: {        
+    private _handlers: {    
         accept: TAcceptHandler | undefined;
         deny: TDenyHandler | undefined;
         err: TErrHandler | undefined;
-    } = {        
+    } = {    
         accept: undefined,
         deny: undefined,
         err: undefined,
@@ -26,7 +26,7 @@ export class UserLoginRequest extends Protocol.UserLogin.Request {
 
     public destroy() {
         this._state = ERequestState.Destroyed;
-        this._handlers = {
+        this._handlers = {            
             accept: undefined,
             deny: undefined,
             err: undefined,
@@ -51,42 +51,40 @@ export class UserLoginRequest extends Protocol.UserLogin.Request {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message.UserLogin === undefined) {
-                            return reject(new Error(`Expecting message from "UserLogin" group.`));
-                        } else if (message.UserLogin.Accepted !== undefined) {
-                            this._handlers.accept !== undefined && this._handlers.accept(message.UserLogin.Accepted);
-                            return resolve(message.UserLogin.Accepted);
-                        } else if (message.UserLogin.Denied !== undefined) {
-                            this._handlers.deny !== undefined && this._handlers.deny(message.UserLogin.Denied);
-                            return resolve(message.UserLogin.Denied);
+                        if (message === undefined || message.UserLogin === undefined) {
+                            return reject(new Error(`Expecting message from "message.UserLogin" group.`));
+                        } else if (message.UserLogin.Accept !== undefined) {
+                            this._handlers.accept !== undefined && this._handlers.accept(message.UserLogin.Accept);
+                            return resolve(message.UserLogin.Accept);
+                        } else if (message.UserLogin.Deny !== undefined) {
+                            this._handlers.deny !== undefined && this._handlers.deny(message.UserLogin.Deny);
+                            return resolve(message.UserLogin.Deny);
                         } else if (message.UserLogin.Err !== undefined) {
                             this._handlers.err !== undefined && this._handlers.err(message.UserLogin.Err);
                             return resolve(message.UserLogin.Err);
                         } else {
-                            return reject(new Error(`No message in "UserLogin" group.`));
+                            return reject(new Error(`No message in "message.UserLogin" group.`));
                         }
                     case ERequestState.Destroyed:
-                        return reject(new Error(`Request "UserLogin" has been destroyed. Response would not be processed.`));
+                        return reject(new Error(`Request "UserLoginRequest" has been destroyed. Response would not be processed.`));
                     case ERequestState.Pending:
-                        return reject(new Error(`Unexpected state for request "UserLogin".`));
+                        return reject(new Error(`Unexpected state for request "UserLoginRequest".`));
                 }
             }).catch((err: Error) => {
                 reject(err);
             });
         });
     }
-
-    public accept(handler: TAcceptHandler): UserLogin {
+    
+    public accept(handler: TAcceptHandler): UserLoginRequest {
         this._handlers.accept = handler;
         return this;
     }
-
-    public deny(handler: TDenyHandler): UserLogin {
+    public deny(handler: TDenyHandler): UserLoginRequest {
         this._handlers.deny = handler;
         return this;
     }
-
-    public err(handler: TErrHandler): UserLogin {
+    public err(handler: TErrHandler): UserLoginRequest {
         this._handlers.err = handler;
         return this;
     }

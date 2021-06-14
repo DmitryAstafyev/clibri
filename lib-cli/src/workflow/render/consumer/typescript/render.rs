@@ -1,6 +1,15 @@
 #[path = "./render.request.rs"]
 pub mod render_request;
 
+#[path = "./render.consumer.rs"]
+pub mod render_consumer;
+
+#[path = "./render.interfaces.request.rs"]
+pub mod render_interfaces_request;
+
+#[path = "./render.options.rs"]
+pub mod render_options;
+
 use super::{
     workflow,
     workflow::{
@@ -9,39 +18,38 @@ use super::{
         },
     },
     ImplementationRender,
-    stop,
     helpers,
     Protocol,
 };
 use render_request::{ RenderRequest };
-
-use regex::Regex;
-use std::include_str;
+use render_consumer::{ RenderConsumer };
+use render_interfaces_request::{ RenderInterfacesRequest };
+use render_options::{ RenderOptions };
 use std::{
     path::{
         Path,
-        PathBuf,
     }
 };
 
 pub struct TypescriptRender {
-    signature: u16,
 }
 
 impl TypescriptRender {
 }
 
 impl ImplementationRender for TypescriptRender {
-    fn new(signature: u16) -> Self {
+    fn new() -> Self {
         TypescriptRender {
-            signature,
         }
     }
 
-    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String> {
+    fn render(&self, base: &Path, store: &WorkflowStore, _protocol: &Protocol) -> Result<String, String> {
         for request in &store.requests {
             (RenderRequest::new()).render(base, &request)?;
         }
+        (RenderConsumer::new()).render(base, store)?;
+        (RenderInterfacesRequest::new()).render(base)?;
+        (RenderOptions::new()).render(base)?;
         Ok(String::new())
     }
 }

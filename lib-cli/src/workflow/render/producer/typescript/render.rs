@@ -12,31 +12,26 @@ use super::{
     },
     Protocol,
 };
-use super::{ ImplementationRender, stop };
-use regex::Regex;
-use std::include_str;
+use super::{ ImplementationRender };
 use std::{
     path::{
         Path,
-        PathBuf,
     }
 };
 
 pub struct TypescriptRender {
-    signature: u16,
 }
 
 impl TypescriptRender {
 }
 
 impl ImplementationRender for TypescriptRender {
-    fn new(signature: u16) -> Self {
+    fn new() -> Self {
         TypescriptRender {
-            signature,
         }
     }
 
-    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String> {
+    fn render(&self, _base: &Path, _store: &WorkflowStore, _protocol: &Protocol) -> Result<String, String> {
         Ok(String::new())
     }
 }

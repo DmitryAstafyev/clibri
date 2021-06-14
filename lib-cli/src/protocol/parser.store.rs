@@ -168,7 +168,6 @@ impl Store {
 
     pub fn get_struct_by_str_path(&self, from: usize, path: &str) -> Option<&Struct> {
         let path: Vec<String> = path.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
-        let mut struct_reference: Option<&Struct> = None;
         let last = path.len() - 1;
         let mut parent: usize = from;
         for (pos, type_str) in path.iter().enumerate() {
@@ -184,7 +183,7 @@ impl Store {
                 return None;
             }
         }
-        return None;
+        None
     }
 
     pub fn set_field_type_as_repeated(&mut self) {

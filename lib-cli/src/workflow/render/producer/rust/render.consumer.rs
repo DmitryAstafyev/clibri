@@ -1,8 +1,5 @@
 use super::{
     helpers,
-    helpers::{
-        render as tools,
-    },
     workflow::{
         config::{
             Config
@@ -191,7 +188,7 @@ impl RenderConsumer {
         &self,
         base: &Path,
         config: &Config,
-        protocol: &Protocol,
+        _protocol: &Protocol,
     ) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = templates::MODULE.to_owned();

@@ -8,6 +8,9 @@ pub mod request;
 #[path = "./parser.event.rs"]
 pub mod event;
 
+#[path = "./parser.broadcast.rs"]
+pub mod broadcast;
+
 #[path = "./parser.store.rs"]
 pub mod store;
 
@@ -32,12 +35,14 @@ use std::path::PathBuf;
 use config::{Config};
 use request::{Request};
 use event::{Event};
+use broadcast::{Broadcast, Broadcasts};
 use store::{Store};
 
 pub enum EntityOut {
     Config(Config),
     Event(Event),
     Request(Request),
+    Broadcasts(Broadcasts),
 }
 
 pub trait EntityParser {
@@ -106,9 +111,11 @@ impl Parser {
                                 opened = Some(Box::new(entity));
                             } else if let Some(entity) = Request::open(word.clone()) {
                                 opened = Some(Box::new(entity));
+                            } else if let Some(entity) = Broadcasts::open(word.clone()) {
+                                opened = Some(Box::new(entity));
                             } else if let Some(entity) = Event::open(word.clone()) {
                                 opened = Some(Box::new(entity));
-                            }
+                            } 
                             if opened.is_none() {
                                 return Err(self.err(&format!("Unknown keyword {}", word)));
                             }
@@ -131,6 +138,7 @@ impl Parser {
                                         if let Err(e) =  match entity.extract() {
                                             EntityOut::Config(config) => self.store.set_config(config),
                                             EntityOut::Event(event) => self.store.add_event(event),
+                                            EntityOut::Broadcasts(broadcasts) => self.store.add_broadcast(broadcasts),
                                             EntityOut::Request(request) => self.store.add_request(request),
                                         } {
                                             return Err(self.err(&e));

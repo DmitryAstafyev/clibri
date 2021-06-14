@@ -32,6 +32,9 @@ pub mod consumer;
 #[path = "./consumer/consumer_identification.rs"]
 pub mod consumer_identification;
 
+#[path = "./broadcast/broadcast.rs"]
+pub mod broadcast;
+
 [[requests_declaration]]
 
 #[path = "./events/deafault_event_connected.rs"]
@@ -45,6 +48,7 @@ pub mod default_disconnected_event;
 use super::tools;
 use consumer::Consumer;
 use consumer_identification::Filter;
+use broadcast::Broadcast;
 use fiber::{
     logger::Logger,
     server::{

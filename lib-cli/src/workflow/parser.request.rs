@@ -3,12 +3,7 @@ use super::{
     ENext,
     EntityParser,
     Protocol,
-};
-
-use std::{
-    path::{
-        Path,
-    }
+    Broadcast,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,27 +30,11 @@ enum Pending {
 }
 
 #[derive(Debug, Clone)]
-pub struct ActionBroadcast {
-    pub reference: String,
-    pub optional: bool,
-}
-
-impl ActionBroadcast {
-
-    pub fn new(reference: String, optional: bool) -> Self {
-        Self {
-            reference,
-            optional,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct Action {
     pub conclusion: Option<String>,
     pub response: Option<String>,
     /// (broadcast struct, is optional)
-    pub broadcast: Vec<ActionBroadcast>,
+    pub broadcast: Vec<Broadcast>,
     current: String,
     optional: bool,
 }
@@ -77,7 +56,7 @@ impl Action {
         }
     }
 
-    fn add_broadcast(&mut self, broadcast: ActionBroadcast) -> Result<(), String> {
+    fn add_broadcast(&mut self, broadcast: Broadcast) -> Result<(), String> {
         if self.broadcast.iter().any(|b| b.reference == broadcast.reference) {
             Err(format!("Broadcast {} has been already added", broadcast.reference))
         } else {
@@ -104,11 +83,6 @@ impl Action {
         }
     }
 
-    fn get_dest_file_declaration(&self, base: &Path, request: &Request) -> Result<String, String> {
-        let dest = base.join("observers");
-        let request = request.get_request()?;
-        Ok(String::from(dest.join(format!("{}.rs", request.to_lowercase().replace(".", "_"))).to_string_lossy()))
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -487,7 +461,7 @@ impl EntityParser for Request {
                                                         > Events.Message;
                                 }
                                 */
-                                if let Err(e) = action.add_broadcast(ActionBroadcast::new(action.current.clone(), action.optional)) {
+                                if let Err(e) = action.add_broadcast(Broadcast::new(action.current.clone(), action.optional)) {
                                     return Err(e);
                                 }
                                 action.optional = false;

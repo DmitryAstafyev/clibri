@@ -11,6 +11,9 @@ pub mod consumer;
 #[path = "./consumer/consumer_identification.rs"]
 pub mod consumer_identification;
 
+#[path = "./broadcast/broadcast.rs"]
+pub mod broadcast;
+
 #[path = "./observers/userlogin_request.rs"]
 pub mod userlogin_request;
 #[path = "./observers/users_request.rs"]
@@ -32,6 +35,7 @@ pub mod serverevents_userkickoff;
 use super::tools;
 use consumer::Consumer;
 use consumer_identification::Filter;
+use broadcast::Broadcast;
 use fiber::{
     logger::Logger,
     server::{

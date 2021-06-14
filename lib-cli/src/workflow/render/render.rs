@@ -5,7 +5,6 @@ pub mod producer;
 pub mod consumer;
 
 use super::{
-    stop,
     helpers,
     workflow,
     workflow::{
@@ -37,7 +36,7 @@ use std::{
 
 pub trait ImplementationRender {
 
-    fn new(signature: u16) -> Self;
+    fn new() -> Self;
     fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String>;
 
 }
@@ -48,7 +47,7 @@ pub struct ProtocolRefs {
 }
 
 pub fn render(
-    protocol_refs: ProtocolRefs,
+    _protocol_refs: ProtocolRefs,
     mut consumer_dest: Option<PathBuf>,
     mut producer_dest: Option<PathBuf>,
     store: WorkflowStore,
@@ -65,14 +64,14 @@ pub fn render(
                         dest = dest.join("rust");
                         mkdir(&dest)?;
                     }
-                    (ConsumerRustRender::new(0)).render(&dest, &store, protocol)?;
+                    (ConsumerRustRender::new()).render(&dest, &store, protocol)?;
                 },
                 Target::TypeScript => {
                     if outs.len() > 1 {
                         dest = dest.join("typescript");
                         mkdir(&dest)?;
                     }
-                    (ConsumerTypescriptRender::new(0)).render(&dest, &store, protocol)?;
+                    (ConsumerTypescriptRender::new()).render(&dest, &store, protocol)?;
                 },
             }
         }
@@ -88,14 +87,14 @@ pub fn render(
                         dest = dest.join("rust");
                         mkdir(&dest)?;
                     }
-                    (ProducerRustRender::new(0)).render(&dest, &store, protocol)?;
+                    (ProducerRustRender::new()).render(&dest, &store, protocol)?;
                 },
                 Target::TypeScript => {
                     if outs.len() > 1 {
                         dest = dest.join("typescript");
                         mkdir(&dest)?;
                     }
-                    (ProducerTypescriptRender::new(0)).render(&dest, &store, protocol)?;
+                    (ProducerTypescriptRender::new()).render(&dest, &store, protocol)?;
                 },
             }
         }

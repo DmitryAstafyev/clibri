@@ -37,6 +37,10 @@ Messages.Request !Messages.Err {
    > Events.UserConnected;
 }
 
+@broadcast {
+   > Events.UserDisconnected;
+}
+
 # If messages are defined in group
 # UserLogin {
 #     Request !Err;

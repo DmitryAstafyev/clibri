@@ -1,9 +1,3 @@
-// use super::protocol::enums::Enum;
-// use super::protocol::fields::Field;
-// use super::protocol::groups::Group;
-// use super::protocol::store::Store;
-// use super::protocol::structs::Struct;
-// use super::protocol::types::PrimitiveTypes;
 use super::{
     workflow::{
         store::{
@@ -12,31 +6,25 @@ use super::{
     },
     Protocol,
 };
-use super::{ ImplementationRender, stop };
-use regex::Regex;
-use std::include_str;
+use super::{ ImplementationRender };
 use std::{
     path::{
         Path,
-        PathBuf,
     }
 };
 
 pub struct RustRender {
-    signature: u16,
 }
 
 impl RustRender {
 }
 
 impl ImplementationRender for RustRender {
-    fn new(signature: u16) -> Self {
-        RustRender {
-            signature,
-        }
+    fn new() -> Self {
+        RustRender {}
     }
 
-    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String> {
+    fn render(&self, _base: &Path, _store: &WorkflowStore, _protocol: &Protocol) -> Result<String, String> {
         Ok(String::new())
     }
 }
