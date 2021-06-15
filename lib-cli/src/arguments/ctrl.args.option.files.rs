@@ -28,11 +28,17 @@ mod keys {
     pub const TS: &str = "-ts";
     pub const WORKFLOW: &str = "--workflow";
     pub const WF: &str = "-wf";
+    pub const CONSUMER_DEST: &str = "--consumer-dest";
+    pub const CD: &str = "-cd";
+    pub const PRODUCER_DEST: &str = "--producer-dest";
+    pub const PD: &str = "-pd";
 }
 
 pub struct ArgsOptionFiles {
     src: Option<PathBuf>,
     workflow: Option<PathBuf>,
+    dest_consumer: Option<PathBuf>,
+    dest_producer: Option<PathBuf>,
     dest_rs: Option<PathBuf>,
     dest_ts: Option<PathBuf>,
     errs: Vec<String>,
@@ -44,6 +50,8 @@ impl ArgsOptionFiles {
         Self {
             src: None,
             workflow: None,
+            dest_consumer: None,
+            dest_producer: None,
             dest_rs: None,
             dest_ts: None,
             errs: vec![],
@@ -64,7 +72,7 @@ impl ArgsOptionFiles {
     fn set_workflow(&mut self, path: PathBuf) {
         if !path.exists() {
             self.set_err(format!(
-                "Source file doesn't exist. Path: {}",
+                "Workflow source file doesn't exist. Path: {}",
                 path.as_path().display().to_string()
             ));
         } else {
@@ -82,7 +90,6 @@ impl ArgsOptionFiles {
         }
     }
 
-
     fn set_dest_ts(&mut self, path: PathBuf, overwrite: bool) {
         if !overwrite && path.exists() {
             self.set_err(format!("Typescript destination file already exists. Use key --overwrite (--ow or -o) to overwrite destination file. File: {}",
@@ -90,6 +97,28 @@ impl ArgsOptionFiles {
             ));
         } else {
             self.dest_ts = Some(path);
+        }
+    }
+
+    fn set_dest_consumer(&mut self, path: PathBuf) {
+        if !path.exists() {
+            self.set_err(format!(
+                "Consumer destination doesn't exist. Path: {}",
+                path.as_path().display().to_string()
+            ));
+        } else {
+            self.dest_consumer = Some(path);
+        }
+    }
+
+    fn set_dest_producer(&mut self, path: PathBuf) {
+        if !path.exists() {
+            self.set_err(format!(
+                "Producer destination doesn't exist. Path: {}",
+                path.as_path().display().to_string()
+            ));
+        } else {
+            self.dest_producer = Some(path);
         }
     }
 
@@ -196,6 +225,22 @@ impl CtrlArg for ArgsOptionFiles {
                 options.set_dest_ts(Path::new(pwd).join(arg_str_dest), overwrite);
             }
         }
+        if let Some(dest_index) = args
+            .iter()
+            .position(|arg| arg == keys::CONSUMER_DEST || arg == keys::CD)
+        {
+            if let Some(arg_str_dest) = args.get(dest_index + 1) {
+                options.set_dest_consumer(Path::new(pwd).join(arg_str_dest));
+            }
+        }
+        if let Some(dest_index) = args
+            .iter()
+            .position(|arg| arg == keys::PRODUCER_DEST || arg == keys::PD)
+        {
+            if let Some(arg_str_dest) = args.get(dest_index + 1) {
+                options.set_dest_producer(Path::new(pwd).join(arg_str_dest));
+            }
+        }
         options
     }
 
@@ -253,11 +298,10 @@ impl CtrlArg for ArgsOptionFiles {
                                     typescript: None,
                                     rust: None,
                                 };
-                                
                                 if let Err(err) = workflow_render(
                                     protocol_refs, 
-                                    Some(Path::new("/storage/projects/private/fiber/lib-cli/tmp/consumer").to_path_buf()),
-                                    Some(Path::new("/storage/projects/private/fiber/lib-cli/tmp/producer").to_path_buf()),
+                                    self.dest_consumer.clone(),
+                                    self.dest_producer.clone(),
                                     workflow_store,
                                     &protocol_store
                                 ) {
@@ -286,9 +330,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, &mut protocol_store, RustRender::new(embedded, 0)) {
-                            return Err(e);
-                        }
+                        self.write(dest, &mut protocol_store, RustRender::new(embedded, 0))?;
                     }
                     if let Some(dest) = self.dest_ts.clone() {
                         if dest.exists() && !overwrite {
@@ -307,9 +349,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        if let Err(e) = self.write(dest, &mut protocol_store, TypescriptRender::new(embedded, 0)) {
-                            return Err(e);
-                        }
+                        self.write(dest, &mut protocol_store, TypescriptRender::new(embedded, 0))?;
                     }
                     Ok(())
                 }
@@ -321,7 +361,7 @@ impl CtrlArg for ArgsOptionFiles {
     }
 
     fn get_help(&self) -> String {
-        format!("{}\n{}\n{}\n{}",
+        format!("{}\n{}\n{}\n{}\n{}\n{}",
             format!("{}{}",
                 helpers::output::keys(&format!("{} ({}, {})", keys::SOURCE, keys::SRC, keys::S)),
                 helpers::output::desk("[required] path to source file. Protocol file with description messages."),
@@ -337,6 +377,14 @@ impl CtrlArg for ArgsOptionFiles {
             format!("{}{}",
                 helpers::output::keys(&format!("{} ({}, {})", keys::DESTINATION_TS, keys::DEST_TS, keys::TS)),
                 helpers::output::desk("path to destination ts (typescript) file. If value isn't defined, would be used path and name of source file"),
+            ),
+            format!("{}{}",
+                helpers::output::keys(&format!("{} ({})", keys::CONSUMER_DEST, keys::CD)),
+                helpers::output::desk("path to destination for consumer's code"),
+            ),
+            format!("{}{}",
+                helpers::output::keys(&format!("{} ({})", keys::PRODUCER_DEST, keys::PD)),
+                helpers::output::desk("path to destination for producer's code"),
             )
         )
     }
@@ -345,59 +393,27 @@ impl CtrlArg for ArgsOptionFiles {
 
 pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
     move |mut args: Vec<String>| {
-        if let Some(index) = args
-            .iter()
-            .position(|arg| arg == keys::SOURCE || arg == keys::SRC || arg == keys::S)
-        {
-            match args.get(index + 1) {
-                Some(_) => {
-                    args.remove(index + 1);
-                    args.remove(index);
-                }
-                None => {
-                    args.remove(index);
-                }
-            }
-        }
-        if let Some(index) = args
-            .iter()
-            .position(|arg| arg == keys::WORKFLOW || arg == keys::WF)
-        {
-            match args.get(index + 1) {
-                Some(_) => {
-                    args.remove(index + 1);
-                    args.remove(index);
-                }
-                None => {
-                    args.remove(index);
-                }
-            }
-        }
-        if let Some(index) = args
-            .iter()
-            .position(|arg| arg == keys::DESTINATION_RS || arg == keys::DEST_RS || arg == keys::RS)
-        {
-            match args.get(index + 1) {
-                Some(_) => {
-                    args.remove(index + 1);
-                    args.remove(index);
-                }
-                None => {
-                    args.remove(index);
-                }
-            }
-        }
-        if let Some(index) = args
-            .iter()
-            .position(|arg| arg == keys::DESTINATION_TS || arg == keys::DEST_TS || arg == keys::TS)
-        {
-            match args.get(index + 1) {
-                Some(_) => {
-                    args.remove(index + 1);
-                    args.remove(index);
-                }
-                None => {
-                    args.remove(index);
+        let keys: Vec<Vec<&str>> = vec![
+            vec![keys::SOURCE, keys::SRC, keys::S],
+            vec![keys::WORKFLOW, keys::WF],
+            vec![keys::DESTINATION_RS, keys::DEST_RS, keys::RS],
+            vec![keys::DESTINATION_TS, keys::DEST_TS, keys::TS],
+            vec![keys::CONSUMER_DEST, keys::CD],
+            vec![keys::PRODUCER_DEST, keys::PD],
+        ];
+        for sub_keys in keys {
+            if let Some(index) = args
+                .iter()
+                .position(|arg| sub_keys.iter().any(|k| k == arg))
+            {
+                match args.get(index + 1) {
+                    Some(_) => {
+                        args.remove(index + 1);
+                        args.remove(index);
+                    }
+                    None => {
+                        args.remove(index);
+                    }
                 }
             }
         }
