@@ -25,6 +25,9 @@ pub mod render_producer;
 #[path = "./render.app.rs"]
 pub mod render_app;
 
+#[path = "./render.protocol.rs"]
+pub mod render_protocol;
+
 use super::{
     ImplementationRender,
     helpers,
@@ -35,6 +38,8 @@ use super::{
         }
     },
     Protocol,
+    ProtocolRender,
+    ProtocolRustRender,
 };
 use render_request::{ RenderRequest };
 use render_event::{ RenderEvent };
@@ -45,6 +50,7 @@ use render_event_connected::{ RenderEventConnected };
 use render_broadcast::{ RenderBroadcast };
 use render_event_disconnected::{ RenderEventDisconnected };
 use render_app::{ RenderApp };
+use render_protocol::{ RenderProtocol };
 use std::{
     path::{
         Path,
@@ -57,13 +63,19 @@ pub struct RustRender {
 impl RustRender {
 }
 
-impl ImplementationRender for RustRender {
+impl ImplementationRender<ProtocolRustRender> for RustRender {
     fn new() -> Self {
         RustRender {
         }
     }
 
-    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String> {
+    fn render(
+        &self,
+        base: &Path,
+        store: &WorkflowStore,
+        protocol: &mut Protocol,
+        protocol_render: ProtocolRustRender,
+    ) -> Result<String, String> {
         for request in &store.requests {
             (RenderRequest::new()).render(base, &request)?;
         }
@@ -77,6 +89,7 @@ impl ImplementationRender for RustRender {
         (RenderConsumer::new()).render(base, store.get_config()?, protocol)?;
         (RenderProducer::new()).render(base, store, protocol)?;
         (RenderApp::new()).render(base, store, protocol)?;
+        (RenderProtocol::new()).render(base, protocol, &protocol_render)?;
         Ok(String::new())
     }
 }

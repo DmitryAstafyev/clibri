@@ -1,20 +1,33 @@
-use super::helpers;
-use super::protocol::{ Parser as ProtocolParser };
-use super::protocol::store::{ Store };
-use super::workflow::{ Parser as WorkflowParser };
-use super::render::rust::RustRender;
-use super::render::typescript::TypescriptRender;
-use super::render::Render;
-use super::workflow_render::{
-    render as workflow_render,
-    ProtocolRefs,
+use super::{
+    helpers,
+    CtrlArg,
+    EArgumentsNames,
+    EArgumentsValues,
+    protocol::{
+        Parser as ProtocolParser,
+    },
+    workflow::{
+        Parser as WorkflowParser,
+    },
+    render::{
+        Render,
+        rust::RustRender,
+        typescript::TypescriptRender,
+    },
+    workflow_render::{
+        render as workflow_render,
+    }
 };
-use super::{CtrlArg, EArgumentsNames, EArgumentsValues};
-use std::collections::HashMap;
-use std::fs::{OpenOptions, remove_file};
-use std::io::prelude::*;
-use std::path::{Path, PathBuf};
-use std::time::Instant;
+
+use std::{
+    collections::HashMap,
+    fs::remove_file,
+    time::Instant,
+    path::{
+        Path,
+        PathBuf,
+    }
+};
 
 mod keys {
     pub const SOURCE: &str = "--source";
@@ -154,29 +167,6 @@ impl ArgsOptionFiles {
         }
     }
 
-    fn write(&self, dest: PathBuf, protocol_store: &mut Store, render: impl Render) -> Result<(), String> {
-        let t_render = Instant::now();
-        let content: String = render.render(protocol_store);
-        match OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(dest.clone())
-        {
-            Ok(mut file) => {
-                if let Err(e) = file.write_all(content.as_bytes()) {
-                    return Err(e.to_string());
-                }
-                println!(
-                    "[OK][{}ms] saved {:?}",
-                    t_render.elapsed().as_millis(),
-                    dest
-                );
-                Ok(())
-            }
-            Err(e) => Err(e.to_string())
-        }
-    } 
-
 }
 
 impl CtrlArg for ArgsOptionFiles {
@@ -277,6 +267,9 @@ impl CtrlArg for ArgsOptionFiles {
         &self,
         ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>,
     ) -> Result<(), String> {
+        if self.src.is_none() && self.workflow.is_some() {
+            return Err(String::from("Workflow cannot be generated without reference to protocol"));
+        }
         if let Some(src) = self.src.clone() {
             let t_parsing = Instant::now();
             let overwrite: bool = self.get_overwrite_flag(ctrls);
@@ -294,19 +287,12 @@ impl CtrlArg for ArgsOptionFiles {
                         let mut workflow: WorkflowParser = WorkflowParser::new(workflow_path.to_owned());
                         match workflow.parse(&mut protocol_store) {
                             Ok(workflow_store) => {
-                                let protocol_refs: ProtocolRefs = ProtocolRefs {
-                                    typescript: None,
-                                    rust: None,
-                                };
-                                if let Err(err) = workflow_render(
-                                    protocol_refs, 
+                                workflow_render(
                                     self.dest_consumer.clone(),
                                     self.dest_producer.clone(),
                                     workflow_store,
-                                    &protocol_store
-                                ) {
-                                    return Err(err);
-                                }
+                                    &mut protocol_store
+                                )?;
                             },
                             Err(err) => {
                                 return Err(err);
@@ -330,7 +316,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        self.write(dest, &mut protocol_store, RustRender::new(embedded, 0))?;
+                        RustRender::new(embedded, 0).render(&mut protocol_store, &dest)?;
                     }
                     if let Some(dest) = self.dest_ts.clone() {
                         if dest.exists() && !overwrite {
@@ -349,7 +335,7 @@ impl CtrlArg for ArgsOptionFiles {
                                 );
                             }
                         }
-                        self.write(dest, &mut protocol_store, TypescriptRender::new(embedded, 0))?;
+                        TypescriptRender::new(embedded, 0).render(&mut protocol_store, &dest)?;
                     }
                     Ok(())
                 }

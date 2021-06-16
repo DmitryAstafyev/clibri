@@ -15,7 +15,16 @@ use super::{
     protocol::store::{
         Store as Protocol
     },
-    render::Target,
+    render::{
+        Target,
+        Render as ProtocolRender,
+        rust::{
+            RustRender as ProtocolRustRender,
+        },
+        typescript::{
+            TypescriptRender as ProtocolTypescriptRender,
+        }
+    },
 };
 use producer::{
     rust::{ RustRender as ProducerRustRender },
@@ -34,67 +43,73 @@ use std::{
     }
 };
 
-pub trait ImplementationRender {
+pub trait ImplementationRender<T: ProtocolRender> {
 
     fn new() -> Self;
-    fn render(&self, base: &Path, store: &WorkflowStore, protocol: &Protocol) -> Result<String, String>;
+    fn render(
+        &self,
+        base: &Path,
+        store: &WorkflowStore,
+        protocol: &mut Protocol,
+        protocol_render: T,
+    ) -> Result<String, String>;
 
-}
-
-pub struct ProtocolRefs {
-    pub typescript: Option<PathBuf>,
-    pub rust: Option<PathBuf>,
 }
 
 pub fn render(
-    _protocol_refs: ProtocolRefs,
     mut consumer_dest: Option<PathBuf>,
     mut producer_dest: Option<PathBuf>,
     store: WorkflowStore,
-    protocol: &Protocol,
+    protocol: &mut Protocol,
 ) -> Result<(), String> {
+    let consumer_outs = &(store.get_config()?.consumer);
+    let producer_outs = &(store.get_config()?.producer);
+    if consumer_dest.is_none() && !consumer_outs.is_empty() {
+        return Err(String::from("Destination folder for consumer isn't defined. Use --consumer-dest (or -cd) to define it."))
+    }
+    if producer_dest.is_none() && !producer_outs.is_empty() {
+        return Err(String::from("Destination folder for producer isn't defined. Use --producer-dest (or -pd) to define it."))
+    }
     if let Some(consumer_dest) = consumer_dest.take() {
         mkdir(&consumer_dest)?;
-        let outs = &(store.get_config()?.consumer);
-        for out in outs {
+        for out in consumer_outs {
             let mut dest = consumer_dest.clone();
             match out {
                 Target::Rust => {
-                    if outs.len() > 1 {
+                    if consumer_outs.len() > 1 {
                         dest = dest.join("rust");
                         mkdir(&dest)?;
                     }
-                    (ConsumerRustRender::new()).render(&dest, &store, protocol)?;
+                    (ConsumerRustRender::new()).render(&dest, &store, protocol, ProtocolRustRender::new(true, 0))?;
                 },
                 Target::TypeScript => {
-                    if outs.len() > 1 {
+                    if consumer_outs.len() > 1 {
                         dest = dest.join("typescript");
                         mkdir(&dest)?;
                     }
-                    (ConsumerTypescriptRender::new()).render(&dest, &store, protocol)?;
+                    (ConsumerTypescriptRender::new()).render(&dest, &store, protocol, ProtocolTypescriptRender::new(true, 0))?;
                 },
             }
         }
     }
     if let Some(producer_dest) = producer_dest.take() {
         mkdir(&producer_dest)?;
-        let outs = &(store.get_config()?.producer);
-        for out in outs {
+        for out in producer_outs {
             let mut dest = producer_dest.clone();
             match out {
                 Target::Rust => {
-                    if outs.len() > 1 {
+                    if producer_outs.len() > 1 {
                         dest = dest.join("rust");
                         mkdir(&dest)?;
                     }
-                    (ProducerRustRender::new()).render(&dest, &store, protocol)?;
+                    (ProducerRustRender::new()).render(&dest, &store, protocol, ProtocolRustRender::new(true, 0))?;
                 },
                 Target::TypeScript => {
-                    if outs.len() > 1 {
+                    if producer_outs.len() > 1 {
                         dest = dest.join("typescript");
                         mkdir(&dest)?;
                     }
-                    (ProducerTypescriptRender::new()).render(&dest, &store, protocol)?;
+                    (ProducerTypescriptRender::new()).render(&dest, &store, protocol, ProtocolTypescriptRender::new(true, 0))?;
                 },
             }
         }

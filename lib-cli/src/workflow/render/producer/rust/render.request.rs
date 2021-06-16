@@ -167,17 +167,6 @@ impl RenderRequest {
         helpers::fs::write(dest, output, true)
     }
 
-    fn get_dest_file(&self, base: &Path, request: &Request) -> Result<PathBuf, String> {
-        let dest = base.join("observers");
-        if !dest.exists() {
-            if let Err(e) = fs::create_dir(&dest) {
-                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
-            }
-        }
-        let request = request.get_request()?;
-        Ok(dest.join(format!("{}.rs", request.to_lowercase().replace(".", "_"))))
-    }
-
     fn get_conclusion_enum(&self, request: &Request) -> Result<String, String> {
         let mut output: String = templates::CONCLUSION_ENUM.to_owned();
         let mut conclusions: String = String::new();
@@ -254,7 +243,7 @@ impl RenderRequest {
         } else {
             output = templates::EMITTER_MULTIPLE.to_string();
             let mut conclusions: String = String::new();
-            for (pos, action) in request.actions.iter().enumerate() {
+            for action in request.actions.iter() {
                 let mut conclusion: String = templates::EMITTER_CONCLUSION.to_string();
                 conclusion = conclusion.replace("[[conclusion_name]]", &action.get_conclusion()?);
                 if action.broadcast.is_empty() {
@@ -293,9 +282,6 @@ impl RenderRequest {
                         .replace("[[broadcasts_impls]]", &tools::inject_tabs(3, broadcasts));
                 }
                 conclusions = format!("{}{}", conclusions, conclusion);
-                if pos < request.actions.len() - 1 {
-                    //conclusions = format!("{},\n", conclusions);
-                }
             }
             output = tools::inject_tabs(3, output.replace("[[conclutions]]", &tools::inject_tabs(1, conclusions)));
         }
@@ -308,6 +294,17 @@ impl RenderRequest {
 
     fn into_rust_path(&self, input: &str) -> String {
         input.to_string().replace(".", "::")
+    }
+
+    fn get_dest_file(&self, base: &Path, request: &Request) -> Result<PathBuf, String> {
+        let dest = base.join("observers");
+        if !dest.exists() {
+            if let Err(e) = fs::create_dir(&dest) {
+                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+            }
+        }
+        let request = request.get_request()?;
+        Ok(dest.join(format!("{}.rs", request.to_lowercase().replace(".", "_"))))
     }
 
 }

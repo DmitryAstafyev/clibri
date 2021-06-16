@@ -4,9 +4,14 @@ use super::protocol::groups::Group;
 use super::protocol::store::Store;
 use super::protocol::structs::Struct;
 use super::protocol::types::PrimitiveTypes;
-use super::{ Render, stop };
+use super::{ Render, stop, helpers };
 use regex::Regex;
-use std::include_str;
+use std::{
+    include_str,
+    path::{
+        Path,
+    }
+};
 
 pub struct TypescriptRender {
     embedded: bool,
@@ -1708,7 +1713,7 @@ impl Render for TypescriptRender {
         }
     }
 
-    fn render(&self, store: &mut Store) -> String {
+    fn render(&self, store: &mut Store, dest: &Path) -> Result<(), String> {
         let mut body = format!("{}\n", self.includes());
         body = format!(
             "{}{}",
@@ -1734,6 +1739,6 @@ impl Render for TypescriptRender {
             }
         }
         body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
-        body
+        helpers::fs::write(dest.to_path_buf(), body, true)
     }
 }

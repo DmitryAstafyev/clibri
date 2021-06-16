@@ -5,9 +5,14 @@ use super::protocol::store::Store;
 use super::protocol::structs::Struct;
 use super::protocol::types::PrimitiveTypes;
 use super::Render;
+use super::helpers;
 use regex::Regex;
-use std::include_str;
-
+use std::{
+    include_str,
+    path::{
+        Path,
+    }
+};
 pub struct RustRender {
     embedded: bool,
     signature: u16,
@@ -845,7 +850,7 @@ impl Render for RustRender {
         }
     }
 
-    fn render(&self, store: &mut Store) -> String {
+    fn render(&self, store: &mut Store, dest: &Path) -> Result<(), String> {
         let mut body = format!("{}\n", self.includes());
         body = format!(
             "{}{}",
@@ -868,6 +873,6 @@ impl Render for RustRender {
             }
         }
         body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
-        body
+        helpers::fs::write(dest.to_path_buf(), body, true)
     }
 }

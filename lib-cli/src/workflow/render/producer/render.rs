@@ -9,4 +9,7 @@ use super::{
     ImplementationRender,
     workflow,
     Protocol,
+    ProtocolRender,
+    ProtocolRustRender,
+    ProtocolTypescriptRender,
 };

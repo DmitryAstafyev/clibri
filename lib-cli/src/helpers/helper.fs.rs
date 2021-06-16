@@ -20,11 +20,15 @@ pub fn write(filename: PathBuf, content: String, overwrite: bool) -> Result<(), 
     match OpenOptions::new()
         .write(true)
         .create(true)
-        .open(filename)
+        .open(filename.clone())
     {
         Ok(mut file) => if let Err(e) = file.write_all(content.as_bytes()) {
             Err(e.to_string())
         } else {
+            println!(
+                "[OK] {:?} has been written",
+                filename
+            );
             Ok(())
         }
         Err(e) => Err(e.to_string())

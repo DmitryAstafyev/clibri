@@ -11,6 +11,8 @@ use super::{
         },
     },
     Protocol,
+    ProtocolRender,
+    ProtocolTypescriptRender,
 };
 use super::{ ImplementationRender };
 use std::{
@@ -25,13 +27,19 @@ pub struct TypescriptRender {
 impl TypescriptRender {
 }
 
-impl ImplementationRender for TypescriptRender {
+impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
     fn new() -> Self {
         TypescriptRender {
         }
     }
 
-    fn render(&self, _base: &Path, _store: &WorkflowStore, _protocol: &Protocol) -> Result<String, String> {
+    fn render(
+        &self,
+        _base: &Path,
+        _store: &WorkflowStore,
+        _protocol: &mut Protocol,
+        _protocol_render: ProtocolTypescriptRender,
+    ) -> Result<String, String> {
         Ok(String::new())
     }
 }
