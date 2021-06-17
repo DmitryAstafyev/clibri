@@ -8,7 +8,7 @@ export type TAcceptHandler = (response: Protocol.Message.Accepted) => void
 export type TDenyHandler = (response: Protocol.Message.Denied) => void
 export type TErrHandler = (response: Protocol.Message.Err) => void
 
-export class MessageRequest extends Protocol.UserLogin.Request {
+export class MessageRequest extends Protocol.Message.Request {
 
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
@@ -20,7 +20,7 @@ export class MessageRequest extends Protocol.UserLogin.Request {
         deny: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.UserLogin.IRequest) {
+    constructor(request: Protocol.Message.IRequest) {
         super(request);
     }
 
@@ -53,12 +53,12 @@ export class MessageRequest extends Protocol.UserLogin.Request {
                         this._state = ERequestState.Ready;
                         if (message === undefined || message.Message === undefined) {
                             return reject(new Error(`Expecting message from "message.Message" group.`));
-                        } else if (message.Message.Accept !== undefined) {
-                            this._handlers.accept !== undefined && this._handlers.accept(message.Message.Accept);
-                            return resolve(message.Message.Accept);
-                        } else if (message.Message.Deny !== undefined) {
-                            this._handlers.deny !== undefined && this._handlers.deny(message.Message.Deny);
-                            return resolve(message.Message.Deny);
+                        } else if (message.Message.Accepted !== undefined) {
+                            this._handlers.accept !== undefined && this._handlers.accept(message.Message.Accepted);
+                            return resolve(message.Message.Accepted);
+                        } else if (message.Message.Denied !== undefined) {
+                            this._handlers.deny !== undefined && this._handlers.deny(message.Message.Denied);
+                            return resolve(message.Message.Denied);
                         } else if (message.Message.Err !== undefined) {
                             this._handlers.err !== undefined && this._handlers.err(message.Message.Err);
                             return resolve(message.Message.Err);

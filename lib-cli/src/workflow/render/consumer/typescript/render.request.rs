@@ -26,11 +26,11 @@ import { ERequestState } from '../interfaces/request';
 
 [[types_declarations]]
 
-export class [[reference]] extends Protocol.UserLogin.Request {
+export class [[reference]] extends Protocol.[[struct_ref]] {
 
     private _state: ERequestState = ERequestState.Ready;
 [[handlers]]
-    constructor(request: Protocol.UserLogin.IRequest) {
+    constructor(request: Protocol.[[struct_interface]]) {
         super(request);
     }
 
@@ -115,12 +115,27 @@ impl RenderRequest {
         let mut output: String = templates::MODULE.to_owned();
         output = output.replace("[[types_declarations]]", &self.get_types_declarations(request)?);
         output = output.replace("[[reference]]", &(request.get_request()?).replace(".", ""));
+        output = output.replace("[[struct_ref]]", &request.get_request()?);
+        output = output.replace("[[struct_interface]]", &self.get_struct_interface(request)?);
         output = output.replace("[[resolver]]", &self.get_resolver_type(request)?);
         output = output.replace("[[handlers]]", &tools::inject_tabs(1, self.get_handlers(request)?));
         output = output.replace("[[handlers_defs]]", &tools::inject_tabs(3, self.get_handlers_defs(request)?));
         output = output.replace("[[handlers_setters]]", &tools::inject_tabs(1, self.get_handlers_setters(request)?));
         output = output.replace("[[response_handler]]", &tools::inject_tabs(6, self.get_response_handler(request)?));
         helpers::fs::write(dest, output, true)
+    }
+
+    fn get_struct_interface(&self, request: &Request) -> Result<String, String> {
+        let full = request.get_request()?;
+        let mut parts: Vec<&str> = full.split('.').collect();
+        if parts.is_empty() {
+            Err(String::from("Invalid reference to struct for request"))
+        } else {
+            let ref_to_interface = format!("I{}", parts[parts.len() - 1]);
+            let last = parts.len() - 1;
+            parts[last] = &ref_to_interface;
+            Ok(parts.join("."))
+        }
     }
 
     fn get_types_declarations(&self, request: &Request) -> Result<String, String> {
@@ -276,17 +291,13 @@ r#"{}) {{
 }} "#, check_group, group);
         if request.actions.len() > 1 {
             for action in &request.actions {
-                if let Some(name) = action.conclusion.as_ref() {
-                    output = format!("{}{}", output,
-r#"else if ([[group]].[[name]] !== undefined) {
-    this._handlers.[[handler]] !== undefined && this._handlers.[[handler]]([[group]].[[name]]);
-    return resolve([[group]].[[name]]);
+                output = format!("{}{}", output,
+r#"else if ([[group]].[[response]] !== undefined) {
+    this._handlers.[[handler]] !== undefined && this._handlers.[[handler]]([[group]].[[response]]);
+    return resolve([[group]].[[response]]);
 } "#.replace("[[group]]", &group)
-    .replace("[[name]]", &name)
-    .replace("[[handler]]", &name.to_lowercase()));
-                } else {
-                    return Err(String::from("Action doesn't have bound conclusion name"));
-                };
+    .replace("[[response]]", &action.get_last_response_entity()?)
+    .replace("[[handler]]", &action.get_conclusion()?.to_lowercase()));
             }
         } else {
             output = format!("{}{}", output,

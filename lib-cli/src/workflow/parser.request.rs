@@ -83,6 +83,27 @@ impl Action {
         }
     }
 
+    pub fn get_response(&self) -> Result<String, String> {
+        if let Some(response) = self.response.as_ref() {
+            Ok(String::from(response))
+        } else {
+            Err(String::from("Response name isn't defined"))
+        }
+    }
+
+    pub fn get_last_response_entity(&self) -> Result<String, String> {
+        if let Some(response) = self.response.as_ref() {
+            let parts: Vec<&str> = response.split('.').collect();
+            Ok(String::from(if !parts.is_empty() { 
+                parts[parts.len() - 1]
+            } else {
+                return Err(String::from("Response isn't valid"));    
+            }))
+        } else {
+            Err(String::from("Response name isn't defined"))
+        }
+    }
+
 }
 
 #[derive(Debug, Clone)]

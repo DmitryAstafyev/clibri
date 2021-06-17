@@ -53,12 +53,12 @@ export class UserLoginRequest extends Protocol.UserLogin.Request {
                         this._state = ERequestState.Ready;
                         if (message === undefined || message.UserLogin === undefined) {
                             return reject(new Error(`Expecting message from "message.UserLogin" group.`));
-                        } else if (message.UserLogin.Accept !== undefined) {
-                            this._handlers.accept !== undefined && this._handlers.accept(message.UserLogin.Accept);
-                            return resolve(message.UserLogin.Accept);
-                        } else if (message.UserLogin.Deny !== undefined) {
-                            this._handlers.deny !== undefined && this._handlers.deny(message.UserLogin.Deny);
-                            return resolve(message.UserLogin.Deny);
+                        } else if (message.UserLogin.Accepted !== undefined) {
+                            this._handlers.accept !== undefined && this._handlers.accept(message.UserLogin.Accepted);
+                            return resolve(message.UserLogin.Accepted);
+                        } else if (message.UserLogin.Denied !== undefined) {
+                            this._handlers.deny !== undefined && this._handlers.deny(message.UserLogin.Denied);
+                            return resolve(message.UserLogin.Denied);
                         } else if (message.UserLogin.Err !== undefined) {
                             this._handlers.err !== undefined && this._handlers.err(message.UserLogin.Err);
                             return resolve(message.UserLogin.Err);
