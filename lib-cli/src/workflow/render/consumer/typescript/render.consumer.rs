@@ -174,15 +174,15 @@ export class Consumer {
             const request: Protocol.Identification.SelfKey = new Protocol.Identification.SelfKey(key);
             const sequence: number = this.getSequence();
             this.request(request.pack(sequence), sequence).then((response: Protocol.IAvailableMessages) => {
-                if (response.Identification === undefined) {
-                    return reject(new Error(this._logger.err(`Expecting message from "Identification" group.`)));
+                if (response.InternalServiceGroup === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message from "InternalServiceGroup" group.`)));
                 }
-                if (response.Identification.SelfKeyResponse === undefined) {
-                    return reject(new Error(this._logger.err(`Expecting message "Identification.SelfKeyResponse".`)));
+                if (response.InternalServiceGroup.SelfKeyResponse === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message "InternalServiceGroup.SelfKeyResponse".`)));
                 }
-                this.uuid = response.Identification.SelfKeyResponse.uuid;
+                this.uuid = response.InternalServiceGroup.SelfKeyResponse.uuid;
                 this._logger.debug(`Consumer is assigned with uuid ${this.uuid}`);
-                resolve(response.Identification.SelfKeyResponse.uuid);
+                resolve(response.InternalServiceGroup.SelfKeyResponse.uuid);
             }).catch((err: Error) => {
                 reject(new Error(this._logger.err(`Fail assing consumer due error: ${err.message}`)));
             });

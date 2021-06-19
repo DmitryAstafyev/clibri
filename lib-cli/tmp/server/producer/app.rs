@@ -1,4 +1,7 @@
 
+#[macro_use]
+extern crate lazy_static;
+
 #[path = "../producer/producer.rs"]
 pub mod producer;
 
@@ -9,18 +12,21 @@ use fiber::{
 };
 
 use producer::{
+    userlogin_request,
     userlogin_request::{
         ObserverRequest as UserLoginRequestObserver,
     },
     users_request::{
         ObserverRequest as UsersRequestObserver,
     },
+    message_request,
     message_request::{
         ObserverRequest as MessageRequestObserver,
     },
     messages_request::{
         ObserverRequest as MessagesRequestObserver,
     },
+    serverevents_userkickoff,
     serverevents_userkickoff::{
         ObserverEvent as ServerEventsUserKickOffEvent,
     },
@@ -68,7 +74,7 @@ impl UserLoginRequestObserver {
         request: &Protocol::UserLogin::Request,
         cx: &Cx,
         ucx: WrappedCustomContext,
-    ) -> Result<UserLoginRequestObserver::Conclusion, Protocol::UserLogin::Err> {
+    ) -> Result<userlogin_request::Conclusion, Protocol::UserLogin::Err> {
         panic!("conclusion method isn't implemented");
     }
     
@@ -116,7 +122,7 @@ impl MessageRequestObserver {
         request: &Protocol::Message::Request,
         cx: &Cx,
         ucx: WrappedCustomContext,
-    ) -> Result<MessageRequestObserver::Conclusion, Protocol::Message::Err> {
+    ) -> Result<message_request::Conclusion, Protocol::Message::Err> {
         panic!("conclusion method isn't implemented");
     }
     
@@ -159,7 +165,7 @@ impl ConnectedEvent {
     fn handler<WrappedCustomContext>(
         _uuid: Uuid,
         _ucx: WrappedCustomContext,
-        _broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        _broadcast: &dyn Fn(Filter, producer::broadcast::Broadcast) -> Result<(), String>,
     ) -> () {
         // Implementation
     }
@@ -169,7 +175,7 @@ impl DisconnectedEvent {
     fn handler<WrappedCustomContext>(
         uuid: Uuid,
         _ucx: WrappedCustomContext,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, producer::broadcast::Broadcast) -> Result<(), String>,
     ) -> () {
         // Implementation
     }
@@ -177,11 +183,12 @@ impl DisconnectedEvent {
 
 impl ServerEventsUserKickOffEvent {
     fn handler<WrappedCustomContext>(
-        event: ServerEvents::UserKickOff,
+        event: &Protocol::ServerEvents::UserKickOff,
         ucx: WrappedCustomContext,
         control: Control,
-    ) -> Option<Vec<(Filter, ServerEventsUserKickOffEvent::Broadcast)>> {
-        // Implementation       
+    ) -> Option<Vec<(Filter, serverevents_userkickoff::Broadcast)>> {
+        // Implementation
+        None      
     }
 }
 

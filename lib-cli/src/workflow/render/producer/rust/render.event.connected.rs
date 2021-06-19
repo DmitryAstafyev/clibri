@@ -1,5 +1,13 @@
 use super::{
     helpers,
+    helpers::{
+        render as tools,
+    },
+    workflow::{
+        broadcast::{
+            Broadcast
+        }
+    },
 };
 use std::{
     fs,
@@ -14,6 +22,7 @@ mod templates {
 r#"use super::{
     Filter,
     Broadcast,
+    Protocol::PackingStruct,
 };
 
 use uuid::Uuid;
@@ -41,9 +50,12 @@ impl ObserverEvent {
         &self,
         uuid: Uuid,
         ucx: UCX,
-        broadcast: &dyn Fn(Filter, Broadcast) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> () {
-        Self::handler(uuid, ucx, broadcast);
+        Self::handler(uuid, ucx, &(|filter: Filter, message: Broadcast| {
+            broadcast(filter, match message {[[messages]],
+            })
+        }));
     }
 }
 
@@ -69,9 +81,15 @@ impl RenderEventConnected {
     pub fn render(
         &self,
         base: &Path,
+        broadcasts: &Vec<Broadcast>,
     ) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
-        helpers::fs::write(dest, templates::MODULE.to_owned(), true)
+        let mut messages: String = String::new();
+        for broadcast in broadcasts {
+            messages = format!("{}\nBroadcast::{}(mut msg) => msg.pack(0, None)?", messages, broadcast.reference.replace(".", ""));
+        }
+        let output = templates::MODULE.replace("[[messages]]", &tools::inject_tabs(4, messages));
+        helpers::fs::write(dest, output, true)
     }
 
     fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
@@ -81,7 +99,7 @@ impl RenderEventConnected {
                 return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
             }
         }
-        Ok(dest.join("event_connected.rs"))
+        Ok(dest.join("default_event_connected.rs"))
     }
 
 }

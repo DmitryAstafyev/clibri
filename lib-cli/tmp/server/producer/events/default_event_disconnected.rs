@@ -1,6 +1,7 @@
 use super::{
     Filter,
     Broadcast,
+    Protocol::PackingStruct,
 };
 use uuid::Uuid;
 
@@ -27,9 +28,13 @@ impl ObserverEvent {
         &self,
         uuid: Uuid,
         ucx: UCX,
-        broadcast: &dyn Fn(Filter, Broadcast) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> () {
-        Self::handler(uuid, ucx, broadcast);
+        Self::handler(uuid, ucx, &(|filter: Filter, message: Broadcast| {
+            broadcast(filter, match message {                
+                Broadcast::EventsUserDisconnected(mut msg) => msg.pack(0, None)?,
+            })
+        }));
     }
 }
 

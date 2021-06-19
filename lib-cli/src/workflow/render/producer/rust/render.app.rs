@@ -20,6 +20,9 @@ use std::{
 
 mod templates {
     pub const MODULE: &str = r#"
+#[macro_use]
+extern crate lazy_static;
+
 #[path = "../producer/producer.rs"]
 pub mod producer;
 
@@ -75,7 +78,7 @@ impl ConnectedEvent {
     fn handler<WrappedCustomContext>(
         _uuid: Uuid,
         _ucx: WrappedCustomContext,
-        _broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        _broadcast: &dyn Fn(Filter, producer::broadcast::Broadcast) -> Result<(), String>,
     ) -> () {
         // Implementation
     }
@@ -85,7 +88,7 @@ impl DisconnectedEvent {
     fn handler<WrappedCustomContext>(
         uuid: Uuid,
         _ucx: WrappedCustomContext,
-        broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
+        broadcast: &dyn Fn(Filter, producer::broadcast::Broadcast) -> Result<(), String>,
     ) -> () {
         // Implementation
     }
@@ -155,11 +158,12 @@ r#"[[module]]::{
     pub const EVENT_HANDLER: &str =
 r#"impl [[struct_name]]Event {
     fn handler<WrappedCustomContext>(
-        event: [[reference]],
+        event: &Protocol::[[reference]],
         ucx: WrappedCustomContext,
         control: Control,
-    ) -> Option<Vec<(Filter, [[struct_name]]Event::Broadcast)>> {
-        // Implementation       
+    ) -> Option<Vec<(Filter, [[module_name]]::Broadcast)>> {
+        // Implementation
+        None      
     }
 }"#;
     pub const CONCLUSION_METHOD: &str = r#"
@@ -208,6 +212,9 @@ impl RenderApp {
     fn requests_imports(&self, store: &WorkflowStore) -> Result<String, String> {
         let mut output: String = String::new();
         for (pos, request) in store.requests.iter().enumerate() {
+            if request.actions.len() > 1 {
+                output = format!("{}{},\n", output, &request.as_mod_name()?);
+            } 
             output = format!("{}{}",
                 output,
                 templates::REQUEST_IMPORT
@@ -228,7 +235,7 @@ impl RenderApp {
             if request.actions.len() > 1 {
                 out = out.replace("[[conclutions_methods]]", &format!("\n{}\n", self.get_conclusion_methods(request)?));
                 out = out.replace("[[conclutions_caller_name]]", "conclusion");
-                out = out.replace("[[conclutions_caller_ok]]", &format!("{}Observer::Conclusion", &request.as_struct_name()?));
+                out = out.replace("[[conclutions_caller_ok]]", &format!("{}::Conclusion", &request.as_mod_name()?));
             } else {
                 out = out.replace("[[conclutions_methods]]", "");
                 out = out.replace("[[conclutions_caller_name]]", "response");
@@ -250,7 +257,8 @@ impl RenderApp {
     fn events_imports(&self, store: &WorkflowStore) -> Result<String, String> {
         let mut output: String = String::new();
         for (pos, event) in store.events.iter().enumerate() {
-            output = format!("{}{}",
+            output = format!("{},\n{}{}",
+                event.as_mod_name()?,
                 output,
                 templates::EVENT_IMPORT
                     .replace("[[module]]", &event.as_mod_name()?)
@@ -269,6 +277,7 @@ impl RenderApp {
             let mut out: String = templates::EVENT_HANDLER.to_owned();
             out = out.replace("[[reference]]", &self.into_rust_path(&event.get_reference()?));
             out = out.replace("[[struct_name]]", &event.as_struct_name()?);
+            out = out.replace("[[module_name]]", &event.as_mod_name()?);
             if pos < store.requests.len() - 1 {
                 out = format!("{}\n", out);
             }

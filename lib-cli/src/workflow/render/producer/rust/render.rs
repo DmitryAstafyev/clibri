@@ -82,8 +82,8 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         for event in &store.events {
             (RenderEvent::new()).render(base, &event)?;
         }
-        (RenderEventConnected::new()).render(base)?;
-        (RenderEventDisconnected::new()).render(base)?;
+        (RenderEventConnected::new()).render(base, &store.broadcast)?;
+        (RenderEventDisconnected::new()).render(base, &store.broadcast)?;
         (RenderBroadcast::new()).render(base, &store.broadcast)?;
         (RenderIdentification::new()).render(base, store.get_config()?, protocol)?;
         (RenderConsumer::new()).render(base, store.get_config()?, protocol)?;

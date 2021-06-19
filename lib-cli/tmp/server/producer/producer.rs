@@ -1,7 +1,3 @@
-
-#[path = "./traits/observer.rs"]
-pub mod observer;
-
 #[path = "./protocol/protocol.rs"]
 pub mod protocol;
 
@@ -23,13 +19,13 @@ pub mod message_request;
 #[path = "./observers/messages_request.rs"]
 pub mod messages_request;
 
-#[path = "./events/deafault_event_connected.rs"]
+#[path = "./events/default_event_connected.rs"]
 pub mod default_connected_event;
 
-#[path = "./events/deafault_event_disconnected.rs"]
+#[path = "./events/default_event_disconnected.rs"]
 pub mod default_disconnected_event;
 
-#[path = "serverevents_userkickoff.rs"]
+#[path = "./events/serverevents_userkickoff.rs"]
 pub mod serverevents_userkickoff;
 
 use super::tools;
@@ -168,12 +164,12 @@ impl ProducerEventsHolderTrait for ProducerEventsHolder {}
 
 #[derive(Clone)]
 pub struct Events {
-    pub serverevents_userkickoff: UnboundedSender<serverevents_userkickoff::Event>,
+    pub serverevents_userkickoff: UnboundedSender<Protocol::ServerEvents::UserKickOff>,
 }
 
 impl Events {
     pub fn new(
-        serverevents_userkickoff: UnboundedSender<serverevents_userkickoff::Event>
+        serverevents_userkickoff: UnboundedSender<Protocol::ServerEvents::UserKickOff>
     ) -> Self {
         Events {
             serverevents_userkickoff
@@ -309,8 +305,8 @@ pub fn init<
         rx_consumers_task_sd,
     );
     let (tx_serverevents_userkickoff, rx_serverevents_userkickoff): (
-        UnboundedSender<serverevents_userkickoff::Event>,
-        UnboundedReceiver<serverevents_userkickoff::Event>,
+        UnboundedSender<Protocol::ServerEvents::UserKickOff>,
+        UnboundedReceiver<Protocol::ServerEvents::UserKickOff>,
     ) = unbounded_channel();
     let events = Events::new(
         tx_serverevents_userkickoff
@@ -850,7 +846,7 @@ fn spawn_events<
 >(
     ucx: UCX,
     control: Control,
-    rx_serverevents_userkickoff: UnboundedReceiver<serverevents_userkickoff::Event>,
+    rx_serverevents_userkickoff: UnboundedReceiver<Protocol::ServerEvents::UserKickOff>,
     rx_shutdown: Receiver<()>,
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {

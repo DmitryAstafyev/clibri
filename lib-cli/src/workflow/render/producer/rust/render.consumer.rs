@@ -56,7 +56,7 @@ impl Cx {
 
     pub fn assign(
         &self,
-        assigned: [[assigned_key]],
+        assigned: Protocol::[[assigned_key]],
         overwrite: bool,
     ) -> Result<(), String> {
         if let Err(e) = self.consumers.send(ConsumersChannel::Assign((
@@ -153,12 +153,12 @@ impl Consumer {
         self.uuid
     }
 
-    pub fn key(&mut self, key: [[self_key]], overwrite: bool) -> String {
+    pub fn key(&mut self, key: Protocol::[[self_key]], overwrite: bool) -> String {
         self.identification.key(key, overwrite);
         self.uuid.to_string()
     }
 
-    pub fn assign(&mut self, key: [[assigned_key]], overwrite: bool) {
+    pub fn assign(&mut self, key: Protocol::[[assigned_key]], overwrite: bool) {
         self.identification.assign(key, overwrite);
     }
 

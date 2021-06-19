@@ -19,11 +19,8 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE: &str = r#"
-#[path = "./traits/observer.rs"]
-pub mod observer;
-
-#[path = "./protocol/protocol.rs"]
+    pub const MODULE: &str =
+r#"#[path = "./protocol/protocol.rs"]
 pub mod protocol;
 
 #[path = "./consumer/consumer.rs"]
@@ -37,10 +34,10 @@ pub mod broadcast;
 
 [[requests_declaration]]
 
-#[path = "./events/deafault_event_connected.rs"]
+#[path = "./events/default_event_connected.rs"]
 pub mod default_connected_event;
 
-#[path = "./events/deafault_event_disconnected.rs"]
+#[path = "./events/default_event_disconnected.rs"]
 pub mod default_disconnected_event;
 
 [[events_declaration]]
@@ -785,19 +782,19 @@ impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {
 r#"#[path = "./observers/[[filename]]"]
 pub mod [[module_name]];"#;
     pub const EVENT_DEC: &str =
-r#"#[path = "[[filename]]"]
+r#"#[path = "./events/[[filename]]"]
 pub mod [[module_name]];"#;
     pub const EVENT_STRUCT_DEC: &str =
-"pub [[module_name]]: UnboundedSender<[[module_name]]::Event>";
+"pub [[module_name]]: UnboundedSender<Protocol::[[reference]]>";
     pub const EVENT_ARG_DEC: &str =
-"[[module_name]]: UnboundedSender<[[module_name]]::Event>";
+"[[module_name]]: UnboundedSender<Protocol::[[reference]]>";
     pub const EVENT_CHANNEL: &str =
 r#"let (tx_[[module_name]], rx_[[module_name]]): (
-    UnboundedSender<[[module_name]]::Event>,
-    UnboundedReceiver<[[module_name]]::Event>,
+    UnboundedSender<Protocol::[[reference]]>,
+    UnboundedReceiver<Protocol::[[reference]]>,
 ) = unbounded_channel();"#;
     pub const EVENT_RECEIVER_DEC: &str =
-"rx_[[module_name]]: UnboundedReceiver<[[module_name]]::Event>";
+"rx_[[module_name]]: UnboundedReceiver<Protocol::[[reference]]>";
     pub const EVENT_TASK: &str = 
 "[[module_name]]::ObserverEvent::listen(ucx.clone(), control.clone(), rx_[[module_name]])";
     pub const REQUEST_DEF: &str = 
@@ -980,7 +977,8 @@ impl RenderProducer {
         for (pos, event) in store.events.iter().enumerate() {
             output = format!("{}{}",
                 output,
-                templates::EVENT_STRUCT_DEC 
+                templates::EVENT_STRUCT_DEC
+                    .replace("[[reference]]", &self.into_rust_path(&event.get_reference()?))
                     .replace("[[module_name]]", &event.as_mod_name()?)
             );
             if pos < store.events.len() - 1 {
@@ -995,7 +993,8 @@ impl RenderProducer {
         for (pos, event) in store.events.iter().enumerate() {
             output = format!("{}{}",
                 output,
-                templates::EVENT_ARG_DEC 
+                templates::EVENT_ARG_DEC
+                    .replace("[[reference]]", &self.into_rust_path(&event.get_reference()?))
                     .replace("[[module_name]]", &event.as_mod_name()?)
             );
             if pos < store.events.len() - 1 {
@@ -1024,7 +1023,8 @@ impl RenderProducer {
         for (pos, event) in store.events.iter().enumerate() {
             output = format!("{}{}",
                 output,
-                templates::EVENT_CHANNEL 
+                templates::EVENT_CHANNEL
+                    .replace("[[reference]]", &self.into_rust_path(&event.get_reference()?))
                     .replace("[[module_name]]", &event.as_mod_name()?)
             );
             if pos < store.events.len() - 1 {
@@ -1067,7 +1067,8 @@ impl RenderProducer {
         for (pos, event) in store.events.iter().enumerate() {
             output = format!("{}{}",
                 output,
-                templates::EVENT_RECEIVER_DEC 
+                templates::EVENT_RECEIVER_DEC
+                    .replace("[[reference]]", &self.into_rust_path(&event.get_reference()?))
                     .replace("[[module_name]]", &event.as_mod_name()?)
             );
             if pos < store.events.len() - 1 {
