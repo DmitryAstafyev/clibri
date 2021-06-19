@@ -33,7 +33,7 @@ pub trait Observer {
         ucx: UCX,
         broadcast: &dyn Fn(Filter, Broadcast) -> Result<(), String>,
     ) -> () {
-        panic!("hanlder method for Connected isn't implemented");
+        panic!("hanlder method for Disconnected isn't implemented");
     }
 }
 
