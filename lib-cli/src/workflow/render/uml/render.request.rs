@@ -1,5 +1,4 @@
 use super::{
-    helpers,
     helpers::{
         render as tools,
     },
@@ -7,13 +6,6 @@ use super::{
         request::{
             Request
         }
-    }
-};
-use std::{
-    fs,
-    path::{
-        Path,
-        PathBuf,
     }
 };
 
@@ -75,17 +67,15 @@ impl RenderRequest {
                     );
                 }
                 output = format!(
-r#"{}== {} ==
-    Producer -> Consumer: {}{}
-"#,
+r#"{}
+== {} ==
+    Producer -> Consumer: {}{}"#,
                     output,
                     name,
                     reference,
                     tools::inject_tabs(1, broadcasts),
                 );
             }
-        } else {
-            output = String::from("\n");
         }
         Ok(output)
     }
