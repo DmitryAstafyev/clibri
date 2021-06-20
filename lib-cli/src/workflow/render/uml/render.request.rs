@@ -60,7 +60,7 @@ impl RenderRequest {
                 };
                 let mut broadcasts: String = String::new();
                 for broadcast in &action.broadcast {
-                    broadcasts = format!("{}\nProducer {} Others: {}",
+                    broadcasts = format!("{}\nProducer {} Consumers: {}",
                         broadcasts,
                         if broadcast.optional { "-->" } else { "->" },
                         broadcast.reference,
