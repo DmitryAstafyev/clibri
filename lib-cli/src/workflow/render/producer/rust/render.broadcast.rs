@@ -22,7 +22,7 @@ mod templates {
 use super::{
     Protocol,
 };
-pub enum Broadcast {[[broadcast]],
+pub enum Broadcast {[[broadcast]]
 }
 "#;
 }
@@ -50,7 +50,7 @@ impl RenderBroadcast {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = String::new();
         for broadcast in broadcasts {
-            output = format!("{}\n{}(Protocol::{})",
+            output = format!("{}\n{}(Protocol::{}),",
                 output,
                 broadcast.reference.replace(".", ""),
                 broadcast.reference.replace(".", "::"),

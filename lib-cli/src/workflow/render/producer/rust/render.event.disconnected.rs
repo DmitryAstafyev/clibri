@@ -52,7 +52,7 @@ impl ObserverEvent {
         broadcast: &dyn Fn(Filter, Vec<u8>) -> Result<(), String>,
     ) -> () {
         Self::handler(uuid, ucx, &(|filter: Filter, message: Broadcast| {
-            broadcast(filter, match message {[[messages]],
+            broadcast(filter, match message {[[messages]]
             })
         }));
     }
@@ -85,7 +85,7 @@ impl RenderEventDisconnected {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut messages: String = String::new();
         for broadcast in broadcasts {
-            messages = format!("{}\nBroadcast::{}(mut msg) => msg.pack(0, None)?", messages, broadcast.reference.replace(".", ""));
+            messages = format!("{}\nBroadcast::{}(mut msg) => msg.pack(0, None)?,", messages, broadcast.reference.replace(".", ""));
         }
         let output = templates::MODULE.replace("[[messages]]", &tools::inject_tabs(4, messages));
         helpers::fs::write(dest, output, true)

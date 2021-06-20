@@ -4,4 +4,5 @@ use super::{
 };
 pub enum Broadcast {    
     EventsUserDisconnected(Protocol::Events::UserDisconnected),
+    EventsMessage(Protocol::Events::Message),
 }

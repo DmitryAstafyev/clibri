@@ -34,6 +34,7 @@ impl ObserverEvent {
         Self::handler(uuid, ucx, &(|filter: Filter, message: Broadcast| {
             broadcast(filter, match message {                
                 Broadcast::EventsUserDisconnected(mut msg) => msg.pack(0, None)?,
+                Broadcast::EventsMessage(mut msg) => msg.pack(0, None)?,Other
             })
         }));
     }

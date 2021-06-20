@@ -374,6 +374,16 @@ impl DisconnectedEvent {
                             )) {
                                 println!("Fail to send broadcasting. Error: {}", e);
                             }
+                            if let Err(e) = broadcast(filter.clone(), producer::broadcast::Broadcast::EventsMessage(
+                                producer::protocol::Events::Message {
+                                    user: "".to_owned(),
+                                    message: msg,
+                                    timestamp: tm.as_secs(),
+                                    uuid: uuid.to_string(),
+                                }
+                            )) {
+                                println!("Fail to send broadcasting. Error: {}", e);
+                            }
                             // match (producer::protocol::Events::UserDisconnected {
                             //     username: user.name,
                             //     uuid: uuid.to_string(),

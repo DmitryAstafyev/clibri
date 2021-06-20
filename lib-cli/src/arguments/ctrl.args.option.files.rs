@@ -15,8 +15,11 @@ use super::{
         typescript::TypescriptRender,
     },
     workflow_render::{
+        uml::{
+            UmlRender,
+        },
         render as workflow_render,
-    }
+    },
 };
 
 use std::{
@@ -45,6 +48,8 @@ mod keys {
     pub const CD: &str = "-cd";
     pub const PRODUCER_DEST: &str = "--producer-dest";
     pub const PD: &str = "-pd";
+    pub const UML: &str = "--uml";
+    pub const U: &str = "-u";
 }
 
 pub struct ArgsOptionFiles {
@@ -54,6 +59,7 @@ pub struct ArgsOptionFiles {
     dest_producer: Option<PathBuf>,
     dest_rs: Option<PathBuf>,
     dest_ts: Option<PathBuf>,
+    dest_uml: Option<PathBuf>,
     errs: Vec<String>,
 }
 
@@ -67,6 +73,7 @@ impl ArgsOptionFiles {
             dest_producer: None,
             dest_rs: None,
             dest_ts: None,
+            dest_uml: None,
             errs: vec![],
         }
     }
@@ -132,6 +139,16 @@ impl ArgsOptionFiles {
             ));
         } else {
             self.dest_producer = Some(path);
+        }
+    }
+
+    fn set_dest_uml(&mut self, path: PathBuf, overwrite: bool) {
+        if !overwrite && path.exists() {
+            self.set_err(format!("UML scheme destination file already exists. Use key --overwrite (--ow or -o) to overwrite destination file. File: {}",
+                path.as_path().display().to_string(),
+            ));
+        } else {
+            self.dest_uml = Some(path);
         }
     }
 
@@ -231,6 +248,14 @@ impl CtrlArg for ArgsOptionFiles {
                 options.set_dest_producer(Path::new(pwd).join(arg_str_dest));
             }
         }
+        if let Some(dest_index) = args
+            .iter()
+            .position(|arg| arg == keys::UML || arg == keys::U)
+        {
+            if let Some(arg_str_dest) = args.get(dest_index + 1) {
+                options.set_dest_uml(Path::new(pwd).join(arg_str_dest), overwrite);
+            }
+        }
         options
     }
 
@@ -282,17 +307,28 @@ impl CtrlArg for ArgsOptionFiles {
                         t_parsing.elapsed().as_millis(),
                         src
                     );
+                    if self.workflow.is_none() && self.dest_uml.is_some() {
+                        return Err(String::from("UML scheme can be created only based on workflow scheme. Please define path to workflow scheme"));
+                    }
                     if let Some(workflow_path) = self.workflow.as_ref() {
                         // TODO: remove workflow dest folder
                         let mut workflow: WorkflowParser = WorkflowParser::new(workflow_path.to_owned());
                         match workflow.parse(&mut protocol_store) {
                             Ok(workflow_store) => {
-                                workflow_render(
-                                    self.dest_consumer.clone(),
-                                    self.dest_producer.clone(),
-                                    workflow_store,
-                                    &mut protocol_store
-                                )?;
+                                if let Some(uml_path) = self.dest_uml.as_ref() {
+                                    (UmlRender::new()).render(
+                                        uml_path,
+                                        &workflow_store,
+                                        &mut protocol_store,
+                                    )?;
+                                } else {
+                                    workflow_render(
+                                        self.dest_consumer.clone(),
+                                        self.dest_producer.clone(),
+                                        workflow_store,
+                                        &mut protocol_store
+                                    )?;
+                                }
                             },
                             Err(err) => {
                                 return Err(err);
@@ -347,7 +383,7 @@ impl CtrlArg for ArgsOptionFiles {
     }
 
     fn get_help(&self) -> String {
-        format!("{}\n{}\n{}\n{}\n{}\n{}",
+        format!("{}\n{}\n{}\n{}\n{}\n{}\n{}",
             format!("{}{}",
                 helpers::output::keys(&format!("{} ({}, {})", keys::SOURCE, keys::SRC, keys::S)),
                 helpers::output::desk("[required] path to source file. Protocol file with description messages."),
@@ -371,6 +407,10 @@ impl CtrlArg for ArgsOptionFiles {
             format!("{}{}",
                 helpers::output::keys(&format!("{} ({})", keys::PRODUCER_DEST, keys::PD)),
                 helpers::output::desk("path to destination for producer's code"),
+            ),
+            format!("{}{}",
+                helpers::output::keys(&format!("{} ({})", keys::UML, keys::U)),
+                helpers::output::desk("path to destination of UML scheme"),
             )
         )
     }
@@ -386,6 +426,7 @@ pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
             vec![keys::DESTINATION_TS, keys::DEST_TS, keys::TS],
             vec![keys::CONSUMER_DEST, keys::CD],
             vec![keys::PRODUCER_DEST, keys::PD],
+            vec![keys::UML, keys::U],
         ];
         for sub_keys in keys {
             if let Some(index) = args
