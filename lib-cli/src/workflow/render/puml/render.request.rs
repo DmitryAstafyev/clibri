@@ -13,7 +13,7 @@ mod templates {
     pub const MODULE: &str = 
 r#"group [[name]]
     Consumer -> Producer: [[request]]
-    Producer -->x Consumer: [[error]][[conclusions]]
+    Producer -->x Consumer: <font color=red>[[error]][[conclusions]]
 end"#;
 }
 
@@ -76,6 +76,8 @@ r#"{}
                     tools::inject_tabs(1, broadcasts),
                 );
             }
+        } else {
+            output = format!("\nProducer -> Consumer: {}", request.get_response()?);
         }
         Ok(output)
     }

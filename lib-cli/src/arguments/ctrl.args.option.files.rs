@@ -15,8 +15,8 @@ use super::{
         typescript::TypescriptRender,
     },
     workflow_render::{
-        uml::{
-            UmlRender,
+        puml::{
+            PumlRender,
         },
         render as workflow_render,
     },
@@ -48,8 +48,8 @@ mod keys {
     pub const CD: &str = "-cd";
     pub const PRODUCER_DEST: &str = "--producer-dest";
     pub const PD: &str = "-pd";
-    pub const UML: &str = "--uml";
-    pub const U: &str = "-u";
+    pub const PUML: &str = "--puml";
+    pub const D: &str = "-d";
 }
 
 pub struct ArgsOptionFiles {
@@ -144,7 +144,7 @@ impl ArgsOptionFiles {
 
     fn set_dest_uml(&mut self, path: PathBuf, overwrite: bool) {
         if !overwrite && path.exists() {
-            self.set_err(format!("UML scheme destination file already exists. Use key --overwrite (--ow or -o) to overwrite destination file. File: {}",
+            self.set_err(format!("PUML scheme destination file already exists. Use key --overwrite (--ow or -o) to overwrite destination file. File: {}",
                 path.as_path().display().to_string(),
             ));
         } else {
@@ -250,7 +250,7 @@ impl CtrlArg for ArgsOptionFiles {
         }
         if let Some(dest_index) = args
             .iter()
-            .position(|arg| arg == keys::UML || arg == keys::U)
+            .position(|arg| arg == keys::PUML || arg == keys::D)
         {
             if let Some(arg_str_dest) = args.get(dest_index + 1) {
                 options.set_dest_uml(Path::new(pwd).join(arg_str_dest), overwrite);
@@ -308,7 +308,7 @@ impl CtrlArg for ArgsOptionFiles {
                         src
                     );
                     if self.workflow.is_none() && self.dest_uml.is_some() {
-                        return Err(String::from("UML scheme can be created only based on workflow scheme. Please define path to workflow scheme"));
+                        return Err(String::from("PUML scheme can be created only based on workflow scheme. Please define path to workflow scheme"));
                     }
                     if let Some(workflow_path) = self.workflow.as_ref() {
                         // TODO: remove workflow dest folder
@@ -316,7 +316,7 @@ impl CtrlArg for ArgsOptionFiles {
                         match workflow.parse(&mut protocol_store) {
                             Ok(workflow_store) => {
                                 if let Some(uml_path) = self.dest_uml.as_ref() {
-                                    (UmlRender::new()).render(
+                                    (PumlRender::new()).render(
                                         uml_path,
                                         &workflow_store,
                                         &mut protocol_store,
@@ -409,8 +409,8 @@ impl CtrlArg for ArgsOptionFiles {
                 helpers::output::desk("path to destination for producer's code"),
             ),
             format!("{}{}",
-                helpers::output::keys(&format!("{} ({})", keys::UML, keys::U)),
-                helpers::output::desk("path to destination of UML scheme"),
+                helpers::output::keys(&format!("{} ({})", keys::PUML, keys::D)),
+                helpers::output::desk("path to destination of PUML scheme"),
             )
         )
     }
@@ -426,7 +426,7 @@ pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
             vec![keys::DESTINATION_TS, keys::DEST_TS, keys::TS],
             vec![keys::CONSUMER_DEST, keys::CD],
             vec![keys::PRODUCER_DEST, keys::PD],
-            vec![keys::UML, keys::U],
+            vec![keys::PUML, keys::D],
         ];
         for sub_keys in keys {
             if let Some(index) = args

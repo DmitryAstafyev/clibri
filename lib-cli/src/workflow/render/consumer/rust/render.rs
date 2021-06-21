@@ -5,7 +5,6 @@ use super::{
         },
     },
     Protocol,
-    ProtocolRender,
     ProtocolRustRender,
 };
 use super::{ ImplementationRender };

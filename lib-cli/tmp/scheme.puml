@@ -1,34 +1,39 @@
 @startuml
 
+    collections Consumers as Consumers
+    control Controller as Controller
+    
     group UserLoginRequest
         Consumer -> Producer: UserLogin.Request
-        Producer -->x Consumer: UserLogin.Err    
+        Producer -->x Consumer: <font color=red>UserLogin.Err    
         == Accept ==
             Producer -> Consumer: UserLogin.Accepted    
-            Producer -> Others: Events.UserConnected
-            Producer -> Others: Events.Message
+            Producer -> Consumers: Events.UserConnected
+            Producer -> Consumers: Events.Message
         == Deny ==
             Producer -> Consumer: UserLogin.Denied    
     end
 
     group UsersRequest
         Consumer -> Producer: Users.Request
-        Producer -->x Consumer: Users.Err    
+        Producer -->x Consumer: <font color=red>Users.Err    
+        Producer -> Consumer: Users.Response
     end
 
     group MessageRequest
         Consumer -> Producer: Message.Request
-        Producer -->x Consumer: Message.Err    
+        Producer -->x Consumer: <font color=red>Message.Err    
         == Accept ==
             Producer -> Consumer: Message.Accepted    
-            Producer -> Others: Events.Message
+            Producer -> Consumers: Events.Message
         == Deny ==
             Producer -> Consumer: Message.Denied    
     end
 
     group MessagesRequest
         Consumer -> Producer: Messages.Request
-        Producer -->x Consumer: Messages.Err    
+        Producer -->x Consumer: <font color=red>Messages.Err    
+        Producer -> Consumer: Messages.Response
     end
 
     group ServerEvents.UserKickOff

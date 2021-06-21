@@ -25,16 +25,24 @@ use std::{
         Path,
     }
 };
+mod templates {
+    pub const MODULE: &str = 
+r#"@startuml
 
-pub struct UmlRender {
+    collections Consumers as Consumers
+    control Controller as Controller
+    [[content]]
+@enduml"#;
+}
+pub struct PumlRender {
 }
 
-impl UmlRender {
+impl PumlRender {
 }
 
-impl UmlRender {
+impl PumlRender {
     pub fn new() -> Self {
-        UmlRender {}
+        PumlRender {}
     }
 
     pub fn render(
@@ -43,7 +51,7 @@ impl UmlRender {
         store: &WorkflowStore,
         _protocol: &mut Protocol,
     ) -> Result<(), String> {
-        let mut output: String = String::from("@startuml\n");
+        let mut output: String = String::new();
         for request in &store.requests {
             output = format!("{}\n{}\n",
                 output,
@@ -60,7 +68,7 @@ impl UmlRender {
             output,
             tools::inject_tabs(1, RenderBroadcasts::new().render(&store.broadcast)?),
         );
-        output = format!("{}\n@enduml", output);
+        output = templates::MODULE.replace("[[content]]", &output);
         helpers::fs::write(dest.to_path_buf(), output, true)
     }
 }

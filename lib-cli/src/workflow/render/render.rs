@@ -4,8 +4,8 @@ pub mod producer;
 #[path = "./consumer/render.rs"]
 pub mod consumer;
 
-#[path = "./uml/render.rs"]
-pub mod uml;
+#[path = "./puml/render.rs"]
+pub mod puml;
 
 use super::{
     helpers,

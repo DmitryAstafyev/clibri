@@ -11,7 +11,6 @@ use super::{
         },
     },
     Protocol,
-    ProtocolRender,
     ProtocolTypescriptRender,
 };
 use super::{ ImplementationRender };
