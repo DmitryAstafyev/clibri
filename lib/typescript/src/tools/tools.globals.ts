@@ -1,7 +1,9 @@
-declare var window: Window | undefined;
-declare var global: NodeJS.Global | undefined;
+declare type Window = any;
 
-export default function globals(): Window | NodeJS.Global | Error {
+declare var window: Window | undefined;
+declare var global: any | undefined;
+
+export default function globals(): Window | any | Error {
     if (typeof window === 'object' && window !== null) {
         return window;
     } else if (typeof global === 'object' && global !== null) {

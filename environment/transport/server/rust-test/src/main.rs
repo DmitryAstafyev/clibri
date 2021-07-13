@@ -88,7 +88,7 @@ pub mod tools {
 
 }
 
-const CLIENTS: usize = 20000;
+const CLIENTS: usize = 10000;
 
 async fn connect_client() -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
     match connect_async("ws://127.0.0.1:8080").await {

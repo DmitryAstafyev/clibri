@@ -5,6 +5,7 @@ import globals from './tools/tools.globals';
 import { init as initBrowserSupport } from './tools/tools.browser';
 
 export { Client, IClientSubjects } from './interfaces/client.interface';
+export { Server, IServerSubjects, IServerReceivedEvent, IServerError, EServerErrorContext, EServerErrorType } from './interfaces/server.interface';
 export { Logger, ELogLevel, DefaultLogger } from './interfaces/logger.interface';
 
 export { Subject, Subscription, guid, globals };

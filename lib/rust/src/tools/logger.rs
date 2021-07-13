@@ -15,6 +15,7 @@ pub struct GlobalLoggerSettings {
     last: u128,
 }
 
+#[allow(clippy::new_without_default)]
 impl GlobalLoggerSettings {
 
     pub fn new() -> Self {

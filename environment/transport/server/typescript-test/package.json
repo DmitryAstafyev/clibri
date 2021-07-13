@@ -1,5 +1,5 @@
 {
-  "name": "fiber-websocket-client",
+  "name": "fiber-websocket-server",
   "version": "0.0.1",
   "description": "Typescript implementation for Fiber's Protocol",
   "main": "./dist/index.js",
@@ -14,23 +14,22 @@
   "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
   "license": "MIT",
   "devDependencies": {
-    "@types/jasmine": "^3.5.4",
-    "@types/node": "^14.0.26",
-    "chai": "^4.2.0",
-    "jasmine": "^3.5.0",
-    "jasmine-core": "^3.5.0",
-    "jasmine-ts": "^0.3.0",
-    "source-map-loader": "^1.0.1",
-    "ts-loader": "^8.0.1",
-    "ts-node": "^8.6.2",
+    "@types/node": "^16.0.0",
+    "@types/ws": "^7.4.5",
+    "source-map-loader": "^3.0.0",
+    "ts-loader": "^9.2.3",
+    "ts-node": "^10.0.0",
     "tslint": "^6.0.0",
-    "typescript": "^3.5.3",
-    "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11"
+    "typescript": "^4.3.5",
+    "webpack": "^5.42.0",
+    "webpack-cli": "^4.7.2"
   },
   "dependencies": {
     "build": "^0.1.4",
-    "fiber": "file:../../../../lib/typescript"
+    "cli-progress": "^3.9.0",
+    "fiber": "file:../../../../lib/typescript",
+    "fiber-websocket-server": "file:../typescript",
+    "ws": "^7.5.1"
   },
   "repository": {
     "type": "git",

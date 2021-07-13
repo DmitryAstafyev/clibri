@@ -1,5 +1,6 @@
 import { Buffer } from 'buffer';
 
+declare class Window {}
 declare var window: Window | undefined;
 
 const INJECTING_BUFFER_FLAG = '___INJECTING_BUFFER_FLAG___';

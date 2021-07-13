@@ -115,7 +115,7 @@ export class Connection extends Client {
             this._close();
             this._subjects.disconnected.emit();
         },
-        message: (event: MessageEvent) => { 
+        message: (event: MessageEvent) => {
             if (!(event.data instanceof Blob)) {
                 this._subjects.error.emit(new Error(this._logger.debug(`Expecting only Blob data`)));
                 return;

@@ -1,18 +1,13 @@
 module.exports = {
     entry: "./src/index.ts",
     mode: "production",
+    target: "node",
     output: {
         filename: "index.js",
         path: __dirname + "/dist",
+        library: 'fiber-websocket-server',
         libraryTarget: 'umd',
-        library: 'fiber',
-        umdNamedDefine: true,
         globalObject: 'this',
-    },
-    node: {
-        global: false,
-        __filename: false,
-        __dirname: false,
     },
     // Enable sourcemaps for debugging webpack's output.
     devtool: "source-map",
