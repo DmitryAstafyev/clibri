@@ -20,7 +20,6 @@ use std::{
 mod templates {
     pub const MODULE: &str = r#"
 use super::{
-    tools,
     Control,
     Protocol,
     Protocol::PackingStruct,
@@ -31,9 +30,8 @@ use tokio::{
         UnboundedReceiver,
     }
 };
-use fiber::{
-    logger::Logger,
-};
+use fiber::env::logs;
+use log::{error};
 
 pub enum Broadcast {
 [[broadcast]],
@@ -77,10 +75,10 @@ impl ObserverEvent {
 [[broadcasts_pack]],
                     } {
                         Ok(buffer) => if let Err(err) = control.send(filter, buffer) {
-                            tools::logger.err(&format!("[event: [[event_ref]]] fail to send message due error: {}", err));
+                            error!(target: logs::targets::PRODUCER, "[event: [[event_ref]]] fail to send message due error: {}", err);
                         },
                         Err(err) => {
-                            tools::logger.err(&format!("[event: [[event_ref]]] fail to get a buffer due error: {}", err));
+                            error!(target: logs::targets::PRODUCER, "[event: [[event_ref]]] fail to get a buffer due error: {}", err);
                         },
                     }
                 }

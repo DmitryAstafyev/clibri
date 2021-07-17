@@ -6,10 +6,10 @@ use super::{
     stat::Stat,
     connection::Connection,
     handshake::Handshake as HandshakeInterface,
-    tools,
 };
 use fiber::{
-    logger::Logger,
+    env,
+    env::logs,
     server::{
         errors::Errors,
         events::Events,
@@ -17,6 +17,7 @@ use fiber::{
         control::Control as ServerControl
     },
 };
+use log::{debug, warn, error, info};
 use std::collections::HashMap;
 use std::sync::{
     Arc,
@@ -69,6 +70,7 @@ pub struct Server {
 impl Server {
 
     pub fn new(addr: String) -> Self {
+        env::logs::init();
         Self {
             addr,
             controlls: Arc::new(RwLock::new(HashMap::new())),
@@ -97,9 +99,9 @@ impl Interface for Server {
         let addr: String = self.addr.clone();
         let stat_ref = self.stat.clone();
         let controlls_ref = self.controlls.clone();
-        tools::logger.verb("[main]: will create main task");
+        info!(target: logs::targets::SERVER, "[main]: will create main task");
         let task = async move {
-            tools::logger.verb("[main]: runtime is created");
+            info!(target: logs::targets::SERVER, "[main]: runtime is created");
             let events_cl = events.clone();
             let stat = stat_ref.clone();
             let send_event = move |event: Events| {
@@ -109,7 +111,7 @@ impl Interface for Server {
                     _ => {}
                 };
                 if let Err(e) = events_cl.send(event) {
-                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                    warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
                 }
             };
             let (tx_tcp_stream, mut rx_tcp_stream): (
@@ -122,13 +124,12 @@ impl Interface for Server {
             ) = channel();
             let stat = stat_ref.clone();
             let streams_task: JoinHandle<()> = spawn(async move {
-                tools::logger.verb("[task: streams]:: started");
+                info!(target: logs::targets::SERVER, "[task: streams]:: started");
                 let listener = match TcpListener::bind(addr).await {
                     Ok(listener) => listener,
                     Err(e) => {
-                        send_event(Events::ServerError(Errors::Create(
-                            tools::logger.warn(&format!("Fail to start server. Error: {}", e)),
-                        )));
+                        warn!(target: logs::targets::SERVER, "Fail to start server. Error: {}", e);
+                        send_event(Events::ServerError(Errors::Create(format!("{}", e))));
                         return;
                     }
                 };
@@ -138,34 +139,32 @@ impl Interface for Server {
                         loop {
                             let stream = match listener.accept().await {
                                 Ok((stream, _addr)) => {
-                                    tools::logger.debug(&format!("Getting request to connect from: {}", _addr));
+                                    debug!(target: logs::targets::SERVER, "Getting request to connect from: {}", _addr);
                                     if let Ok(mut stat) = stat.write() { stat.connecting(); }
                                     // TODO: middleware to confirm acception
                                     stream
                                 },
                                 Err(e) => {
-                                    send_event(Events::ServerError(Errors::AcceptStream(
-                                        tools::logger.warn(&format!("Cannot accept connection. Error: {}", e)),
-                                    )));
+                                    warn!(target: logs::targets::SERVER, "Cannot accept connection. Error: {}", e);
+                                    send_event(Events::ServerError(Errors::AcceptStream(format!("{}", e))));
                                     continue;
                                 }
                             };
                             if let Err(e) = tx_tcp_stream.send(stream) {
-                                send_event(Events::ServerError(Errors::AcceptStream(
-                                    tools::logger.warn(&format!("Cannot share stream. Error: {}", e)),
-                                )));
+                                warn!(target: logs::targets::SERVER, "Cannot share stream. Error: {}", e);
+                                send_event(Events::ServerError(Errors::AcceptStream(format!("{}", e))));
                                 break;
                             }
                         }
                     } => {
-                        tools::logger.warn("TcpListener listener task was finished by error");
+                        warn!(target: logs::targets::SERVER, "TcpListener listener task was finished by error");
                     },
                     _ = rx_streams_task_sd => {
-                        tools::logger.warn("TcpListener listener task was finished by shutdown");
+                        warn!(target: logs::targets::SERVER, "TcpListener listener task was finished by shutdown");
                     }
                 };
                 drop(listener);
-                tools::logger.verb("[task: streams]:: finished");
+                info!(target: logs::targets::SERVER, "[task: streams]:: finished");
             });
             let events_cl = events.clone();
             let stat = stat_ref.clone();
@@ -176,7 +175,7 @@ impl Interface for Server {
                     _ => {}
                 };
                 if let Err(e) = events_cl.send(event) {
-                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                    warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
                 }
             };
             let controlls = controlls_ref.clone();
@@ -191,29 +190,28 @@ impl Interface for Server {
                 Receiver<()>,
             ) = channel();
             let accepting_task: JoinHandle<()> = spawn(async move {
-                tools::logger.verb("[task: accepting]:: started");
+                info!(target: logs::targets::SERVER, "[task: accepting]:: started");
                 select! {
                     _ = async {
                         while let Some(stream) = rx_tcp_stream.recv().await {
-                            tools::logger.debug("New stream has been gotten");
+                            debug!(target: logs::targets::SERVER, "New stream has been gotten");
                             let ws = match accept_hdr_async(stream, |req: &Request, response: Response| {
                                 Handshake::accept(req, response)
                             }).await {
                                 Ok(ws) => ws,
                                 Err(e) => {
-                                    tools::logger.warn(&format!("Fail to accept stream due error: {:?}", e));
+                                    warn!(target: logs::targets::SERVER, "Fail to accept stream due error: {:?}", e);
                                     continue;
                                 }
                             };
-                            tools::logger.debug("Connection has been accepted");
+                            debug!(target: logs::targets::SERVER, "Connection has been accepted");
                             if let Ok(mut stat) = stat.write() { stat.connected(); }
                             let uuid = Uuid::new_v4();
                             let control = match Connection::new(uuid).attach(ws, connection_events.clone(), tx_messages.clone()).await {
                                 Ok(control) => control,
                                 Err(e) => {
-                                    send_event(Events::ServerError(Errors::CreateWS(
-                                        tools::logger.warn(&format!("Cannot create ws connection. Error: {}", e)),
-                                    )));
+                                    warn!(target: logs::targets::SERVER, "Cannot create ws connection. Error: {}", e);
+                                    send_event(Events::ServerError(Errors::CreateWS(format!("{}", e))));
                                     continue;
                                 }
                             };
@@ -221,25 +219,24 @@ impl Interface for Server {
                                 Ok(mut controlls) => {
                                     controlls.entry(uuid).or_insert(control);
                                     if let Ok(mut stat) = stat.write() { stat.alive(controlls.len()); }
-                                    tools::logger.debug("Controll of connection has been added");
+                                    debug!(target: logs::targets::SERVER, "Controll of connection has been added");
                                     send_event(Events::Connected(uuid));
                                 },
                                 Err(e) => {
-                                    send_event(Events::ServerError(Errors::CreateWS(
-                                        tools::logger.err(&format!("Fail get controlls due error: {}", e)),
-                                    )));
+                                    error!(target: logs::targets::SERVER, "Fail get controlls due error: {}", e);
+                                    send_event(Events::ServerError(Errors::CreateWS(format!("{}", e))));
                                     continue;
                                 }
                             };
                         }
                     } => {
-                        tools::logger.verb("[task: accepting]:: natural finishing");
+                        info!(target: logs::targets::SERVER, "[task: accepting]:: natural finishing");
                     },
                     _ = rx_accepting_task_sd => {
-                        tools::logger.verb("[task: accepting]:: shutdown called");
+                        info!(target: logs::targets::SERVER, "[task: accepting]:: shutdown called");
                     }
                 };
-                tools::logger.verb("[task: accepting]:: finished");
+                info!(target: logs::targets::SERVER, "[task: accepting]:: finished");
             });
             let controlls = controlls_ref.clone();
             let events_cl = events.clone();
@@ -251,7 +248,7 @@ impl Interface for Server {
                     _ => {}
                 };
                 if let Err(e) = events_cl.send(event) {
-                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                    warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
                 }
             };
             let stat = stat_ref.clone();
@@ -260,7 +257,7 @@ impl Interface for Server {
                 Receiver<()>,
             ) = channel();
             let messages_task: JoinHandle<()> = spawn(async move {
-                tools::logger.verb("[task: messages]:: started");
+                info!(target: logs::targets::SERVER, "[task: messages]:: started");
                 select! {
                     _ = async {
                         while let Some(msg) = rx_messages.recv().await {
@@ -270,32 +267,35 @@ impl Interface for Server {
                                     send_event(Events::Received(uuid, buffer))
                                 },
                                 Messages::Disconnect { uuid, code } => {
-                                    tools::logger.debug(&format!("{}:: Client wants to disconnect (code: {:?})", uuid, code));
+                                    debug!(target: logs::targets::SERVER, "{}:: Client wants to disconnect (code: {:?})", uuid, code);
                                     if let Ok(mut stat) = stat.write() { stat.disconnected(); }
                                     match controlls.write() {
                                         Ok(mut controlls) => {
                                             if let Some(_control) = controlls.remove(&uuid) {
-                                                tools::logger.debug(&format!("{}:: Channel of connection has been removed", uuid));
+                                                debug!(target: logs::targets::SERVER, "{}:: Channel of connection has been removed", uuid);
                                                 if let Ok(mut stat) = stat.write() { stat.alive(controlls.len()); }
                                                 send_event(Events::Disconnected(uuid));
                                             } else {
-                                                tools::logger.err(&format!("{}:: Fail to find channel of connection to remove it", uuid));
+                                                error!(target: logs::targets::SERVER, "{}:: Fail to find channel of connection to remove it", uuid);
                                             }
                                         },
-                                        Err(e) => send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Cannot get access to controllers. Error: {}", uuid, e)))),
+                                        Err(e) => {
+                                            error!(target: logs::targets::SERVER, "{}:: Cannot get access to controllers. Error: {}", uuid, e);
+                                            send_event(Events::Error(Some(uuid), format!("{}", e)))
+                                        },
                                     };
                                 },
                                 Messages::Error { uuid, error } => send_event(Events::Error(Some(uuid), format!("{:?}", error).to_string()))
                             }
                         }
                     } => {
-                        tools::logger.verb("[task: messages]:: natural finishing");
+                        info!(target: logs::targets::SERVER, "[task: messages]:: natural finishing");
                     },
                     _ = rx_messages_task_sd => {
-                        tools::logger.verb("[task: messages]:: shutdown called");
+                        info!(target: logs::targets::SERVER, "[task: messages]:: shutdown called");
                     }
                 };
-                tools::logger.verb("[task: messages]:: finished");
+                info!(target: logs::targets::SERVER, "[task: messages]:: finished");
             });
             let events_cl = events.clone();
             let stat = stat_ref.clone();
@@ -306,7 +306,7 @@ impl Interface for Server {
                     _ => {}
                 };
                 if let Err(e) = events_cl.send(event) {
-                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                    warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
                 }
             };
             let stat = stat_ref.clone();
@@ -316,7 +316,7 @@ impl Interface for Server {
             ) = channel();
             let controlls = controlls_ref.clone();
             let sender_task: JoinHandle<()> = spawn(async move {
-                tools::logger.verb("[task: sender]:: started");
+                info!(target: logs::targets::SERVER, "[task: sender]:: started");
                 select! {
                     _ = async {
                         while let Some((buffer, uuid)) = sending.recv().await {
@@ -326,35 +326,34 @@ impl Interface for Server {
                                     if let Some(uuid) = uuid {
                                         if let Some(control) = controlls.get_mut(&uuid) {
                                             if let Err(e) = control.send(Control::Send(buffer)) {
-                                                send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e))))
-                                            } else {
-                                                if let Ok(mut stat) = stat.write() { stat.sent_bytes(len); }
-                                            }
+                                                error!(target: logs::targets::SERVER, "{}:: Fail to close connection due error: {}", uuid, e);
+                                                send_event(Events::Error(Some(uuid), format!("{}", e)))
+                                            } else if let Ok(mut stat) = stat.write() { stat.sent_bytes(len); }
                                         }
                                     } else {
                                         for (uuid, control) in controlls.iter_mut() {
                                             if let Err(e) = control.send(Control::Send(buffer.clone())) {
-                                                send_event(Events::Error(Some(*uuid), tools::logger.err(&format!("{}:: Fail to close connection due error: {}", uuid, e))))
-                                            } else {
-                                                if let Ok(mut stat) = stat.write() { stat.sent_bytes(len); }
-                                            }
+                                                error!(target: logs::targets::SERVER, "{}:: Fail to close connection due error: {}", uuid, e);
+                                                send_event(Events::Error(Some(*uuid), format!("{}", e)))
+                                            } else if let Ok(mut stat) = stat.write() { stat.sent_bytes(len); }
                                         }
                                     }               
                                 },
                                 Err(e) => {
-                                    send_event(Events::Error(None, tools::logger.err(&format!("Cannot get access to controllers. Error: {}", e))));
+                                    error!(target: logs::targets::SERVER, "Cannot get access to controllers. Error: {}", e);
+                                    send_event(Events::Error(None, format!("{}", e)));
                                     break;
                                 },
                             };
                         }                       
                     } => {
-                        tools::logger.verb("[task: sender]:: natural finishing");
+                        info!(target: logs::targets::SERVER, "[task: sender]:: natural finishing");
                     },
                     _ = rx_sender_task_sd => {
-                        tools::logger.verb("[task: sender]:: shutdown called");
+                        info!(target: logs::targets::SERVER, "[task: sender]:: shutdown called");
                     }
                 };
-                tools::logger.verb("[task: sender]:: finished");
+                info!(target: logs::targets::SERVER, "[task: sender]:: finished");
             });
 
             let controlls = controlls_ref.clone();
@@ -367,19 +366,19 @@ impl Interface for Server {
                     _ => {}
                 };
                 if let Err(e) = events_cl.send(event) {
-                    tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                    warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
                 }
             };
             let control_task: JoinHandle<()> = spawn(async move {
-                tools::logger.verb("[task: control]:: started");
+                info!(target: logs::targets::SERVER, "[task: control]:: started");
                 if let Some(mut control) = control {
                     while let Some(msg) = control.recv().await { match msg {
                         ServerControl::Shutdown => {
-                            tools::logger.debug("ServerControl::Shutdown has been called");
-                            if let Err(e) = tx_streams_task_sd.send(()) { tools::logger.err(&format!("fail call shutdown for streams task. Error: {:?}", e)); }
-                            if let Err(e) = tx_accepting_task_sd.send(()) { tools::logger.err(&format!("fail call accepting for streams task. Error: {:?}", e)); }
-                            if let Err(e) = tx_messages_task_sd.send(()) { tools::logger.err(&format!("fail call messages for streams task. Error: {:?}", e)); }
-                            if let Err(e) = tx_sender_task_sd.send(()) { tools::logger.err(&format!("fail call sender for streams task. Error: {:?}", e)); }
+                            debug!(target: logs::targets::SERVER, "ServerControl::Shutdown has been called");
+                            if let Err(e) = tx_streams_task_sd.send(()) { error!(target: logs::targets::SERVER, "fail call shutdown for streams task. Error: {:?}", e); }
+                            if let Err(e) = tx_accepting_task_sd.send(()) { error!(target: logs::targets::SERVER, "fail call accepting for streams task. Error: {:?}", e); }
+                            if let Err(e) = tx_messages_task_sd.send(()) { error!(target: logs::targets::SERVER, "fail call messages for streams task. Error: {:?}", e); }
+                            if let Err(e) = tx_sender_task_sd.send(()) { error!(target: logs::targets::SERVER, "fail call sender for streams task. Error: {:?}", e); }
                             break;
                         },
                         ServerControl::Disconnect(uuid) => {
@@ -387,43 +386,44 @@ impl Interface for Server {
                                 Ok(controlls) => {
                                     if let Some(control) = controlls.get(&uuid) {
                                         if let Err(e) = control.send(Control::Disconnect) {
-                                            send_event(Events::Error(Some(uuid), tools::logger.err(&format!("{}:: Fail to send close connection command due error: {}", uuid, e))))
+                                            error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
+                                            send_event(Events::Error(Some(uuid), format!("{}", e)))
                                         }
                                     } else {
-                                        send_event(Events::ServerError(Errors::CreateWS(
-                                            tools::logger.err(&format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)),
-                                        )))
+                                        error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
+                                        send_event(Events::ServerError(Errors::CreateWS(format!("Command Disconnect has been gotten. But cannot find client: {}", uuid))));
                                     }
                                 },
-                                Err(e) => send_event(Events::ServerError(Errors::CreateWS(
-                                    tools::logger.err(&format!("Fail get controlls due error: {}", e)),
-                                )))
+                                Err(e) => {
+                                    error!(target: logs::targets::SERVER, "Fail get controlls due error: {}", e);
+                                    send_event(Events::ServerError(Errors::CreateWS(format!("{}", e))));
+                                }
                             };
                         }
                     } }
                 }
-                tools::logger.verb("[task: control]:: finished");
+                info!(target: logs::targets::SERVER, "[task: control]:: finished");
             });
             select! {
                 _ = streams_task => {
-                    tools::logger.debug("[main]:: finished on streams_task");
+                    debug!(target: logs::targets::SERVER, "[main]:: finished on streams_task");
                 },
                 _ = accepting_task => {
-                    tools::logger.debug("[main]:: finished on accepting_task");
+                    debug!(target: logs::targets::SERVER, "[main]:: finished on accepting_task");
                 },
                 _ = messages_task => {
-                    tools::logger.debug("[main]:: finished on messages_task");
+                    debug!(target: logs::targets::SERVER, "[main]:: finished on messages_task");
                 },
                 _ = sender_task => {
-                    tools::logger.debug("[main]:: finished on sender_task");
+                    debug!(target: logs::targets::SERVER, "[main]:: finished on sender_task");
                 },
                 _ = control_task => {
-                    tools::logger.debug("[main]:: finished on control_task");
+                    debug!(target: logs::targets::SERVER, "[main]:: finished on control_task");
                 },
             };
-            tools::logger.verb("[main]:: finished");
+            info!(target: logs::targets::SERVER, "[main]:: finished");
             if let Err(e) = events.send(Events::Shutdown) {
-                tools::logger.warn(&format!("Cannot send Events::Shutdown . Error: {}", e));
+                warn!(target: logs::targets::SERVER, "Cannot send Events::Shutdown . Error: {}", e);
             }
             Ok(())
         };

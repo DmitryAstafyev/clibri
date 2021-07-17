@@ -1,6 +1,5 @@
 
 use super::{
-    tools,
     Control,
     Protocol,
     Protocol::PackingStruct,
@@ -11,9 +10,8 @@ use tokio::{
         UnboundedReceiver,
     }
 };
-use fiber::{
-    logger::Logger,
-};
+use fiber::env::logs;
+use log::{error};
 
 pub enum Broadcast {
     EventsMessage(Protocol::Events::Message),
@@ -59,10 +57,10 @@ impl ObserverEvent {
                         Broadcast::EventsUserConnected(mut msg) => msg.pack(0, None),
                     } {
                         Ok(buffer) => if let Err(err) = control.send(filter, buffer) {
-                            tools::logger.err(&format!("[event: ServerEvents::UserKickOff] fail to send message due error: {}", err));
+                            error!(target: logs::targets::PRODUCER, "[event: ServerEvents::UserKickOff] fail to send message due error: {}", err);
                         },
                         Err(err) => {
-                            tools::logger.err(&format!("[event: ServerEvents::UserKickOff] fail to get a buffer due error: {}", err));
+                            error!(target: logs::targets::PRODUCER, "[event: ServerEvents::UserKickOff] fail to get a buffer due error: {}", err);
                         },
                     }
                 }

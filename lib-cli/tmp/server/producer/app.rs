@@ -1,15 +1,6 @@
 
-#[macro_use]
-extern crate lazy_static;
-
 #[path = "../producer/producer.rs"]
 pub mod producer;
-
-use fiber::{
-    logger::{
-        LogLevel,
-    },
-};
 
 use producer::{
     userlogin_request,
@@ -50,15 +41,7 @@ use tokio::{
     join,
     runtime::Runtime,
 };
-
-#[allow(non_upper_case_globals)]
-pub mod tools {
-    use fiber::logger::DefaultLogger;
-
-    lazy_static! {
-        pub static ref logger: DefaultLogger = DefaultLogger::new("Producer".to_owned(), Some(5));
-    }
-}
+use log::{debug, error, info, warn};
 
 #[derive(Clone)]
 struct CustomContext {}
@@ -203,10 +186,6 @@ impl producer::ProducerEventsHolder {
 }
 
 fn main() {
-    match fiber::tools::LOGGER_SETTINGS.lock() {
-        Ok(mut settings) => settings.set_level(LogLevel::Verb),
-        Err(e) => println!("Fail set log level due error: {}", e),
-    };
     let server: Server = Server::new(String::from("127.0.0.1:8080"));
     let ucx = CustomContext {};
     // producer::init_and_start(server, ucx, None);

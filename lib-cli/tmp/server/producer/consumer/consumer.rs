@@ -1,13 +1,13 @@
 
 use super::consumer_identification::{Filter, Identification};
-use super::{tools, ConsumersChannel, Protocol};
-use fiber::logger::Logger;
+use super::{ConsumersChannel, Protocol};
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 pub struct Cx {
     uuid: Uuid,
     consumers: UnboundedSender<ConsumersChannel>,
 }
+use log::{debug, error};
 
 impl Cx {
     pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
@@ -95,18 +95,21 @@ impl Consumer {
     pub fn send(&self, buffer: Vec<u8>) -> Result<(), String> {
         let len = buffer.len();
         if let Err(e) = self.sender.send((buffer, Some(self.uuid))) {
-            Err(tools::logger.err(&format!(
+            error!(
+                target: "consumer",
                 "{}:: Fail to send buffer {} bytes, due error: {}",
                 self.get_uuid(),
                 len,
                 e
-            )))
+            );
+            Err(format!("{}", e))
         } else {
-            tools::logger.debug(&format!(
+            debug!(
+                target: "consumer",
                 "{}:: Has been sent a buffer {} bytes",
                 self.get_uuid(),
                 len
-            ));
+            );
             Ok(())
         }
     }

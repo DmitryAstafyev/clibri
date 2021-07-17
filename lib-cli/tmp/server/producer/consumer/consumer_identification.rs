@@ -1,9 +1,7 @@
 
 use super::{
-    tools,
     Protocol
 };
-use fiber::logger::Logger;
 use std::{
     cmp::{
         Eq,
@@ -12,6 +10,8 @@ use std::{
     sync::Arc,
 };
 use uuid::Uuid;
+use fiber::env::logs;
+use log::{warn};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Condition {
@@ -96,7 +96,7 @@ impl Identification {
 
     pub fn assigned(&self) -> bool {
         if self.assigned.is_none() {
-            tools::logger.warn("Client doesn't have producer identification");
+            warn!(target: logs::targets::PRODUCER, "Client doesn't have producer identification");
         }
         self.key.is_some()
     }

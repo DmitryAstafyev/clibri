@@ -4,10 +4,9 @@ use super::{
         Messages,
         Error as ChannelError
     },
-    tools,
 };
 use fiber::{
-    logger::Logger,
+    env::logs,
     server::{
         errors::Errors,
         events::Events
@@ -43,6 +42,7 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 use uuid::Uuid;
+use log::{debug, warn, error, info};
 
 enum State {
     DisconnectByClient(Option<CloseFrame<'static>>),
@@ -73,20 +73,19 @@ impl Connection {
         let incomes_task_events = events.clone();
         let send_event = move |event: Events| {
             if let Err(e) = incomes_task_events.send(event) {
-                tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
             }
         };
         let send_message = move |msg: Messages| {
             match messages.send(msg) {
                 Ok(_) => {},
                 Err(e) => {
+                    warn!(target: logs::targets::SERVER, "{}:: Fail to send data back to server. Error: {}", uuid, e);
                     if let Err(e) = events.send(Events::ConnectionError(
                         Some(uuid),
-                        Errors::FailSendBack(
-                            tools::logger.warn(&format!("{}:: Fail to send data back to server. Error: {}", uuid, e))
-                        ),
+                        Errors::FailSendBack(format!("{}", e)),
                     )) {
-                        tools::logger.warn(&format!("Cannot send event. Error: {}", e));
+                        warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
                     }
                 },
             };
@@ -105,23 +104,24 @@ impl Connection {
                             Err(e) => {
                                 if let Error::Protocol(ref e) = e {
                                     if e == &ProtocolError::ResetWithoutClosingHandshake {
-                                        state = Some(State::DisconnectByClientWithError(tools::logger.debug(&format!("{}:: Client disconnected without closing handshake", uuid))));
+                                        debug!(target: logs::targets::SERVER, "{}:: Client disconnected without closing handshake", uuid);
+                                        state = Some(State::DisconnectByClientWithError(format!("{}", e)));
                                     }
                                 }
                                 if state.is_none() {
-                                    let e = tools::logger.warn(&format!("{}:: Cannot get message. Error: {:?}", uuid, e));
+                                    warn!(target: logs::targets::SERVER, "{}:: Cannot get message. Error: {:?}", uuid, e);
                                     send_event(Events::ConnectionError(
                                         Some(uuid),
-                                        Errors::InvalidMessage(e.clone()),
+                                        Errors::InvalidMessage(format!("{}", e)),
                                     ));
-                                    state = Some(State::Error(ChannelError::ReadSocket(e)));
+                                    state = Some(State::Error(ChannelError::ReadSocket(format!("{}", e))));
                                 }
                                 break;
                             }
                         };
                         match msg {
                             Message::Text(_) => {
-                                tools::logger.warn(&format!("{}:: has been gotten not binnary data", uuid));
+                                warn!(target: logs::targets::SERVER, "{}:: has been gotten not binnary data", uuid);
                                 send_event(Events::ConnectionError(
                                     Some(uuid),
                                     Errors::NonBinaryData,
@@ -129,14 +129,14 @@ impl Connection {
                                 continue;
                             },
                             Message::Binary(buffer) => {
-                                tools::logger.verb(&format!("{}:: binary data {:?}", uuid, buffer));
+                                info!(target: logs::targets::SERVER, "{}:: binary data {:?}", uuid, buffer);
                                 send_message(Messages::Binary {
                                     uuid,
                                     buffer,
                                 });
                             },
                             Message::Ping(_) | Message::Pong(_) => {
-                                tools::logger.warn(&format!("{}:: Ping / Pong", uuid));
+                                warn!(target: logs::targets::SERVER, "{}:: Ping / Pong", uuid);
                             },
                             Message::Close(close_frame) => {
                                 state = Some(State::DisconnectByClient(close_frame));
@@ -153,7 +153,8 @@ impl Connection {
                         match cmd {
                             Control::Send(buffer) => {
                                 if let Err(e) = ws.send(Message::from(buffer)).await {
-                                    state = Some(State::Error(ChannelError::WriteSocket(tools::logger.err(&format!("{}:: Cannot send data to client. Error: {}", uuid, e)))));
+                                    error!(target: logs::targets::SERVER, "{}:: Cannot send data to client. Error: {}", uuid, e);
+                                    state = Some(State::Error(ChannelError::WriteSocket(format!("{}", e))));
                                     break;
                                 }
                             },
@@ -165,7 +166,7 @@ impl Connection {
                     } 
                 };
             }
-            tools::logger.debug(&format!("{}:: exit from socket listening loop.", uuid));
+            debug!(target: logs::targets::SERVER, "{}:: exit from socket listening loop.", uuid);
             if let Some(state) = state {
                 match state {
                     State::DisconnectByServer => {
@@ -179,7 +180,7 @@ impl Connection {
                         } });
                     },
                     State::DisconnectByClientWithError(e) => {
-                        tools::logger.debug(&format!("{}:: client error: {}", uuid, e));
+                        debug!(target: logs::targets::SERVER, "{}:: client error: {}", uuid, e);
                         send_message(Messages::Disconnect { uuid, code: None });
                     },
                     State::Error(error) => {
@@ -192,12 +193,13 @@ impl Connection {
                 Err(e) => {
                     match e {
                         Error::AlreadyClosed | Error::ConnectionClosed => {
-                            tools::logger.debug(&format!("{}:: connection is already closed", uuid));
+                            debug!(target: logs::targets::SERVER, "{}:: connection is already closed", uuid);
                         },
                         _ => {
+                            error!(target: logs::targets::SERVER, "{}:: fail to close connection", uuid);
                             send_event(Events::ConnectionError(
                                 Some(uuid),
-                                Errors::CannotClose(tools::logger.err(&format!("{}:: fail to close connection", uuid))),
+                                Errors::CannotClose(format!("{}:: fail to close connection", uuid)),
                             ));
                         }
                     }
