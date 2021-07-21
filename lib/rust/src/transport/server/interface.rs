@@ -4,13 +4,14 @@ use futures::Future;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use uuid::Uuid;
 
-pub trait Interface: Send {
-    type Output: Future<Output = Result<(), String>>;
+use std::pin::Pin;
+pub type Task<E> = Pin<Box<dyn Future<Output = Result<(), E>>>>;
 
+pub trait Interface<E: std::error::Error>: Send {
     fn listen(
         &mut self,
-        channel: UnboundedSender<Events>,
+        channel: UnboundedSender<Events<E>>,
         messages: UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
         controll: Option<UnboundedReceiver<Control>>,
-    ) -> Self::Output;
+    ) -> Result<Task<E>, E>;
 }

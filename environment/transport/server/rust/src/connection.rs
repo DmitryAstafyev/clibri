@@ -1,48 +1,25 @@
 use super::{
-    channel::{
-        Control,
-        Messages,
-        Error as ChannelError
-    },
+    channel::{Control, Error as ChannelError, Messages},
+    errors::Error,
 };
-use fiber::{
-    env::logs,
-    server::{
-        errors::Errors,
-        events::Events
-    },
-};
-use futures::{
-    SinkExt,
-    StreamExt
-};
+use fiber::{env::logs, server::events::Events};
+use futures::{SinkExt, StreamExt};
+use log::{debug, error, info, warn};
 use tokio::{
-    net::{
-        TcpStream
-    },
-    sync::mpsc::{
-        unbounded_channel,
-        UnboundedReceiver,
-        UnboundedSender
-    },
-    task::{
-        spawn,
-    },
+    net::TcpStream,
     select,
+    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    task::spawn,
 };
 use tokio_tungstenite::{
     tungstenite::{
-        error::{
-            Error,
-            ProtocolError,
-        },
+        error::{Error as TungsteniteError, ProtocolError},
         protocol::CloseFrame,
-        protocol::Message
+        protocol::Message,
     },
     WebSocketStream,
 };
 use uuid::Uuid;
-use log::{debug, warn, error, info};
 
 enum State {
     DisconnectByClient(Option<CloseFrame<'static>>),
@@ -63,7 +40,7 @@ impl Connection {
     pub async fn attach(
         &mut self,
         mut ws: WebSocketStream<TcpStream>,
-        events: UnboundedSender<Events>,
+        events: UnboundedSender<Events<Error>>,
         messages: UnboundedSender<Messages>,
     ) -> Result<UnboundedSender<Control>, String> {
         let (tx_control, mut rx_control): (UnboundedSender<Control>, UnboundedReceiver<Control>) =
@@ -71,23 +48,32 @@ impl Connection {
         let uuid = self.uuid;
         let mut state: Option<State> = None;
         let incomes_task_events = events.clone();
-        let send_event = move |event: Events| {
+        let send_event = move |event: Events<Error>| {
             if let Err(e) = incomes_task_events.send(event) {
-                warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
+                warn!(
+                    target: logs::targets::SERVER,
+                    "Cannot send event. Error: {}", e
+                );
             }
         };
         let send_message = move |msg: Messages| {
             match messages.send(msg) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
-                    warn!(target: logs::targets::SERVER, "{}:: Fail to send data back to server. Error: {}", uuid, e);
+                    warn!(
+                        target: logs::targets::SERVER,
+                        "{}:: Fail to send data back to server. Error: {}", uuid, e
+                    );
                     if let Err(e) = events.send(Events::ConnectionError(
                         Some(uuid),
-                        Errors::FailSendBack(format!("{}", e)),
+                        Error::Channel(format!("{}", e)),
                     )) {
-                        warn!(target: logs::targets::SERVER, "Cannot send event. Error: {}", e);
+                        warn!(
+                            target: logs::targets::SERVER,
+                            "Cannot send event. Error: {}", e
+                        );
                     }
-                },
+                }
             };
         };
         spawn(async move {
@@ -102,7 +88,7 @@ impl Connection {
                         let msg = match msg {
                             Ok(msg) => msg,
                             Err(e) => {
-                                if let Error::Protocol(ref e) = e {
+                                if let TungsteniteError::Protocol(ref e) = e {
                                     if e == &ProtocolError::ResetWithoutClosingHandshake {
                                         debug!(target: logs::targets::SERVER, "{}:: Client disconnected without closing handshake", uuid);
                                         state = Some(State::DisconnectByClientWithError(format!("{}", e)));
@@ -112,7 +98,7 @@ impl Connection {
                                     warn!(target: logs::targets::SERVER, "{}:: Cannot get message. Error: {:?}", uuid, e);
                                     send_event(Events::ConnectionError(
                                         Some(uuid),
-                                        Errors::InvalidMessage(format!("{}", e)),
+                                        Error::InvalidMessage(format!("{}", e)),
                                     ));
                                     state = Some(State::Error(ChannelError::ReadSocket(format!("{}", e))));
                                 }
@@ -124,7 +110,7 @@ impl Connection {
                                 warn!(target: logs::targets::SERVER, "{}:: has been gotten not binnary data", uuid);
                                 send_event(Events::ConnectionError(
                                     Some(uuid),
-                                    Errors::NonBinaryData,
+                                    Error::NonBinaryData,
                                 ));
                                 continue;
                             },
@@ -163,51 +149,63 @@ impl Connection {
                                 break;
                             },
                         }
-                    } 
+                    }
                 };
             }
-            debug!(target: logs::targets::SERVER, "{}:: exit from socket listening loop.", uuid);
+            debug!(
+                target: logs::targets::SERVER,
+                "{}:: exit from socket listening loop.", uuid
+            );
             if let Some(state) = state {
                 match state {
                     State::DisconnectByServer => {
                         send_message(Messages::Disconnect { uuid, code: None });
-                    },
+                    }
                     State::DisconnectByClient(frame) => {
-                        send_message(Messages::Disconnect { uuid, code: if let Some(frame) = frame {
-                            Some(frame.code)
-                        } else {
-                            None
-                        } });
-                    },
+                        send_message(Messages::Disconnect {
+                            uuid,
+                            code: if let Some(frame) = frame {
+                                Some(frame.code)
+                            } else {
+                                None
+                            },
+                        });
+                    }
                     State::DisconnectByClientWithError(e) => {
-                        debug!(target: logs::targets::SERVER, "{}:: client error: {}", uuid, e);
+                        debug!(
+                            target: logs::targets::SERVER,
+                            "{}:: client error: {}", uuid, e
+                        );
                         send_message(Messages::Disconnect { uuid, code: None });
-                    },
+                    }
                     State::Error(error) => {
                         send_message(Messages::Error { uuid, error });
-                    },
+                    }
                 };
             }
             match ws.close(None).await {
-                Ok(()) => {},
-                Err(e) => {
-                    match e {
-                        Error::AlreadyClosed | Error::ConnectionClosed => {
-                            debug!(target: logs::targets::SERVER, "{}:: connection is already closed", uuid);
-                        },
-                        _ => {
-                            error!(target: logs::targets::SERVER, "{}:: fail to close connection", uuid);
-                            send_event(Events::ConnectionError(
-                                Some(uuid),
-                                Errors::CannotClose(format!("{}:: fail to close connection", uuid)),
-                            ));
-                        }
+                Ok(()) => {}
+                Err(e) => match e {
+                    TungsteniteError::AlreadyClosed | TungsteniteError::ConnectionClosed => {
+                        debug!(
+                            target: logs::targets::SERVER,
+                            "{}:: connection is already closed", uuid
+                        );
                     }
-                }
+                    _ => {
+                        error!(
+                            target: logs::targets::SERVER,
+                            "{}:: fail to close connection", uuid
+                        );
+                        send_event(Events::ConnectionError(
+                            Some(uuid),
+                            Error::CloseConnection(format!("{}:: fail to close connection", uuid)),
+                        ));
+                    }
+                },
             };
             drop(ws);
         });
         Ok(tx_control)
     }
-
 }

@@ -1,12 +1,6 @@
-pub use tokio_tungstenite::{
-    tungstenite::{
-        handshake::server::{
-            Request,
-            Response,
-            ErrorResponse,
-        },
-        protocol::frame::coding::CloseCode
-    }
+pub use tokio_tungstenite::tungstenite::{
+    handshake::server::{ErrorResponse, Request, Response},
+    protocol::frame::coding::CloseCode,
 };
 
 #[path = "./server.rs"]
@@ -23,3 +17,6 @@ pub mod connection;
 
 #[path = "./connection.channel.rs"]
 pub mod channel;
+
+#[path = "./errors.rs"]
+pub mod errors;
