@@ -11,15 +11,16 @@ use futures::{
 };
 use indicatif::ProgressBar;
 use log::{error, info};
-use std::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Instant;
 use tokio::{
     join,
     net::TcpStream,
-    runtime::Runtime,
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    sync::{
+        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender, channel, Receiver, Sender},
+        oneshot,
+    },
     task::{spawn, JoinHandle},
     time::Duration,
 };
@@ -44,12 +45,32 @@ struct Stat {
     pub disconnected: u32,
     pub failed: u32,
     pub sent: u32,
+    pub write: u32,
     pub recieved: u32,
     pub created_in: u128,
     pub sent_in: u128,
     pub done_in: u128,
 }
 
+impl Stat {
+    pub fn print(&self) {
+        println!("==========================================================================");
+        println!("Clients created:      {}", self.created);
+        println!("Clients destroyed:    {}", self.destroyed);
+        println!("Clients connected:    {}", self.connected);
+        println!("Clients disconnected: {}", self.disconnected);
+        println!("Clients failed:       {}", self.failed);
+        println!("Packages write:       {}", self.write);
+        println!("Packages sent:        {}", self.sent);
+        println!("Packages recieved:    {}", self.recieved);
+        println!("Created in:           {}ms", self.created_in);
+        println!("Sent in:              {}ms", self.sent_in);
+        println!("Done in:              {}ms", self.done_in);
+        println!("==========================================================================");
+    }
+}
+
+//const CLIENTS: usize = 28227;
 const CLIENTS: usize = 10000;
 
 async fn connect_client() -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, String> {
@@ -61,9 +82,9 @@ async fn connect_client() -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, 
 
 async fn create_client(
     ws: Option<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    status: mpsc::Sender<ClientStatus>,
+    status: Sender<ClientStatus>,
     stat: Arc<RwLock<Stat>>,
-    starter: mpsc::Receiver<()>,
+    starter: oneshot::Receiver<()>,
 ) {
     let ws = if let Some(ws) = ws {
         ws
@@ -83,7 +104,7 @@ async fn create_client(
                     .send(ClientStatus::Err(format!(
                         "client [connect_async]: failed to connect: {}",
                         e
-                    )))
+                    ))).await
                     .expect("ClientStatus should be sent");
                 return;
             }
@@ -92,19 +113,32 @@ async fn create_client(
     let client_status_rd = status.clone();
     let (mut write, mut read) = ws.split();
     // TODO: stream should be closed as well
-    let reader = spawn(async move {
+    let reader: JoinHandle<
+        Result<
+            futures::stream::SplitStream<
+                tokio_tungstenite::WebSocketStream<
+                    tokio_tungstenite::MaybeTlsStream<
+                        tokio::net::TcpStream
+                    >
+                >,
+            >,
+            String,
+        >,
+    > = spawn(async move {
         info!(target: "test", "client: reader is created");
         if let Some(msg) = read.next().await {
             let data = msg.unwrap().into_data();
             info!(target: "test", "income data: {:?}", data);
         }
         info!(target: "test", "client: reader is destroyed");
+        Ok(read)
     });
     let (tx_sender_from_client, mut rx_sender_from_client): (
         UnboundedSender<Vec<u8>>,
         UnboundedReceiver<Vec<u8>>,
     ) = unbounded_channel();
     let client_status_wr = status.clone();
+    let stat_sr = stat.clone();
     let writer: JoinHandle<
         Result<
             futures::stream::SplitSink<
@@ -127,18 +161,24 @@ async fn create_client(
                     .send(ClientStatus::Err(format!(
                         "client [writer]: fail to send data: {}",
                         e
-                    )))
+                    ))).await
                     .expect("ClientStatus should be sent");
                 return Err(String::from("Fail to write data"));
             }
         }
+        match stat_sr.write() {
+            Ok(mut stat) => stat.write += 1,
+            Err(_) => {
+                error!(target: "test", "cannot write stat");
+            }
+        };
         info!(target: "test", "client: writer is destroyed");
         Ok(write)
     });
     let client_status_sd = status.clone();
     let stat_sw = stat.clone();
     let sender_from_client = spawn(async move {
-        if let Err(e) = starter.recv() {
+        if let Err(e) = starter.await {
             error!(target: "test",
                 "client [sender_from_client]: fail recieve from starter channel: {}",
                 e
@@ -147,7 +187,7 @@ async fn create_client(
                 .send(ClientStatus::Err(format!(
                     "client [sender_from_client]: fail recieve from starter channel: {}",
                     e
-                )))
+                ))).await
                 .expect("ClientStatus should be sent");
             return;
         }
@@ -162,7 +202,7 @@ async fn create_client(
                 .send(ClientStatus::Err(format!(
                     "client [tx_sender_from_client]: failed to send data: {}",
                     e
-                )))
+                ))).await
                 .expect("ClientStatus should be sent");
             return;
         } else {
@@ -182,19 +222,32 @@ async fn create_client(
             error!(target: "test", "cannot write stat");
         }
     };
-    let (_reader, write, _sender) = join!(reader, writer, sender_from_client,);
-    match match write {
-        Ok(write) => write,
-        Err(err) => panic!("Fail write data form client: {}", err),
-    } {
-        Ok(mut write) => {
-            if let Err(err) = write.close().await {
-                error!(target: "test", "cannot close stream: {}", err);
+    let (read, write, _sender) = join!(reader, writer, sender_from_client,);
+    match read {
+        Ok(read) => match read {
+            Ok(read) => {
+                drop(read);
+            },
+            Err(err) => {
+                error!(target: "test", "Fail read data form client: {}", err);
             }
+        },
+        Err(err) => {
+            error!(target: "test", "Fail join reader: {}", err);
         }
-        Err(_) => {
-            // Logs already done
-        }
+    }
+    match write {
+        Ok(write) => match write {
+            Ok(write) => {
+                drop(write);
+            },
+            Err(err) => {
+                error!(target: "test", "Fail write data: {}", err);
+            },
+        },
+        Err(err) => {
+            error!(target: "test", "Fail join writer: {}", err);
+        },
     }
     match stat.write() {
         Ok(mut stat) => stat.destroyed += 1,
@@ -203,14 +256,14 @@ async fn create_client(
         }
     };
     client_status_rd
-        .send(ClientStatus::Done)
+        .send(ClientStatus::Done).await
         .expect("ClientStatus should be sent");
     info!(target: "test", "client: done");
 }
 
 async fn create_events_listener(
     mut rx_events: UnboundedReceiver<Events<Error>>,
-    tx_server_state: mpsc::Sender<ServerState>,
+    tx_server_state: Sender<ServerState>,
     tx_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
     tx_server_shutdown: UnboundedSender<()>,
     stat: Arc<RwLock<Stat>>,
@@ -220,7 +273,7 @@ async fn create_events_listener(
         match event {
             Events::Ready => {
                 info!(target: "test", "[T][EventsLoop] server is ready");
-                if let Err(e) = tx_server_state.send(ServerState::Ready) {
+                if let Err(e) = tx_server_state.send(ServerState::Ready).await {
                     error!(target: "test", "cannot send server state: {}", e);
                 }
             }
@@ -281,26 +334,16 @@ async fn create_events_listener(
     }
 }
 
-fn connect_all() {
+async fn connect_all() {
     info!(target: "test", "starting");
-    let (tx_events, rx_events): (
-        UnboundedSender<Events<Error>>,
-        UnboundedReceiver<Events<Error>>,
-    ) = unbounded_channel();
     let (tx_server_shutdown, mut rx_server_shutdown): (UnboundedSender<()>, UnboundedReceiver<()>) =
         unbounded_channel();
-    let (tx_sender, rx_sender): (
-        UnboundedSender<(Vec<u8>, Option<Uuid>)>,
-        UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
-    ) = unbounded_channel();
-    let (tx_control, rx_control): (UnboundedSender<Control>, UnboundedReceiver<Control>) =
-        unbounded_channel();
-    let (tx_status, rx_status): (mpsc::Sender<ClientStatus>, mpsc::Receiver<ClientStatus>) =
-        mpsc::channel();
-    let (tx_server_state, rx_server_state): (
-        mpsc::Sender<ServerState>,
-        mpsc::Receiver<ServerState>,
-    ) = mpsc::channel();
+    let (tx_status, mut rx_status): (Sender<ClientStatus>, Receiver<ClientStatus>) =
+        channel(10);
+    let (tx_server_state, mut rx_server_state): (
+        Sender<ServerState>,
+        Receiver<ServerState>,
+    ) = channel(10);
     let stat: Arc<RwLock<Stat>> = Arc::new(RwLock::new(Stat {
         created: 0,
         destroyed: 0,
@@ -308,35 +351,32 @@ fn connect_all() {
         disconnected: 0,
         failed: 0,
         sent: 0,
+        write: 0,
         recieved: 0,
         created_in: 0,
         sent_in: 0,
         done_in: 0,
     }));
-    thread::spawn(move || {
-        let rt = match Runtime::new() {
-            Ok(rt) => rt,
+    let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
+    let rx_events = match server.observer() {
+        Ok(rx_events) => rx_events,
+        Err(e) => panic!("{}", e),
+    };
+    let tx_sender = server.sender();
+    let tx_control = server.control();
+    spawn(async move {
+        match server.listen() {
+            Ok(task) => {
+                if let Err(e) = task.await {
+                    error!(target: "test", "fail on server task: {}", e);
+                }
+            }
             Err(e) => {
-                return Err(error!(target: "test", "Fail to create runtime executor. Error: {}", e))
+                error!(target: "test", "fail to create server: {}", e);
+                panic!("{}", e);
             }
-        };
-        rt.block_on(async {
-            println!("{} starting server...", style("[test]").bold().dim(),);
-            let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
-            match server.listen(tx_events, rx_sender, Some(rx_control)) {
-                Ok(task) => {
-                    if let Err(e) = task.await {
-                        error!(target: "test", "fail on server task: {}", e);
-                    }
-                }
-                Err(e) => {
-                    error!(target: "test", "fail to create server: {}", e);
-                    panic!("{}", e);
-                }
-            }
-            server.print_stat();
-        });
-        Ok(())
+        }
+        server.print_stat();
     });
     let stat_sr = stat.clone();
     thread::spawn(move || {
@@ -349,15 +389,16 @@ fn connect_all() {
         ));
     });
     println!("{} waiting for server...", style("[test]").bold().dim(),);
-    match rx_server_state.recv() {
-        Ok(state) => match state {
+    if let Some(state) = rx_server_state.recv().await {
+        match state {
             ServerState::Ready => {
                 println!("{} server is ready", style("[test]").bold().dim(),);
             }
-        },
-        Err(e) => panic!("{}", e),
-    };
-    let mut starters: Vec<mpsc::Sender<()>> = vec![];
+        }
+    } else {
+        panic!("Server isn't ready");
+    }
+    let mut starters: Vec<oneshot::Sender<()>> = vec![];
     let mut connections = vec![];
     println!(
         "{} creating clients executors...",
@@ -365,8 +406,8 @@ fn connect_all() {
     );
     let start = Instant::now();
     for _ in 0..CLIENTS {
-        let (tx_client_starter, rx_client_starter): (mpsc::Sender<()>, mpsc::Receiver<()>) =
-            mpsc::channel();
+        let (tx_client_starter, rx_client_starter): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+        oneshot::channel();
         let client = create_client(None, tx_status.clone(), stat.clone(), rx_client_starter);
         connections.push(client);
         starters.push(tx_client_starter);
@@ -377,18 +418,27 @@ fn connect_all() {
             error!(target: "test", "cannot write stat");
         }
     };
-    thread::spawn(move || {
-        let rt = match Runtime::new() {
-            Ok(rt) => rt,
-            Err(e) => {
-                return Err(error!(target: "test", "Fail to create runtime executor. Error: {}", e))
+    println!(
+        "{} created {} clients",
+        style("[test]").bold().dim(),
+        connections.len()
+    );
+    let stat_ja = stat.clone();
+    spawn(async move {
+        println!("{} starting clients...", style("[test]").bold().dim(),);
+        let len = connections.len();
+        join_all(connections).await;
+        println!(
+            "{} {} clients were started",
+            style("[test]").bold().dim(),
+            len
+        );
+        match stat_ja.read() {
+            Ok(stat) => stat.print(),
+            Err(_) => {
+                error!(target: "test", "cannot write stat");
             }
         };
-        rt.block_on(async {
-            println!("{} starting clients...", style("[test]").bold().dim(),);
-            join_all(connections).await;
-        });
-        Ok(())
     });
     let start = Instant::now();
     let start_wf = Instant::now();
@@ -411,7 +461,7 @@ fn connect_all() {
     );
     let mut done: usize = 0;
     let pb = ProgressBar::new(CLIENTS as u64);
-    while let Ok(status) = rx_status.recv() {
+    while let Some(status) = rx_status.recv().await {
         //TODO: check state. it might be an error
         match status {
             ClientStatus::Done => {
@@ -422,7 +472,7 @@ fn connect_all() {
                 }
             }
             ClientStatus::Err(e) => {
-                // panic!("{}", e)
+                error!(target: "test", "client status error: {}", e);
                 match stat.write() {
                     Ok(mut stat) => stat.failed += 1,
                     Err(_) => {
@@ -430,10 +480,13 @@ fn connect_all() {
                     }
                 };
                 pb.inc(1);
-                error!(target: "test", "client status error: {}", e);
             }
         }
     }
+    println!(
+        "{} no more channels for clients...",
+        style("[test]").bold().dim(),
+    );
     pb.finish_and_clear();
     match stat.write() {
         Ok(mut stat) => stat.done_in = start_wf.elapsed().as_millis(),
@@ -487,26 +540,16 @@ fn connect_all() {
     });
 }
 
-fn connect_one_by_one() {
+async fn connect_one_by_one() {
     info!(target: "test", "starting");
-    let (tx_events, rx_events): (
-        UnboundedSender<Events<Error>>,
-        UnboundedReceiver<Events<Error>>,
-    ) = unbounded_channel();
     let (tx_server_shutdown, mut rx_server_shutdown): (UnboundedSender<()>, UnboundedReceiver<()>) =
         unbounded_channel();
-    let (tx_sender, rx_sender): (
-        UnboundedSender<(Vec<u8>, Option<Uuid>)>,
-        UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
-    ) = unbounded_channel();
-    let (tx_control, rx_control): (UnboundedSender<Control>, UnboundedReceiver<Control>) =
-        unbounded_channel();
-    let (tx_status, rx_status): (mpsc::Sender<ClientStatus>, mpsc::Receiver<ClientStatus>) =
-        mpsc::channel();
-    let (tx_server_state, rx_server_state): (
-        mpsc::Sender<ServerState>,
-        mpsc::Receiver<ServerState>,
-    ) = mpsc::channel();
+    let (tx_status, mut rx_status): (Sender<ClientStatus>, Receiver<ClientStatus>) =
+        channel(10);
+    let (tx_server_state, mut rx_server_state): (
+        Sender<ServerState>,
+        Receiver<ServerState>,
+    ) = channel(10);
     let stat: Arc<RwLock<Stat>> = Arc::new(RwLock::new(Stat {
         created: 0,
         destroyed: 0,
@@ -514,35 +557,33 @@ fn connect_one_by_one() {
         disconnected: 0,
         failed: 0,
         sent: 0,
+        write: 0,
         recieved: 0,
         created_in: 0,
         sent_in: 0,
         done_in: 0,
     }));
-    thread::spawn(move || {
-        let rt = match Runtime::new() {
-            Ok(rt) => rt,
+    let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
+    let rx_events = match server.observer() {
+        Ok(rx_events) => rx_events,
+        Err(e) => panic!("{}", e),
+    };
+    let tx_sender = server.sender();
+    let tx_control = server.control();
+    spawn(async move {
+        println!("{} starting server...", style("[test]").bold().dim(),);
+        match server.listen() {
+            Ok(task) => {
+                if let Err(e) = task.await {
+                    error!(target: "test", "fail on server task: {}", e);
+                }
+            }
             Err(e) => {
-                return Err(error!(target: "test", "Fail to create runtime executor. Error: {}", e))
+                error!(target: "test", "fail to create server: {}", e);
+                panic!("{}", e);
             }
-        };
-        rt.block_on(async {
-            println!("{} starting server...", style("[test]").bold().dim(),);
-            let mut server: Server = Server::new(String::from("127.0.0.1:8080"));
-            match server.listen(tx_events, rx_sender, Some(rx_control)) {
-                Ok(task) => {
-                    if let Err(e) = task.await {
-                        error!(target: "test", "fail on server task: {}", e);
-                    }
-                }
-                Err(e) => {
-                    error!(target: "test", "fail to create server: {}", e);
-                    panic!("{}", e);
-                }
-            }
-            server.print_stat();
-        });
-        Ok(())
+        }
+        server.print_stat();
     });
     let stat_sr = stat.clone();
     thread::spawn(move || {
@@ -555,95 +596,86 @@ fn connect_one_by_one() {
         ));
     });
     println!("{} waiting for server...", style("[test]").bold().dim(),);
-    match rx_server_state.recv() {
-        Ok(state) => match state {
+    if let Some(state) = rx_server_state.recv().await {
+        match state {
             ServerState::Ready => {
                 println!("{} server is ready", style("[test]").bold().dim(),);
             }
-        },
-        Err(e) => panic!("{}", e),
-    };
+        }
+    } else {
+        panic!("Server isn't started");
+    }
     let mut connectings_tasks = vec![];
     println!(
         "{} creating clients connectors...",
         style("[test]").bold().dim(),
     );
-    // let start = Instant::now();
     for _ in 0..CLIENTS {
         connectings_tasks.push(connect_client());
     }
     let stat_con = stat.clone();
-    thread::spawn(move || {
-        let rt = match Runtime::new() {
-            Ok(rt) => rt,
-            Err(e) => {
-                return Err(error!(target: "test", "Fail to create runtime executor. Error: {}", e))
+    spawn(async move {
+        println!(
+            "{} starting clients connections...",
+            style("[test]").bold().dim(),
+        );
+        let mut sockets = vec![];
+        let mut stream = stream::iter(connectings_tasks);
+        let pb = ProgressBar::new(CLIENTS as u64);
+        while let Some(connector) = stream.next().await {
+            match connector.await {
+                Ok(socket) => {
+                    pb.inc(1);
+                    sockets.push(socket);
+                }
+                Err(err) => panic!("{}", err),
+            };
+        }
+        pb.finish_and_clear();
+        let mut starters: Vec<oneshot::Sender<()>> = vec![];
+        let mut connections = vec![];
+        println!(
+            "{} creating clients executors...",
+            style("[test]").bold().dim(),
+        );
+        let start = Instant::now();
+        let pb = ProgressBar::new(CLIENTS as u64);
+        for _ in 0..sockets.len() {
+            let (tx_client_starter, rx_client_starter): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+            oneshot::channel();
+            let client = create_client(
+                Some(sockets.remove(0)),
+                tx_status.clone(),
+                stat_con.clone(),
+                rx_client_starter,
+            );
+            connections.push(client);
+            starters.push(tx_client_starter);
+            pb.inc(1);
+        }
+        pb.finish_and_clear();
+        match stat_con.write() {
+            Ok(mut stat) => stat.created_in = start.elapsed().as_millis(),
+            Err(_) => {
+                error!(target: "test", "cannot write stat");
             }
         };
-        rt.block_on(async {
-            println!(
-                "{} starting clients connections...",
-                style("[test]").bold().dim(),
-            );
-            let mut sockets = vec![];
-            let mut stream = stream::iter(connectings_tasks);
-            let pb = ProgressBar::new(CLIENTS as u64);
-            while let Some(connector) = stream.next().await {
-                match connector.await {
-                    Ok(socket) => {
-                        pb.inc(1);
-                        sockets.push(socket);
-                    }
-                    Err(err) => panic!("{}", err),
-                };
+        println!("{} starting clients...", style("[test]").bold().dim(),);
+        let start = Instant::now();
+        println!(
+            "{} send messages to clients into queue",
+            style("[test]").bold().dim(),
+        );
+        for starter in starters {
+            starter.send(()).expect("Client should be started");
+        }
+        match stat_con.write() {
+            Ok(mut stat) => stat.sent_in = start.elapsed().as_millis(),
+            Err(_) => {
+                error!(target: "test", "cannot write stat");
             }
-            pb.finish_and_clear();
-            let mut starters: Vec<mpsc::Sender<()>> = vec![];
-            let mut connections = vec![];
-            println!(
-                "{} creating clients executors...",
-                style("[test]").bold().dim(),
-            );
-            let start = Instant::now();
-            let pb = ProgressBar::new(CLIENTS as u64);
-            for _ in 0..sockets.len() {
-                let (tx_client_starter, rx_client_starter): (mpsc::Sender<()>, mpsc::Receiver<()>) =
-                    mpsc::channel();
-                let client = create_client(
-                    Some(sockets.remove(0)),
-                    tx_status.clone(),
-                    stat_con.clone(),
-                    rx_client_starter,
-                );
-                connections.push(client);
-                starters.push(tx_client_starter);
-                pb.inc(1);
-            }
-            pb.finish_and_clear();
-            match stat_con.write() {
-                Ok(mut stat) => stat.created_in = start.elapsed().as_millis(),
-                Err(_) => {
-                    error!(target: "test", "cannot write stat");
-                }
-            };
-            println!("{} starting clients...", style("[test]").bold().dim(),);
-            let start = Instant::now();
-            println!(
-                "{} send messages to clients into queue",
-                style("[test]").bold().dim(),
-            );
-            for starter in starters {
-                starter.send(()).expect("Client should be started");
-            }
-            match stat_con.write() {
-                Ok(mut stat) => stat.sent_in = start.elapsed().as_millis(),
-                Err(_) => {
-                    error!(target: "test", "cannot write stat");
-                }
-            };
-            join_all(connections).await;
-        });
-        Ok(())
+        };
+        join_all(connections).await;
     });
     let start_wf = Instant::now();
     println!(
@@ -652,7 +684,7 @@ fn connect_one_by_one() {
     );
     let mut done: usize = 0;
     let pb = ProgressBar::new(CLIENTS as u64);
-    while let Ok(status) = rx_status.recv() {
+    while let Some(status) = rx_status.recv().await {
         //TODO: check state. it might be an error
         match status {
             ClientStatus::Done => {
@@ -663,7 +695,7 @@ fn connect_one_by_one() {
                 }
             }
             ClientStatus::Err(e) => {
-                // panic!("{}", e)
+                error!(target: "test", "client status error: {}", e);
                 match stat.write() {
                     Ok(mut stat) => stat.failed += 1,
                     Err(_) => {
@@ -671,11 +703,14 @@ fn connect_one_by_one() {
                     }
                 };
                 pb.inc(1);
-                error!(target: "test", "client status error: {}", e);
             }
         }
     }
     pb.finish_and_clear();
+    println!(
+        "{} no more channels for clients...",
+        style("[test]").bold().dim(),
+    );
     match stat.write() {
         Ok(mut stat) => stat.done_in = start_wf.elapsed().as_millis(),
         Err(_) => {
@@ -728,18 +763,20 @@ fn connect_one_by_one() {
     });
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), String> {
     logs::init();
     println!(
         "{} Test #1. Connect clients all together",
         style("[test #1: start]").bold().dim(),
     );
-    connect_all();
+    connect_all().await;
     println!("{} Done", style("[test #1: done]").bold().dim(),);
     println!(
         "{} Test #2. Connect clients one by one",
         style("[test #2: start]").bold().dim(),
     );
-    connect_one_by_one();
+    connect_one_by_one().await;
     println!("{} Done", style("[test #2: done]").bold().dim(),);
+    Ok(())
 }

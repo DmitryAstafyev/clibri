@@ -11,7 +11,7 @@ import {
 Logger.setGlobalLevel(1);
 
 const CLIENT_MSG = "Hello from client";
-const CLIENTS_COUNT = 5000;
+const CLIENTS_COUNT = 10000;
 
 class Connection {
 
@@ -29,7 +29,9 @@ class Connection {
         closed: (uuid: string) => void,
     ) {
         this._id = id;
-        this._socket = new WebSocket('ws://127.0.0.1:8080');
+        this._socket = new WebSocket('ws://127.0.0.1:8080', {
+            handshakeTimeout: 999999,
+        });
         this._socket.addEventListener('open', this._onOpen.bind(this));
         this._socket.addEventListener('message', this._onData.bind(this));
         this._socket.addEventListener('close', this._onClose.bind(this));

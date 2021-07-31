@@ -9,12 +9,12 @@ edition = "2018"
 [dependencies]
 fiber = { path = "../../../../lib/rust" }
 fiber_transport_server = { path = "../rust" }
-bytes = "*"
-indicatif = "*"
-console = "*"
-uuid = { version = "0.8.1", features = ["v4"] }
-tokio = { version = "1.5.0", features = ["full"] }
-tokio-tungstenite = "0.14.0"
-futures = { version = "0.3.14" }
+bytes = "1.0.1"
+indicatif = "0.16.2"
+console = "0.14.1"
+uuid = { version = "0.8.2", features = ["v4"] }
+tokio = { version = "1.9.0", features = ["full"] }
+tokio-tungstenite = "0.15.0"
+futures = { version = "0.3.16" }
 log = "0.4.14"
 log4rs = "1.0.0"

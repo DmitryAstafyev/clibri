@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tokio::task::JoinError;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -16,4 +17,12 @@ pub enum Error {
 	InvalidMessage(String),
 	#[error("error on channel: `{0}`")]
 	Channel(String),
+	#[error("observer has been taken already")]
+	ObserverAlreadyTaken,
+	#[error("fail to take sender")]
+	FailTakeSender,
+	#[error("fail to take control")]
+	FailTakeControl,
+	#[error("fail to join task")]
+	JoinError(JoinError),
 }
