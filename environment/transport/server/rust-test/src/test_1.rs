@@ -30,12 +30,15 @@ impl Test {
         mut rx_server_events: UnboundedReceiver<Events<Error>>,
         tx_server_ready: oneshot::Sender<()>,
         tx_server_shutdown: oneshot::Sender<()>,
+        tx_all_disconnected: oneshot::Sender<()>,
         tx_client_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
         stat: Arc<RwLock<Stat>>,
     ) -> Result<(), String> {
         info!(target: "test", "starting event listener");
         let mut tx_server_ready_wrapped = Some(tx_server_ready);
         let mut tx_server_shutdown_wrapped = Some(tx_server_shutdown);
+        let mut disconnected: u32 = 0;
+        let mut tx_all_disconnected = Some(tx_all_disconnected);
         while let Some(event) = rx_server_events.recv().await {
             match event {
                 Events::Ready => {
@@ -65,12 +68,18 @@ impl Test {
                     };
                 }
                 Events::Disconnected(_uuid) => {
+                    disconnected += 1;
                     match stat.write() {
                         Ok(mut stat) => stat.disconnected += 1,
                         Err(err) => {
                             return Err(format!("Fail write stat. Error: {}", err));
                         }
                     };
+                    if disconnected == config::CLIENTS {
+                        if let Some(tx_all_disconnected) = tx_all_disconnected.take() {
+                            tx_all_disconnected.send(()).map_err(|e| format!("{:?}", e))?;
+                        }
+                    }
                 }
                 Events::Received(uuid, buffer) => {
                     info!(target: "test",
@@ -127,6 +136,10 @@ impl Test {
             UnboundedSender<ClientStatus>,
             UnboundedReceiver<ClientStatus>,
         ) = unbounded_channel();
+        let (tx_all_disconnected, rx_all_disconnected): (
+            oneshot::Sender<()>,
+            oneshot::Receiver<()>,
+        ) = oneshot::channel();
         let stat: Arc<RwLock<Stat>> = Arc::new(RwLock::new(Stat::new()));
         let stat_rc = stat.clone();
         // Step 1. Start server and server events loop
@@ -141,6 +154,7 @@ impl Test {
                     rx_server_events,
                     tx_server_ready,
                     tx_server_shutdown,
+                    tx_all_disconnected,
                     tx_client_sender,
                     stat_rc
                 ) => res
@@ -256,13 +270,19 @@ impl Test {
             Ok(mut stat) => stat.done_in = start.elapsed().as_millis(),
             Err(err) => panic!("fail to write stat: {}", err),
         };
-        // Step 6. Waiting for clients will be removed
+        // Step 6. Waiting for all clients will be disconnected
+        rx_all_disconnected.await.map_err(|e| e.to_string())?;
+        println!(
+            "{} all clients are disconnected",
+            style("[test]").bold().dim(),
+        );
+        // Step 7. Waiting for clients will be removed
         rx_clients_task_done.await.map_err(|e| e.to_string())?;
         println!(
             "{} all clients are removed",
             style("[test]").bold().dim(),
         );
-        // Step 7. Shutdown server
+        // Step 8. Shutdown server
         println!(
             "{} send shutdown command to server",
             style("[test]").bold().dim(),
