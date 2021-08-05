@@ -18,3 +18,4 @@ tokio-tungstenite = "0.15.0"
 futures = { version = "0.3.16" }
 log = "0.4.14"
 log4rs = "1.0.0"
+tokio-util = "0.6.7"
