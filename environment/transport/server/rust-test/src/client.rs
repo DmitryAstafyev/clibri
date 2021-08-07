@@ -29,7 +29,7 @@ impl Client {
     }
 
     pub fn uuid(&self) -> Uuid {
-        self.uuid.clone()
+        self.uuid
     }
 
     pub async fn run(

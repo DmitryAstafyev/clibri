@@ -20,6 +20,7 @@ use std::sync::{Arc, RwLock};
 use tokio::{
     net::{TcpListener, TcpStream},
     select,
+    join,
     sync::{mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender}},
 };
 use tokio_tungstenite::{
@@ -375,35 +376,42 @@ impl Interface<Error> for Server {
             return Err(Error::FailTakeControl);
         };
         let tx_events = self.tx_events.clone();
-        let result = select! {
-            result = self.streams_task(addr, tx_tcp_stream, cancel.child_token()) => {
-                debug!(target: logs::targets::SERVER, "[main]:: finished on streams_task");
-                result               
-            },
-            result = self.accepting_task(tx_messages, rx_tcp_stream, cancel.child_token()) => {
-                debug!(target: logs::targets::SERVER, "[main]:: finished on accepting_task");
-                result
-            },
-            result = self.messages_task(rx_messages, cancel.child_token()) => {
-                debug!(target: logs::targets::SERVER, "[main]:: finished on messages_task");
-                result
-            },
-            result = self.sending_task(rx_sender, cancel.child_token()) => {
-                debug!(target: logs::targets::SERVER, "[main]:: finished on sender_task");
-                result
-            },
-            result = self.control_task(rx_control, cancel) => {
-                debug!(target: logs::targets::SERVER, "[main]:: finished on control_task");
-                result
-            },
-        };
-        if let Err(err) = result.as_ref() {
-            error!(target: logs::targets::SERVER, "[main]:: finished with error: {}", err);
-        } else {
-            info!(target: logs::targets::SERVER, "[main]:: finished");
-        }
+        let (
+            streams_task,
+            accepting_task,
+            messages_task,
+            sending_task,
+            control_task,
+        ) = join!(
+            self.streams_task(addr, tx_tcp_stream, cancel.child_token()),
+            self.accepting_task(tx_messages, rx_tcp_stream, cancel.child_token()),
+            self.messages_task(rx_messages, cancel.child_token()),
+            self.sending_task(rx_sender, cancel.child_token()),
+            self.control_task(rx_control, cancel),
+        );
         tx_events.send(Events::Shutdown).map_err(|err| Error::Channel(err.to_string()))?;
-        result
+        if let Err(err) = streams_task {
+            error!(target: logs::targets::SERVER, "[main]:: streams_task finished with error: {}", err);
+            return Err(err);
+        }
+        if let Err(err) = accepting_task {
+            error!(target: logs::targets::SERVER, "[main]:: accepting_task finished with error: {}", err);
+            return Err(err);
+        }
+        if let Err(err) = messages_task {
+            error!(target: logs::targets::SERVER, "[main]:: messages_task finished with error: {}", err);
+            return Err(err);
+        }
+        if let Err(err) = sending_task {
+            error!(target: logs::targets::SERVER, "[main]:: sending_task finished with error: {}", err);
+            return Err(err);
+        }
+        if let Err(err) = control_task {
+            error!(target: logs::targets::SERVER, "[main]:: control_task finished with error: {}", err);
+            return Err(err);
+        }
+        debug!(target: logs::targets::SERVER, "[main]:: all tasks are finished without errors");
+        Ok(())
     }
 
     fn observer(&mut self) -> Result<UnboundedReceiver<Events<Error>>, Error> {
