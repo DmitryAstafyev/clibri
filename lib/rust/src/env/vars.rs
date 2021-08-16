@@ -1,13 +1,18 @@
-use log::{LevelFilter};
+use log::LevelFilter;
 
 pub fn debug_mode() -> Option<bool> {
     match std::env::var("FIBER_DEBUG_MODE") {
-        Ok(value) => if value.to_ascii_lowercase() == "true" || value.to_ascii_lowercase() == "on"  || value.to_ascii_lowercase() == "1" {
-            Some(true)
-        } else {
-            Some(false)
+        Ok(value) => {
+            if value.to_ascii_lowercase() == "true"
+                || value.to_ascii_lowercase() == "on"
+                || value.to_ascii_lowercase() == "1"
+            {
+                Some(true)
+            } else {
+                Some(false)
+            }
         }
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
@@ -35,6 +40,27 @@ pub fn log_level() -> Option<LevelFilter> {
                 None
             }
         }
-        Err(_) => None
+        Err(_) => None,
+    }
+}
+
+pub fn root_log_level() -> LevelFilter {
+    match std::env::var("FIBER_ROOT_LOG_LEVEL") {
+        Ok(value) => {
+            if value.to_ascii_lowercase() == levels::ERROR {
+                LevelFilter::Error
+            } else if value.to_ascii_lowercase() == levels::WARN {
+                LevelFilter::Warn
+            } else if value.to_ascii_lowercase() == levels::DEBUG {
+                LevelFilter::Debug
+            } else if value.to_ascii_lowercase() == levels::INFO {
+                LevelFilter::Info
+            } else if value.to_ascii_lowercase() == levels::TRACE {
+                LevelFilter::Trace
+            } else {
+                LevelFilter::Warn
+            }
+        }
+        Err(_) => LevelFilter::Warn,
     }
 }

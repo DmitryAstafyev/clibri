@@ -1,5 +1,5 @@
 [package]
-name = "fiber_transport_server"
+name = "fiber_transport_client"
 version = "0.1.0"
 authors = ["DmitryAstafyev <dvastafyev@gmail.com>"]
 edition = "2018"
@@ -8,8 +8,6 @@ edition = "2018"
 
 [dependencies]
 fiber = { path = "../../../../lib/rust" }
-bytes = "1.0.1"
-uuid = { version = "0.8.2", features = ["v4"] }
 tokio = { version = "1.9.0", features = ["full"] }
 tokio-tungstenite = "0.15.0"
 futures = { version = "0.3.16" }
@@ -17,5 +15,5 @@ thiserror = "1.0.26"
 log = "0.4.14"
 log4rs = "1.0.0"
 tokio-util = "0.6.7"
-async-trait = "0.1.51"
 hyper = { version = "0.14.11", features = ["full"] }
+uuid = { version = "0.8.2", features = ["v4"] }

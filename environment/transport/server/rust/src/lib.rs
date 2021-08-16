@@ -20,3 +20,6 @@ pub mod channel;
 
 #[path = "./errors.rs"]
 pub mod errors;
+
+#[path = "./options.rs"]
+pub mod options;

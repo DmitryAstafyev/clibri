@@ -1,14 +1,14 @@
-use super::{
-    client::{Client, ClientStatus},
-    config,
-    stat::Stat,
-};
-//use console::style;
+use super::{client::ClientStatus, config, stat::Stat};
 use console::style;
 use fiber::server::{control::Control, events::Events, interface::Interface};
+use fiber_transport_client::{
+    client::{Client, ConnectReturn, ToSend},
+    events::{Event as ClientEvent, Message as ClientMessage},
+    options::{ConnectionType, Options as ClientOptions},
+};
 use fiber_transport_server::{
     errors::Error,
-    options::{Listener, Options},
+    options::{Distributor, Listener, Options, Ports},
     server::Server,
 };
 use futures::future::join_all;
@@ -27,6 +27,7 @@ use tokio::{
 };
 use uuid::Uuid;
 
+// TODO: clients events: connected / disconnected don't work
 pub struct Test;
 
 impl Test {
@@ -76,7 +77,7 @@ impl Test {
                             return Err(format!("Fail write stat. Error: {}", err));
                         }
                     };
-                    if disconnected == config::CLIENTS_DIRECT_CONNECT {
+                    if disconnected == config::CLIENTS_DIRECT_DISTRIBUTOR {
                         if let Some(tx_all_disconnected) = tx_all_disconnected.take() {
                             tx_all_disconnected
                                 .send(())
@@ -130,7 +131,12 @@ impl Test {
             .parse::<SocketAddr>()
             .map_err(|e| e.to_string())?;
         let mut server: Server = Server::new(Options {
-            listener: Listener::Direct(socket_addr),
+            listener: Listener::Distributor(Distributor {
+                addr: socket_addr.ip().to_string(),
+                ports: Ports::Range(7001..7500),
+                distributor: socket_addr,
+                connections_per_port: 10000,
+            }),
         });
         let rx_server_events = server.observer().map_err(|e| format!("{:?}", e))?;
         let tx_client_sender = server.sender();
@@ -180,11 +186,17 @@ impl Test {
         println!("{} creating clients", style("[test]").bold().dim(),);
         let start = Instant::now();
         let mut clients: HashMap<Uuid, Client> = HashMap::new();
-        let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
-        for _ in 0..config::CLIENTS_DIRECT_CONNECT {
-            let client = Client::new(None)
-                .await
-                .map_err(|e| format!("Fail to create a client. Error: {}", e))?;
+        let pb = ProgressBar::new(config::CLIENTS_DIRECT_DISTRIBUTOR as u64);
+        let socket_addr = config::SERVER_ADDR
+            .parse::<SocketAddr>()
+            .map_err(|e| e.to_string())?;
+        for _ in 0..config::CLIENTS_DIRECT_DISTRIBUTOR {
+            let client = Client::new(
+                ClientOptions {
+                    connection: ConnectionType::Distributor(socket_addr),
+                },
+                None,
+            );
             let uuid = client.uuid();
             clients.insert(uuid, client);
             match stat.write() {
@@ -213,12 +225,117 @@ impl Test {
                 style("[test]").bold().dim(),
             );
             let start = Instant::now();
-            let results = join_all(
-                clients
-                    .iter_mut()
-                    .map(|(_uuid, client)| client.run(tx_client_status.clone(), stat_rc.clone())),
-            )
-            .await;
+            let mut jobs = vec![];
+            println!(
+                "{} clients spawn task: creating clients and jobs",
+                style("[test]").bold().dim(),
+            );
+            let pb = ProgressBar::new(config::CLIENTS_DIRECT_DISTRIBUTOR as u64);
+            for (_, client) in clients.iter_mut() {
+                let (mut rx_client_event, rx_client_done): ConnectReturn =
+                    match client.connect().await {
+                        Ok(connection) => connection,
+                        Err(err) => {
+                            eprintln!("fail to connect client: {:?}", err);
+                            panic!("fail to connect client: {:?}", err);
+                        }
+                    };
+                let stat = stat_rc.clone();
+                let client_ref = client.clone();
+                let status = tx_client_status.clone();
+                jobs.push(async move {
+                    // Step 1. Wakeup
+                    match stat.write() {
+                        Ok(mut stat) => stat.wakeup += 1,
+                        Err(err) => {
+                            return Err(format!("Fail write stat. Error: {}", err));
+                        }
+                    };
+                    // Step 2. Sending sample package to server
+                    let buffer: Vec<u8> = vec![0u8, 1u8, 2u8, 3u8, 4u8];
+                    client_ref
+                        .send(ToSend::Binary(buffer.clone()))
+                        .map_err(|e| format!("{:?}", e))?;
+                    match stat.write() {
+                        Ok(mut stat) => stat.write += 1,
+                        Err(err) => {
+                            return Err(format!("Fail write stat. Error: {}", err));
+                        }
+                    };
+                    let mut incomes: u8 = 0;
+                    while let Some(msg) = rx_client_event.recv().await {
+                        match msg {
+                            // Step 3. Waiting and reading message from server
+                            ClientEvent::Message(msg) => match msg {
+                                ClientMessage::Binary(income) => {
+                                    incomes += 1;
+                                    if income != vec![5u8, 6u8, 7u8, 8u8, 9u8] {
+                                        return Err(String::from("Invalid data from server"));
+                                    }
+                                    match stat.write() {
+                                        Ok(mut stat) => stat.read += 1,
+                                        Err(err) => {
+                                            return Err(format!("Fail write stat. Error: {}", err));
+                                        }
+                                    };
+                                    if incomes >= 2 {
+                                        break;
+                                    }
+                                }
+                                smth => {
+                                    eprintln!("unexpected message: {:?}", smth);
+                                    return Err(format!("unexpected message: {:?}", smth));
+                                }
+                            },
+                            ClientEvent::Connected(_) => {
+                                incomes += 1;
+                                match stat.write() {
+                                    Ok(mut stat) => stat.client_connected += 1,
+                                    Err(err) => {
+                                        return Err(format!("Fail write stat. Error: {}", err));
+                                    }
+                                };
+                                if incomes >= 2 {
+                                    break;
+                                }
+                            }
+                            ClientEvent::Disconnected => {
+                                break;
+                            }
+                            ClientEvent::Error(err) => {
+                                eprintln!("client error: {:?}", err);
+                                return Err(format!("client error: {:?}", err));
+                            }
+                        }
+                    }
+                    client.stop();
+
+                    // Waiting for done signal
+                    if let Err(err) = rx_client_done.await {
+                        eprintln!("fail to get client done status: {:?}", err);
+                        return Err(format!("fail to get client done status: {:?}", err));
+                    };
+                    match stat.write() {
+                        Ok(mut stat) => stat.client_done += 1,
+                        Err(err) => {
+                            return Err(format!("Fail write stat. Error: {}", err));
+                        }
+                    };
+                    status.send(ClientStatus::Done).map_err(|e| e.to_string())?;
+                    Ok::<Uuid, String>(client.uuid())
+                });
+                pb.inc(1);
+            }
+            pb.finish_and_clear();
+            println!(
+                "{} clients spawn task: waiting for clients will do jobs",
+                style("[test]").bold().dim(),
+            );
+            let results = join_all(jobs).await;
+            println!(
+                "{} clients spawn task: checks for clients jobs results",
+                style("[test]").bold().dim(),
+            );
             for result in results.iter() {
                 match result {
                     Ok(uuid) => {
@@ -249,14 +366,14 @@ impl Test {
         );
         let mut done: usize = 0;
         let start = Instant::now();
-        let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
+        let pb = ProgressBar::new(config::CLIENTS_DIRECT_DISTRIBUTOR as u64);
         while let Some(status) = rx_client_status.recv().await {
             //TODO: check state. it might be an error
             match status {
                 ClientStatus::Done => {
                     done += 1;
                     pb.inc(1);
-                    if done == config::CLIENTS_DIRECT_CONNECT as usize {
+                    if done == config::CLIENTS_DIRECT_DISTRIBUTOR as usize {
                         break;
                     }
                 }

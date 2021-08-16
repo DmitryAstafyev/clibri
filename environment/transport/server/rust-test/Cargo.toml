@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 fiber = { path = "../../../../lib/rust" }
 fiber_transport_server = { path = "../rust" }
+fiber_transport_client = { path = "../../client/rust" }
 bytes = "1.0.1"
 indicatif = "0.16.2"
 console = "0.14.1"

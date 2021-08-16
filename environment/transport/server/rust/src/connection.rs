@@ -1,6 +1,6 @@
 use super::{
     channel::{Control, Error as ChannelError, Messages},
-    errors::Error,
+    errors::Error, server::MonitorEvent,
 };
 use fiber::{env::logs, server::events::Events};
 use futures::{SinkExt, StreamExt};
@@ -42,6 +42,8 @@ impl Connection {
         mut ws: WebSocketStream<TcpStream>,
         events: UnboundedSender<Events<Error>>,
         messages: UnboundedSender<Messages>,
+        monitor: Option<UnboundedSender<(u16, MonitorEvent)>>,
+        port: u16,
     ) -> Result<UnboundedSender<Control>, String> {
         let (tx_control, mut rx_control): (UnboundedSender<Control>, UnboundedReceiver<Control>) =
             unbounded_channel();
@@ -56,6 +58,9 @@ impl Connection {
                 );
             }
         };
+        if let Some(monitor) = monitor.as_ref() {
+            monitor.send((port, MonitorEvent::Connected)).map_err(|_e| String::from("Fail send monitor event - connected"))?;
+        }
         let send_message = move |msg: Messages| {
             match messages.send(msg) {
                 Ok(_) => {}
@@ -205,6 +210,14 @@ impl Connection {
                 },
             };
             drop(ws);
+            if let Some(monitor) = monitor.as_ref() {
+                if let Err(_err) = monitor.send((port, MonitorEvent::Disconnected)) {
+                    error!(
+                        target: logs::targets::SERVER,
+                        "{}:: Fail send monitor event - disconnected", uuid
+                    );
+                }
+            }
         });
         Ok(tx_control)
     }

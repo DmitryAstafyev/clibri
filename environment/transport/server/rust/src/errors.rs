@@ -25,4 +25,13 @@ pub enum Error {
 	FailTakeControl,
 	#[error("fail to join task")]
 	JoinError(JoinError),
+	#[error("error on body parsing: `{0}`")]
+	BodyParsing(String),
+	#[error("server error: `{0}`")]
+	HttpServer(String),
+	#[error("error while distributing: `{0}`")]
+	Distributing(String),
+	#[error("fail to parse string to SocketAddr: `{0}`")]
+	SocketAddr(String)
 }
+
