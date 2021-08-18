@@ -77,7 +77,7 @@ impl Test {
                             return Err(format!("Fail write stat. Error: {}", err));
                         }
                     };
-                    if disconnected == config::CLIENTS_DIRECT_CONNECT {
+                    if disconnected == config::CLIENTS_2 {
                         if let Some(tx_all_disconnected) = tx_all_disconnected.take() {
                             tx_all_disconnected
                                 .send(())
@@ -181,11 +181,11 @@ impl Test {
         println!("{} creating clients", style("[test]").bold().dim(),);
         let start = Instant::now();
         let mut clients: HashMap<Uuid, Client> = HashMap::new();
-        let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
+        let pb = ProgressBar::new(config::CLIENTS_2 as u64);
         let socket_addr = config::SERVER_ADDR
             .parse::<SocketAddr>()
             .map_err(|e| e.to_string())?;
-        for _ in 0..config::CLIENTS_DIRECT_CONNECT {
+        for _ in 0..config::CLIENTS_2 {
             let client = Client::new(
                 ClientOptions {
                     connection: ConnectionType::Direct(socket_addr),
@@ -225,7 +225,7 @@ impl Test {
                 "{} clients spawn task: creating clients and jobs",
                 style("[test]").bold().dim(),
             );
-            let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
+            let pb = ProgressBar::new(config::CLIENTS_2 as u64);
             for (_, client) in clients.iter_mut() {
                 let (mut rx_client_event, rx_client_done): ConnectReturn =
                     match client.connect().await {
@@ -361,14 +361,14 @@ impl Test {
         );
         let mut done: usize = 0;
         let start = Instant::now();
-        let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
+        let pb = ProgressBar::new(config::CLIENTS_2 as u64);
         while let Some(status) = rx_client_status.recv().await {
             //TODO: check state. it might be an error
             match status {
                 ClientStatus::Done => {
                     done += 1;
                     pb.inc(1);
-                    if done == config::CLIENTS_DIRECT_CONNECT as usize {
+                    if done == config::CLIENTS_2 as usize {
                         break;
                     }
                 }

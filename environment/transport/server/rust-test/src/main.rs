@@ -10,8 +10,8 @@ use fiber::env::logs;
 #[tokio::main]
 async fn main() -> Result<(), String> {
     logs::init();
-    // test_1::Test::run().await?;
-    // test_2::Test::run().await?;
+    test_1::Test::run().await?;
+    test_2::Test::run().await?;
     test_3::Test::run().await?;
     Ok(())
 }

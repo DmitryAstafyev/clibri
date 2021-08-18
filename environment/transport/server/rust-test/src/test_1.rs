@@ -76,7 +76,7 @@ impl Test {
                             return Err(format!("Fail write stat. Error: {}", err));
                         }
                     };
-                    if disconnected == config::CLIENTS_DIRECT_CONNECT {
+                    if disconnected == config::CLIENTS_1 {
                         if let Some(tx_all_disconnected) = tx_all_disconnected.take() {
                             tx_all_disconnected
                                 .send(())
@@ -180,8 +180,8 @@ impl Test {
         println!("{} creating clients", style("[test]").bold().dim(),);
         let start = Instant::now();
         let mut clients: HashMap<Uuid, Client> = HashMap::new();
-        let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
-        for _ in 0..config::CLIENTS_DIRECT_CONNECT {
+        let pb = ProgressBar::new(config::CLIENTS_1 as u64);
+        for _ in 0..config::CLIENTS_1 {
             let client = Client::new(None)
                 .await
                 .map_err(|e| format!("Fail to create a client. Error: {}", e))?;
@@ -249,14 +249,14 @@ impl Test {
         );
         let mut done: usize = 0;
         let start = Instant::now();
-        let pb = ProgressBar::new(config::CLIENTS_DIRECT_CONNECT as u64);
+        let pb = ProgressBar::new(config::CLIENTS_1 as u64);
         while let Some(status) = rx_client_status.recv().await {
             //TODO: check state. it might be an error
             match status {
                 ClientStatus::Done => {
                     done += 1;
                     pb.inc(1);
-                    if done == config::CLIENTS_DIRECT_CONNECT as usize {
+                    if done == config::CLIENTS_1 as usize {
                         break;
                     }
                 }

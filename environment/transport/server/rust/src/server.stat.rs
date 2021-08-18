@@ -1,9 +1,12 @@
 use std::fmt;
 
 pub struct Stat {
-    connecting: usize,      // Attempt to connect
-    connected: usize,       // Socket accepted and connected
-    disconnected: usize,    // Socket disconnected
+    connection_type: String,
+    connecting: usize,   // Attempt to connect
+    connected: usize,    // Socket accepted and connected
+    disconnected: usize, // Socket disconnected
+    listeners_created: u16,
+    listeners_destroyed: u16,
     errors: usize,
     recieved_bytes: usize,
     recieved_packages: usize,
@@ -13,26 +16,26 @@ pub struct Stat {
 }
 
 impl Default for Stat {
-
     fn default() -> Self {
         Self::new()
     }
-
 }
 
 impl Stat {
-
     pub fn new() -> Self {
         Self {
+            connection_type: String::new(),
             connecting: 0,
             connected: 0,
             disconnected: 0,
+            listeners_created: 0,
+            listeners_destroyed: 0,
             errors: 0,
             recieved_bytes: 0,
             recieved_packages: 0,
             sent_bytes: 0,
             sent_packages: 0,
-            alive: 0, 
+            alive: 0,
         }
     }
 
@@ -66,16 +69,27 @@ impl Stat {
         self.alive = alive;
     }
 
+    pub fn listener_created(&mut self) {
+        self.listeners_created += 1;
+    }
+
+    pub fn listener_destroyed(&mut self) {
+        self.listeners_destroyed += 1;
+    }
+
     pub fn print(&self) {
         println!("{}", self);
     }
-
-
 }
 
 impl fmt::Display for Stat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\
+        write!(
+            f,
+            "\
+- server:           {}
+- listeners created {}
+- listeners destroy {}
 - connecting:       {} attempts
 - connected:        {} clients
 - disconnected:     {} clients
@@ -86,6 +100,9 @@ impl fmt::Display for Stat {
 - sent:             {} packages
 - alive:            {} clients
 ",
+            self.connection_type,
+            self.listeners_created,
+            self.listeners_destroyed,
             self.connecting,
             self.connected,
             self.disconnected,

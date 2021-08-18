@@ -113,6 +113,9 @@ impl Server {
         info!(target: logs::targets::SERVER, "[task: streams]:: started");
         let listener = match TcpListener::bind(addr).await {
             Ok(listener) => {
+                if let Ok(mut stat) = stat.write() {
+                    stat.listener_created();
+                }
                 debug!(
                     target: logs::targets::SERVER,
                     "server has been started on {}", addr
@@ -168,6 +171,9 @@ impl Server {
             }
         };
         drop(listener);
+        if let Ok(mut stat) = stat.write() {
+            stat.listener_destroyed();
+        }
         res
     }
 
