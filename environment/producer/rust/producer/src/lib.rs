@@ -38,47 +38,29 @@ pub mod DisconnectedEvent;
 #[path = "./events/event.KickOff.rs"]
 pub mod KickOffEvent;
 
-
 use super::tools;
 use consumer::Consumer;
 use consumer_identification::Filter;
 use fiber::{
     logger::Logger,
     server::{
-        control::Control as ServerControl,
-        events::Events as ServerEvents,
-        interface::Interface
-    }
+        control::Control as ServerControl, events::Events as ServerEvents, interface::Interface,
+    },
 };
+use futures::Future;
 use protocol as Protocol;
 use std::collections::HashMap;
-use std::sync::{
-    Arc,
-    RwLock
-};
 use std::pin::Pin;
+use std::sync::{Arc, RwLock};
 use tokio::{
-    select,
     join,
-    sync::mpsc::{
-        unbounded_channel,
-        UnboundedReceiver,
-        UnboundedSender,
-        error::SendError
-    },
-    sync::oneshot::{
-        channel,
-        Receiver,
-        Sender
-    },
-    task::{
-        spawn,
-        JoinHandle
-    },
     runtime::Runtime,
+    select,
+    sync::mpsc::{error::SendError, unbounded_channel, UnboundedReceiver, UnboundedSender},
+    sync::oneshot::{channel, Receiver, Sender},
+    task::{spawn, JoinHandle},
 };
 use uuid::Uuid;
-use futures::Future;
 use Protocol::PackingStruct;
 
 pub enum ProducerError {
@@ -124,7 +106,10 @@ pub fn broadcasting(
     buffer: Vec<u8>,
 ) -> Result<(), String> {
     if let Err(e) = consumers.send(ConsumersChannel::SendByFilter((filter, buffer))) {
-        Err(tools::logger.err(&format!("Fail to get access consumers channel due error: {}", e)))
+        Err(tools::logger.err(&format!(
+            "Fail to get access consumers channel due error: {}",
+            e
+        )))
     } else {
         Ok(())
     }
@@ -132,7 +117,6 @@ pub fn broadcasting(
 
 #[allow(non_snake_case)]
 trait ProducerEventsHolderTrait {
-
     fn ConsumerConnected(_uuid: Uuid) {
         tools::logger.debug("[producer event: ConsumerConnected] doesn't have handler");
     }
@@ -152,7 +136,6 @@ trait ProducerEventsHolderTrait {
     fn Error(_err: ProducerError) {
         tools::logger.debug("[producer event: InternalError] doesn't have handler");
     }
-
 }
 
 pub struct ProducerEventsHolder;
@@ -165,12 +148,8 @@ pub struct Events {
 }
 
 impl Events {
-    pub fn new(
-        KickOffEvent: UnboundedSender<KickOffEvent::Event>
-    ) -> Self {
-        Events {
-            KickOffEvent,
-        }
+    pub fn new(KickOffEvent: UnboundedSender<KickOffEvent::Event>) -> Self {
+        Events { KickOffEvent }
     }
 }
 
@@ -182,7 +161,6 @@ pub struct Control {
 }
 
 impl Control {
-
     pub fn new(
         server_control: UnboundedSender<ServerControl>,
         consumers: UnboundedSender<ConsumersChannel>,
@@ -199,37 +177,40 @@ impl Control {
         self.server_control.send(ServerControl::Shutdown)
     }
 
-    pub fn assign(&self, uuid: Uuid, assigned: Protocol::Identification::AssignedKey, overwrite: bool) -> Result<(), SendError<ConsumersChannel>> {
-        self.consumers.send(ConsumersChannel::Assign((uuid, assigned, overwrite)))
+    pub fn assign(
+        &self,
+        uuid: Uuid,
+        assigned: Protocol::Identification::AssignedKey,
+        overwrite: bool,
+    ) -> Result<(), SendError<ConsumersChannel>> {
+        self.consumers
+            .send(ConsumersChannel::Assign((uuid, assigned, overwrite)))
     }
 
     pub fn send(&self, filter: Filter, buffer: Vec<u8>) -> Result<(), SendError<ConsumersChannel>> {
-        self.consumers.send(ConsumersChannel::SendByFilter((filter, buffer)))
+        self.consumers
+            .send(ConsumersChannel::SendByFilter((filter, buffer)))
     }
 
     pub fn disconnect(&self, filter: Filter) -> Result<(), SendError<ConsumersChannel>> {
         self.consumers.send(ConsumersChannel::Disconnect(filter))
     }
-
 }
 
 pub enum StartError {
-    Runtime()
+    Runtime(),
 }
 
-pub fn init_and_start<
-    S: 'static + Interface + Sync + Send,
-    UCX: 'static + Sync + Send + Clone,
->(
+pub fn init_and_start<S: 'static + Interface + Sync + Send, UCX: 'static + Sync + Send + Clone>(
     server: S,
     ucx: UCX,
     control: Option<std::sync::mpsc::Sender<Control>>,
 ) -> Result<(), std::io::Error> {
-    let rt  = match Runtime::new() {
+    let rt = match Runtime::new() {
         Ok(rt) => rt,
         Err(e) => {
             return Err(e);
-        },
+        }
     };
     rt.block_on(async move {
         let (thread, controller) = init(server, ucx);
@@ -243,17 +224,14 @@ pub fn init_and_start<
     Ok(())
 }
 
-pub fn init<
-    S: 'static + Interface + Sync + Send,
-    UCX: 'static + Sync + Send + Clone,
->(
+pub fn init<S: 'static + Interface + Sync + Send, UCX: 'static + Sync + Send + Clone>(
     mut server: S,
     ucx: UCX,
 ) -> (Pin<Box<dyn Future<Output = ()>>>, Control) {
     let (tx_server_events, rx_server_events): (
         UnboundedSender<ServerEvents>,
-        UnboundedReceiver<ServerEvents>) =
-        unbounded_channel();
+        UnboundedReceiver<ServerEvents>,
+    ) = unbounded_channel();
     let (tx_sender, rx_sender): (
         UnboundedSender<(Vec<u8>, Option<Uuid>)>,
         UnboundedReceiver<(Vec<u8>, Option<Uuid>)>,
@@ -270,10 +248,8 @@ pub fn init<
         UnboundedSender<ServerControl>,
         UnboundedReceiver<ServerControl>,
     ) = unbounded_channel();
-    let (tx_server_listener_task_sd, rx_server_listener_task_sd): (
-        Sender<()>,
-        Receiver<()>,
-    ) = channel();
+    let (tx_server_listener_task_sd, rx_server_listener_task_sd): (Sender<()>, Receiver<()>) =
+        channel();
     let server_listener_task: JoinHandle<Result<(), String>> = spawn_server_listener(
         rx_server_events,
         tx_consumers.clone(),
@@ -284,14 +260,9 @@ pub fn init<
         Sender<()>,
         Receiver<()>,
     ) = channel();
-    let producer_events_holder_task: JoinHandle<Result<(), String>> = spawn_producer_events_holder(
-        rx_producer_events,
-        rx_producer_events_holder_task_sd,
-    );
-    let (tx_consumers_task_sd, rx_consumers_task_sd): (
-        Sender<()>,
-        Receiver<()>,
-    ) = channel();
+    let producer_events_holder_task: JoinHandle<Result<(), String>> =
+        spawn_producer_events_holder(rx_producer_events, rx_producer_events_holder_task_sd);
+    let (tx_consumers_task_sd, rx_consumers_task_sd): (Sender<()>, Receiver<()>) = channel();
     let consumers_task: JoinHandle<Result<(), String>> = spawn_consumers(
         tx_consumers.clone(),
         rx_consumers,
@@ -305,24 +276,11 @@ pub fn init<
         UnboundedSender<KickOffEvent::Event>,
         UnboundedReceiver<KickOffEvent::Event>,
     ) = unbounded_channel();
-    let events = Events::new(
-        tx_event_kickoff
-    );
-    let control = Control::new(
-        tx_server_control,
-        tx_consumers,
-        events,
-    );
-    let (tx_events_task_sd, rx_events_task_sd): (
-        Sender<()>,
-        Receiver<()>,
-    ) = channel();
-    let events_task: JoinHandle<Result<(), String>> = spawn_events(
-        ucx,
-        control.clone(),
-        rx_event_kickoff,
-        rx_events_task_sd,
-    );
+    let events = Events::new(tx_event_kickoff);
+    let control = Control::new(tx_server_control, tx_consumers, events);
+    let (tx_events_task_sd, rx_events_task_sd): (Sender<()>, Receiver<()>) = channel();
+    let events_task: JoinHandle<Result<(), String>> =
+        spawn_events(ucx, control.clone(), rx_event_kickoff, rx_events_task_sd);
     let task = async move {
         tools::logger.debug("[task: main]:: started");
         select! {
@@ -347,7 +305,9 @@ pub fn init<
             Some(("events holder", tx_producer_events_holder_task_sd)),
             Some(("consumers", tx_consumers_task_sd)),
             Some(("events", tx_events_task_sd)),
-        ]).iter_mut() {
+        ])
+        .iter_mut()
+        {
             if let Some(task) = task.take() {
                 if let Err(_e) = task.1.send(()) {
                     tools::logger.debug(&format!("Fail send finish signal to task: {}", task.0));
@@ -367,10 +327,7 @@ fn spawn_server_listener(
 ) -> JoinHandle<Result<(), String>> {
     spawn(async move {
         tools::logger.debug("[task: server listener]:: started");
-        let (_tx_streams_task_sd, rx_streams_task_sd): (
-            Sender<()>,
-            Receiver<()>,
-        ) = channel();
+        let (_tx_streams_task_sd, rx_streams_task_sd): (Sender<()>, Receiver<()>) = channel();
         select! {
             _ = async {
                 tools::logger.debug("[task: server listener]:: started");
@@ -470,9 +427,7 @@ fn spawn_producer_events_holder(
 }
 
 #[allow(non_snake_case)]
-fn spawn_consumers<
-    UCX: 'static + Sync + Send + Clone,
->(
+fn spawn_consumers<UCX: 'static + Sync + Send + Clone>(
     tx_consumers: UnboundedSender<ConsumersChannel>,
     mut rx_consumers: UnboundedReceiver<ConsumersChannel>,
     tx_server_control: UnboundedSender<ServerControl>,
@@ -830,9 +785,7 @@ fn spawn_consumers<
 }
 
 #[allow(non_snake_case)]
-fn spawn_events<
-    UCX: 'static + Sync + Send + Clone,
->(
+fn spawn_events<UCX: 'static + Sync + Send + Clone>(
     ucx: UCX,
     control: Control,
     rx_event_kickoff: UnboundedReceiver<KickOffEvent::Event>,
@@ -855,21 +808,19 @@ pub trait ProducerTrait<UCX>
 where
     UCX: 'static + Sync + Send + Clone,
 {
-
     fn connected(uuid: Uuid, ucx: UCX) -> Result<(), String> {
-        Err(String::from("Handler for event conntected isn't implemented."))
+        Err(String::from(
+            "Handler for event conntected isn't implemented.",
+        ))
     }
 
     fn disconnected(uuid: Uuid, ucx: UCX) -> Result<EventDisconnectedBroadcasting, String> {
-        Err(String::from("Handler for event conntected isn't implemented."))
+        Err(String::from(
+            "Handler for event conntected isn't implemented.",
+        ))
     }
-
 }
 
-pub struct Producer {
+pub struct Producer {}
 
-}
-
-impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {
-
-}
+impl<UCX: 'static + Sync + Send + Clone> ProducerTrait<UCX> for Producer {}

@@ -1,0 +1,148 @@
+group Identification {
+    struct SelfKey {
+        str uuid?;
+        u64 id?;
+        str location?;
+    }
+    struct SelfKeyResponse {
+        str uuid;
+    }
+    struct AssignedKey {
+        str uuid?;
+        bool auth?;
+    }
+}
+
+enum UserRole {
+    Admin;
+    User;
+    Manager;
+}
+
+group Events {
+    struct UserConnected {
+        str username;
+        str uuid;
+    }
+
+    struct UserDisconnected {
+        str username;
+        str uuid;
+    }
+
+    struct Message {
+        u64 timestamp;
+        str user;
+        str message;
+        str uuid;
+    }
+}
+
+group ServerEvents {
+    struct UserKickOff {
+        str reason?;
+        str uuid;
+    }
+}
+
+group Message {
+
+    struct Request {
+        str user;
+        str message;
+    }
+
+    struct Accepted {
+        str uuid;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
+
+group Messages {
+
+    struct Message {
+        u64 timestamp;
+        str user;
+        str uuid;
+        str message;
+    }
+
+    struct Request {
+    }
+
+    struct Response {
+        Message[] messages;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
+
+group UserLogin {
+
+    struct Request {
+        str username;
+    }
+
+    struct Accepted {
+        str uuid;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
+
+group UserInfo {
+
+    struct Request {
+    }
+
+    struct Accepted {
+        str browser;
+    }
+
+    struct Denied {
+        str reason;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
+
+group Users {
+
+    struct User {
+        str name;
+        str uuid;
+    }
+
+    struct Request {
+    }
+
+    struct Response {
+        User[] users;
+    }
+
+    struct Err {
+        str error;
+    }
+
+}
