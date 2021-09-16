@@ -1,4 +1,4 @@
-use super::protocol;
+use super::implementation::protocol;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
