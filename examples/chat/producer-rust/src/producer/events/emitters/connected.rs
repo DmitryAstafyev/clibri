@@ -1,5 +1,4 @@
-use super::{broadcast, pack, EmitterError};
-use crate::{events, identification, producer::Control, Context};
+use super::{broadcast, events, identification, pack, producer::Control, Context, EmitterError};
 use uuid::Uuid;
 
 pub async fn emit(

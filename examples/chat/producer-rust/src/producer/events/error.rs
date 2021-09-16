@@ -1,4 +1,4 @@
-use crate::{producer::Control, Context, ProducerError};
+use super::{producer::Control, Context, ProducerError};
 use uuid::Uuid;
 
 #[allow(unused_variables)]

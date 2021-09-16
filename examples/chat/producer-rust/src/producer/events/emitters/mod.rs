@@ -2,7 +2,7 @@ pub mod connected;
 pub mod disconnected;
 pub mod error;
 
-use crate::{producer::Control, protocol};
+use super::*;
 use protocol::PackingStruct;
 use thiserror::Error;
 use uuid::Uuid;
@@ -28,7 +28,7 @@ pub fn pack(
 
 pub fn broadcast(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
-    control: &Control,
+    control: &producer::Control,
 ) -> Result<(), EmitterError> {
     control
         .broadcast(broadcasting.0.clone(), broadcasting.1.clone())

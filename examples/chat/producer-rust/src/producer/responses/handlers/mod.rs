@@ -3,7 +3,7 @@ pub mod messages;
 pub mod user_login;
 pub mod users;
 
-use crate::{producer::Control, protocol};
+use super::*;
 use protocol::PackingStruct;
 use thiserror::Error;
 use uuid::Uuid;
@@ -29,7 +29,7 @@ pub fn pack(
 
 pub fn broadcast(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
-    control: &Control,
+    control: &producer::Control,
 ) -> Result<(), HandlerError> {
     control
         .broadcast(broadcasting.0.clone(), broadcasting.1.clone())

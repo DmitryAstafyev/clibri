@@ -1,3 +1,5 @@
+use super::*;
+
 pub mod message;
 pub mod messages;
 pub mod user_login;
