@@ -26,12 +26,12 @@ pub fn pack(
         .map_err(EmitterError::Packing)
 }
 
-pub fn broadcast(
+pub fn broadcast<E: std::error::Error>(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
     control: &producer::Control,
 ) -> Result<(), EmitterError> {
     control
         .broadcast(broadcasting.0.clone(), broadcasting.1.clone())
-        .map_err(|e| EmitterError::Processing(e.to_string()))?;
+        .map_err(|e: ProducerError<E>| EmitterError::Processing(e.to_string()))?;
     Ok(())
 }

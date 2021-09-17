@@ -1,9 +1,10 @@
 use super::{
     broadcast, identification, pack, producer::Control, protocol, responses, Context, HandlerError,
+    ProducerError,
 };
 use uuid::Uuid;
 
-pub async fn process(
+pub async fn process<E: std::error::Error>(
     context: &mut Context,
     filter: identification::Filter,
     uuid: Uuid,
@@ -39,9 +40,9 @@ pub async fn process(
     };
     control
         .send(buffer, Some(uuid))
-        .map_err(|e| HandlerError::Processing(e.to_string()))?;
+        .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))?;
     for msg in broadcasting.iter_mut() {
-        broadcast(msg, control)?;
+        broadcast::<E>(msg, control)?;
     }
     Ok(())
 }

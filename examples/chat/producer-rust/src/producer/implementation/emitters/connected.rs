@@ -1,7 +1,7 @@
 use super::{broadcast, events, identification, pack, producer::Control, Context, EmitterError};
 use uuid::Uuid;
 
-pub async fn emit(
+pub async fn emit<E: std::error::Error>(
     uuid: Uuid,
     context: &mut Context,
     filter: identification::Filter,
@@ -9,7 +9,7 @@ pub async fn emit(
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let (mut broadcast_userlogin, mut broadcast_message) =
-        events::connected::emit(uuid, context, filter, control)
+        events::connected::emit::<E>(uuid, context, filter, control)
             .await
             .map_err(EmitterError::Emitting)?;
     broadcasting.push((
@@ -23,7 +23,7 @@ pub async fn emit(
         ));
     }
     for msg in broadcasting.iter_mut() {
-        broadcast(msg, control)?;
+        broadcast::<E>(msg, control)?;
     }
     Ok(())
 }

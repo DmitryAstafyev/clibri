@@ -1,8 +1,8 @@
 use super::{events, producer::Control, Context, EmitterError, ProducerError};
 use uuid::Uuid;
 
-pub async fn emit(
-    error: ProducerError,
+pub async fn emit<E: std::error::Error>(
+    error: ProducerError<E>,
     uuid: Option<Uuid>,
     context: &mut Context,
     control: &Control,

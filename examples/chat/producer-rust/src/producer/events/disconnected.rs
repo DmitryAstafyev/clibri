@@ -4,7 +4,7 @@ use uuid::Uuid;
 type BroadcastMessage = (Vec<Uuid>, protocol::Events::Message);
 
 #[allow(unused_variables)]
-pub async fn emit(
+pub async fn emit<E: std::error::Error>(
     uuid: Uuid,
     context: &mut Context,
     filter: identification::Filter,

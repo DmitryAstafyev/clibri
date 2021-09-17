@@ -5,7 +5,7 @@ type BroadcastUserConnected = (Vec<Uuid>, protocol::Events::UserConnected);
 type BroadcastMessage = Option<(Vec<Uuid>, protocol::Events::Message)>;
 
 #[allow(unused_variables)]
-pub async fn emit(
+pub async fn emit<E: std::error::Error>(
     uuid: Uuid,
     context: &mut Context,
     filter: identification::Filter,
