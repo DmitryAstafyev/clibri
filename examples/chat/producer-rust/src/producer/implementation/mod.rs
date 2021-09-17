@@ -428,13 +428,12 @@ pub mod producer {
         Ok(())
     }
 
-    pub async fn run<E: std::error::Error>(
-        mut server: Box<dyn Interface<E>>,
-        context: Context,
-    ) -> Result<(), ProducerError<E>> {
-        let rx_server_events = server
-            .observer()
-            .map_err(|e: E| ProducerError::ServerError(e))?;
+    pub async fn run<S, E>(mut server: S, context: Context) -> Result<(), ProducerError<E>>
+    where
+        S: Interface<E>,
+        E: std::error::Error,
+    {
+        let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
         let tx_consumer_sender = server.sender();
         let shutdown = CancellationToken::new();
         let control = Control {
@@ -448,7 +447,7 @@ pub mod producer {
                     target: logs::targets::PRODUCER,
                     "starting server"
                 );
-                server.listen().await.map_err(|e: E| ProducerError::ServerError(e))
+                server.listen().await.map_err(ProducerError::ServerError)
             } => res,
             res = listener(
                 context,
