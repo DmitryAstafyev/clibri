@@ -20,7 +20,10 @@ use std::collections::HashMap;
 use thiserror::Error;
 use tokio::{
     select,
-    sync::mpsc::{UnboundedReceiver, UnboundedSender},
+    sync::{
+        mpsc::{UnboundedReceiver, UnboundedSender},
+        oneshot,
+    },
 };
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
@@ -58,6 +61,14 @@ pub mod producer {
 
     impl Control {
         pub async fn shutdown<E: std::error::Error>(&self) -> Result<(), ProducerError<E>> {
+            let (tx_shutdown_confirmation, rx_shutdown_confirmation): (
+                oneshot::Sender<Option<E>>,
+                oneshot::Receiver<Option<E>>,
+            ) = oneshot::channel();
+            self.tx_server_control
+                .send(ServerControl::Shutdown)
+                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
+            // Wait for response
             Ok(())
         }
 
@@ -65,6 +76,9 @@ pub mod producer {
             &self,
             uuid: Uuid,
         ) -> Result<(), ProducerError<E>> {
+            self.tx_server_control
+                .send(ServerControl::Disconnect(uuid))
+                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
             Ok(())
         }
 

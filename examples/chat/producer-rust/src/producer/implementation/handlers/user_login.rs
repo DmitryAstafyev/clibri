@@ -13,31 +13,32 @@ pub async fn process<E: std::error::Error>(
     control: &Control,
 ) -> Result<(), HandlerError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
-    let buffer = match responses::user_login::response(context, request, filter, control).await {
-        Ok(conclusion) => match conclusion {
-            responses::user_login::Response::Accepted((
-                mut response,
-                mut broadcast_userlogin,
-                mut broadcast_message,
-            )) => {
-                broadcasting.push((
-                    broadcast_userlogin.0,
-                    pack(&0, &uuid, &mut broadcast_userlogin.1)?,
-                ));
-                if let Some(mut broadcast_message) = broadcast_message.take() {
+    let buffer =
+        match responses::user_login::response(uuid, context, request, filter, control).await {
+            Ok(conclusion) => match conclusion {
+                responses::user_login::Response::Accepted((
+                    mut response,
+                    mut broadcast_userlogin,
+                    mut broadcast_message,
+                )) => {
                     broadcasting.push((
-                        broadcast_message.0,
-                        pack(&0, &uuid, &mut broadcast_message.1)?,
+                        broadcast_userlogin.0,
+                        pack(&0, &uuid, &mut broadcast_userlogin.1)?,
                     ));
+                    if let Some(mut broadcast_message) = broadcast_message.take() {
+                        broadcasting.push((
+                            broadcast_message.0,
+                            pack(&0, &uuid, &mut broadcast_message.1)?,
+                        ));
+                    }
+                    pack(&sequence, &uuid, &mut response)?
                 }
-                pack(&sequence, &uuid, &mut response)?
-            }
-            responses::user_login::Response::Deny(mut response) => {
-                pack(&sequence, &uuid, &mut response)?
-            }
-        },
-        Err(mut error) => pack(&sequence, &uuid, &mut error)?,
-    };
+                responses::user_login::Response::Deny(mut response) => {
+                    pack(&sequence, &uuid, &mut response)?
+                }
+            },
+            Err(mut error) => pack(&sequence, &uuid, &mut error)?,
+        };
     control
         .send(buffer, Some(uuid))
         .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))?;

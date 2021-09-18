@@ -8,5 +8,6 @@ pub async fn emit<E: std::error::Error>(
     context: &mut Context,
     control: &Control,
 ) -> Result<(), String> {
-    Err(String::from("Event emitter \"error\" isn't implemented"))
+    Ok(())
+    // Err(String::from("Event emitter \"error\" isn't implemented"))
 }

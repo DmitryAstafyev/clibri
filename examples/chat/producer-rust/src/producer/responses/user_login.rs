@@ -17,6 +17,7 @@ pub enum Response {
 
 #[allow(unused_variables)]
 pub async fn response(
+    uuid: Uuid,
     context: &mut Context,
     request: &protocol::UserLogin::Request,
     filter: identification::Filter,
@@ -27,7 +28,13 @@ pub async fn response(
             reason: String::from("User has been login already"),
         }))
     } else {
-        let uuid = context.add_user(&request.username).await;
+        context.add_user(uuid, &request.username).await;
+        let msg = context
+            .add_message(
+                &request.username,
+                format!("User {} has been join to chat", request.username),
+            )
+            .map_err(|e| protocol::UserLogin::Err { error: e })?;
         Ok(Response::Accepted((
             protocol::UserLogin::Accepted {
                 uuid: uuid.to_string(),
@@ -39,15 +46,7 @@ pub async fn response(
                     uuid: uuid.to_string(),
                 },
             ),
-            Some((
-                filter.except(uuid),
-                protocol::Events::Message {
-                    timestamp: 0,
-                    user: request.username.clone(),
-                    message: String::new(),
-                    uuid: uuid.to_string(),
-                },
-            )),
+            Some((filter.except(uuid), msg)),
         )))
     }
 }

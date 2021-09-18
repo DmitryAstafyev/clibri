@@ -13,7 +13,7 @@ pub async fn process<E: std::error::Error>(
     control: &Control,
 ) -> Result<(), HandlerError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
-    let buffer = match responses::message::response(context, request, filter, control).await {
+    let buffer = match responses::message::response(uuid, context, request, filter, control).await {
         Ok(conclusion) => match conclusion {
             responses::message::Response::Accepted((mut response, mut broadcast_message)) => {
                 broadcasting.push((

@@ -12,7 +12,7 @@ pub async fn process<E: std::error::Error>(
     sequence: u32,
     control: &Control,
 ) -> Result<(), HandlerError> {
-    let buffer = match responses::users::response(context, request, filter, control).await {
+    let buffer = match responses::users::response(uuid, context, request, filter, control).await {
         Ok(mut response) => pack(&sequence, &uuid, &mut response)?,
         Err(mut error) => pack(&sequence, &uuid, &mut error)?,
     };
