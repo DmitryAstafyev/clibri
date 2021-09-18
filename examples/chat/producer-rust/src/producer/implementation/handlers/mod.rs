@@ -14,8 +14,6 @@ pub enum HandlerError {
     Processing(String),
     #[error("packing error: `{0}`")]
     Packing(String),
-    #[error("response: `{0}`")]
-    Response(String),
 }
 
 pub fn pack(

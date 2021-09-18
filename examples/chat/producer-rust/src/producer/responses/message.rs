@@ -1,5 +1,4 @@
 use super::{identification, producer::Control, protocol, Context};
-use std::str::FromStr;
 use uuid::Uuid;
 
 type BroadcastMessage = (Vec<Uuid>, protocol::Events::Message);

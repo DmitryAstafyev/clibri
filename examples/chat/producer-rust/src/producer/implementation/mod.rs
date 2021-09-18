@@ -68,14 +68,11 @@ pub mod producer {
             self.tx_server_control
                 .send(ServerControl::Shutdown)
                 .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
-            // Wait for response
+            // TODO: Wait for response
             Ok(())
         }
 
-        pub async fn disconnect<E: std::error::Error>(
-            &self,
-            uuid: Uuid,
-        ) -> Result<(), ProducerError<E>> {
+        pub fn disconnect<E: std::error::Error>(&self, uuid: Uuid) -> Result<(), ProducerError<E>> {
             self.tx_server_control
                 .send(ServerControl::Disconnect(uuid))
                 .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
