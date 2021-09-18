@@ -7,15 +7,7 @@ use super::{
     stat::Stat,
 };
 use async_trait::async_trait;
-use fiber::{
-    env,
-    env::logs,
-    server::{
-        control::Control as ServerControl,
-        events::Events,
-        interface::{Interface, Sending},
-    },
-};
+use fiber::{env, env::logs, server};
 use futures::lock::Mutex;
 use hyper::{
     header,
@@ -60,12 +52,12 @@ impl HandshakeInterface for Handshake {}
 
 pub struct Server {
     options: Options,
-    tx_events: UnboundedSender<Events<Error>>,
-    rx_events: Option<UnboundedReceiver<Events<Error>>>,
-    tx_sender: UnboundedSender<Sending>,
-    rx_sender: Option<UnboundedReceiver<Sending>>,
-    tx_control: UnboundedSender<ServerControl>,
-    rx_control: Option<UnboundedReceiver<ServerControl>>,
+    tx_events: UnboundedSender<server::Events<Error>>,
+    rx_events: Option<UnboundedReceiver<server::Events<Error>>>,
+    tx_sender: UnboundedSender<server::Sending>,
+    rx_sender: Option<UnboundedReceiver<server::Sending>>,
+    tx_control: UnboundedSender<server::Control>,
+    rx_control: Option<UnboundedReceiver<server::Control>>,
     controlls: Arc<RwLock<HashMap<Uuid, UnboundedSender<Control>>>>,
     stat: Arc<RwLock<Stat>>,
 }
@@ -74,14 +66,16 @@ impl Server {
     pub fn new(options: Options) -> Self {
         env::logs::init();
         let (tx_events, rx_events): (
-            UnboundedSender<Events<Error>>,
-            UnboundedReceiver<Events<Error>>,
+            UnboundedSender<server::Events<Error>>,
+            UnboundedReceiver<server::Events<Error>>,
         ) = unbounded_channel();
-        let (tx_sender, rx_sender): (UnboundedSender<Sending>, UnboundedReceiver<Sending>) =
-            unbounded_channel();
+        let (tx_sender, rx_sender): (
+            UnboundedSender<server::Sending>,
+            UnboundedReceiver<server::Sending>,
+        ) = unbounded_channel();
         let (tx_control, rx_control): (
-            UnboundedSender<ServerControl>,
-            UnboundedReceiver<ServerControl>,
+            UnboundedSender<server::Control>,
+            UnboundedReceiver<server::Control>,
         ) = unbounded_channel();
         Self {
             options,
@@ -105,7 +99,7 @@ impl Server {
     async fn streams_task(
         addr: SocketAddr,
         tx_tcp_stream: UnboundedSender<TcpStream>,
-        tx_events: UnboundedSender<Events<Error>>,
+        tx_events: UnboundedSender<server::Events<Error>>,
         stat: Arc<RwLock<Stat>>,
         mut tx_listener_ready: Option<oneshot::Sender<()>>,
         cancel: CancellationToken,
@@ -128,7 +122,7 @@ impl Server {
                     "Fail to start server on {}. Error: {}", addr, e
                 );
                 tx_events
-                    .send(Events::ServerError(Error::Create(format!("{}", e))))
+                    .send(server::Events::ServerError(Error::Create(format!("{}", e))))
                     .map_err(|e| Error::Channel(e.to_string()))?;
                 return Err(Error::Create(format!("{}", e)));
             }
@@ -139,7 +133,7 @@ impl Server {
             })?;
         } else {
             tx_events
-                .send(Events::Ready)
+                .send(server::Events::Ready)
                 .map_err(|e| Error::Channel(e.to_string()))?;
         }
         let res = select! {
@@ -154,13 +148,13 @@ impl Server {
                         },
                         Err(e) => {
                             warn!(target: logs::targets::SERVER, "Cannot accept connection. Error: {}", e);
-                            tx_events.send(Events::ServerError(Error::AcceptStream(format!("{}", e)))).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::ServerError(Error::AcceptStream(format!("{}", e)))).map_err(|e| Error::Channel(e.to_string()))?;
                             continue;
                         }
                     };
                     if let Err(e) = tx_tcp_stream.send(stream) {
                         warn!(target: logs::targets::SERVER, "Cannot share stream. Error: {}", e);
-                        tx_events.send(Events::ServerError(Error::AcceptStream(format!("{}", e)))).map_err(|e| Error::Channel(e.to_string()))?;
+                        tx_events.send(server::Events::ServerError(Error::AcceptStream(format!("{}", e)))).map_err(|e| Error::Channel(e.to_string()))?;
                         return Err(Error::AcceptStream(format!("{}", e)));
                     }
                 }
@@ -209,7 +203,7 @@ impl Server {
                         Ok(control) => control,
                         Err(e) => {
                             warn!(target: logs::targets::SERVER, "Cannot create ws connection. Error: {}", e);
-                            tx_events.send(Events::ServerError(Error::CreateWS(e.to_string()))).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::ServerError(Error::CreateWS(e.to_string()))).map_err(|e| Error::Channel(e.to_string()))?;
                             continue;
                         }
                     };
@@ -218,11 +212,11 @@ impl Server {
                             controlls.entry(uuid).or_insert(control);
                             if let Ok(mut stat) = stat.write() { stat.alive(controlls.len()); }
                             debug!(target: logs::targets::SERVER, "Controll of connection has been added");
-                            tx_events.send(Events::Connected(uuid)).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::Connected(uuid)).map_err(|e| Error::Channel(e.to_string()))?;
                         },
                         Err(e) => {
                             error!(target: logs::targets::SERVER, "Fail get controlls due error: {}", e);
-                            tx_events.send(Events::ServerError(Error::CreateWS(format!("{}", e)))).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::ServerError(Error::CreateWS(format!("{}", e)))).map_err(|e| Error::Channel(e.to_string()))?;
                             continue;
                         }
                     };
@@ -251,7 +245,7 @@ impl Server {
                     match msg {
                         Messages::Binary { uuid, buffer } => {
                             if let Ok(mut stat) = stat.write() { stat.recieved_bytes(buffer.len()); }
-                            tx_events.send(Events::Received(uuid, buffer)).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::Received(uuid, buffer)).map_err(|e| Error::Channel(e.to_string()))?;
                         },
                         Messages::Disconnect { uuid, code } => {
                             debug!(target: logs::targets::SERVER, "{}:: Client wants to disconnect (code: {:?})", uuid, code);
@@ -261,19 +255,19 @@ impl Server {
                                     if let Some(_control) = controlls.remove(&uuid) {
                                         debug!(target: logs::targets::SERVER, "{}:: Channel of connection has been removed", uuid);
                                         if let Ok(mut stat) = stat.write() { stat.alive(controlls.len()); }
-                                        tx_events.send(Events::Disconnected(uuid)).map_err(|e| Error::Channel(e.to_string()))?;
+                                        tx_events.send(server::Events::Disconnected(uuid)).map_err(|e| Error::Channel(e.to_string()))?;
                                     } else {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to find channel of connection to remove it", uuid);
                                     }
                                 },
                                 Err(e) => {
                                     error!(target: logs::targets::SERVER, "{}:: Cannot get access to controllers. Error: {}", uuid, e);
-                                    tx_events.send(Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                    tx_events.send(server::Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                 },
                             };
                         },
                         Messages::Error { uuid, error } => {
-                            tx_events.send(Events::Error(Some(uuid), format!("{:?}", error).to_string())).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::Error(Some(uuid), format!("{:?}", error).to_string())).map_err(|e| Error::Channel(e.to_string()))?;
                         }
                     }
                 }
@@ -288,7 +282,7 @@ impl Server {
 
     async fn sending_task(
         &self,
-        mut rx_sending: UnboundedReceiver<Sending>,
+        mut rx_sending: UnboundedReceiver<server::Sending>,
         cancel: CancellationToken,
     ) -> Result<(), Error> {
         let tx_events = self.tx_events.clone();
@@ -305,21 +299,21 @@ impl Server {
                                 if let Some(control) = controlls.get_mut(&uuid) {
                                     if let Err(e) = control.send(Control::Send(buffer)) {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to close connection due error: {}", uuid, e);
-                                        tx_events.send(Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                        tx_events.send(server::Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                     } else if let Ok(mut stat) = stat.write() { stat.sent_bytes(len); }
                                 }
                             } else {
                                 for (uuid, control) in controlls.iter_mut() {
                                     if let Err(e) = control.send(Control::Send(buffer.clone())) {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to close connection due error: {}", uuid, e);
-                                        tx_events.send(Events::Error(Some(*uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                        tx_events.send(server::Events::Error(Some(*uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                     } else if let Ok(mut stat) = stat.write() { stat.sent_bytes(len); }
                                 }
                             }
                         },
                         Err(e) => {
                             error!(target: logs::targets::SERVER, "Cannot get access to controllers. Error: {}", e);
-                            tx_events.send(Events::Error(None, format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                            tx_events.send(server::Events::Error(None, format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                             break;
                         },
                     };
@@ -335,7 +329,7 @@ impl Server {
 
     async fn control_task(
         &self,
-        mut control: UnboundedReceiver<ServerControl>,
+        mut control: UnboundedReceiver<server::Control>,
         cancel: CancellationToken,
     ) -> Result<(), Error> {
         let tx_events = self.tx_events.clone();
@@ -345,24 +339,24 @@ impl Server {
             res = async {
                 while let Some(msg) = control.recv().await {
                     match msg {
-                        ServerControl::Shutdown => {
+                        server::Control::Shutdown => {
                             debug!(
                                 target: logs::targets::SERVER,
-                                "ServerControl::Shutdown has been called"
+                                "server::Control::Shutdown has been called"
                             );
                             return Ok(());
                         }
-                        ServerControl::Disconnect(uuid) => {
+                        server::Control::Disconnect(uuid) => {
                             match controlls.read() {
                                 Ok(controlls) => {
                                     if let Some(control) = controlls.get(&uuid) {
                                         if let Err(e) = control.send(Control::Disconnect) {
                                             error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
-                                            tx_events.send(Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                            tx_events.send(server::Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                         }
                                     } else {
                                         error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
-                                        tx_events.send(Events::ServerError(Error::CreateWS(format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)))).map_err(|e| Error::Channel(e.to_string()))?;
+                                        tx_events.send(server::Events::ServerError(Error::CreateWS(format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)))).map_err(|e| Error::Channel(e.to_string()))?;
                                     }
                                 }
                                 Err(e) => {
@@ -370,7 +364,7 @@ impl Server {
                                         target: logs::targets::SERVER,
                                         "Fail get controlls due error: {}", e
                                     );
-                                    tx_events.send(Events::ServerError(Error::CreateWS(format!(
+                                    tx_events.send(server::Events::ServerError(Error::CreateWS(format!(
                                         "{}",
                                         e
                                     )))).map_err(|e| Error::Channel(e.to_string()))?;
@@ -592,7 +586,7 @@ impl Server {
         );
         let graceful = server.with_graceful_shutdown(async { cancel.cancelled().await });
         self.tx_events
-            .send(Events::Ready)
+            .send(server::Events::Ready)
             .map_err(|e| Error::Channel(e.to_string()))?;
         graceful
             .await
@@ -640,7 +634,7 @@ impl Server {
             self.control_task(rx_control, cancel),
         );
         tx_events
-            .send(Events::Shutdown)
+            .send(server::Events::Shutdown)
             .map_err(|err| Error::Channel(err.to_string()))?;
         if let Err(err) = streams_task {
             error!(
@@ -737,7 +731,7 @@ impl Server {
             self.control_task(rx_control, cancel),
         );
         tx_events
-            .send(Events::Shutdown)
+            .send(server::Events::Shutdown)
             .map_err(|err| Error::Channel(err.to_string()))?;
         if let Err(err) = http_task {
             error!(
@@ -790,7 +784,7 @@ impl Server {
 }
 
 #[async_trait]
-impl Interface<Error> for Server {
+impl server::Impl<Error> for Server {
     async fn listen(&mut self) -> Result<(), Error> {
         let options = self.options.clone();
         match options.listener {
@@ -799,7 +793,7 @@ impl Interface<Error> for Server {
         }
     }
 
-    fn observer(&mut self) -> Result<UnboundedReceiver<Events<Error>>, Error> {
+    fn observer(&mut self) -> Result<UnboundedReceiver<server::Events<Error>>, Error> {
         if let Some(rx_events) = self.rx_events.take() {
             Ok(rx_events)
         } else {
@@ -807,11 +801,11 @@ impl Interface<Error> for Server {
         }
     }
 
-    fn sender(&self) -> UnboundedSender<Sending> {
+    fn sender(&self) -> UnboundedSender<server::Sending> {
         self.tx_sender.clone()
     }
 
-    fn control(&self) -> UnboundedSender<ServerControl> {
+    fn control(&self) -> UnboundedSender<server::Control> {
         self.tx_control.clone()
     }
 }

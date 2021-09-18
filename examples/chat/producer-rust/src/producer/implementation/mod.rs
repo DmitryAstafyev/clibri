@@ -10,10 +10,7 @@ pub mod responses;
 use super::context;
 use consumer::{identification, Consumer};
 use context::Context;
-use fiber::{
-    env::logs,
-    server::{control::Control as ServerControl, events::Events, interface::Interface},
-};
+use fiber::{env::logs, server, server::Impl};
 use log::{debug, error, trace, warn};
 use protocol::PackingStruct;
 use std::collections::HashMap;
@@ -54,7 +51,7 @@ pub mod producer {
 
     #[derive(Clone, Debug)]
     pub struct Control {
-        tx_server_control: UnboundedSender<ServerControl>,
+        tx_server_control: UnboundedSender<server::Control>,
         shutdown: CancellationToken,
         tx_consumer_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
     }
@@ -66,7 +63,7 @@ pub mod producer {
                 oneshot::Receiver<Option<E>>,
             ) = oneshot::channel();
             self.tx_server_control
-                .send(ServerControl::Shutdown)
+                .send(server::Control::Shutdown)
                 .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
             // TODO: Wait for response
             Ok(())
@@ -74,7 +71,7 @@ pub mod producer {
 
         pub fn disconnect<E: std::error::Error>(&self, uuid: Uuid) -> Result<(), ProducerError<E>> {
             self.tx_server_control
-                .send(ServerControl::Disconnect(uuid))
+                .send(server::Control::Disconnect(uuid))
                 .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
             Ok(())
         }
@@ -384,7 +381,7 @@ pub mod producer {
 
     async fn listener<E: std::error::Error>(
         mut context: Context,
-        mut rx_server_events: UnboundedReceiver<Events<E>>,
+        mut rx_server_events: UnboundedReceiver<server::Events<E>>,
         control: Control,
     ) -> Result<(), ProducerError<E>> {
         debug!(
@@ -394,19 +391,19 @@ pub mod producer {
         let mut consumers: HashMap<Uuid, Consumer> = HashMap::new();
         while let Some(event) = rx_server_events.recv().await {
             match event {
-                Events::Ready => {}
-                Events::Shutdown => {}
-                Events::Connected(uuid) => {
+                server::Events::Ready => {}
+                server::Events::Shutdown => {}
+                server::Events::Connected(uuid) => {
                     add_connection(uuid, &mut consumers, &mut context, &control).await?
                 }
-                Events::Disconnected(uuid) => {
+                server::Events::Disconnected(uuid) => {
                     remove_connection(uuid, &mut consumers, &mut context, &control).await?
                 }
-                Events::Received(uuid, buffer) => {
+                server::Events::Received(uuid, buffer) => {
                     process_received_data(uuid, buffer, &mut consumers, &mut context, &control)
                         .await?
                 }
-                Events::Error(uuid, err) => emitters::error::emit::<E>(
+                server::Events::Error(uuid, err) => emitters::error::emit::<E>(
                     ProducerError::ConsumerError(err),
                     uuid,
                     &mut context,
@@ -414,7 +411,7 @@ pub mod producer {
                 )
                 .await
                 .map_err(ProducerError::EventEmitterError)?,
-                Events::ConnectionError(uuid, err) => emitters::error::emit::<E>(
+                server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E>(
                     ProducerError::ConnectionError(err.to_string()),
                     uuid,
                     &mut context,
@@ -422,7 +419,7 @@ pub mod producer {
                 )
                 .await
                 .map_err(ProducerError::EventEmitterError)?,
-                Events::ServerError(err) => emitters::error::emit(
+                server::Events::ServerError(err) => emitters::error::emit(
                     ProducerError::ServerError(err),
                     None,
                     &mut context,
@@ -441,7 +438,7 @@ pub mod producer {
 
     pub async fn run<S, E>(mut server: S, context: Context) -> Result<(), ProducerError<E>>
     where
-        S: Interface<E>,
+        S: server::Impl<E>,
         E: std::error::Error,
     {
         let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;

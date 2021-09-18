@@ -2,7 +2,7 @@ use super::{
     channel::{Control, Error as ChannelError, Messages},
     errors::Error, server::MonitorEvent,
 };
-use fiber::{env::logs, server::events::Events};
+use fiber::{env::logs, server};
 use futures::{SinkExt, StreamExt};
 use log::{debug, error, info, warn};
 use tokio::{
@@ -40,7 +40,7 @@ impl Connection {
     pub async fn attach(
         &mut self,
         mut ws: WebSocketStream<TcpStream>,
-        events: UnboundedSender<Events<Error>>,
+        events: UnboundedSender<server::Events<Error>>,
         messages: UnboundedSender<Messages>,
         monitor: Option<UnboundedSender<(u16, MonitorEvent)>>,
         port: u16,
@@ -50,7 +50,7 @@ impl Connection {
         let uuid = self.uuid;
         let mut state: Option<State> = None;
         let incomes_task_events = events.clone();
-        let send_event = move |event: Events<Error>| {
+        let send_event = move |event: server::Events<Error>| {
             if let Err(e) = incomes_task_events.send(event) {
                 warn!(
                     target: logs::targets::SERVER,
@@ -69,7 +69,7 @@ impl Connection {
                         target: logs::targets::SERVER,
                         "{}:: Fail to send data back to server. Error: {}", uuid, e
                     );
-                    if let Err(e) = events.send(Events::ConnectionError(
+                    if let Err(e) = events.send(server::Events::ConnectionError(
                         Some(uuid),
                         Error::Channel(format!("{}", e)),
                     )) {
@@ -101,7 +101,7 @@ impl Connection {
                                 }
                                 if state.is_none() {
                                     warn!(target: logs::targets::SERVER, "{}:: Cannot get message. Error: {:?}", uuid, e);
-                                    send_event(Events::ConnectionError(
+                                    send_event(server::Events::ConnectionError(
                                         Some(uuid),
                                         Error::InvalidMessage(format!("{}", e)),
                                     ));
@@ -113,7 +113,7 @@ impl Connection {
                         match msg {
                             Message::Text(_) => {
                                 warn!(target: logs::targets::SERVER, "{}:: has been gotten not binnary data", uuid);
-                                send_event(Events::ConnectionError(
+                                send_event(server::Events::ConnectionError(
                                     Some(uuid),
                                     Error::NonBinaryData,
                                 ));
@@ -202,7 +202,7 @@ impl Connection {
                             target: logs::targets::SERVER,
                             "{}:: fail to close connection", uuid
                         );
-                        send_event(Events::ConnectionError(
+                        send_event(server::Events::ConnectionError(
                             Some(uuid),
                             Error::CloseConnection(format!("{}:: fail to close connection", uuid)),
                         ));

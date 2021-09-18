@@ -5,7 +5,7 @@ use super::{
 };
 //use console::style;
 use console::style;
-use fiber::server::{control::Control, events::Events, interface::Interface};
+use fiber::{server, server::Impl};
 use fiber_transport_server::{
     errors::Error,
     options::{Listener, Options},
@@ -31,7 +31,7 @@ pub struct Test;
 
 impl Test {
     async fn events_task(
-        mut rx_server_events: UnboundedReceiver<Events<Error>>,
+        mut rx_server_events: UnboundedReceiver<server::Events<Error>>,
         tx_server_ready: oneshot::Sender<()>,
         tx_server_shutdown: oneshot::Sender<()>,
         tx_all_disconnected: oneshot::Sender<()>,
@@ -44,14 +44,14 @@ impl Test {
         let mut tx_all_disconnected = Some(tx_all_disconnected);
         while let Some(event) = rx_server_events.recv().await {
             match event {
-                Events::Ready => {
+                server::Events::Ready => {
                     if let Some(tx_server_ready) = tx_server_ready_wrapped.take() {
                         tx_server_ready.send(()).map_err(|e| format!("{:?}", e))?;
                     } else {
                         return Err(String::from("Server Ready event called twice"));
                     }
                 }
-                Events::Shutdown => {
+                server::Events::Shutdown => {
                     if let Some(tx_server_shutdown) = tx_server_shutdown_wrapped.take() {
                         tx_server_shutdown
                             .send(())
@@ -60,7 +60,7 @@ impl Test {
                         return Err(String::from("Server Shutdown event called twice"));
                     }
                 }
-                Events::Connected(_uuid) => {
+                server::Events::Connected(_uuid) => {
                     match stat.write() {
                         Ok(mut stat) => stat.connected += 1,
                         Err(err) => {
@@ -68,7 +68,7 @@ impl Test {
                         }
                     };
                 }
-                Events::Disconnected(_uuid) => {
+                server::Events::Disconnected(_uuid) => {
                     disconnected += 1;
                     match stat.write() {
                         Ok(mut stat) => stat.disconnected += 1,
@@ -84,7 +84,7 @@ impl Test {
                         }
                     }
                 }
-                Events::Received(uuid, buffer) => {
+                server::Events::Received(uuid, buffer) => {
                     match stat.write() {
                         Ok(mut stat) => stat.recieved += 1,
                         Err(err) => {
@@ -105,13 +105,13 @@ impl Test {
                         }
                     };
                 }
-                Events::Error(uuid, err) => {
+                server::Events::Error(uuid, err) => {
                     return Err(format!("Error ({:?}): {:?}", uuid, err));
                 }
-                Events::ConnectionError(uuid, err) => {
+                server::Events::ConnectionError(uuid, err) => {
                     return Err(format!("ConnectionError ({:?}): {:?}", uuid, err));
                 }
-                Events::ServerError(err) => {
+                server::Events::ServerError(err) => {
                     return Err(format!("ServerError: {:?}", err));
                 }
             }
@@ -291,7 +291,7 @@ impl Test {
             style("[test]").bold().dim(),
         );
         tx_server_control
-            .send(Control::Shutdown)
+            .send(server::Control::Shutdown)
             .map_err(|e| format!("{}", e))?;
         // Step 7. Waiting for a server is done
         println!(
