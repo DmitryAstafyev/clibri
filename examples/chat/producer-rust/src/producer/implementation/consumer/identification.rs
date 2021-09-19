@@ -1,4 +1,4 @@
-use super::{protocol, Consumer};
+use super::{producer, protocol, Consumer};
 use fiber::env::logs;
 use log::warn;
 use std::collections::HashMap;
@@ -59,14 +59,18 @@ impl Filter {
 #[derive(Debug, Clone)]
 pub struct Identification {
     pub uuid: Uuid,
+    producer_indentification_strategy: producer::ProducerIdentificationStrategy,
+    discredited: bool,
     key: Option<protocol::Identification::SelfKey>,
     assigned: Option<protocol::Identification::AssignedKey>,
 }
 
 impl Identification {
-    pub fn new(uuid: Uuid) -> Self {
+    pub fn new(uuid: Uuid, options: &producer::Options) -> Self {
         Identification {
             uuid,
+            producer_indentification_strategy: options.producer_indentification_strategy.clone(),
+            discredited: false,
             key: None,
             assigned: None,
         }
@@ -103,11 +107,31 @@ impl Identification {
 
     pub fn assigned(&self) -> bool {
         if self.assigned.is_none() {
-            warn!(
-                target: logs::targets::PRODUCER,
-                "Client doesn't have producer identification"
-            );
+            match self.producer_indentification_strategy {
+                producer::ProducerIdentificationStrategy::Ignore => true,
+                producer::ProducerIdentificationStrategy::Log => {
+                    warn!(
+                        target: logs::targets::PRODUCER,
+                        "{}:: client doesn't have producer identification", self.uuid
+                    );
+                    true
+                }
+                _ => false,
+            }
+        } else {
+            true
         }
+    }
+
+    pub fn has_key(&self) -> bool {
         self.key.is_some()
+    }
+
+    pub fn discredited(&mut self) {
+        self.discredited = true;
+    }
+
+    pub fn is_discredited(&self) -> bool {
+        self.discredited
     }
 }

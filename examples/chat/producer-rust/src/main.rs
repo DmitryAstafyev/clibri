@@ -13,6 +13,6 @@ async fn main() {
         listener: Listener::Direct(socket_addr),
     });
     let context = producer::Context::new();
-    producer::run(server, context).await;
+    producer::run(server, producer::Options::new(), context).await;
     println!("Hello, World!");
 }

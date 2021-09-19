@@ -1,6 +1,6 @@
 pub mod identification;
 
-use super::protocol;
+use super::{producer, protocol};
 use log::error;
 use thiserror::Error;
 use uuid::Uuid;
@@ -20,11 +20,11 @@ pub struct Consumer {
 }
 
 impl Consumer {
-    pub fn new(uuid: Uuid) -> Self {
+    pub fn new(uuid: Uuid, options: &producer::Options) -> Self {
         Self {
             uuid,
             buffer: protocol::Buffer::new(),
-            identification: identification::Identification::new(uuid),
+            identification: identification::Identification::new(uuid, options),
         }
     }
 

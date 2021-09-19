@@ -44,10 +44,78 @@ pub enum ProducerError<E: std::error::Error> {
     AssignedError(String),
     #[error("channel access error: `{0}`")]
     ChannelError(String),
+    #[error("consumer doesn't have a key; uuid: `{0}`")]
+    NoConsumerKey(Uuid),
+    #[error("consumer wasn't assigned; uuid: `{0}`")]
+    NoAssignedConsumer(Uuid),
+    #[error("consumer already marked as disconnected; uuid: `{0}`")]
+    AlreadyDisconnected(Uuid),
 }
 
 pub mod producer {
     use super::*;
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum ProducerIdentificationStrategy {
+        // Put warning into logs
+        Log,
+        // Emit error (would not stop producer)
+        EmitError,
+        // Disconnect consumer
+        Disconnect,
+        // Disconnect consumer and emit error
+        EmitErrorAndDisconnect,
+        // Ignore if consumer doesn't have producer identification
+        Ignore,
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum ConsumerErrorHandelingStrategy {
+        // Emit error (would not stop producer)
+        EmitError,
+        // Disconnect consumer
+        Disconnect,
+        // Disconnect consumer and emit error
+        EmitErrorAndDisconnect,
+        // Put warning into logs
+        Log,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Options {
+        pub producer_indentification_strategy: ProducerIdentificationStrategy,
+        pub consumer_error_handeling_strategy: ConsumerErrorHandelingStrategy,
+    }
+
+    impl Default for Options {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl Options {
+        pub fn new() -> Self {
+            Options {
+                producer_indentification_strategy: ProducerIdentificationStrategy::Log,
+                consumer_error_handeling_strategy:
+                    ConsumerErrorHandelingStrategy::EmitErrorAndDisconnect,
+            }
+        }
+        pub fn producer_indentification_strategy(
+            &mut self,
+            value: ProducerIdentificationStrategy,
+        ) -> &mut Self {
+            self.producer_indentification_strategy = value;
+            self
+        }
+        pub fn consumer_error_handeling_strategy(
+            &mut self,
+            value: ConsumerErrorHandelingStrategy,
+        ) -> &mut Self {
+            self.consumer_error_handeling_strategy = value;
+            self
+        }
+    }
 
     #[derive(Clone, Debug)]
     pub struct Control {
@@ -108,12 +176,13 @@ pub mod producer {
         consumers: &mut HashMap<Uuid, Consumer>,
         context: &mut Context,
         control: &Control,
+        options: &Options,
     ) -> Result<(), ProducerError<E>> {
         debug!(
             target: logs::targets::PRODUCER,
             "new client connection: {}", uuid,
         );
-        consumers.insert(uuid, Consumer::new(uuid));
+        consumers.insert(uuid, Consumer::new(uuid, options));
         debug!(
             target: logs::targets::PRODUCER,
             "new connection accepted: {}", uuid,
@@ -144,24 +213,55 @@ pub mod producer {
             target: logs::targets::PRODUCER,
             "client disconnected: {}", uuid,
         );
-        consumers.remove(&uuid);
-        if let Err(err) = emitters::disconnected::emit::<E>(
-            uuid,
-            context,
-            identification::Filter::new(consumers).await,
-            control,
-        )
-        .await
-        {
+        if consumers.remove(&uuid).is_none() {
             warn!(
                 target: logs::targets::PRODUCER,
-                "fail call connected handler for {}; error: {:?}", uuid, err,
+                "cannot find a client {}; guess it was disconnected already", uuid,
+            );
+        } else {
+            if let Err(err) = emitters::disconnected::emit::<E>(
+                uuid,
+                context,
+                identification::Filter::new(consumers).await,
+                control,
+            )
+            .await
+            {
+                warn!(
+                    target: logs::targets::PRODUCER,
+                    "fail call connected handler for {}; error: {:?}", uuid, err,
+                );
+            }
+            debug!(
+                target: logs::targets::PRODUCER,
+                "client {} has been disconnected", uuid,
             );
         }
-        debug!(
-            target: logs::targets::PRODUCER,
-            "disconnection of client {} is accepted", uuid,
-        );
+        Ok(())
+    }
+
+    async fn disconnect<E: std::error::Error>(
+        uuid: Uuid,
+        consumers: &mut HashMap<Uuid, Consumer>,
+        mut context: &mut Context,
+        control: &Control,
+    ) -> Result<(), ProducerError<E>> {
+        if let Some(consumer) = consumers.get_mut(&uuid) {
+            if consumer.get_identification().is_discredited() {
+                return Ok(());
+            }
+            consumer.get_identification().discredited();
+            control.disconnect::<E>(uuid)?;
+        } else {
+            emitters::error::emit::<E>(
+                ProducerError::AlreadyDisconnected(uuid),
+                Some(uuid),
+                &mut context,
+                control,
+            )
+            .await
+            .map_err(ProducerError::EventEmitterError)?;
+        }
         Ok(())
     }
 
@@ -188,6 +288,7 @@ pub mod producer {
         consumers: &mut HashMap<Uuid, Consumer>,
         mut context: &mut Context,
         control: &Control,
+        options: &Options,
     ) -> Result<(), ProducerError<E>> {
         trace!(
             target: logs::targets::PRODUCER,
@@ -196,8 +297,11 @@ pub mod producer {
         );
         let mut messages: consumer::ConsumerMessages = vec![];
         let mut assigned: bool = false;
+        let mut has_key: bool = false;
         if let Some(consumer) = consumers.get_mut(&uuid) {
-            if let Err(err) = consumer.chunk(&buffer) {
+            if consumer.get_identification().is_discredited() {
+                // Consumer is discredited do nothing with it
+            } else if let Err(err) = consumer.chunk(&buffer) {
                 responsing_err(
                     format!("fail to read chunk of data; error: {}", err),
                     uuid,
@@ -208,6 +312,7 @@ pub mod producer {
             } else {
                 messages = consumer.get_messages();
                 assigned = consumer.get_identification().assigned();
+                has_key = consumer.get_identification().has_key();
             }
         } else {
             responsing_err(
@@ -267,14 +372,46 @@ pub mod producer {
                     }
                 }
                 message => {
-                    if !assigned {
+                    if !has_key {
+                        warn!(
+                            target: logs::targets::PRODUCER,
+                            "consumer {} tries to send data, but it doesn't have a key", uuid
+                        );
+                        disconnect(uuid, consumers, &mut context, control).await?;
+                        emitters::error::emit::<E>(
+                            ProducerError::NoConsumerKey(uuid),
+                            Some(uuid),
+                            &mut context,
+                            control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?;
+                    } else if !assigned {
                         warn!(
                             target: logs::targets::PRODUCER,
                             "consumer {} tries to send data, but it isn't assigned", uuid
                         );
-                        // TODO: ProducerEvent
-                        // TODO: Consumer should be disconnected or some tx_producer_events should be to consumer
-                        // it might be some option of producer like NonAssignedStratagy
+                        if options.producer_indentification_strategy
+                            == ProducerIdentificationStrategy::Disconnect
+                            || options.producer_indentification_strategy
+                                == ProducerIdentificationStrategy::EmitErrorAndDisconnect
+                        {
+                            disconnect(uuid, consumers, &mut context, control).await?;
+                        }
+                        if options.producer_indentification_strategy
+                            == ProducerIdentificationStrategy::EmitError
+                            || options.producer_indentification_strategy
+                                == ProducerIdentificationStrategy::EmitErrorAndDisconnect
+                        {
+                            emitters::error::emit::<E>(
+                                ProducerError::NoAssignedConsumer(uuid),
+                                Some(uuid),
+                                &mut context,
+                                control,
+                            )
+                            .await
+                            .map_err(ProducerError::EventEmitterError)?;
+                        }
                     } else {
                         match message {
                             protocol::AvailableMessages::UserLogin(
@@ -383,6 +520,7 @@ pub mod producer {
         mut context: Context,
         mut rx_server_events: UnboundedReceiver<server::Events<E>>,
         control: Control,
+        options: &Options,
     ) -> Result<(), ProducerError<E>> {
         debug!(
             target: logs::targets::PRODUCER,
@@ -394,14 +532,21 @@ pub mod producer {
                 server::Events::Ready => {}
                 server::Events::Shutdown => {}
                 server::Events::Connected(uuid) => {
-                    add_connection(uuid, &mut consumers, &mut context, &control).await?
+                    add_connection(uuid, &mut consumers, &mut context, &control, options).await?
                 }
                 server::Events::Disconnected(uuid) => {
                     remove_connection(uuid, &mut consumers, &mut context, &control).await?
                 }
                 server::Events::Received(uuid, buffer) => {
-                    process_received_data(uuid, buffer, &mut consumers, &mut context, &control)
-                        .await?
+                    process_received_data(
+                        uuid,
+                        buffer,
+                        &mut consumers,
+                        &mut context,
+                        &control,
+                        options,
+                    )
+                    .await?
                 }
                 server::Events::Error(uuid, err) => emitters::error::emit::<E>(
                     ProducerError::ConsumerError(err),
@@ -436,7 +581,11 @@ pub mod producer {
         Ok(())
     }
 
-    pub async fn run<S, E>(mut server: S, context: Context) -> Result<(), ProducerError<E>>
+    pub async fn run<S, E>(
+        mut server: S,
+        options: Options,
+        context: Context,
+    ) -> Result<(), ProducerError<E>>
     where
         S: server::Impl<E>,
         E: std::error::Error,
@@ -461,6 +610,7 @@ pub mod producer {
                 context,
                 rx_server_events,
                 control,
+                &options,
             ) => res
         }
     }
