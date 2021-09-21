@@ -36,6 +36,10 @@ impl Consumer {
         self.identification.clone()
     }
 
+    pub fn get_mut_identification(&mut self) -> &mut identification::Identification {
+        &mut self.identification
+    }
+
     pub fn key(&mut self, key: &protocol::Identification::SelfKey, overwrite: bool) -> String {
         self.identification.key(key.clone(), overwrite);
         self.uuid.to_string()

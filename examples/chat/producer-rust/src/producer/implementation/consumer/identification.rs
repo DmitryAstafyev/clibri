@@ -9,7 +9,7 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub async fn new(consumers: &mut HashMap<Uuid, Consumer>) -> Self {
+    pub async fn new(consumers: &HashMap<Uuid, Consumer>) -> Self {
         let mut identifications: HashMap<Uuid, Identification> = HashMap::new();
         for consumer in consumers.values() {
             identifications.insert(consumer.get_uuid(), consumer.get_identification());
@@ -58,7 +58,7 @@ impl Filter {
 
 #[derive(Debug, Clone)]
 pub struct Identification {
-    pub uuid: Uuid,
+    uuid: Uuid,
     producer_indentification_strategy: producer::ProducerIdentificationStrategy,
     discredited: bool,
     key: Option<protocol::Identification::SelfKey>,
@@ -74,6 +74,10 @@ impl Identification {
             key: None,
             assigned: None,
         }
+    }
+
+    pub fn uuid(&self) -> Uuid {
+        self.uuid
     }
 
     pub fn key(&mut self, key: protocol::Identification::SelfKey, overwrite: bool) {

@@ -5,14 +5,22 @@ use super::{
 use uuid::Uuid;
 
 pub async fn process<E: std::error::Error>(
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
-    filter: identification::Filter,
-    uuid: Uuid,
     request: &protocol::Messages::Request,
     sequence: u32,
     control: &Control,
 ) -> Result<(), HandlerError> {
-    let buffer = match responses::messages::response(uuid, context, request, filter, control).await
+    let uuid = identification.uuid();
+    let buffer = match responses::messages::response(
+        identification,
+        filter,
+        context,
+        request,
+        control,
+    )
+    .await
     {
         Ok(mut response) => pack(&sequence, &uuid, &mut response)?,
         Err(mut error) => pack(&sequence, &uuid, &mut error)?,

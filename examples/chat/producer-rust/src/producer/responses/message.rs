@@ -10,12 +10,13 @@ pub enum Response {
 
 #[allow(unused_variables)]
 pub async fn response(
-    uuid: Uuid,
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::Message::Request,
-    filter: identification::Filter,
     control: &Control,
 ) -> Result<Response, protocol::Message::Err> {
+    let uuid = identification.uuid();
     if !context.is_user_exist(&request.user).await {
         Ok(Response::Deny(protocol::Message::Denied {
             reason: String::from("User doesn't exist"),

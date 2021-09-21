@@ -5,16 +5,19 @@ use super::{
 use uuid::Uuid;
 
 pub async fn process<E: std::error::Error>(
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
-    filter: identification::Filter,
-    uuid: Uuid,
     request: &protocol::UserLogin::Request,
     sequence: u32,
     control: &Control,
 ) -> Result<(), HandlerError> {
+    let uuid = identification.uuid();
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let buffer =
-        match responses::user_login::response(uuid, context, request, filter, control).await {
+        match responses::user_login::response(identification, filter, context, request, control)
+            .await
+        {
             Ok(conclusion) => match conclusion {
                 responses::user_login::Response::Accepted((
                     mut response,

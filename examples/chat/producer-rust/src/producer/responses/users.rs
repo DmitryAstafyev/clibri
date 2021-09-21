@@ -3,10 +3,10 @@ use uuid::Uuid;
 
 #[allow(unused_variables)]
 pub async fn response(
-    uuid: Uuid,
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::Users::Request,
-    filter: identification::Filter,
     control: &Control,
 ) -> Result<protocol::Users::Response, protocol::Users::Err> {
     Ok(protocol::Users::Response {

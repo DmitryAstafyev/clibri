@@ -1,21 +1,17 @@
 use super::{identification, producer::Control, protocol, Context};
 use uuid::Uuid;
-/*
-    pub struct UserDisconnected {
-        pub username: String,
-        pub uuid: String,
-    }
-*/
+
 type BroadcastUserDisconnected = (Vec<Uuid>, protocol::Events::UserDisconnected);
 type BroadcastMessage = Option<(Vec<Uuid>, protocol::Events::Message)>;
 
 #[allow(unused_variables)]
 pub async fn emit<E: std::error::Error>(
-    uuid: Uuid,
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
-    filter: identification::Filter,
     control: &Control,
 ) -> Result<(BroadcastUserDisconnected, BroadcastMessage), String> {
+    let uuid = identification.uuid();
     if let Some(user) = context.remove_user(uuid).await {
         let msg = context.add_message(&user.name, format!("User {} has been left", user.name))?;
         Ok((

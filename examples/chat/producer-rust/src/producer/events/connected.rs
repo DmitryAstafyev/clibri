@@ -1,11 +1,11 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, Context};
 use uuid::Uuid;
 
 #[allow(unused_variables)]
 pub async fn emit<E: std::error::Error>(
-    uuid: Uuid,
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
-    filter: identification::Filter,
     control: &Control,
 ) -> Result<(), String> {
     Ok(())

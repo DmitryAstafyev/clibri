@@ -17,12 +17,13 @@ pub enum Response {
 
 #[allow(unused_variables)]
 pub async fn response(
-    uuid: Uuid,
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::UserLogin::Request,
-    filter: identification::Filter,
     control: &Control,
 ) -> Result<Response, protocol::UserLogin::Err> {
+    let uuid = identification.uuid();
     if context.is_user_exist(&request.username).await {
         Ok(Response::Deny(protocol::UserLogin::Denied {
             reason: String::from("User has been login already"),

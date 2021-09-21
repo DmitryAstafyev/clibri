@@ -50,6 +50,8 @@ pub enum ProducerError<E: std::error::Error> {
     NoAssignedConsumer(Uuid),
     #[error("consumer already marked as disconnected; uuid: `{0}`")]
     AlreadyDisconnected(Uuid),
+    #[error("fail to add consumer into storage; uuid: `{0}`")]
+    FailToAddConsumer(Uuid),
 }
 
 pub mod producer {
@@ -182,15 +184,19 @@ pub mod producer {
             target: logs::targets::PRODUCER,
             "new client connection: {}", uuid,
         );
-        consumers.insert(uuid, Consumer::new(uuid, options));
+        if consumers.contains_key(&uuid) {
+            return Err(ProducerError::FailToAddConsumer(uuid));
+        }
+        let filter = identification::Filter::new(consumers).await;
+        let mut client = Consumer::new(uuid, options);
         debug!(
             target: logs::targets::PRODUCER,
             "new connection accepted: {}", uuid,
         );
         if let Err(err) = emitters::connected::emit::<E>(
-            uuid,
+            client.get_mut_identification(),
+            &filter,
             context,
-            identification::Filter::new(consumers).await,
             control,
         )
         .await
@@ -200,6 +206,7 @@ pub mod producer {
                 "fail call connected handler for {}; error: {:?}", uuid, err,
             );
         }
+        consumers.insert(uuid, client);
         Ok(())
     }
 
@@ -213,16 +220,12 @@ pub mod producer {
             target: logs::targets::PRODUCER,
             "client disconnected: {}", uuid,
         );
-        if consumers.remove(&uuid).is_none() {
-            warn!(
-                target: logs::targets::PRODUCER,
-                "cannot find a client {}; guess it was disconnected already", uuid,
-            );
-        } else {
+        let filter = identification::Filter::new(consumers).await;
+        if let Some(mut client) = consumers.remove(&uuid) {
             if let Err(err) = emitters::disconnected::emit::<E>(
-                uuid,
+                client.get_mut_identification(),
+                &filter,
                 context,
-                identification::Filter::new(consumers).await,
                 control,
             )
             .await
@@ -236,32 +239,25 @@ pub mod producer {
                 target: logs::targets::PRODUCER,
                 "client {} has been disconnected", uuid,
             );
+        } else {
+            warn!(
+                target: logs::targets::PRODUCER,
+                "cannot find a client {}; guess it was disconnected already", uuid,
+            );
         }
         Ok(())
     }
 
-    async fn disconnect<E: std::error::Error>(
+    fn disconnect<E: std::error::Error>(
         uuid: Uuid,
-        consumers: &mut HashMap<Uuid, Consumer>,
-        mut context: &mut Context,
+        consumer: &mut Consumer,
         control: &Control,
     ) -> Result<(), ProducerError<E>> {
-        if let Some(consumer) = consumers.get_mut(&uuid) {
-            if consumer.get_identification().is_discredited() {
-                return Ok(());
-            }
-            consumer.get_identification().discredited();
-            control.disconnect::<E>(uuid)?;
-        } else {
-            emitters::error::emit::<E>(
-                ProducerError::AlreadyDisconnected(uuid),
-                Some(uuid),
-                &mut context,
-                control,
-            )
-            .await
-            .map_err(ProducerError::EventEmitterError)?;
+        if consumer.get_identification().is_discredited() {
+            return Ok(());
         }
+        consumer.get_identification().discredited();
+        control.disconnect::<E>(uuid)?;
         Ok(())
     }
 
@@ -269,6 +265,7 @@ pub mod producer {
         err: String,
         uuid: Uuid,
         mut context: &mut Context,
+        identification: Option<&mut identification::Identification>,
         control: &Control,
     ) -> Result<(), ProducerError<E>> {
         warn!(target: logs::targets::PRODUCER, "{}:: {}", uuid, err);
@@ -276,6 +273,7 @@ pub mod producer {
             ProducerError::ResponsingError(err),
             Some(uuid),
             &mut context,
+            identification,
             control,
         )
         .await
@@ -295,37 +293,49 @@ pub mod producer {
             "new chunk of data from {} has been gotten",
             uuid,
         );
+        let filter = identification::Filter::new(consumers).await;
         let mut messages: consumer::ConsumerMessages = vec![];
         let mut assigned: bool = false;
         let mut has_key: bool = false;
-        if let Some(consumer) = consumers.get_mut(&uuid) {
+        let mut client: Option<&mut Consumer> = if let Some(consumer) = consumers.get_mut(&uuid) {
             if consumer.get_identification().is_discredited() {
                 // Consumer is discredited do nothing with it
+                None
             } else if let Err(err) = consumer.chunk(&buffer) {
                 responsing_err(
                     format!("fail to read chunk of data; error: {}", err),
                     uuid,
                     &mut context,
+                    Some(consumer.get_mut_identification()),
                     control,
                 )
-                .await?
+                .await?;
+                None
             } else {
                 messages = consumer.get_messages();
                 assigned = consumer.get_identification().assigned();
                 has_key = consumer.get_identification().has_key();
+                Some(consumer)
             }
         } else {
             responsing_err(
                 String::from("fail to find consumer; message wouldn't be processed"),
                 uuid,
                 &mut context,
+                None,
                 control,
             )
-            .await?
-        }
+            .await?;
+            None
+        };
         if messages.is_empty() {
             return Ok(());
         }
+        let client = if let Some(client) = client.take() {
+            client
+        } else {
+            return Ok(());
+        };
         for (message, header) in messages.iter() {
             match message {
                 protocol::AvailableMessages::Identification(
@@ -336,39 +346,33 @@ pub mod producer {
                         "consumer {} requested identification",
                         uuid,
                     );
-                    if let Some(consumer) = consumers.get_mut(&uuid) {
-                        let assigned_uuid = consumer.key(request, true);
-                        if let Err(err) = match (protocol::Identification::SelfKeyResponse {
-                            uuid: assigned_uuid.clone(),
-                        })
-                        .pack(header.sequence, Some(assigned_uuid.clone()))
-                        {
-                            Ok(buffer) => {
-                                if let Err(err) = control.send::<E>(buffer, Some(uuid)) {
-                                    Err(err.to_string())
-                                } else {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "{}:: identification response has been sent", uuid,
-                                    );
-                                    Ok(())
-                                }
+                    let assigned_uuid = client.key(request, true);
+                    if let Err(err) = match (protocol::Identification::SelfKeyResponse {
+                        uuid: assigned_uuid.clone(),
+                    })
+                    .pack(header.sequence, Some(assigned_uuid.clone()))
+                    {
+                        Ok(buffer) => {
+                            if let Err(err) = control.send::<E>(buffer, Some(uuid)) {
+                                Err(err.to_string())
+                            } else {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "{}:: identification response has been sent", uuid,
+                                );
+                                Ok(())
                             }
-                            Err(err) => Err(err),
-                        } {
-                            responsing_err(
-                                format!("fail to send identification response: {}", err),
-                                uuid,
-                                &mut context,
-                                control,
-                            )
-                            .await?
                         }
-                    } else {
-                        warn!(
-                            target: logs::targets::PRODUCER,
-                            "fail to get consumer {}; requested identification is failed", uuid,
-                        );
+                        Err(err) => Err(err),
+                    } {
+                        responsing_err(
+                            format!("fail to send identification response: {}", err),
+                            uuid,
+                            &mut context,
+                            Some(client.get_mut_identification()),
+                            control,
+                        )
+                        .await?
                     }
                 }
                 message => {
@@ -377,11 +381,12 @@ pub mod producer {
                             target: logs::targets::PRODUCER,
                             "consumer {} tries to send data, but it doesn't have a key", uuid
                         );
-                        disconnect(uuid, consumers, &mut context, control).await?;
+                        disconnect(uuid, client, control)?;
                         emitters::error::emit::<E>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
                             &mut context,
+                            Some(client.get_mut_identification()),
                             control,
                         )
                         .await
@@ -396,7 +401,7 @@ pub mod producer {
                             || options.producer_indentification_strategy
                                 == ProducerIdentificationStrategy::EmitErrorAndDisconnect
                         {
-                            disconnect(uuid, consumers, &mut context, control).await?;
+                            disconnect(uuid, client, control)?;
                         }
                         if options.producer_indentification_strategy
                             == ProducerIdentificationStrategy::EmitError
@@ -407,6 +412,7 @@ pub mod producer {
                                 ProducerError::NoAssignedConsumer(uuid),
                                 Some(uuid),
                                 &mut context,
+                                Some(client.get_mut_identification()),
                                 control,
                             )
                             .await
@@ -418,14 +424,14 @@ pub mod producer {
                                 protocol::UserLogin::AvailableMessages::Request(request),
                             ) => {
                                 if let Err(err) = handlers::user_login::process::<E>(
+                                    client.get_mut_identification(),
+                                    &filter,
                                     &mut context,
                                     // TODO: we should not create each time new filter. Filter should be created just in case:
                                     // - consumer connected
                                     // - consumer disconnected
                                     // - consumer assigned
                                     // in all other cases we can clone filter or even send as &mut
-                                    identification::Filter::new(consumers).await,
-                                    uuid,
                                     request,
                                     header.sequence,
                                     &control,
@@ -436,6 +442,7 @@ pub mod producer {
                                         format!("fail to process user_login: {}", err),
                                         uuid,
                                         &mut context,
+                                        Some(client.get_mut_identification()),
                                         control,
                                     )
                                     .await?
@@ -445,9 +452,9 @@ pub mod producer {
                                 protocol::Messages::AvailableMessages::Request(request),
                             ) => {
                                 if let Err(err) = handlers::messages::process::<E>(
+                                    client.get_mut_identification(),
+                                    &filter,
                                     &mut context,
-                                    identification::Filter::new(consumers).await,
-                                    uuid,
                                     request,
                                     header.sequence,
                                     &control,
@@ -458,6 +465,7 @@ pub mod producer {
                                         format!("fail to process messages: {}", err),
                                         uuid,
                                         &mut context,
+                                        Some(client.get_mut_identification()),
                                         control,
                                     )
                                     .await?
@@ -467,9 +475,9 @@ pub mod producer {
                                 protocol::Users::AvailableMessages::Request(request),
                             ) => {
                                 if let Err(err) = handlers::users::process::<E>(
+                                    client.get_mut_identification(),
+                                    &filter,
                                     &mut context,
-                                    identification::Filter::new(consumers).await,
-                                    uuid,
                                     request,
                                     header.sequence,
                                     &control,
@@ -480,6 +488,7 @@ pub mod producer {
                                         format!("fail to process users: {}", err),
                                         uuid,
                                         &mut context,
+                                        Some(client.get_mut_identification()),
                                         control,
                                     )
                                     .await?
@@ -489,9 +498,9 @@ pub mod producer {
                                 protocol::Message::AvailableMessages::Request(request),
                             ) => {
                                 if let Err(err) = handlers::message::process::<E>(
+                                    client.get_mut_identification(),
+                                    &filter,
                                     &mut context,
-                                    identification::Filter::new(consumers).await,
-                                    uuid,
                                     request,
                                     header.sequence,
                                     &control,
@@ -502,6 +511,7 @@ pub mod producer {
                                         format!("fail to process message: {}", err),
                                         uuid,
                                         &mut context,
+                                        Some(client.get_mut_identification()),
                                         control,
                                     )
                                     .await?
@@ -552,6 +562,7 @@ pub mod producer {
                     ProducerError::ConsumerError(err),
                     uuid,
                     &mut context,
+                    None, // TODO: add identification
                     &control,
                 )
                 .await
@@ -560,6 +571,7 @@ pub mod producer {
                     ProducerError::ConnectionError(err.to_string()),
                     uuid,
                     &mut context,
+                    None, // TODO: add identification
                     &control,
                 )
                 .await
@@ -568,6 +580,7 @@ pub mod producer {
                     ProducerError::ServerError(err),
                     None,
                     &mut context,
+                    None,
                     &control,
                 )
                 .await
@@ -615,3 +628,4 @@ pub mod producer {
         }
     }
 }
+// TODO: spawn separated tasks for 10-20 consumers
