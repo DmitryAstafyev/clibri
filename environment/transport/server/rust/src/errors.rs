@@ -23,6 +23,8 @@ pub enum Error {
 	FailTakeSender,
 	#[error("fail to take control")]
 	FailTakeControl,
+	#[error("fail to take api channel")]
+	FailTakeAPI,
 	#[error("fail to join task")]
 	JoinError(JoinError),
 	#[error("error on body parsing: `{0}`")]
@@ -32,6 +34,5 @@ pub enum Error {
 	#[error("error while distributing: `{0}`")]
 	Distributing(String),
 	#[error("fail to parse string to SocketAddr: `{0}`")]
-	SocketAddr(String)
+	SocketAddr(String),
 }
-
