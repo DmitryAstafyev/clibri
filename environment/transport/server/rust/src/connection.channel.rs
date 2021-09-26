@@ -1,6 +1,6 @@
+use tokio::sync::oneshot;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use uuid::Uuid;
-
 #[derive(Debug, Clone)]
 pub enum Error {
     Parsing(String),
@@ -16,8 +16,8 @@ pub enum Messages {
     Binary { uuid: Uuid, buffer: Vec<u8> },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Control {
     Send(Vec<u8>),
-    Disconnect,
+    Disconnect(oneshot::Sender<()>),
 }

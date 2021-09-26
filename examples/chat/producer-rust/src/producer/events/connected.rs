@@ -1,5 +1,4 @@
 use super::{identification, producer::Control, Context};
-use uuid::Uuid;
 
 #[allow(unused_variables)]
 pub async fn emit<E: std::error::Error>(

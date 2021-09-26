@@ -10,7 +10,7 @@ pub mod responses;
 use super::context;
 use consumer::{identification, Consumer};
 use context::Context;
-use fiber::{env::logs, server, server::Impl};
+use fiber::{env::logs, server};
 use log::{debug, error, trace, warn};
 use protocol::PackingStruct;
 use std::collections::HashMap;
@@ -265,19 +265,43 @@ pub mod producer {
         err: String,
         uuid: Uuid,
         mut context: &mut Context,
-        identification: Option<&mut identification::Identification>,
         control: &Control,
+        options: &Options,
+        consumer: &mut Option<&mut Consumer>,
     ) -> Result<(), ProducerError<E>> {
-        warn!(target: logs::targets::PRODUCER, "{}:: {}", uuid, err);
-        emitters::error::emit::<E>(
-            ProducerError::ResponsingError(err),
-            Some(uuid),
-            &mut context,
-            identification,
-            control,
-        )
-        .await
-        .map_err(ProducerError::EventEmitterError)
+        if options.consumer_error_handeling_strategy == ConsumerErrorHandelingStrategy::Log {
+            warn!(target: logs::targets::PRODUCER, "{}:: {}", uuid, err);
+        }
+        if options.consumer_error_handeling_strategy == ConsumerErrorHandelingStrategy::Disconnect
+            || options.consumer_error_handeling_strategy
+                == ConsumerErrorHandelingStrategy::EmitErrorAndDisconnect
+        {
+            if let Some(consumer) = consumer.as_deref_mut() {
+                disconnect(uuid, consumer, control)?;
+            } else {
+                error!(
+                    target: logs::targets::PRODUCER,
+                    "{}:: fail to find consumer to disconnect client", uuid
+                );
+            }
+        }
+        if options.consumer_error_handeling_strategy == ConsumerErrorHandelingStrategy::EmitError
+            || options.consumer_error_handeling_strategy
+                == ConsumerErrorHandelingStrategy::EmitErrorAndDisconnect
+        {
+            emitters::error::emit::<E>(
+                ProducerError::ResponsingError(err),
+                Some(uuid),
+                &mut context,
+                consumer
+                    .as_deref_mut()
+                    .map(|consumer| consumer.get_mut_identification()),
+                control,
+            )
+            .await
+            .map_err(ProducerError::EventEmitterError)?;
+        }
+        Ok(())
     }
 
     async fn process_received_data<E: std::error::Error>(
@@ -306,8 +330,9 @@ pub mod producer {
                     format!("fail to read chunk of data; error: {}", err),
                     uuid,
                     &mut context,
-                    Some(consumer.get_mut_identification()),
                     control,
+                    options,
+                    &mut Some(consumer),
                 )
                 .await?;
                 None
@@ -322,8 +347,9 @@ pub mod producer {
                 String::from("fail to find consumer; message wouldn't be processed"),
                 uuid,
                 &mut context,
-                None,
                 control,
+                options,
+                &mut None,
             )
             .await?;
             None
@@ -369,8 +395,9 @@ pub mod producer {
                             format!("fail to send identification response: {}", err),
                             uuid,
                             &mut context,
-                            Some(client.get_mut_identification()),
                             control,
+                            options,
+                            &mut Some(client),
                         )
                         .await?
                     }
@@ -391,11 +418,18 @@ pub mod producer {
                         )
                         .await
                         .map_err(ProducerError::EventEmitterError)?;
-                    } else if !assigned {
-                        warn!(
-                            target: logs::targets::PRODUCER,
-                            "consumer {} tries to send data, but it isn't assigned", uuid
-                        );
+                    } else if !assigned
+                        && options.producer_indentification_strategy
+                            != ProducerIdentificationStrategy::Ignore
+                    {
+                        if options.producer_indentification_strategy
+                            == ProducerIdentificationStrategy::Log
+                        {
+                            warn!(
+                                target: logs::targets::PRODUCER,
+                                "consumer {} tries to send data, but it isn't assigned", uuid
+                            );
+                        }
                         if options.producer_indentification_strategy
                             == ProducerIdentificationStrategy::Disconnect
                             || options.producer_indentification_strategy
@@ -427,11 +461,6 @@ pub mod producer {
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
-                                    // TODO: we should not create each time new filter. Filter should be created just in case:
-                                    // - consumer connected
-                                    // - consumer disconnected
-                                    // - consumer assigned
-                                    // in all other cases we can clone filter or even send as &mut
                                     request,
                                     header.sequence,
                                     &control,
@@ -442,8 +471,9 @@ pub mod producer {
                                         format!("fail to process user_login: {}", err),
                                         uuid,
                                         &mut context,
-                                        Some(client.get_mut_identification()),
                                         control,
+                                        options,
+                                        &mut Some(client),
                                     )
                                     .await?
                                 }
@@ -465,8 +495,9 @@ pub mod producer {
                                         format!("fail to process messages: {}", err),
                                         uuid,
                                         &mut context,
-                                        Some(client.get_mut_identification()),
                                         control,
+                                        options,
+                                        &mut Some(client),
                                     )
                                     .await?
                                 }
@@ -488,8 +519,9 @@ pub mod producer {
                                         format!("fail to process users: {}", err),
                                         uuid,
                                         &mut context,
-                                        Some(client.get_mut_identification()),
                                         control,
+                                        options,
+                                        &mut Some(client),
                                     )
                                     .await?
                                 }
@@ -511,8 +543,9 @@ pub mod producer {
                                         format!("fail to process message: {}", err),
                                         uuid,
                                         &mut context,
-                                        Some(client.get_mut_identification()),
                                         control,
+                                        options,
+                                        &mut Some(client),
                                     )
                                     .await?
                                 }
@@ -562,7 +595,13 @@ pub mod producer {
                     ProducerError::ConsumerError(err),
                     uuid,
                     &mut context,
-                    None, // TODO: add identification
+                    if let Some(uuid) = uuid.as_ref() {
+                        consumers
+                            .get_mut(uuid)
+                            .map(|consumer| consumer.get_mut_identification())
+                    } else {
+                        None
+                    },
                     &control,
                 )
                 .await
@@ -571,7 +610,13 @@ pub mod producer {
                     ProducerError::ConnectionError(err.to_string()),
                     uuid,
                     &mut context,
-                    None, // TODO: add identification
+                    if let Some(uuid) = uuid.as_ref() {
+                        consumers
+                            .get_mut(uuid)
+                            .map(|consumer| consumer.get_mut_identification())
+                    } else {
+                        None
+                    },
                     &control,
                 )
                 .await

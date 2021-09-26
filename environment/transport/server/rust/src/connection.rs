@@ -1,6 +1,7 @@
 use super::{
     channel::{Control, Error as ChannelError, Messages},
-    errors::Error, server::MonitorEvent,
+    errors::Error,
+    server::MonitorEvent,
 };
 use fiber::{env::logs, server};
 use futures::{SinkExt, StreamExt};
@@ -8,7 +9,10 @@ use log::{debug, error, info, warn};
 use tokio::{
     net::TcpStream,
     select,
-    sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    sync::{
+        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+        oneshot,
+    },
     task::spawn,
 };
 use tokio_tungstenite::{
@@ -59,7 +63,9 @@ impl Connection {
             }
         };
         if let Some(monitor) = monitor.as_ref() {
-            monitor.send((port, MonitorEvent::Connected)).map_err(|_e| String::from("Fail send monitor event - connected"))?;
+            monitor
+                .send((port, MonitorEvent::Connected))
+                .map_err(|_e| String::from("Fail send monitor event - connected"))?;
         }
         let send_message = move |msg: Messages| {
             match messages.send(msg) {
@@ -82,6 +88,7 @@ impl Connection {
             };
         };
         spawn(async move {
+            let mut shutdown_resolver: Option<oneshot::Sender<()>> = None;
             loop {
                 select! {
                     msg = ws.next() => {
@@ -149,7 +156,8 @@ impl Connection {
                                     break;
                                 }
                             },
-                            Control::Disconnect => {
+                            Control::Disconnect(tx_shutdown_resolver) => {
+                                shutdown_resolver = Some(tx_shutdown_resolver);
                                 state = Some(State::DisconnectByServer);
                                 break;
                             },
@@ -215,6 +223,14 @@ impl Connection {
                     error!(
                         target: logs::targets::SERVER,
                         "{}:: Fail send monitor event - disconnected", uuid
+                    );
+                }
+            }
+            if let Some(tx_shutdown_resolver) = shutdown_resolver.take() {
+                if tx_shutdown_resolver.send(()).is_err() {
+                    error!(
+                        target: logs::targets::SERVER,
+                        "{}:: Fail send disconnect confirmation", uuid
                     );
                 }
             }

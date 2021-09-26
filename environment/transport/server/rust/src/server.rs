@@ -430,9 +430,13 @@ impl Server {
                         }
                         InternalChannel::Disconnect(uuid, tx_resolve) => {
                             if let Some(control) = controlls.get(&uuid) {
-                                if let Err(e) = control.send(Control::Disconnect) {
+                                let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
+                                if let Err(e) = control.send(Control::Disconnect(tx_shutdown_resolve)) {
                                     error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
                                     tx_events.send(server::Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                } else if rx_shutdown_resolve.await.is_err() {
+                                    error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
+                                    tx_events.send(server::Events::Error(Some(uuid), String::from("Fail get disconnect confirmation"))).map_err(|e| Error::Channel(e.to_string()))?;
                                 }
                             } else {
                                 error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
@@ -658,6 +662,7 @@ impl Server {
                                 target: logs::targets::SERVER,
                                 "server::Control::Shutdown has been called"
                             );
+                            //TODO: disconnect all before
                             return Ok(());
                         }
                         server::Control::Disconnect(uuid) => {

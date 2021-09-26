@@ -2,7 +2,6 @@ use super::{
     identification, pack, producer::Control, protocol, responses, Context, HandlerError,
     ProducerError,
 };
-use uuid::Uuid;
 
 pub async fn process<E: std::error::Error>(
     identification: &mut identification::Identification,
