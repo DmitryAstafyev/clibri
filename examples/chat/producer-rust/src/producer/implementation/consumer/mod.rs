@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub mod identification;
 
 use super::{producer, protocol};

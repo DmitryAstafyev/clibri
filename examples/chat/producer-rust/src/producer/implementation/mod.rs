@@ -16,17 +16,15 @@ use protocol::PackingStruct;
 use std::collections::HashMap;
 use thiserror::Error;
 use tokio::{
-    select,
+    join, select,
     sync::{
-        mpsc::{UnboundedReceiver, UnboundedSender},
+        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
+    task,
 };
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
-
-pub type BroadcastSender = UnboundedSender<(Vec<Uuid>, Vec<u8>)>;
-pub type BroadcastReceiver = UnboundedReceiver<(Vec<Uuid>, Vec<u8>)>;
 
 #[derive(Error, Debug)]
 pub enum ProducerError<E: std::error::Error> {
@@ -40,22 +38,52 @@ pub enum ProducerError<E: std::error::Error> {
     EventEmitterError(emitters::EmitterError),
     #[error("responsing error: `{0}`")]
     ResponsingError(String),
-    #[error("not assigned consumer access: `{0}`")]
-    AssignedError(String),
     #[error("channel access error: `{0}`")]
     ChannelError(String),
     #[error("consumer doesn't have a key; uuid: `{0}`")]
     NoConsumerKey(Uuid),
     #[error("consumer wasn't assigned; uuid: `{0}`")]
     NoAssignedConsumer(Uuid),
-    #[error("consumer already marked as disconnected; uuid: `{0}`")]
-    AlreadyDisconnected(Uuid),
     #[error("fail to add consumer into storage; uuid: `{0}`")]
     FailToAddConsumer(Uuid),
 }
 
+#[allow(dead_code)]
 pub mod producer {
     use super::*;
+
+    pub enum ManageChannel {
+        Shutdown(oneshot::Sender<()>),
+    }
+
+    pub struct Manage {
+        tx_manage_channel: UnboundedSender<ManageChannel>,
+        shutdown_tracker_token: CancellationToken,
+    }
+
+    impl Manage {
+        pub async fn shutdown<E: std::error::Error>(&self) -> Result<(), ProducerError<E>> {
+            let (tx_resolver, rx_resolver): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+                oneshot::channel();
+            self.tx_manage_channel
+                .send(ManageChannel::Shutdown(tx_resolver))
+                .map_err(|_| {
+                    ProducerError::ChannelError(String::from("Fail to send shutdown command"))
+                })?;
+            rx_resolver
+                .await
+                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
+            Ok(())
+        }
+
+        pub fn is_down(&self) -> bool {
+            self.shutdown_tracker_token.is_cancelled()
+        }
+
+        pub fn get_shutdown_tracker(&self) -> CancellationToken {
+            self.shutdown_tracker_token.clone()
+        }
+    }
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum ProducerIdentificationStrategy {
@@ -129,13 +157,19 @@ pub mod producer {
     impl Control {
         pub async fn shutdown<E: std::error::Error>(&self) -> Result<(), ProducerError<E>> {
             let (tx_shutdown_confirmation, rx_shutdown_confirmation): (
-                oneshot::Sender<Option<E>>,
-                oneshot::Receiver<Option<E>>,
+                oneshot::Sender<()>,
+                oneshot::Receiver<()>,
             ) = oneshot::channel();
             self.tx_server_control
-                .send(server::Control::Shutdown)
+                .send(server::Control::Shutdown(tx_shutdown_confirmation))
                 .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
-            // TODO: Wait for response
+            if let Err(err) = rx_shutdown_confirmation.await {
+                error!(
+                    target: logs::targets::PRODUCER,
+                    "fail to get shutdown confirmation from server: {}", err
+                );
+            }
+            self.shutdown.cancel();
             Ok(())
         }
 
@@ -639,23 +673,18 @@ pub mod producer {
         Ok(())
     }
 
-    pub async fn run<S, E>(
+    pub async fn main_task<S, E>(
         mut server: S,
         options: Options,
         context: Context,
+        control: Control,
     ) -> Result<(), ProducerError<E>>
     where
         S: server::Impl<E>,
         E: std::error::Error,
     {
         let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
-        let tx_consumer_sender = server.sender();
-        let shutdown = CancellationToken::new();
-        let control = Control {
-            tx_server_control: server.control(),
-            tx_consumer_sender: tx_consumer_sender.clone(),
-            shutdown,
-        };
+        let cancel = control.shutdown.child_token();
         select! {
             res = async {
                 debug!(
@@ -669,8 +698,80 @@ pub mod producer {
                 rx_server_events,
                 control,
                 &options,
-            ) => res
+            ) => res,
+            _ = cancel.cancelled() => {
+                Ok(())
+            }
         }
+    }
+
+    async fn manage_task<E: std::error::Error>(
+        mut rx_manage_channel: UnboundedReceiver<ManageChannel>,
+        control: &Control,
+    ) -> Result<(), ProducerError<E>> {
+        debug!(target: logs::targets::PRODUCER, "manage_task is started");
+        if let Some(command) = rx_manage_channel.recv().await {
+            match command {
+                ManageChannel::Shutdown(tx_resolver) => {
+                    control.shutdown().await?;
+                    if tx_resolver.send(()).is_err() {
+                        error!(
+                            target: logs::targets::PRODUCER,
+                            "fail to send shutdown confirmation"
+                        );
+                    }
+                }
+            }
+        }
+        debug!(target: logs::targets::PRODUCER, "manage_task is finished");
+        Ok(())
+    }
+
+    pub async fn run<S, E>(
+        server: S,
+        options: Options,
+        context: Context,
+    ) -> Result<Manage, ProducerError<E>>
+    where
+        S: server::Impl<E> + 'static,
+        E: std::error::Error + Send + Sync,
+    {
+        let (tx_manage_channel, rx_manage_channel): (
+            UnboundedSender<ManageChannel>,
+            UnboundedReceiver<ManageChannel>,
+        ) = unbounded_channel();
+        let shutdown_tracker_token = CancellationToken::new();
+        let manage = Manage {
+            tx_manage_channel,
+            shutdown_tracker_token: shutdown_tracker_token.clone(),
+        };
+        task::spawn(async move {
+            let tx_consumer_sender = server.sender();
+            let shutdown = CancellationToken::new();
+            let control = Control {
+                tx_server_control: server.control(),
+                tx_consumer_sender: tx_consumer_sender.clone(),
+                shutdown,
+            };
+            let (main_task_res, manage_task_res) = join!(
+                main_task(server, options, context, control.clone()),
+                manage_task::<E>(rx_manage_channel, &control),
+            );
+            if let Err(err) = main_task_res.as_ref() {
+                error!(
+                    target: logs::targets::PRODUCER,
+                    "main task is finished with error: {}", err
+                );
+            }
+            if let Err(err) = manage_task_res.as_ref() {
+                error!(
+                    target: logs::targets::PRODUCER,
+                    "manage task is finished with error: {}", err
+                );
+            }
+            shutdown_tracker_token.cancel();
+        });
+        Ok(manage)
     }
 }
 // TODO: spawn separated tasks for 10-20 consumers

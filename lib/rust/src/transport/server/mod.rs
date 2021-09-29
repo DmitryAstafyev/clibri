@@ -1,5 +1,8 @@
 use async_trait::async_trait;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::{
+    mpsc::{UnboundedReceiver, UnboundedSender},
+    oneshot,
+};
 use uuid::Uuid;
 
 pub type Sending = (Vec<u8>, Option<Uuid>);
@@ -16,8 +19,16 @@ pub enum Events<E: std::error::Error> {
 }
 
 pub enum Control {
-    Shutdown,
+    Shutdown(oneshot::Sender<()>),
     Disconnect(Uuid),
+}
+
+#[async_trait]
+pub trait ControlT<E: std::error::Error>: Send {
+    async fn shutdown() -> Result<(), E>;
+    async fn send(buffer: Vec<u8>, client: Option<Uuid>) -> Result<(), E>;
+    async fn disconnect(client: Uuid) -> Result<(), E>;
+    async fn disconnect_all() -> Result<(), E>;
 }
 
 #[async_trait]

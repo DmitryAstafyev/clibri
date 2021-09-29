@@ -122,7 +122,7 @@ impl Test {
 
     async fn server_task(mut server: Server) -> Result<(), String> {
         let result = server.listen().await;
-        server.print_stat();
+        server.print_stat().unwrap();
         result.map_err(|e| format!("{}", e))
     }
 
@@ -407,14 +407,19 @@ impl Test {
             "{} send shutdown command to server",
             style("[test]").bold().dim(),
         );
+        let (tx_sd_conf, rx_sd_conf): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+            oneshot::channel();
         tx_server_control
-            .send(server::Control::Shutdown)
+            .send(server::Control::Shutdown(tx_sd_conf))
             .map_err(|e| format!("{}", e))?;
         // Step 7. Waiting for a server is done
         println!(
             "{} waiting for server would be down",
             style("[test]").bold().dim(),
         );
+        if rx_sd_conf.await.is_err() {
+            eprintln!("Fail to get shutdown confirmation");
+        }
         //rx_server_shutdown.await.map_err(|e| format!("{}", e))?;
         if let Err(err) = rx_server_shutdown.await {
             if err.to_string() != *"channel closed" {

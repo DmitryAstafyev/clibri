@@ -57,7 +57,7 @@ enum InternalChannel {
     InsertControl(Uuid, UnboundedSender<Control>, oneshot::Sender<()>),
     RemoveControl(Uuid, oneshot::Sender<()>),
     Send(Vec<u8>, Option<Uuid>, oneshot::Sender<()>),
-    Disconnect(Uuid, oneshot::Sender<()>),
+    Disconnect(Option<Uuid>, oneshot::Sender<()>),
     PrintStat,
     StatRecievedBytes(usize),
     StatListenerCreated,
@@ -172,7 +172,21 @@ impl InternalAPI {
         let (tx_resolve, rx_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) =
             oneshot::channel();
         self.tx_api
-            .send(InternalChannel::Disconnect(uuid, tx_resolve))
+            .send(InternalChannel::Disconnect(Some(uuid), tx_resolve))
+            .map_err(|e| Error::Channel(format!("Fail do api::disconnect; error: {}", e)))?;
+        rx_resolve.await.map_err(|e| {
+            Error::Channel(format!(
+                "Fail get response for api::disconnect; error: {}",
+                e
+            ))
+        })
+    }
+
+    pub async fn disconnect_all(&self) -> Result<(), Error> {
+        let (tx_resolve, rx_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+            oneshot::channel();
+        self.tx_api
+            .send(InternalChannel::Disconnect(None, tx_resolve))
             .map_err(|e| Error::Channel(format!("Fail do api::disconnect; error: {}", e)))?;
         rx_resolve.await.map_err(|e| {
             Error::Channel(format!(
@@ -429,25 +443,44 @@ impl Server {
                             })?;
                         }
                         InternalChannel::Disconnect(uuid, tx_resolve) => {
-                            if let Some(control) = controlls.get(&uuid) {
-                                let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
-                                if let Err(e) = control.send(Control::Disconnect(tx_shutdown_resolve)) {
-                                    error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
-                                    tx_events.send(server::Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
-                                } else if rx_shutdown_resolve.await.is_err() {
-                                    error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
-                                    tx_events.send(server::Events::Error(Some(uuid), String::from("Fail get disconnect confirmation"))).map_err(|e| Error::Channel(e.to_string()))?;
+                            if let Some(uuid) = uuid.as_ref() {
+                                // Disconnect client
+                                if let Some(control) = controlls.get(&uuid) {
+                                    let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
+                                    if let Err(e) = control.send(Control::Disconnect(tx_shutdown_resolve)) {
+                                        error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
+                                        tx_events.send(server::Events::Error(Some(uuid.clone()), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                    } else if rx_shutdown_resolve.await.is_err() {
+                                        error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
+                                        tx_events.send(server::Events::Error(Some(uuid.clone()), String::from("Fail get disconnect confirmation"))).map_err(|e| Error::Channel(e.to_string()))?;
+                                    }
+                                } else {
+                                    error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
+                                    tx_events.send(server::Events::ServerError(Error::CreateWS(format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)))).map_err(|e| Error::Channel(e.to_string()))?;
                                 }
                             } else {
-                                error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
-                                tx_events.send(server::Events::ServerError(Error::CreateWS(format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)))).map_err(|e| Error::Channel(e.to_string()))?;
+                                // Disconnect all
+                                for (uuid, control) in controlls.iter() {
+                                    let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
+                                    if let Err(e) = control.send(Control::Disconnect(tx_shutdown_resolve)) {
+                                        error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
+                                        if let Err(err) = tx_events.send(server::Events::Error(Some(uuid.clone()), format!("{}", e))) {
+                                            error!(target: logs::targets::SERVER, "{}:: Cannot send event Error; error: {}", uuid, err);
+                                        }
+                                    } else if rx_shutdown_resolve.await.is_err() {
+                                        error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
+                                        if let Err(err) = tx_events.send(server::Events::Error(Some(uuid.clone()), String::from("Fail get disconnect confirmation"))) {
+                                            error!(target: logs::targets::SERVER, "{}:: Cannot send event Error; error: {}", uuid, err);
+                                        }
+                                    }
+                                }
                             }
                             tx_resolve.send(()).map_err(|_| {
                                 Error::Channel(String::from(
                                     "Fail handle InternalChannel::Disconnect command",
                                 ))
                             })?;
-                        }
+                    }
                         InternalChannel::PrintStat => {
                             stat.print();
                         }
@@ -657,12 +690,15 @@ impl Server {
             res = async {
                 while let Some(msg) = control.recv().await {
                     match msg {
-                        server::Control::Shutdown => {
+                        server::Control::Shutdown(tx_response) => {
                             debug!(
                                 target: logs::targets::SERVER,
                                 "server::Control::Shutdown has been called"
                             );
-                            //TODO: disconnect all before
+                            api.disconnect_all().await?;
+                            if tx_response.send(()).is_err() {
+                                error!(target: logs::targets::SERVER, "Fail to response on Shutdown command");
+                            }
                             return Ok(());
                         }
                         server::Control::Disconnect(uuid) => {

@@ -1,5 +1,4 @@
 use super::{identification, producer::Control, protocol, Context};
-use uuid::Uuid;
 
 #[allow(unused_variables)]
 pub async fn response(
