@@ -1,6 +1,9 @@
 use super::{client::ClientStatus, config, stat::Stat};
 use console::style;
-use fiber::{server, server::Impl};
+use fiber::{
+    server,
+    server::{Control as ControlTrait, Impl},
+};
 use fiber_transport_client::{
     client::{Client, ConnectReturn, ToSend},
     events::{Event as ClientEvent, Message as ClientMessage},
@@ -9,7 +12,7 @@ use fiber_transport_client::{
 use fiber_transport_server::{
     errors::Error,
     options::{Listener, Options},
-    server::Server,
+    server::{Control, Server},
 };
 use futures::future::join_all;
 use indicatif::ProgressBar;
@@ -36,7 +39,7 @@ impl Test {
         tx_server_ready: oneshot::Sender<()>,
         tx_server_shutdown: oneshot::Sender<()>,
         tx_all_disconnected: oneshot::Sender<()>,
-        tx_client_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
+        server_control: Control,
         stat: Arc<RwLock<Stat>>,
     ) -> Result<(), String> {
         let mut tx_server_ready_wrapped = Some(tx_server_ready);
@@ -96,9 +99,10 @@ impl Test {
                         eprintln!("Invalid data come to server from client");
                     }
                     let buffer: Vec<u8> = vec![5u8, 6u8, 7u8, 8u8, 9u8];
-                    tx_client_sender
-                        .send((buffer, Some(uuid)))
-                        .map_err(|e| format!("{}", e))?;
+                    server_control
+                        .send(buffer, Some(uuid))
+                        .await
+                        .map_err(|e| e.to_string())?;
                     match stat.write() {
                         Ok(mut stat) => stat.sent += 1,
                         Err(err) => {
@@ -122,7 +126,6 @@ impl Test {
 
     async fn server_task(mut server: Server) -> Result<(), String> {
         let result = server.listen().await;
-        server.print_stat().unwrap();
         result.map_err(|e| format!("{}", e))
     }
 
@@ -134,8 +137,7 @@ impl Test {
             listener: Listener::Direct(socket_addr),
         });
         let rx_server_events = server.observer().map_err(|e| format!("{:?}", e))?;
-        let tx_client_sender = server.sender();
-        let tx_server_control = server.control();
+        let server_control = server.control();
         let (tx_server_ready, rx_server_ready): (oneshot::Sender<()>, oneshot::Receiver<()>) =
             oneshot::channel();
         let (tx_server_shutdown, rx_server_shutdown): (oneshot::Sender<()>, oneshot::Receiver<()>) =
@@ -150,6 +152,7 @@ impl Test {
         ) = oneshot::channel();
         let stat: Arc<RwLock<Stat>> = Arc::new(RwLock::new(Stat::new()));
         let stat_rc = stat.clone();
+        let server_control_cl = server_control.clone();
         // Step 1. Start server and server events loop
         spawn(async move {
             println!(
@@ -163,7 +166,7 @@ impl Test {
                     tx_server_ready,
                     tx_server_shutdown,
                     tx_all_disconnected,
-                    tx_client_sender,
+                    server_control_cl,
                     stat_rc
                 ) => res
             } {
@@ -402,19 +405,16 @@ impl Test {
             "{} send shutdown command to server",
             style("[test]").bold().dim(),
         );
-        let (tx_sd_conf, rx_sd_conf): (oneshot::Sender<()>, oneshot::Receiver<()>) =
-            oneshot::channel();
-        tx_server_control
-            .send(server::Control::Shutdown(tx_sd_conf))
-            .map_err(|e| format!("{}", e))?;
+        server_control
+            .print_stat()
+            .await
+            .map_err(|e| e.to_string())?;
+        server_control.shutdown().await.map_err(|e| e.to_string())?;
         // Step 7. Waiting for a server is done
         println!(
             "{} waiting for server would be down",
             style("[test]").bold().dim(),
         );
-        if rx_sd_conf.await.is_err() {
-            eprintln!("Fail to get shutdown confirmation");
-        }
         //rx_server_shutdown.await.map_err(|e| format!("{}", e))?;
         if let Err(err) = rx_server_shutdown.await {
             if err.to_string() != *"channel closed" {

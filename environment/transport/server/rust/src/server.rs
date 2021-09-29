@@ -1,5 +1,5 @@
 use super::{
-    channel::{Control, Messages},
+    channel::{Control as ConnectionControl, Messages},
     connection::Connection,
     errors::Error,
     handshake::Handshake as HandshakeInterface,
@@ -54,11 +54,15 @@ enum InternalChannel {
     DelegatePort(oneshot::Sender<Option<u16>>),
     Insert(u16, (u32, CancellationToken), oneshot::Sender<()>),
     MonitorEvent(MonitorEvent, u16, oneshot::Sender<()>),
-    InsertControl(Uuid, UnboundedSender<Control>, oneshot::Sender<()>),
+    InsertControl(
+        Uuid,
+        UnboundedSender<ConnectionControl>,
+        oneshot::Sender<()>,
+    ),
     RemoveControl(Uuid, oneshot::Sender<()>),
     Send(Vec<u8>, Option<Uuid>, oneshot::Sender<()>),
     Disconnect(Option<Uuid>, oneshot::Sender<()>),
-    PrintStat,
+    PrintStat(oneshot::Sender<()>),
     StatRecievedBytes(usize),
     StatListenerCreated,
     StatListenerDestroyed,
@@ -66,8 +70,41 @@ enum InternalChannel {
 }
 
 #[derive(Clone)]
+pub struct Control {
+    api: InternalAPI,
+}
+
+impl Control {
+    pub async fn print_stat(&self) -> Result<(), Error> {
+        self.api.print_stat().await
+    }
+}
+#[async_trait]
+impl server::Control<Error> for Control {
+    async fn shutdown(&self) -> Result<(), Error> {
+        debug!(
+            target: logs::targets::SERVER,
+            "server::Control::Shutdown has been called"
+        );
+        self.api.disconnect_all().await?;
+        self.api.shutdown();
+        Ok(())
+    }
+    async fn send(&self, buffer: Vec<u8>, client: Option<Uuid>) -> Result<(), Error> {
+        self.api.send(buffer, client).await
+    }
+    async fn disconnect(&self, client: Uuid) -> Result<(), Error> {
+        self.api.disconnect(client).await
+    }
+    async fn disconnect_all(&self) -> Result<(), Error> {
+        self.api.disconnect_all().await
+    }
+}
+
+#[derive(Clone)]
 struct InternalAPI {
     tx_api: UnboundedSender<InternalChannel>,
+    shutdown: CancellationToken,
 }
 
 impl InternalAPI {
@@ -128,7 +165,7 @@ impl InternalAPI {
     pub async fn insert_control(
         &self,
         uuid: Uuid,
-        tx_control: UnboundedSender<Control>,
+        tx_control: UnboundedSender<ConnectionControl>,
     ) -> Result<(), Error> {
         let (tx_resolve, rx_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) =
             oneshot::channel();
@@ -196,10 +233,18 @@ impl InternalAPI {
         })
     }
 
-    pub fn print_stat(&self) -> Result<(), Error> {
+    pub async fn print_stat(&self) -> Result<(), Error> {
+        let (tx_resolve, rx_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+            oneshot::channel();
         self.tx_api
-            .send(InternalChannel::PrintStat)
-            .map_err(|e| Error::Channel(format!("Fail do api::print_stat; error: {}", e)))
+            .send(InternalChannel::PrintStat(tx_resolve))
+            .map_err(|e| Error::Channel(format!("Fail do api::print_stat; error: {}", e)))?;
+        rx_resolve.await.map_err(|e| {
+            Error::Channel(format!(
+                "Fail get response for api::print_stat; error: {}",
+                e
+            ))
+        })
     }
 
     pub fn stat_recieved_bytes(&self, bytes: usize) -> Result<(), Error> {
@@ -230,18 +275,19 @@ impl InternalAPI {
             .send(InternalChannel::StatConnecting)
             .map_err(|e| Error::Channel(format!("Fail do api::stat_connecting; error: {}", e)))
     }
+
+    pub fn shutdown(&self) {
+        self.shutdown.cancel();
+    }
 }
 
 pub struct Server {
     options: Options,
     tx_events: UnboundedSender<server::Events<Error>>,
     rx_events: Option<UnboundedReceiver<server::Events<Error>>>,
-    tx_sender: UnboundedSender<server::Sending>,
-    rx_sender: Option<UnboundedReceiver<server::Sending>>,
-    tx_control: UnboundedSender<server::Control>,
-    rx_control: Option<UnboundedReceiver<server::Control>>,
     rx_api: Option<UnboundedReceiver<InternalChannel>>,
     api: InternalAPI,
+    control: Control,
 }
 
 impl Server {
@@ -251,33 +297,22 @@ impl Server {
             UnboundedSender<server::Events<Error>>,
             UnboundedReceiver<server::Events<Error>>,
         ) = unbounded_channel();
-        let (tx_sender, rx_sender): (
-            UnboundedSender<server::Sending>,
-            UnboundedReceiver<server::Sending>,
-        ) = unbounded_channel();
-        let (tx_control, rx_control): (
-            UnboundedSender<server::Control>,
-            UnboundedReceiver<server::Control>,
-        ) = unbounded_channel();
         let (tx_api, rx_api): (
             UnboundedSender<InternalChannel>,
             UnboundedReceiver<InternalChannel>,
         ) = unbounded_channel();
+        let api = InternalAPI {
+            tx_api,
+            shutdown: CancellationToken::new(),
+        };
         Self {
             options,
             tx_events,
             rx_events: Some(rx_events),
-            tx_sender,
-            rx_sender: Some(rx_sender),
-            tx_control,
-            rx_control: Some(rx_control),
             rx_api: Some(rx_api),
-            api: InternalAPI { tx_api },
+            api: api.clone(),
+            control: Control { api },
         }
-    }
-
-    pub fn print_stat(&self) -> Result<(), Error> {
-        self.api.print_stat()
     }
 
     async fn api_task(
@@ -287,7 +322,7 @@ impl Server {
         cancel: CancellationToken,
     ) -> Result<(), Error> {
         let mut connections: HashMap<u16, (u32, CancellationToken)> = HashMap::new();
-        let mut controlls: HashMap<Uuid, UnboundedSender<Control>> = HashMap::new();
+        let mut controlls: HashMap<Uuid, UnboundedSender<ConnectionControl>> = HashMap::new();
         let mut stat: Stat = Stat::new();
         let tx_events = self.tx_events.clone();
         info!(target: logs::targets::SERVER, "[task: api]:: started");
@@ -423,14 +458,14 @@ impl Server {
                             let len = buffer.len();
                             if let Some(uuid) = uuid {
                                 if let Some(control) = controlls.get_mut(&uuid) {
-                                    if let Err(e) = control.send(Control::Send(buffer)) {
+                                    if let Err(e) = control.send(ConnectionControl::Send(buffer)) {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to close connection due error: {}", uuid, e);
                                         tx_events.send(server::Events::Error(Some(uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                     } else { stat.sent_bytes(len); }
                                 }
                             } else {
                                 for (uuid, control) in controlls.iter_mut() {
-                                    if let Err(e) = control.send(Control::Send(buffer.clone())) {
+                                    if let Err(e) = control.send(ConnectionControl::Send(buffer.clone())) {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to close connection due error: {}", uuid, e);
                                         tx_events.send(server::Events::Error(Some(*uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                     } else { stat.sent_bytes(len); }
@@ -447,12 +482,12 @@ impl Server {
                                 // Disconnect client
                                 if let Some(control) = controlls.get(&uuid) {
                                     let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
-                                    if let Err(e) = control.send(Control::Disconnect(tx_shutdown_resolve)) {
+                                    if let Err(e) = control.send(ConnectionControl::Disconnect(tx_shutdown_resolve)) {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
-                                        tx_events.send(server::Events::Error(Some(uuid.clone()), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
+                                        tx_events.send(server::Events::Error(Some(*uuid), format!("{}", e))).map_err(|e| Error::Channel(e.to_string()))?;
                                     } else if rx_shutdown_resolve.await.is_err() {
                                         error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
-                                        tx_events.send(server::Events::Error(Some(uuid.clone()), String::from("Fail get disconnect confirmation"))).map_err(|e| Error::Channel(e.to_string()))?;
+                                        tx_events.send(server::Events::Error(Some(*uuid), String::from("Fail get disconnect confirmation"))).map_err(|e| Error::Channel(e.to_string()))?;
                                     }
                                 } else {
                                     error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
@@ -462,14 +497,14 @@ impl Server {
                                 // Disconnect all
                                 for (uuid, control) in controlls.iter() {
                                     let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
-                                    if let Err(e) = control.send(Control::Disconnect(tx_shutdown_resolve)) {
+                                    if let Err(e) = control.send(ConnectionControl::Disconnect(tx_shutdown_resolve)) {
                                         error!(target: logs::targets::SERVER, "{}:: Fail to send close connection command due error: {}", uuid, e);
-                                        if let Err(err) = tx_events.send(server::Events::Error(Some(uuid.clone()), format!("{}", e))) {
+                                        if let Err(err) = tx_events.send(server::Events::Error(Some(*uuid), format!("{}", e))) {
                                             error!(target: logs::targets::SERVER, "{}:: Cannot send event Error; error: {}", uuid, err);
                                         }
                                     } else if rx_shutdown_resolve.await.is_err() {
                                         error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
-                                        if let Err(err) = tx_events.send(server::Events::Error(Some(uuid.clone()), String::from("Fail get disconnect confirmation"))) {
+                                        if let Err(err) = tx_events.send(server::Events::Error(Some(*uuid), String::from("Fail get disconnect confirmation"))) {
                                             error!(target: logs::targets::SERVER, "{}:: Cannot send event Error; error: {}", uuid, err);
                                         }
                                     }
@@ -481,8 +516,13 @@ impl Server {
                                 ))
                             })?;
                     }
-                        InternalChannel::PrintStat => {
+                        InternalChannel::PrintStat(tx_resolve) => {
                             stat.print();
+                            tx_resolve.send(()).map_err(|_| {
+                                Error::Channel(String::from(
+                                    "Fail handle InternalChannel::PrintStat command",
+                                ))
+                            })?;
                         }
                         InternalChannel::StatRecievedBytes(bytes) => {
                             stat.recieved_bytes(bytes);
@@ -658,66 +698,6 @@ impl Server {
         }
     }
 
-    async fn sending_task(
-        &self,
-        mut rx_sending: UnboundedReceiver<server::Sending>,
-        cancel: CancellationToken,
-    ) -> Result<(), Error> {
-        let api = self.api.clone();
-        info!(target: logs::targets::SERVER, "[task: sender]:: started");
-        select! {
-            res = async {
-                while let Some((buffer, uuid)) = rx_sending.recv().await {
-                    api.send(buffer, uuid).await?;
-                }
-                Ok(())
-            } => res,
-            _ = cancel.cancelled() => {
-                info!(target: logs::targets::SERVER, "[task: sender]:: shutdown called");
-                Ok(())
-            }
-        }
-    }
-
-    async fn control_task(
-        &self,
-        mut control: UnboundedReceiver<server::Control>,
-        cancel: CancellationToken,
-    ) -> Result<(), Error> {
-        let api = self.api.clone();
-        info!(target: logs::targets::SERVER, "[task: control]:: started");
-        select! {
-            res = async {
-                while let Some(msg) = control.recv().await {
-                    match msg {
-                        server::Control::Shutdown(tx_response) => {
-                            debug!(
-                                target: logs::targets::SERVER,
-                                "server::Control::Shutdown has been called"
-                            );
-                            api.disconnect_all().await?;
-                            if tx_response.send(()).is_err() {
-                                error!(target: logs::targets::SERVER, "Fail to response on Shutdown command");
-                            }
-                            return Ok(());
-                        }
-                        server::Control::Disconnect(uuid) => {
-                            api.disconnect(uuid).await?;
-                        }
-                    }
-                }
-                Ok(())
-            } => {
-                cancel.cancel();
-                res
-            },
-            _ = cancel.cancelled() => {
-                info!(target: logs::targets::SERVER, "[task: control]:: shutdown called");
-                Ok(())
-            }
-        }
-    }
-
     async fn distributor_task(
         &self,
         options: Distributor,
@@ -885,24 +865,14 @@ impl Server {
         ) = unbounded_channel();
         let (tx_messages, rx_messages): (UnboundedSender<Messages>, UnboundedReceiver<Messages>) =
             unbounded_channel();
-        let cancel: CancellationToken = CancellationToken::new();
-        let rx_sender = if let Some(rx_sender) = self.rx_sender.take() {
-            rx_sender
-        } else {
-            return Err(Error::FailTakeSender);
-        };
-        let rx_control = if let Some(rx_control) = self.rx_control.take() {
-            rx_control
-        } else {
-            return Err(Error::FailTakeControl);
-        };
+        let cancel = self.api.shutdown.clone();
         let rx_api = if let Some(rx_api) = self.rx_api.take() {
             rx_api
         } else {
             return Err(Error::FailTakeAPI);
         };
         let tx_events = self.tx_events.clone();
-        let (streams_task, api_task, accepting_task, messages_task, sending_task, control_task) = join!(
+        let (streams_task, api_task, accepting_task, messages_task) = join!(
             Self::streams_task(
                 addr,
                 tx_tcp_stream,
@@ -914,8 +884,6 @@ impl Server {
             self.api_task(rx_api, None, cancel.child_token()),
             self.accepting_task(tx_messages, rx_tcp_stream, None, cancel.child_token()),
             self.messages_task(rx_messages, cancel.child_token()),
-            self.sending_task(rx_sender, cancel.child_token()),
-            self.control_task(rx_control, cancel),
         );
         tx_events
             .send(server::Events::Shutdown)
@@ -948,20 +916,6 @@ impl Server {
             );
             return Err(err);
         }
-        if let Err(err) = sending_task {
-            error!(
-                target: logs::targets::SERVER,
-                "[main]:: sending_task finished with error: {}", err
-            );
-            return Err(err);
-        }
-        if let Err(err) = control_task {
-            error!(
-                target: logs::targets::SERVER,
-                "[main]:: control_task finished with error: {}", err
-            );
-            return Err(err);
-        }
         debug!(
             target: logs::targets::SERVER,
             "[main]:: all tasks are finished without errors"
@@ -983,32 +937,14 @@ impl Server {
         let (tx_messages, rx_messages): (UnboundedSender<Messages>, UnboundedReceiver<Messages>) =
             unbounded_channel();
         let (tx_monitor, rx_monitor): (MonitorSender, MonitorReceiver) = unbounded_channel();
-        let cancel: CancellationToken = CancellationToken::new();
-        let rx_sender = if let Some(rx_sender) = self.rx_sender.take() {
-            rx_sender
-        } else {
-            return Err(Error::FailTakeSender);
-        };
-        let rx_control = if let Some(rx_control) = self.rx_control.take() {
-            rx_control
-        } else {
-            return Err(Error::FailTakeControl);
-        };
+        let cancel = self.api.shutdown.clone();
         let rx_api = if let Some(rx_api) = self.rx_api.take() {
             rx_api
         } else {
             return Err(Error::FailTakeAPI);
         };
         let tx_events = self.tx_events.clone();
-        let (
-            http_task,
-            api_task,
-            distributor_task,
-            accepting_task,
-            messages_task,
-            sending_task,
-            control_task,
-        ) = join!(
+        let (http_task, api_task, distributor_task, accepting_task, messages_task) = join!(
             self.api_task(rx_api, Some(options.clone()), cancel.child_token()),
             self.http_task(options.distributor, tx_port_request, cancel.child_token()),
             self.distributor_task(
@@ -1025,8 +961,6 @@ impl Server {
                 cancel.child_token()
             ),
             self.messages_task(rx_messages, cancel.child_token()),
-            self.sending_task(rx_sender, cancel.child_token()),
-            self.control_task(rx_control, cancel),
         );
         tx_events
             .send(server::Events::Shutdown)
@@ -1066,20 +1000,6 @@ impl Server {
             );
             return Err(err);
         }
-        if let Err(err) = sending_task {
-            error!(
-                target: logs::targets::SERVER,
-                "[main]:: sending_task finished with error: {}", err
-            );
-            return Err(err);
-        }
-        if let Err(err) = control_task {
-            error!(
-                target: logs::targets::SERVER,
-                "[main]:: control_task finished with error: {}", err
-            );
-            return Err(err);
-        }
         debug!(
             target: logs::targets::SERVER,
             "[main]:: all tasks are finished without errors"
@@ -1089,7 +1009,7 @@ impl Server {
 }
 
 #[async_trait]
-impl server::Impl<Error> for Server {
+impl server::Impl<Error, Control> for Server {
     async fn listen(&mut self) -> Result<(), Error> {
         let options = self.options.clone();
         match options.listener {
@@ -1106,11 +1026,7 @@ impl server::Impl<Error> for Server {
         }
     }
 
-    fn sender(&self) -> UnboundedSender<server::Sending> {
-        self.tx_sender.clone()
-    }
-
-    fn control(&self) -> UnboundedSender<server::Control> {
-        self.tx_control.clone()
+    fn control(&self) -> Control {
+        self.control.clone()
     }
 }

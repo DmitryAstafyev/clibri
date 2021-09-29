@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use tokio::sync::{
-    mpsc::{UnboundedReceiver, UnboundedSender},
-    oneshot,
+    mpsc::{UnboundedReceiver},
 };
 use uuid::Uuid;
 
@@ -18,23 +17,17 @@ pub enum Events<E: std::error::Error> {
     ServerError(E),
 }
 
-pub enum Control {
-    Shutdown(oneshot::Sender<()>),
-    Disconnect(Uuid),
+#[async_trait]
+pub trait Control<E: std::error::Error>: Send {
+    async fn shutdown(&self) -> Result<(), E>;
+    async fn send(&self, buffer: Vec<u8>, client: Option<Uuid>) -> Result<(), E>;
+    async fn disconnect(&self, client: Uuid) -> Result<(), E>;
+    async fn disconnect_all(&self) -> Result<(), E>;
 }
 
 #[async_trait]
-pub trait ControlT<E: std::error::Error>: Send {
-    async fn shutdown() -> Result<(), E>;
-    async fn send(buffer: Vec<u8>, client: Option<Uuid>) -> Result<(), E>;
-    async fn disconnect(client: Uuid) -> Result<(), E>;
-    async fn disconnect_all() -> Result<(), E>;
-}
-
-#[async_trait]
-pub trait Impl<E: std::error::Error>: Send {
+pub trait Impl<E: std::error::Error, C: Control<E> + Send>: Send {
     async fn listen(&mut self) -> Result<(), E>;
     fn observer(&mut self) -> Result<UnboundedReceiver<Events<E>>, E>;
-    fn sender(&self) -> UnboundedSender<Sending>;
-    fn control(&self) -> UnboundedSender<Control>;
+    fn control(&self) -> C;
 }
