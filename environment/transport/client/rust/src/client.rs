@@ -12,7 +12,6 @@ use hyper::{Client as HttpClient, StatusCode, Uri};
 use log::{debug, error};
 use std::net::SocketAddr;
 use tokio::{
-    join,
     net::TcpStream,
     select,
     sync::{
@@ -272,24 +271,17 @@ impl Client {
         let (writer, reader) = socket.split();
         self.tx_sender = tx_sender;
         task::spawn(async move {
-            let (reader_task, writer_task) = join!(
-                Self::reader_task(reader, tx_events.clone(), cancel.child_token()),
-                Self::writer_task(writer, rx_sender, cancel)
-            );
+            let res = select! {
+                res = Self::reader_task(reader, tx_events.clone(), cancel.child_token()) => res,
+                res = Self::writer_task(writer, rx_sender, cancel) => res,
+            };
             if let Err(err) = tx_events.send(Event::Disconnected) {
                 error!(
                     target: logs::targets::CLIENT,
                     "fail to send event Disconnected; error: {:?}", err
                 );
             }
-            if let Err(err) = reader_task {
-                if let Err(err) = tx_done.send(Err(err)) {
-                    error!(
-                        target: logs::targets::CLIENT,
-                        "fail to send done signal; error: {:?}", err
-                    );
-                }
-            } else if let Err(err) = writer_task {
+            if let Err(err) = res {
                 if let Err(err) = tx_done.send(Err(err)) {
                     error!(
                         target: logs::targets::CLIENT,

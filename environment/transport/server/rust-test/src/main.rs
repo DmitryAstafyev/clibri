@@ -4,6 +4,7 @@ pub mod stat;
 pub mod test_1;
 pub mod test_2;
 pub mod test_3;
+pub mod test_4;
 
 use fiber::env::logs;
 
@@ -13,5 +14,6 @@ async fn main() -> Result<(), String> {
     test_1::Test::run().await?;
     test_2::Test::run().await?;
     test_3::Test::run().await?;
+    test_4::Test::run().await?;
     Ok(())
 }

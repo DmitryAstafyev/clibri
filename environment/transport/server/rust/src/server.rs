@@ -86,6 +86,7 @@ impl server::Control<Error> for Control {
             target: logs::targets::SERVER,
             "server::Control::Shutdown has been called"
         );
+        self.api.lock();
         self.api.disconnect_all().await?;
         self.api.shutdown();
         Ok(())
@@ -105,6 +106,7 @@ impl server::Control<Error> for Control {
 struct InternalAPI {
     tx_api: UnboundedSender<InternalChannel>,
     shutdown: CancellationToken,
+    locked: CancellationToken,
 }
 
 impl InternalAPI {
@@ -279,6 +281,16 @@ impl InternalAPI {
     pub fn shutdown(&self) {
         self.shutdown.cancel();
     }
+
+    pub fn lock(&self) {
+        if !self.is_locked() {
+            self.locked.cancel();
+        }
+    }
+
+    pub fn is_locked(&self) -> bool {
+        self.locked.is_cancelled()
+    }
 }
 
 pub struct Server {
@@ -304,6 +316,7 @@ impl Server {
         let api = InternalAPI {
             tx_api,
             shutdown: CancellationToken::new(),
+            locked: CancellationToken::new(),
         };
         Self {
             options,
@@ -675,6 +688,9 @@ impl Server {
         select! {
             res = async {
                 while let Some(msg) = rx_messages.recv().await {
+                    if api.is_locked() {
+                        continue;
+                    }
                     match msg {
                         Messages::Binary { uuid, buffer } => {
                             api.stat_recieved_bytes(buffer.len())?;
@@ -716,6 +732,9 @@ impl Server {
         let result = select! {
             res = async {
                 while let Some(tx_response) = rx_port_request.recv().await {
+                    if api.is_locked() {
+                        continue;
+                    }
                     info!(target: logs::targets::SERVER, "request for available port is gotten");
                     let mut port = api.get_port().await?;
                     if let Some(port) = port.take() {
@@ -742,6 +761,9 @@ impl Server {
             } => res,
             res = async {
                 while let Some((port, tx_listener_ready)) = rx_create_listener.recv().await {
+                    if api.is_locked() {
+                        continue;
+                    }
                     let socket_addr = format!("{}:{}", addr, port).parse::<SocketAddr>().map_err(|e| Error::SocketAddr(e.to_string()))?;
                     let tx_events = tx_events.clone();
                     let api = api.clone();
