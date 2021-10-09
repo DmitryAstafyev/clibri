@@ -3,6 +3,7 @@ pub mod disconnected;
 pub mod error;
 
 use super::*;
+use fiber::server;
 use protocol::PackingStruct;
 use thiserror::Error;
 use uuid::Uuid;
@@ -26,12 +27,13 @@ pub fn pack(
         .map_err(EmitterError::Packing)
 }
 
-pub fn broadcast<E: std::error::Error>(
+pub async fn broadcast<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
-    control: &producer::Control,
+    control: &producer::Control<E, C>,
 ) -> Result<(), EmitterError> {
     control
         .broadcast(broadcasting.0.clone(), broadcasting.1.clone())
+        .await
         .map_err(|e: ProducerError<E>| EmitterError::Processing(e.to_string()))?;
     Ok(())
 }

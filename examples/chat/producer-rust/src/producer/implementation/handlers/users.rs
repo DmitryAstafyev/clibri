@@ -2,14 +2,15 @@ use super::{
     identification, pack, producer::Control, protocol, responses, Context, HandlerError,
     ProducerError,
 };
+use fiber::server;
 
-pub async fn process<E: std::error::Error>(
+pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::Users::Request,
     sequence: u32,
-    control: &Control,
+    control: &Control<E, C>,
 ) -> Result<(), HandlerError> {
     let uuid = identification.uuid();
     let buffer =
@@ -19,5 +20,6 @@ pub async fn process<E: std::error::Error>(
         };
     control
         .send(buffer, Some(uuid))
+        .await
         .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))
 }

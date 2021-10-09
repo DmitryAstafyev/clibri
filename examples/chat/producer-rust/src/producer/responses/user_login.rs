@@ -1,4 +1,5 @@
 use super::{identification, producer::Control, protocol, Context};
+use fiber::server;
 use uuid::Uuid;
 
 type BroadcastUserConnected = (Vec<Uuid>, protocol::Events::UserConnected);
@@ -16,12 +17,12 @@ pub enum Response {
 }
 
 #[allow(unused_variables)]
-pub async fn response(
+pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::UserLogin::Request,
-    control: &Control,
+    control: &Control<E, C>,
 ) -> Result<Response, protocol::UserLogin::Err> {
     let uuid = identification.uuid();
     if context.is_user_exist(&request.username).await {

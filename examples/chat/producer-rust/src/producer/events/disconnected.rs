@@ -1,15 +1,16 @@
 use super::{identification, producer::Control, protocol, Context};
+use fiber::server;
 use uuid::Uuid;
 
 type BroadcastUserDisconnected = (Vec<Uuid>, protocol::Events::UserDisconnected);
 type BroadcastMessage = Option<(Vec<Uuid>, protocol::Events::Message)>;
 
 #[allow(unused_variables)]
-pub async fn emit<E: std::error::Error>(
+pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
-    control: &Control,
+    control: &Control<E, C>,
 ) -> Result<(BroadcastUserDisconnected, BroadcastMessage), String> {
     let uuid = identification.uuid();
     if let Some(user) = context.remove_user(uuid).await {

@@ -148,55 +148,55 @@ pub mod producer {
     }
 
     #[derive(Clone, Debug)]
-    pub struct Control {
-        tx_server_control: UnboundedSender<server::Control>,
+    pub struct Control<E, C>
+    where
+        E: std::error::Error,
+        C: server::Control<E> + Send + Clone,
+    {
+        server_control: C,
+        error: Option<E>,
         shutdown: CancellationToken,
-        tx_consumer_sender: UnboundedSender<(Vec<u8>, Option<Uuid>)>,
     }
 
-    impl Control {
-        pub async fn shutdown<E: std::error::Error>(&self) -> Result<(), ProducerError<E>> {
-            let (tx_shutdown_confirmation, rx_shutdown_confirmation): (
-                oneshot::Sender<()>,
-                oneshot::Receiver<()>,
-            ) = oneshot::channel();
-            self.tx_server_control
-                .send(server::Control::Shutdown(tx_shutdown_confirmation))
-                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
-            if let Err(err) = rx_shutdown_confirmation.await {
-                error!(
-                    target: logs::targets::PRODUCER,
-                    "fail to get shutdown confirmation from server: {}", err
-                );
-            }
+    impl<E, C> Control<E, C>
+    where
+        E: std::error::Error,
+        C: server::Control<E> + Send + Clone,
+    {
+        pub async fn shutdown(&self) -> Result<(), ProducerError<E>> {
+            self.server_control
+                .shutdown()
+                .await
+                .map_err(ProducerError::ServerError)?;
             self.shutdown.cancel();
             Ok(())
         }
 
-        pub fn disconnect<E: std::error::Error>(&self, uuid: Uuid) -> Result<(), ProducerError<E>> {
-            self.tx_server_control
-                .send(server::Control::Disconnect(uuid))
-                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
-            Ok(())
+        pub async fn disconnect(&self, uuid: Uuid) -> Result<(), ProducerError<E>> {
+            self.server_control
+                .disconnect(uuid)
+                .await
+                .map_err(ProducerError::ServerError)
         }
 
-        pub fn send<E: std::error::Error>(
+        pub async fn send(
             &self,
             buffer: Vec<u8>,
             uuid: Option<Uuid>,
         ) -> Result<(), ProducerError<E>> {
-            self.tx_consumer_sender
-                .send((buffer, uuid))
-                .map_err(|e| ProducerError::ChannelError(e.to_string()))
+            self.server_control
+                .send(buffer, uuid)
+                .await
+                .map_err(ProducerError::ServerError)
         }
 
-        pub fn broadcast<E: std::error::Error>(
+        pub async fn broadcast(
             &self,
             uuids: Vec<Uuid>,
             buffer: Vec<u8>,
         ) -> Result<(), ProducerError<E>> {
             for uuid in uuids.iter() {
-                if let Err(err) = self.tx_consumer_sender.send((buffer.clone(), Some(*uuid))) {
+                if let Err(err) = self.server_control.send(buffer.clone(), Some(*uuid)).await {
                     warn!(
                         target: logs::targets::PRODUCER,
                         "fail to send data to consumer {}: {}", uuid, err
@@ -207,11 +207,11 @@ pub mod producer {
         }
     }
 
-    async fn add_connection<E: std::error::Error>(
+    async fn add_connection<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         consumers: &mut HashMap<Uuid, Consumer>,
         context: &mut Context,
-        control: &Control,
+        control: &Control<E, C>,
         options: &Options,
     ) -> Result<(), ProducerError<E>> {
         debug!(
@@ -227,7 +227,7 @@ pub mod producer {
             target: logs::targets::PRODUCER,
             "new connection accepted: {}", uuid,
         );
-        if let Err(err) = emitters::connected::emit::<E>(
+        if let Err(err) = emitters::connected::emit::<E, C>(
             client.get_mut_identification(),
             &filter,
             context,
@@ -244,11 +244,11 @@ pub mod producer {
         Ok(())
     }
 
-    async fn remove_connection<E: std::error::Error>(
+    async fn remove_connection<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         consumers: &mut HashMap<Uuid, Consumer>,
         context: &mut Context,
-        control: &Control,
+        control: &Control<E, C>,
     ) -> Result<(), ProducerError<E>> {
         debug!(
             target: logs::targets::PRODUCER,
@@ -256,7 +256,7 @@ pub mod producer {
         );
         let filter = identification::Filter::new(consumers).await;
         if let Some(mut client) = consumers.remove(&uuid) {
-            if let Err(err) = emitters::disconnected::emit::<E>(
+            if let Err(err) = emitters::disconnected::emit::<E, C>(
                 client.get_mut_identification(),
                 &filter,
                 context,
@@ -282,24 +282,24 @@ pub mod producer {
         Ok(())
     }
 
-    fn disconnect<E: std::error::Error>(
+    async fn disconnect<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         consumer: &mut Consumer,
-        control: &Control,
+        control: &Control<E, C>,
     ) -> Result<(), ProducerError<E>> {
         if consumer.get_identification().is_discredited() {
             return Ok(());
         }
         consumer.get_identification().discredited();
-        control.disconnect::<E>(uuid)?;
+        control.disconnect(uuid).await?;
         Ok(())
     }
 
-    async fn responsing_err<E: std::error::Error>(
+    async fn responsing_err<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         err: String,
         uuid: Uuid,
         mut context: &mut Context,
-        control: &Control,
+        control: &Control<E, C>,
         options: &Options,
         consumer: &mut Option<&mut Consumer>,
     ) -> Result<(), ProducerError<E>> {
@@ -311,7 +311,7 @@ pub mod producer {
                 == ConsumerErrorHandelingStrategy::EmitErrorAndDisconnect
         {
             if let Some(consumer) = consumer.as_deref_mut() {
-                disconnect(uuid, consumer, control)?;
+                disconnect(uuid, consumer, control).await?;
             } else {
                 error!(
                     target: logs::targets::PRODUCER,
@@ -323,7 +323,7 @@ pub mod producer {
             || options.consumer_error_handeling_strategy
                 == ConsumerErrorHandelingStrategy::EmitErrorAndDisconnect
         {
-            emitters::error::emit::<E>(
+            emitters::error::emit::<E, C>(
                 ProducerError::ResponsingError(err),
                 Some(uuid),
                 &mut context,
@@ -338,12 +338,12 @@ pub mod producer {
         Ok(())
     }
 
-    async fn process_received_data<E: std::error::Error>(
+    async fn process_received_data<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         buffer: Vec<u8>,
         consumers: &mut HashMap<Uuid, Consumer>,
         mut context: &mut Context,
-        control: &Control,
+        control: &Control<E, C>,
         options: &Options,
     ) -> Result<(), ProducerError<E>> {
         trace!(
@@ -413,7 +413,7 @@ pub mod producer {
                     .pack(header.sequence, Some(assigned_uuid.clone()))
                     {
                         Ok(buffer) => {
-                            if let Err(err) = control.send::<E>(buffer, Some(uuid)) {
+                            if let Err(err) = control.send(buffer, Some(uuid)).await {
                                 Err(err.to_string())
                             } else {
                                 warn!(
@@ -442,8 +442,8 @@ pub mod producer {
                             target: logs::targets::PRODUCER,
                             "consumer {} tries to send data, but it doesn't have a key", uuid
                         );
-                        disconnect(uuid, client, control)?;
-                        emitters::error::emit::<E>(
+                        disconnect(uuid, client, control).await?;
+                        emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
                             &mut context,
@@ -469,14 +469,14 @@ pub mod producer {
                             || options.producer_indentification_strategy
                                 == ProducerIdentificationStrategy::EmitErrorAndDisconnect
                         {
-                            disconnect(uuid, client, control)?;
+                            disconnect(uuid, client, control).await?;
                         }
                         if options.producer_indentification_strategy
                             == ProducerIdentificationStrategy::EmitError
                             || options.producer_indentification_strategy
                                 == ProducerIdentificationStrategy::EmitErrorAndDisconnect
                         {
-                            emitters::error::emit::<E>(
+                            emitters::error::emit::<E, C>(
                                 ProducerError::NoAssignedConsumer(uuid),
                                 Some(uuid),
                                 &mut context,
@@ -491,7 +491,7 @@ pub mod producer {
                             protocol::AvailableMessages::UserLogin(
                                 protocol::UserLogin::AvailableMessages::Request(request),
                             ) => {
-                                if let Err(err) = handlers::user_login::process::<E>(
+                                if let Err(err) = handlers::user_login::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -515,7 +515,7 @@ pub mod producer {
                             protocol::AvailableMessages::Messages(
                                 protocol::Messages::AvailableMessages::Request(request),
                             ) => {
-                                if let Err(err) = handlers::messages::process::<E>(
+                                if let Err(err) = handlers::messages::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -539,7 +539,7 @@ pub mod producer {
                             protocol::AvailableMessages::Users(
                                 protocol::Users::AvailableMessages::Request(request),
                             ) => {
-                                if let Err(err) = handlers::users::process::<E>(
+                                if let Err(err) = handlers::users::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -563,7 +563,7 @@ pub mod producer {
                             protocol::AvailableMessages::Message(
                                 protocol::Message::AvailableMessages::Request(request),
                             ) => {
-                                if let Err(err) = handlers::message::process::<E>(
+                                if let Err(err) = handlers::message::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -593,10 +593,10 @@ pub mod producer {
         Ok(())
     }
 
-    async fn listener<E: std::error::Error>(
+    async fn listener<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         mut context: Context,
         mut rx_server_events: UnboundedReceiver<server::Events<E>>,
-        control: Control,
+        control: Control<E, C>,
         options: &Options,
     ) -> Result<(), ProducerError<E>> {
         debug!(
@@ -625,7 +625,7 @@ pub mod producer {
                     )
                     .await?
                 }
-                server::Events::Error(uuid, err) => emitters::error::emit::<E>(
+                server::Events::Error(uuid, err) => emitters::error::emit::<E, C>(
                     ProducerError::ConsumerError(err),
                     uuid,
                     &mut context,
@@ -640,7 +640,7 @@ pub mod producer {
                 )
                 .await
                 .map_err(ProducerError::EventEmitterError)?,
-                server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E>(
+                server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E, C>(
                     ProducerError::ConnectionError(err.to_string()),
                     uuid,
                     &mut context,
@@ -673,15 +673,16 @@ pub mod producer {
         Ok(())
     }
 
-    pub async fn main_task<S, E>(
+    pub async fn main_task<S, C, E>(
         mut server: S,
         options: Options,
         context: Context,
-        control: Control,
+        control: Control<E, C>,
     ) -> Result<(), ProducerError<E>>
     where
-        S: server::Impl<E>,
-        E: std::error::Error,
+        S: server::Impl<E, C>,
+        C: server::Control<E> + Send + Clone,
+        E: std::error::Error + Clone,
     {
         let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
         let cancel = control.shutdown.child_token();
@@ -705,9 +706,9 @@ pub mod producer {
         }
     }
 
-    async fn manage_task<E: std::error::Error>(
+    async fn manage_task<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         mut rx_manage_channel: UnboundedReceiver<ManageChannel>,
-        control: &Control,
+        control: &Control<E, C>,
     ) -> Result<(), ProducerError<E>> {
         debug!(target: logs::targets::PRODUCER, "manage_task is started");
         if let Some(command) = rx_manage_channel.recv().await {
@@ -727,14 +728,15 @@ pub mod producer {
         Ok(())
     }
 
-    pub async fn run<S, E>(
+    pub async fn run<S, C, E>(
         server: S,
         options: Options,
         context: Context,
     ) -> Result<Manage, ProducerError<E>>
     where
-        S: server::Impl<E> + 'static,
-        E: std::error::Error + Send + Sync,
+        S: server::Impl<E, C> + 'static,
+        E: std::error::Error + Clone + Send + Sync,
+        C: server::Control<E> + Send + Sync + Clone,
     {
         let (tx_manage_channel, rx_manage_channel): (
             UnboundedSender<ManageChannel>,
@@ -746,16 +748,15 @@ pub mod producer {
             shutdown_tracker_token: shutdown_tracker_token.clone(),
         };
         task::spawn(async move {
-            let tx_consumer_sender = server.sender();
             let shutdown = CancellationToken::new();
             let control = Control {
-                tx_server_control: server.control(),
-                tx_consumer_sender: tx_consumer_sender.clone(),
+                server_control: server.control(),
                 shutdown,
+                error: None,
             };
             let (main_task_res, manage_task_res) = join!(
                 main_task(server, options, context, control.clone()),
-                manage_task::<E>(rx_manage_channel, &control),
+                manage_task::<E, C>(rx_manage_channel, &control),
             );
             if let Err(err) = main_task_res.as_ref() {
                 error!(

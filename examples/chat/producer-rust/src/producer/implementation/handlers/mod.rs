@@ -4,6 +4,7 @@ pub mod user_login;
 pub mod users;
 
 use super::*;
+use fiber::server;
 use protocol::PackingStruct;
 use thiserror::Error;
 use uuid::Uuid;
@@ -25,12 +26,13 @@ pub fn pack(
         .map_err(HandlerError::Packing)
 }
 
-pub fn broadcast<E: std::error::Error>(
+pub async fn broadcast<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
-    control: &producer::Control,
+    control: &producer::Control<E, C>,
 ) -> Result<(), HandlerError> {
     control
         .broadcast(broadcasting.0.clone(), broadcasting.1.clone())
+        .await
         .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))?;
     Ok(())
 }

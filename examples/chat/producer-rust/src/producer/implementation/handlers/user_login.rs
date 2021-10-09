@@ -2,15 +2,16 @@ use super::{
     broadcast, identification, pack, producer::Control, protocol, responses, Context, HandlerError,
     ProducerError,
 };
+use fiber::server;
 use uuid::Uuid;
 
-pub async fn process<E: std::error::Error>(
+pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::UserLogin::Request,
     sequence: u32,
-    control: &Control,
+    control: &Control<E, C>,
 ) -> Result<(), HandlerError> {
     let uuid = identification.uuid();
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
@@ -44,9 +45,10 @@ pub async fn process<E: std::error::Error>(
         };
     control
         .send(buffer, Some(uuid))
+        .await
         .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))?;
     for msg in broadcasting.iter_mut() {
-        broadcast::<E>(msg, control)?;
+        broadcast::<E, C>(msg, control).await?;
     }
     Ok(())
 }

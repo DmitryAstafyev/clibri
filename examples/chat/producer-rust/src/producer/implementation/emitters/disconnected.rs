@@ -1,15 +1,16 @@
 use super::{broadcast, events, identification, pack, producer::Control, Context, EmitterError};
+use fiber::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error>(
+pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
-    control: &Control,
+    control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let (mut broadcat_userdisconnected, mut broadcast_message) =
-        events::disconnected::emit::<E>(identification, filter, context, control)
+        events::disconnected::emit::<E, C>(identification, filter, context, control)
             .await
             .map_err(EmitterError::Emitting)?;
     broadcasting.push((
@@ -23,7 +24,7 @@ pub async fn emit<E: std::error::Error>(
         ));
     }
     for msg in broadcasting.iter_mut() {
-        broadcast::<E>(msg, control)?;
+        broadcast::<E, C>(msg, control).await?;
     }
     Ok(())
 }

@@ -1,7 +1,6 @@
 use thiserror::Error;
-use tokio::task::JoinError;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum Error {
 	#[error("creating server error: `{0}`")]
 	Create(String),
@@ -25,8 +24,6 @@ pub enum Error {
 	FailTakeControl,
 	#[error("fail to take api channel")]
 	FailTakeAPI,
-	#[error("fail to join task")]
-	JoinError(JoinError),
 	#[error("error on body parsing: `{0}`")]
 	BodyParsing(String),
 	#[error("server error: `{0}`")]
