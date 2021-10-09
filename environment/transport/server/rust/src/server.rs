@@ -1,6 +1,7 @@
 use super::{
     channel::{Control as ConnectionControl, Messages},
     connection::Connection,
+    env as server_env,
     errors::Error,
     handshake::Handshake as HandshakeInterface,
     options::{Distributor, Listener, Options, Ports},
@@ -88,6 +89,11 @@ impl server::Control<Error> for Control {
         );
         self.api.lock();
         self.api.disconnect_all().await?;
+        if server_env::is_debug_mode() {
+            if let Err(err) = self.api.print_stat().await {
+                warn!(target: logs::targets::SERVER, "fail to print stat: {}", err);
+            }
+        }
         self.api.shutdown();
         Ok(())
     }
@@ -341,6 +347,20 @@ impl Server {
         info!(target: logs::targets::SERVER, "[task: api]:: started");
         select! {
             res = async {
+                let remove_control = |
+                    controlls: &mut HashMap<Uuid, UnboundedSender<ConnectionControl>>,
+                    stat: &mut Stat,
+                    uuid: Uuid| {
+                    if controlls.remove(&uuid).is_some() {
+                        stat.disconnected();
+                        debug!(target: logs::targets::SERVER, "{}:: Channel of connection has been removed", uuid);
+                        stat.alive(controlls.len());
+                        tx_events.send(server::Events::Disconnected(uuid)).map_err(|e| Error::Channel(e.to_string()))?;
+                    } else {
+                        error!(target: logs::targets::SERVER, "{}:: Fail to find channel of connection to remove it", uuid);
+                    }
+                    Ok(())
+                };
                 while let Some(msg) = rx_api.recv().await {
                     match msg {
                         InternalChannel::GetPort(tx_resolve) => {
@@ -453,14 +473,7 @@ impl Server {
                             debug!(target: logs::targets::SERVER, "Controll of connection has been added");
                         }
                         InternalChannel::RemoveControl(uuid, tx_resolve) => {
-                            if controlls.remove(&uuid).is_some() {
-                                stat.disconnected();
-                                debug!(target: logs::targets::SERVER, "{}:: Channel of connection has been removed", uuid);
-                                stat.alive(controlls.len());
-                                tx_events.send(server::Events::Disconnected(uuid)).map_err(|e| Error::Channel(e.to_string()))?;
-                            } else {
-                                error!(target: logs::targets::SERVER, "{}:: Fail to find channel of connection to remove it", uuid);
-                            }
+                            remove_control(&mut controlls, &mut stat, uuid.to_owned())?;
                             tx_resolve.send(()).map_err(|_| {
                                 Error::Channel(String::from(
                                     "Fail handle InternalChannel::RemoveControl command",
@@ -502,12 +515,14 @@ impl Server {
                                         error!(target: logs::targets::SERVER, "{}:: Fail get disconnect confirmation", uuid);
                                         tx_events.send(server::Events::Error(Some(*uuid), String::from("Fail get disconnect confirmation"))).map_err(|e| Error::Channel(e.to_string()))?;
                                     }
+                                    remove_control(&mut controlls, &mut stat, uuid.to_owned())?;
                                 } else {
                                     error!(target: logs::targets::SERVER, "Command Disconnect has been gotten. But cannot find client: {}", uuid);
                                     tx_events.send(server::Events::ServerError(Error::CreateWS(format!("Command Disconnect has been gotten. But cannot find client: {}", uuid)))).map_err(|e| Error::Channel(e.to_string()))?;
                                 }
                             } else {
                                 // Disconnect all
+                                let mut uuids: Vec<Uuid> = vec![];
                                 for (uuid, control) in controlls.iter() {
                                     let (tx_shutdown_resolve, rx_shutdown_resolve): (oneshot::Sender<()>, oneshot::Receiver<()>) = oneshot::channel();
                                     if let Err(e) = control.send(ConnectionControl::Disconnect(tx_shutdown_resolve)) {
@@ -521,6 +536,10 @@ impl Server {
                                             error!(target: logs::targets::SERVER, "{}:: Cannot send event Error; error: {}", uuid, err);
                                         }
                                     }
+                                    uuids.push(uuid.to_owned());
+                                }
+                                for uuid in uuids {
+                                    remove_control(&mut controlls, &mut stat, uuid.to_owned())?;
                                 }
                             }
                             tx_resolve.send(()).map_err(|_| {

@@ -293,10 +293,6 @@ impl Test {
             "{} send shutdown command to server",
             style("[test]").bold().dim(),
         );
-        server_control
-            .print_stat()
-            .await
-            .map_err(|e| e.to_string())?;
         server_control.shutdown().await.map_err(|e| e.to_string())?;
         println!(
             "{} waiting for server would be down",

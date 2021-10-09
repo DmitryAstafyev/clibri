@@ -3,23 +3,14 @@ pub use tokio_tungstenite::tungstenite::{
     protocol::frame::coding::CloseCode,
 };
 
-#[path = "./server.rs"]
-pub mod server;
-
-#[path = "./server.stat.rs"]
-pub mod stat;
-
-#[path = "./connection.handshake.rs"]
-pub mod handshake;
-
-#[path = "./connection.rs"]
-pub mod connection;
-
 #[path = "./connection.channel.rs"]
 pub mod channel;
-
-#[path = "./errors.rs"]
+pub mod connection;
+pub mod env;
 pub mod errors;
-
-#[path = "./options.rs"]
+#[path = "./connection.handshake.rs"]
+pub mod handshake;
 pub mod options;
+pub mod server;
+#[path = "./server.stat.rs"]
+pub mod stat;
