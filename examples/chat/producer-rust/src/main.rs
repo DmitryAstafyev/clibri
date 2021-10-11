@@ -20,5 +20,5 @@ async fn main() {
             return;
         };
     manage.get_shutdown_tracker().cancelled().await;
-    println!("Hello, World!");
+    println!("Chat is shutdown");
 }

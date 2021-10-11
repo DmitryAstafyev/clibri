@@ -1,6 +1,7 @@
 pub mod connected;
 pub mod disconnected;
 pub mod error;
+pub mod user_kickoff;
 
 use super::*;
 use fiber::server;
@@ -25,6 +26,10 @@ pub fn pack(
 ) -> Result<Vec<u8>, EmitterError> {
     msg.pack(*sequence, Some(uuid.to_string()))
         .map_err(EmitterError::Packing)
+}
+
+pub fn unbound_pack(sequence: &u32, msg: &mut dyn PackingStruct) -> Result<Vec<u8>, EmitterError> {
+    msg.pack(*sequence, None).map_err(EmitterError::Packing)
 }
 
 pub async fn broadcast<E: std::error::Error, C: server::Control<E> + Send + Clone>(

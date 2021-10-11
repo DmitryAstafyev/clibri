@@ -47,6 +47,7 @@ pub enum ProducerError<E: std::error::Error> {
     #[error("fail to add consumer into storage; uuid: `{0}`")]
     FailToAddConsumer(Uuid),
 }
+use std::marker::PhantomData;
 
 #[allow(dead_code)]
 pub mod producer {
@@ -56,9 +57,35 @@ pub mod producer {
         Shutdown(oneshot::Sender<()>),
     }
 
+    enum UnboundedEventsList {
+        UserKickOff(protocol::ServerEvents::UserKickOff),
+    }
+
+    enum MergedChannel<E: std::error::Error> {
+        ServerEvents(server::Events<E>),
+        UnboundedEventsList(UnboundedEventsList),
+    }
+
+    #[derive(Clone, Debug)]
+    pub struct UnboundedEvents {
+        tx_unbounded_events: UnboundedSender<UnboundedEventsList>,
+    }
+
+    impl UnboundedEvents {
+        pub async fn user_kickoff(
+            &self,
+            event: protocol::ServerEvents::UserKickOff,
+        ) -> Result<(), String> {
+            self.tx_unbounded_events
+                .send(UnboundedEventsList::UserKickOff(event))
+                .map_err(|e| e.to_string())
+        }
+    }
+
     pub struct Manage {
         tx_manage_channel: UnboundedSender<ManageChannel>,
         shutdown_tracker_token: CancellationToken,
+        pub events: UnboundedEvents,
     }
 
     impl Manage {
@@ -154,8 +181,8 @@ pub mod producer {
         C: server::Control<E> + Send + Clone,
     {
         server_control: C,
-        error: Option<E>,
         shutdown: CancellationToken,
+        phantom: PhantomData<E>,
     }
 
     impl<E, C> Control<E, C>
@@ -596,6 +623,7 @@ pub mod producer {
     async fn listener<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         mut context: Context,
         mut rx_server_events: UnboundedReceiver<server::Events<E>>,
+        mut rx_unbounded_events: UnboundedReceiver<UnboundedEventsList>,
         control: Control<E, C>,
         options: &Options,
     ) -> Result<(), ProducerError<E>> {
@@ -604,66 +632,96 @@ pub mod producer {
             "listener of server's events is started"
         );
         let mut consumers: HashMap<Uuid, Consumer> = HashMap::new();
-        while let Some(event) = rx_server_events.recv().await {
+        while let Some(event) = select! {
+            mut msg = rx_server_events.recv() => {
+                msg.take().map(MergedChannel::ServerEvents)
+            },
+            mut msg = rx_unbounded_events.recv() => {
+                msg.take().map(MergedChannel::UnboundedEventsList)
+            }
+        } {
             match event {
-                server::Events::Ready => {}
-                server::Events::Shutdown => {}
-                server::Events::Connected(uuid) => {
-                    add_connection(uuid, &mut consumers, &mut context, &control, options).await?
-                }
-                server::Events::Disconnected(uuid) => {
-                    remove_connection(uuid, &mut consumers, &mut context, &control).await?
-                }
-                server::Events::Received(uuid, buffer) => {
-                    process_received_data(
+                MergedChannel::ServerEvents(event) => match event {
+                    server::Events::Ready => {}
+                    server::Events::Shutdown => {}
+                    server::Events::Connected(uuid) => {
+                        add_connection(uuid, &mut consumers, &mut context, &control, options)
+                            .await?
+                    }
+                    server::Events::Disconnected(uuid) => {
+                        remove_connection(uuid, &mut consumers, &mut context, &control).await?
+                    }
+                    server::Events::Received(uuid, buffer) => {
+                        process_received_data(
+                            uuid,
+                            buffer,
+                            &mut consumers,
+                            &mut context,
+                            &control,
+                            options,
+                        )
+                        .await?
+                    }
+                    server::Events::Error(uuid, err) => emitters::error::emit::<E, C>(
+                        ProducerError::ConsumerError(err),
                         uuid,
-                        buffer,
-                        &mut consumers,
                         &mut context,
+                        if let Some(uuid) = uuid.as_ref() {
+                            consumers
+                                .get_mut(uuid)
+                                .map(|consumer| consumer.get_mut_identification())
+                        } else {
+                            None
+                        },
                         &control,
-                        options,
                     )
-                    .await?
+                    .await
+                    .map_err(ProducerError::EventEmitterError)?,
+                    server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E, C>(
+                        ProducerError::ConnectionError(err.to_string()),
+                        uuid,
+                        &mut context,
+                        if let Some(uuid) = uuid.as_ref() {
+                            consumers
+                                .get_mut(uuid)
+                                .map(|consumer| consumer.get_mut_identification())
+                        } else {
+                            None
+                        },
+                        &control,
+                    )
+                    .await
+                    .map_err(ProducerError::EventEmitterError)?,
+                    server::Events::ServerError(err) => emitters::error::emit(
+                        ProducerError::ServerError(err),
+                        None,
+                        &mut context,
+                        None,
+                        &control,
+                    )
+                    .await
+                    .map_err(ProducerError::EventEmitterError)?,
+                },
+                MergedChannel::UnboundedEventsList(event) => {
+                    let filter = identification::Filter::new(&consumers).await;
+                    match event {
+                        UnboundedEventsList::UserKickOff(event) => {
+                            if let Err(err) = emitters::user_kickoff::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call user_kickoff handler; error: {:?}", err,
+                                );
+                            }
+                        }
+                    }
                 }
-                server::Events::Error(uuid, err) => emitters::error::emit::<E, C>(
-                    ProducerError::ConsumerError(err),
-                    uuid,
-                    &mut context,
-                    if let Some(uuid) = uuid.as_ref() {
-                        consumers
-                            .get_mut(uuid)
-                            .map(|consumer| consumer.get_mut_identification())
-                    } else {
-                        None
-                    },
-                    &control,
-                )
-                .await
-                .map_err(ProducerError::EventEmitterError)?,
-                server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E, C>(
-                    ProducerError::ConnectionError(err.to_string()),
-                    uuid,
-                    &mut context,
-                    if let Some(uuid) = uuid.as_ref() {
-                        consumers
-                            .get_mut(uuid)
-                            .map(|consumer| consumer.get_mut_identification())
-                    } else {
-                        None
-                    },
-                    &control,
-                )
-                .await
-                .map_err(ProducerError::EventEmitterError)?,
-                server::Events::ServerError(err) => emitters::error::emit(
-                    ProducerError::ServerError(err),
-                    None,
-                    &mut context,
-                    None,
-                    &control,
-                )
-                .await
-                .map_err(ProducerError::EventEmitterError)?,
             }
         }
         debug!(
@@ -673,11 +731,12 @@ pub mod producer {
         Ok(())
     }
 
-    pub async fn main_task<S, C, E>(
+    async fn main_task<S, C, E>(
         mut server: S,
         options: Options,
         context: Context,
         control: Control<E, C>,
+        rx_unbounded_events: UnboundedReceiver<UnboundedEventsList>,
     ) -> Result<(), ProducerError<E>>
     where
         S: server::Impl<E, C>,
@@ -697,6 +756,7 @@ pub mod producer {
             res = listener(
                 context,
                 rx_server_events,
+                rx_unbounded_events,
                 control,
                 &options,
             ) => res,
@@ -742,20 +802,34 @@ pub mod producer {
             UnboundedSender<ManageChannel>,
             UnboundedReceiver<ManageChannel>,
         ) = unbounded_channel();
+        let (tx_unbounded_events, rx_unbounded_events): (
+            UnboundedSender<UnboundedEventsList>,
+            UnboundedReceiver<UnboundedEventsList>,
+        ) = unbounded_channel();
         let shutdown_tracker_token = CancellationToken::new();
+        let unbounded_events = UnboundedEvents {
+            tx_unbounded_events,
+        };
         let manage = Manage {
             tx_manage_channel,
             shutdown_tracker_token: shutdown_tracker_token.clone(),
+            events: unbounded_events,
         };
         task::spawn(async move {
             let shutdown = CancellationToken::new();
             let control = Control {
                 server_control: server.control(),
                 shutdown,
-                error: None,
+                phantom: PhantomData,
             };
             let (main_task_res, manage_task_res) = join!(
-                main_task(server, options, context, control.clone()),
+                main_task(
+                    server,
+                    options,
+                    context,
+                    control.clone(),
+                    rx_unbounded_events
+                ),
                 manage_task::<E, C>(rx_manage_channel, &control),
             );
             if let Err(err) = main_task_res.as_ref() {
