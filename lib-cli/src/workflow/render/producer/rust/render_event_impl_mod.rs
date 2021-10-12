@@ -21,7 +21,15 @@ impl Render {
 
     pub fn render(&self, base: &Path, events: &Vec<Event>) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
-        let mut output = String::from("use super::*;\n");
+        let mut output = String::from(
+            r#"use super::*;
+pub mod connected;
+pub mod disconnected;
+pub mod error;
+pub mod ready;
+pub mod shutdown;
+"#,
+        );
         for event in events.iter() {
             output = format!("{}pub mod {};\n", output, event.as_mod_name()?);
         }

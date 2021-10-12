@@ -7,7 +7,13 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE: &str = r#"[[mods]]use super::*;
+    pub const MODULE: &str = r#"[[mods]]pub mod connected;
+pub mod disconnected;
+pub mod error;
+pub mod ready;
+pub mod shutdown;
+
+use super::*;
 use fiber::server;
 use protocol::PackingStruct;
 use thiserror::Error;

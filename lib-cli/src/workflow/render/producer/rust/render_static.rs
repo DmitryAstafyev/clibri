@@ -12,6 +12,8 @@ mod paths {
         pub const connected: &str = "connected.rs";
         pub const disconnected: &str = "disconnected.rs";
         pub const error: &str = "error.rs";
+        pub const ready: &str = "ready.rs";
+        pub const shutdown: &str = "shutdown.rs";
         pub const dest: &str = "events";
     }
     pub mod consumer {
@@ -23,6 +25,8 @@ mod paths {
         pub const connected: &str = "connected.rs";
         pub const disconnected: &str = "disconnected.rs";
         pub const error: &str = "error.rs";
+        pub const ready: &str = "ready.rs";
+        pub const shutdown: &str = "shutdown.rs";
         pub const dest: &str = "implementation/emitters";
     }
 }
@@ -56,6 +60,16 @@ impl Render {
             true,
         )?;
         helpers::fs::write(
+            self.get_dest_file(base, paths::events::dest, paths::events::ready)?,
+            include_str!("./static/events/ready.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
+            include_str!("./static/events/shutdown.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
             self.get_dest_file(base, paths::consumer::dest, paths::consumer::identification)?,
             include_str!("./static/implementation/consumer/identification.rs").to_owned(),
             true,
@@ -79,6 +93,16 @@ impl Render {
         helpers::fs::write(
             self.get_dest_file(base, paths::emitters::dest, paths::emitters::error)?,
             include_str!("./static/implementation/emitters/error.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::emitters::dest, paths::emitters::ready)?,
+            include_str!("./static/implementation/emitters/ready.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::emitters::dest, paths::emitters::shutdown)?,
+            include_str!("./static/implementation/emitters/shutdown.rs").to_owned(),
             true,
         )?;
         Ok(())

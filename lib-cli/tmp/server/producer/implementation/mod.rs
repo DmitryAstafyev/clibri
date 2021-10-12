@@ -1,3 +1,4 @@
+
 pub mod consumer;
 pub mod emitters;
 #[path = "../events/mod.rs"]
@@ -58,7 +59,8 @@ pub mod producer {
     }
 
     enum UnboundedEventsList {
-        UserKickOff(protocol::ServerEvents::UserKickOff),
+        ServerEventsUserKickOff(protocol::ServerEvents::UserKickOff),
+        ServerEventsUserAlert(protocol::ServerEvents::UserAlert),
     }
 
     enum MergedChannel<E: std::error::Error> {
@@ -72,12 +74,20 @@ pub mod producer {
     }
 
     impl UnboundedEvents {
-        pub async fn user_kickoff(
+        pub async fn serverevents_userkickoff(
             &self,
             event: protocol::ServerEvents::UserKickOff,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::UserKickOff(event))
+                .send(UnboundedEventsList::ServerEventsUserKickOff(event))
+                .map_err(|e| e.to_string())
+        }
+        pub async fn serverevents_useralert(
+            &self,
+            event: protocol::ServerEvents::UserAlert,
+        ) -> Result<(), String> {
+            self.tx_unbounded_events
+                .send(UnboundedEventsList::ServerEventsUserAlert(event))
                 .map_err(|e| e.to_string())
         }
     }
@@ -515,10 +525,8 @@ pub mod producer {
                         }
                     } else {
                         match message {
-                            protocol::AvailableMessages::UserLogin(
-                                protocol::UserLogin::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::user_login::process::<E, C>(
+                            protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(request)) => {
+                                if let Err(err) = handlers::userlogin_request::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -529,7 +537,7 @@ pub mod producer {
                                 .await
                                 {
                                     responsing_err(
-                                        format!("fail to process user_login: {}", err),
+                                        format!("fail to process userlogin_request: {}", err),
                                         uuid,
                                         &mut context,
                                         control,
@@ -538,11 +546,9 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::Messages(
-                                protocol::Messages::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::messages::process::<E, C>(
+                            },
+                            protocol::AvailableMessages::Users(protocol::Users::AvailableMessages::Request(request)) => {
+                                if let Err(err) = handlers::users_request::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -553,7 +559,7 @@ pub mod producer {
                                 .await
                                 {
                                     responsing_err(
-                                        format!("fail to process messages: {}", err),
+                                        format!("fail to process users_request: {}", err),
                                         uuid,
                                         &mut context,
                                         control,
@@ -562,11 +568,9 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::Users(
-                                protocol::Users::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::users::process::<E, C>(
+                            },
+                            protocol::AvailableMessages::Message(protocol::Message::AvailableMessages::Request(request)) => {
+                                if let Err(err) = handlers::message_request::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -577,7 +581,7 @@ pub mod producer {
                                 .await
                                 {
                                     responsing_err(
-                                        format!("fail to process users: {}", err),
+                                        format!("fail to process message_request: {}", err),
                                         uuid,
                                         &mut context,
                                         control,
@@ -586,11 +590,9 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::Message(
-                                protocol::Message::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::message::process::<E, C>(
+                            },
+                            protocol::AvailableMessages::Messages(protocol::Messages::AvailableMessages::Request(request)) => {
+                                if let Err(err) = handlers::messages_request::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
                                     &mut context,
@@ -601,7 +603,7 @@ pub mod producer {
                                 .await
                                 {
                                     responsing_err(
-                                        format!("fail to process message: {}", err),
+                                        format!("fail to process messages_request: {}", err),
                                         uuid,
                                         &mut context,
                                         control,
@@ -610,7 +612,7 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
+                            },
                             _ => {}
                         }
                     }
@@ -709,8 +711,8 @@ pub mod producer {
                 MergedChannel::UnboundedEventsList(event) => {
                     let filter = identification::Filter::new(&consumers).await;
                     match event {
-                        UnboundedEventsList::UserKickOff(event) => {
-                            if let Err(err) = emitters::user_kickoff::emit::<E, C>(
+                        UnboundedEventsList::ServerEventsUserKickOff(event) => {
+                            if let Err(err) = emitters::serverevents_userkickoff::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -720,10 +722,25 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call user_kickoff handler; error: {:?}", err,
+                                    "fail call serverevents_userkickoff handler; error: {:?}", err,
                                 );
                             }
-                        }
+                        },
+                        UnboundedEventsList::ServerEventsUserAlert(event) => {
+                            if let Err(err) = emitters::serverevents_useralert::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call serverevents_useralert handler; error: {:?}", err,
+                                );
+                            }
+                        },
                     }
                 }
             }
@@ -853,4 +870,3 @@ pub mod producer {
         Ok(manage)
     }
 }
-// TODO: spawn separated tasks for 10-20 consumers

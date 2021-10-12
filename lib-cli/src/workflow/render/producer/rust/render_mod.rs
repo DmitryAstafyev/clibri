@@ -1,3 +1,14 @@
+use super::{
+    helpers, helpers::render as tools, workflow::broadcast::Broadcast, workflow::request::Request,
+    workflow::store::Store,
+};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
+mod templates {
+    pub const MODULE: &str = r#"
 pub mod consumer;
 pub mod emitters;
 #[path = "../events/mod.rs"]
@@ -58,7 +69,7 @@ pub mod producer {
     }
 
     enum UnboundedEventsList {
-        UserKickOff(protocol::ServerEvents::UserKickOff),
+[[events_list]]
     }
 
     enum MergedChannel<E: std::error::Error> {
@@ -72,14 +83,7 @@ pub mod producer {
     }
 
     impl UnboundedEvents {
-        pub async fn user_kickoff(
-            &self,
-            event: protocol::ServerEvents::UserKickOff,
-        ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::UserKickOff(event))
-                .map_err(|e| e.to_string())
-        }
+[[events_callers]]
     }
 
     pub struct Manage {
@@ -515,102 +519,7 @@ pub mod producer {
                         }
                     } else {
                         match message {
-                            protocol::AvailableMessages::UserLogin(
-                                protocol::UserLogin::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::user_login::process::<E, C>(
-                                    client.get_mut_identification(),
-                                    &filter,
-                                    &mut context,
-                                    request,
-                                    header.sequence,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    responsing_err(
-                                        format!("fail to process user_login: {}", err),
-                                        uuid,
-                                        &mut context,
-                                        control,
-                                        options,
-                                        &mut Some(client),
-                                    )
-                                    .await?
-                                }
-                            }
-                            protocol::AvailableMessages::Messages(
-                                protocol::Messages::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::messages::process::<E, C>(
-                                    client.get_mut_identification(),
-                                    &filter,
-                                    &mut context,
-                                    request,
-                                    header.sequence,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    responsing_err(
-                                        format!("fail to process messages: {}", err),
-                                        uuid,
-                                        &mut context,
-                                        control,
-                                        options,
-                                        &mut Some(client),
-                                    )
-                                    .await?
-                                }
-                            }
-                            protocol::AvailableMessages::Users(
-                                protocol::Users::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::users::process::<E, C>(
-                                    client.get_mut_identification(),
-                                    &filter,
-                                    &mut context,
-                                    request,
-                                    header.sequence,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    responsing_err(
-                                        format!("fail to process users: {}", err),
-                                        uuid,
-                                        &mut context,
-                                        control,
-                                        options,
-                                        &mut Some(client),
-                                    )
-                                    .await?
-                                }
-                            }
-                            protocol::AvailableMessages::Message(
-                                protocol::Message::AvailableMessages::Request(request),
-                            ) => {
-                                if let Err(err) = handlers::message::process::<E, C>(
-                                    client.get_mut_identification(),
-                                    &filter,
-                                    &mut context,
-                                    request,
-                                    header.sequence,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    responsing_err(
-                                        format!("fail to process message: {}", err),
-                                        uuid,
-                                        &mut context,
-                                        control,
-                                        options,
-                                        &mut Some(client),
-                                    )
-                                    .await?
-                                }
-                            }
+[[requests]]
                             _ => {}
                         }
                     }
@@ -709,21 +618,7 @@ pub mod producer {
                 MergedChannel::UnboundedEventsList(event) => {
                     let filter = identification::Filter::new(&consumers).await;
                     match event {
-                        UnboundedEventsList::UserKickOff(event) => {
-                            if let Err(err) = emitters::user_kickoff::emit::<E, C>(
-                                event,
-                                &filter,
-                                &mut context,
-                                &control,
-                            )
-                            .await
-                            {
-                                warn!(
-                                    target: logs::targets::PRODUCER,
-                                    "fail call user_kickoff handler; error: {:?}", err,
-                                );
-                            }
-                        }
+[[events]]
                     }
                 }
             }
@@ -852,5 +747,178 @@ pub mod producer {
         });
         Ok(manage)
     }
+}"#;
+    pub const REQUEST: &str = r#"[[ref]] => {
+    if let Err(err) = handlers::[[module]]::process::<E, C>(
+        client.get_mut_identification(),
+        &filter,
+        &mut context,
+        request,
+        header.sequence,
+        &control,
+    )
+    .await
+    {
+        responsing_err(
+            format!("fail to process [[module]]: {}", err),
+            uuid,
+            &mut context,
+            control,
+            options,
+            &mut Some(client),
+        )
+        .await?
+    }
+},"#;
+    pub const EVENT: &str = r#"UnboundedEventsList::[[name]](event) => {
+    if let Err(err) = emitters::[[module]]::emit::<E, C>(
+        event,
+        &filter,
+        &mut context,
+        &control,
+    )
+    .await
+    {
+        warn!(
+            target: logs::targets::PRODUCER,
+            "fail call [[module]] handler; error: {:?}", err,
+        );
+    }
+},"#;
+    pub const EVENT_CALLER: &str = r#"pub async fn [[module]](
+    &self,
+    event: protocol::[[ref]],
+) -> Result<(), String> {
+    self.tx_unbounded_events
+        .send(UnboundedEventsList::[[name]](event))
+        .map_err(|e| e.to_string())
+}"#;
 }
-// TODO: spawn separated tasks for 10-20 consumers
+
+pub struct Render {}
+
+impl Default for Render {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Render {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn render(&self, base: &Path, store: &Store) -> Result<(), String> {
+        let dest: PathBuf = self.get_dest_file(base)?;
+        let mut output = templates::MODULE.to_owned();
+        output = output.replace("[[requests]]", &self.get_requests(store)?);
+        output = output.replace("[[events]]", &self.get_events(store)?);
+        output = output.replace("[[events_list]]", &self.get_events_list(store)?);
+        output = output.replace("[[events_callers]]", &self.get_events_callers(store)?);
+        helpers::fs::write(dest, output, true)
+    }
+
+    fn get_requests(&self, store: &Store) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, request) in store.requests.iter().enumerate() {
+            let mut request_output: String = String::from(templates::REQUEST);
+            let parts: Vec<String> = request
+                .get_request()?
+                .split('.')
+                .collect::<Vec<&str>>()
+                .iter()
+                .map(|v| String::from(*v))
+                .collect();
+            let enum_ref: String = if parts.len() == 1 {
+                format!(
+                    "protocol::AvailableMessages::{}(protocol::{}(request))",
+                    parts[0], parts[0]
+                )
+            } else {
+                //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
+                //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(request))
+                let mut chain: String = String::from("");
+                for (pos, part) in parts.iter().enumerate() {
+                    let mut step: String = String::from("protocol");
+                    for n in 0..pos {
+                        step = format!("{}::{}", step, parts[n]);
+                    }
+                    step = format!("{}::AvailableMessages::{}(", step, part);
+                    chain = format!("{}{}", chain, step);
+                }
+                format!("{}request{}", chain, ")".repeat(parts.len()))
+            };
+            request_output = request_output.replace("[[ref]]", &enum_ref);
+            request_output = request_output.replace(
+                "[[module]]",
+                &request.get_request()?.to_lowercase().replace(".", "_"),
+            );
+            output = format!("{}{}", output, request_output);
+            if pos < store.requests.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(tools::inject_tabs(7, output))
+    }
+
+    fn get_events(&self, store: &Store) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            let mut event_output: String = String::from(templates::EVENT);
+            event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
+            event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
+            output = format!("{}{}", output, event_output);
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(tools::inject_tabs(6, output))
+    }
+
+    fn get_events_list(&self, store: &Store) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            output = format!(
+                "{}{}(protocol::{}),{}",
+                output,
+                event.as_struct_name()?,
+                event.as_struct_path()?,
+                if pos < store.events.len() - 1 {
+                    "\n"
+                } else {
+                    ""
+                }
+            );
+        }
+        Ok(tools::inject_tabs(2, output))
+    }
+
+    fn get_events_callers(&self, store: &Store) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, event) in store.events.iter().enumerate() {
+            let mut event_output: String = String::from(templates::EVENT_CALLER);
+            event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
+            event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
+            event_output = event_output.replace("[[ref]]", &event.as_struct_path()?);
+            output = format!("{}{}", output, event_output);
+            if pos < store.events.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(tools::inject_tabs(2, output))
+    }
+
+    fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
+        let dest = base.join("implementation");
+        if !dest.exists() {
+            if let Err(e) = fs::create_dir(&dest) {
+                return Err(format!(
+                    "Fail to create dest folder {}. Error: {}",
+                    dest.to_string_lossy(),
+                    e
+                ));
+            }
+        }
+        Ok(dest.join("mod.rs"))
+    }
+}
