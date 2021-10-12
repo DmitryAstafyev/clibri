@@ -3312,6 +3312,7 @@ export namespace Events {
 export namespace ServerEvents {
     export interface IAvailableMessages {
         UserKickOff?: UserKickOff,
+        UserAlert?: UserAlert,
     }
 
     export interface IUserKickOff {
@@ -3429,6 +3430,121 @@ export namespace ServerEvents {
         }
     }
 
+    export interface IUserAlert {
+        reason: string | undefined;
+        uuid: string;
+    }
+    export class UserAlert extends Protocol.Convertor implements IUserAlert, ISigned<UserAlert> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'reason', types: Protocol.Primitives.StrUTF8, optional: true, },
+            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+        ];
+
+        public static defaults(): UserAlert {
+            return new ServerEvents.UserAlert({
+                reason: undefined,
+                uuid: '',
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<UserAlert>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof UserAlert)) {
+                                throw new Error(`Expecting instance of UserAlert on index #${index}`);
+                            }
+                        });
+                    } catch (e) {
+                        return e;
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof UserAlert ? undefined : new Error(`Expecting instance of UserAlert`);
+                }};
+            }
+        }
+
+        public static from(obj: any): UserAlert | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = UserAlert.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, UserAlert.scheme);
+                return error instanceof Error ? error : new UserAlert({
+                    reason: obj.reason,
+                    uuid: obj.uuid,
+                });
+            }
+        }
+
+        public reason: string | undefined;
+        public uuid: string;
+        public static getSignature(): string { return 'UserAlert'; }
+        public static getId(): number { return 28; }
+
+
+        constructor(params: IUserAlert)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                this[key] = params[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'UserAlert'; }
+
+        public get(): UserAlert { return this; }
+
+        public getId(): number { return 28; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+                () => this.reason === undefined ? this.getBuffer(29, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(29, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
+                () => this.getBufferFromBuf<string>(30, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | undefined {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            const reasonBuf: ArrayBufferLike | undefined = storage.get(29);
+            if (reasonBuf === undefined) {
+                return new Error(`Fail to get property reason`);
+            }
+            if (reasonBuf.byteLength === 0) {
+                this.reason = undefined;
+            } else {
+                const reason: string | Error = this.getValue<string>(storage, 29, Protocol.Primitives.StrUTF8.decode);
+                if (reason instanceof Error) {
+                    return reason;
+                } else {
+                    this.reason = reason;
+                }
+            }
+            const uuid: string | Error = this.getValue<string>(storage, 30, Protocol.Primitives.StrUTF8.decode);
+            if (uuid instanceof Error) {
+                return uuid;
+            } else {
+                this.uuid = uuid;
+            }
+        }
+
+        public defaults(): UserAlert {
+            return UserAlert.defaults();
+        }
+    }
+
 }
 
 export namespace Message {
@@ -3497,7 +3613,7 @@ export namespace Message {
         public user: string;
         public message: string;
         public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 29; }
+        public static getId(): number { return 32; }
 
 
         constructor(params: IRequest)  {
@@ -3513,12 +3629,12 @@ export namespace Message {
 
         public get(): Request { return this; }
 
-        public getId(): number { return 29; }
+        public getId(): number { return 32; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(30, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
-                () => this.getBufferFromBuf<string>(31, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
+                () => this.getBufferFromBuf<string>(33, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
+                () => this.getBufferFromBuf<string>(34, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
             ]);
         }
 
@@ -3527,13 +3643,13 @@ export namespace Message {
             if (storage instanceof Error) {
                 return storage;
             }
-            const user: string | Error = this.getValue<string>(storage, 30, Protocol.Primitives.StrUTF8.decode);
+            const user: string | Error = this.getValue<string>(storage, 33, Protocol.Primitives.StrUTF8.decode);
             if (user instanceof Error) {
                 return user;
             } else {
                 this.user = user;
             }
-            const message: string | Error = this.getValue<string>(storage, 31, Protocol.Primitives.StrUTF8.decode);
+            const message: string | Error = this.getValue<string>(storage, 34, Protocol.Primitives.StrUTF8.decode);
             if (message instanceof Error) {
                 return message;
             } else {
@@ -3599,7 +3715,7 @@ export namespace Message {
 
         public uuid: string;
         public static getSignature(): string { return 'Accepted'; }
-        public static getId(): number { return 32; }
+        public static getId(): number { return 35; }
 
 
         constructor(params: IAccepted)  {
@@ -3615,11 +3731,11 @@ export namespace Message {
 
         public get(): Accepted { return this; }
 
-        public getId(): number { return 32; }
+        public getId(): number { return 35; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(33, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.getBufferFromBuf<string>(36, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
             ]);
         }
 
@@ -3628,7 +3744,7 @@ export namespace Message {
             if (storage instanceof Error) {
                 return storage;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 33, Protocol.Primitives.StrUTF8.decode);
+            const uuid: string | Error = this.getValue<string>(storage, 36, Protocol.Primitives.StrUTF8.decode);
             if (uuid instanceof Error) {
                 return uuid;
             } else {
@@ -3694,7 +3810,7 @@ export namespace Message {
 
         public reason: string;
         public static getSignature(): string { return 'Denied'; }
-        public static getId(): number { return 34; }
+        public static getId(): number { return 37; }
 
 
         constructor(params: IDenied)  {
@@ -3710,11 +3826,11 @@ export namespace Message {
 
         public get(): Denied { return this; }
 
-        public getId(): number { return 34; }
+        public getId(): number { return 37; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(35, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
+                () => this.getBufferFromBuf<string>(38, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
             ]);
         }
 
@@ -3723,7 +3839,7 @@ export namespace Message {
             if (storage instanceof Error) {
                 return storage;
             }
-            const reason: string | Error = this.getValue<string>(storage, 35, Protocol.Primitives.StrUTF8.decode);
+            const reason: string | Error = this.getValue<string>(storage, 38, Protocol.Primitives.StrUTF8.decode);
             if (reason instanceof Error) {
                 return reason;
             } else {
@@ -3789,7 +3905,7 @@ export namespace Message {
 
         public error: string;
         public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 36; }
+        public static getId(): number { return 39; }
 
 
         constructor(params: IErr)  {
@@ -3805,11 +3921,11 @@ export namespace Message {
 
         public get(): Err { return this; }
 
-        public getId(): number { return 36; }
+        public getId(): number { return 39; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(37, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.getBufferFromBuf<string>(40, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -3818,7 +3934,7 @@ export namespace Message {
             if (storage instanceof Error) {
                 return storage;
             }
-            const error: string | Error = this.getValue<string>(storage, 37, Protocol.Primitives.StrUTF8.decode);
+            const error: string | Error = this.getValue<string>(storage, 40, Protocol.Primitives.StrUTF8.decode);
             if (error instanceof Error) {
                 return error;
             } else {
@@ -3909,7 +4025,7 @@ export namespace Messages {
         public uuid: string;
         public message: string;
         public static getSignature(): string { return 'Message'; }
-        public static getId(): number { return 39; }
+        public static getId(): number { return 42; }
 
 
         constructor(params: IMessage)  {
@@ -3925,14 +4041,14 @@ export namespace Messages {
 
         public get(): Message { return this; }
 
-        public getId(): number { return 39; }
+        public getId(): number { return 42; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(40, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.timestamp)),
-                () => this.getBufferFromBuf<string>(41, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
-                () => this.getBufferFromBuf<string>(42, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-                () => this.getBufferFromBuf<string>(43, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
+                () => this.getBuffer(43, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.timestamp)),
+                () => this.getBufferFromBuf<string>(44, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
+                () => this.getBufferFromBuf<string>(45, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.getBufferFromBuf<string>(46, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
             ]);
         }
 
@@ -3941,25 +4057,25 @@ export namespace Messages {
             if (storage instanceof Error) {
                 return storage;
             }
-            const timestamp: bigint | Error = this.getValue<bigint>(storage, 40, Protocol.Primitives.u64.decode);
+            const timestamp: bigint | Error = this.getValue<bigint>(storage, 43, Protocol.Primitives.u64.decode);
             if (timestamp instanceof Error) {
                 return timestamp;
             } else {
                 this.timestamp = timestamp;
             }
-            const user: string | Error = this.getValue<string>(storage, 41, Protocol.Primitives.StrUTF8.decode);
+            const user: string | Error = this.getValue<string>(storage, 44, Protocol.Primitives.StrUTF8.decode);
             if (user instanceof Error) {
                 return user;
             } else {
                 this.user = user;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 42, Protocol.Primitives.StrUTF8.decode);
+            const uuid: string | Error = this.getValue<string>(storage, 45, Protocol.Primitives.StrUTF8.decode);
             if (uuid instanceof Error) {
                 return uuid;
             } else {
                 this.uuid = uuid;
             }
-            const message: string | Error = this.getValue<string>(storage, 43, Protocol.Primitives.StrUTF8.decode);
+            const message: string | Error = this.getValue<string>(storage, 46, Protocol.Primitives.StrUTF8.decode);
             if (message instanceof Error) {
                 return message;
             } else {
@@ -4020,7 +4136,7 @@ export namespace Messages {
         }
 
         public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 44; }
+        public static getId(): number { return 47; }
 
 
         constructor(params: IRequest)  {
@@ -4036,7 +4152,7 @@ export namespace Messages {
 
         public get(): Request { return this; }
 
-        public getId(): number { return 44; }
+        public getId(): number { return 47; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
@@ -4108,7 +4224,7 @@ export namespace Messages {
 
         public messages: Array<Messages.Message>;
         public static getSignature(): string { return 'Response'; }
-        public static getId(): number { return 45; }
+        public static getId(): number { return 48; }
 
 
         constructor(params: IResponse)  {
@@ -4124,11 +4240,11 @@ export namespace Messages {
 
         public get(): Response { return this; }
 
-        public getId(): number { return 45; }
+        public getId(): number { return 48; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => { const self: Message = Message.defaults(); return this.getBufferFromBuf<Message[]>(46, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.messages); },
+                () => { const self: Message = Message.defaults(); return this.getBufferFromBuf<Message[]>(49, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.messages); },
             ]);
         }
 
@@ -4138,7 +4254,7 @@ export namespace Messages {
                 return storage;
             }
             const arrmessagesInst: Messages.Message = Messages.Message.defaults();
-            const arrmessages: Array<any> | Error = this.getValue<Message[]>(storage, 46, arrmessagesInst.decodeSelfArray.bind(arrmessagesInst));
+            const arrmessages: Array<any> | Error = this.getValue<Message[]>(storage, 49, arrmessagesInst.decodeSelfArray.bind(arrmessagesInst));
             if (arrmessages instanceof Error) {
                 return arrmessages;
             } else {
@@ -4204,7 +4320,7 @@ export namespace Messages {
 
         public error: string;
         public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 47; }
+        public static getId(): number { return 50; }
 
 
         constructor(params: IErr)  {
@@ -4220,11 +4336,11 @@ export namespace Messages {
 
         public get(): Err { return this; }
 
-        public getId(): number { return 47; }
+        public getId(): number { return 50; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(48, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.getBufferFromBuf<string>(51, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -4233,7 +4349,7 @@ export namespace Messages {
             if (storage instanceof Error) {
                 return storage;
             }
-            const error: string | Error = this.getValue<string>(storage, 48, Protocol.Primitives.StrUTF8.decode);
+            const error: string | Error = this.getValue<string>(storage, 51, Protocol.Primitives.StrUTF8.decode);
             if (error instanceof Error) {
                 return error;
             } else {
@@ -4309,7 +4425,7 @@ export namespace UserLogin {
 
         public username: string;
         public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 50; }
+        public static getId(): number { return 53; }
 
 
         constructor(params: IRequest)  {
@@ -4325,11 +4441,11 @@ export namespace UserLogin {
 
         public get(): Request { return this; }
 
-        public getId(): number { return 50; }
+        public getId(): number { return 53; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(51, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.username),
+                () => this.getBufferFromBuf<string>(54, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.username),
             ]);
         }
 
@@ -4338,7 +4454,7 @@ export namespace UserLogin {
             if (storage instanceof Error) {
                 return storage;
             }
-            const username: string | Error = this.getValue<string>(storage, 51, Protocol.Primitives.StrUTF8.decode);
+            const username: string | Error = this.getValue<string>(storage, 54, Protocol.Primitives.StrUTF8.decode);
             if (username instanceof Error) {
                 return username;
             } else {
@@ -4404,7 +4520,7 @@ export namespace UserLogin {
 
         public uuid: string;
         public static getSignature(): string { return 'Accepted'; }
-        public static getId(): number { return 52; }
+        public static getId(): number { return 55; }
 
 
         constructor(params: IAccepted)  {
@@ -4420,11 +4536,11 @@ export namespace UserLogin {
 
         public get(): Accepted { return this; }
 
-        public getId(): number { return 52; }
+        public getId(): number { return 55; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(53, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.getBufferFromBuf<string>(56, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
             ]);
         }
 
@@ -4433,7 +4549,7 @@ export namespace UserLogin {
             if (storage instanceof Error) {
                 return storage;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 53, Protocol.Primitives.StrUTF8.decode);
+            const uuid: string | Error = this.getValue<string>(storage, 56, Protocol.Primitives.StrUTF8.decode);
             if (uuid instanceof Error) {
                 return uuid;
             } else {
@@ -4499,7 +4615,7 @@ export namespace UserLogin {
 
         public reason: string;
         public static getSignature(): string { return 'Denied'; }
-        public static getId(): number { return 54; }
+        public static getId(): number { return 57; }
 
 
         constructor(params: IDenied)  {
@@ -4515,11 +4631,11 @@ export namespace UserLogin {
 
         public get(): Denied { return this; }
 
-        public getId(): number { return 54; }
+        public getId(): number { return 57; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(55, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
+                () => this.getBufferFromBuf<string>(58, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
             ]);
         }
 
@@ -4528,7 +4644,7 @@ export namespace UserLogin {
             if (storage instanceof Error) {
                 return storage;
             }
-            const reason: string | Error = this.getValue<string>(storage, 55, Protocol.Primitives.StrUTF8.decode);
+            const reason: string | Error = this.getValue<string>(storage, 58, Protocol.Primitives.StrUTF8.decode);
             if (reason instanceof Error) {
                 return reason;
             } else {
@@ -4594,7 +4710,7 @@ export namespace UserLogin {
 
         public error: string;
         public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 56; }
+        public static getId(): number { return 59; }
 
 
         constructor(params: IErr)  {
@@ -4610,11 +4726,11 @@ export namespace UserLogin {
 
         public get(): Err { return this; }
 
-        public getId(): number { return 56; }
+        public getId(): number { return 59; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(57, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.getBufferFromBuf<string>(60, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -4623,7 +4739,7 @@ export namespace UserLogin {
             if (storage instanceof Error) {
                 return storage;
             }
-            const error: string | Error = this.getValue<string>(storage, 57, Protocol.Primitives.StrUTF8.decode);
+            const error: string | Error = this.getValue<string>(storage, 60, Protocol.Primitives.StrUTF8.decode);
             if (error instanceof Error) {
                 return error;
             } else {
@@ -4694,7 +4810,7 @@ export namespace UserInfo {
         }
 
         public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 59; }
+        public static getId(): number { return 62; }
 
 
         constructor(params: IRequest)  {
@@ -4710,7 +4826,7 @@ export namespace UserInfo {
 
         public get(): Request { return this; }
 
-        public getId(): number { return 59; }
+        public getId(): number { return 62; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
@@ -4782,7 +4898,7 @@ export namespace UserInfo {
 
         public browser: string;
         public static getSignature(): string { return 'Accepted'; }
-        public static getId(): number { return 60; }
+        public static getId(): number { return 63; }
 
 
         constructor(params: IAccepted)  {
@@ -4798,11 +4914,11 @@ export namespace UserInfo {
 
         public get(): Accepted { return this; }
 
-        public getId(): number { return 60; }
+        public getId(): number { return 63; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(61, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.browser),
+                () => this.getBufferFromBuf<string>(64, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.browser),
             ]);
         }
 
@@ -4811,7 +4927,7 @@ export namespace UserInfo {
             if (storage instanceof Error) {
                 return storage;
             }
-            const browser: string | Error = this.getValue<string>(storage, 61, Protocol.Primitives.StrUTF8.decode);
+            const browser: string | Error = this.getValue<string>(storage, 64, Protocol.Primitives.StrUTF8.decode);
             if (browser instanceof Error) {
                 return browser;
             } else {
@@ -4877,7 +4993,7 @@ export namespace UserInfo {
 
         public reason: string;
         public static getSignature(): string { return 'Denied'; }
-        public static getId(): number { return 62; }
+        public static getId(): number { return 65; }
 
 
         constructor(params: IDenied)  {
@@ -4893,11 +5009,11 @@ export namespace UserInfo {
 
         public get(): Denied { return this; }
 
-        public getId(): number { return 62; }
+        public getId(): number { return 65; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(63, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
+                () => this.getBufferFromBuf<string>(66, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
             ]);
         }
 
@@ -4906,7 +5022,7 @@ export namespace UserInfo {
             if (storage instanceof Error) {
                 return storage;
             }
-            const reason: string | Error = this.getValue<string>(storage, 63, Protocol.Primitives.StrUTF8.decode);
+            const reason: string | Error = this.getValue<string>(storage, 66, Protocol.Primitives.StrUTF8.decode);
             if (reason instanceof Error) {
                 return reason;
             } else {
@@ -4972,7 +5088,7 @@ export namespace UserInfo {
 
         public error: string;
         public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 64; }
+        public static getId(): number { return 67; }
 
 
         constructor(params: IErr)  {
@@ -4988,11 +5104,11 @@ export namespace UserInfo {
 
         public get(): Err { return this; }
 
-        public getId(): number { return 64; }
+        public getId(): number { return 67; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(65, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.getBufferFromBuf<string>(68, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -5001,7 +5117,7 @@ export namespace UserInfo {
             if (storage instanceof Error) {
                 return storage;
             }
-            const error: string | Error = this.getValue<string>(storage, 65, Protocol.Primitives.StrUTF8.decode);
+            const error: string | Error = this.getValue<string>(storage, 68, Protocol.Primitives.StrUTF8.decode);
             if (error instanceof Error) {
                 return error;
             } else {
@@ -5082,7 +5198,7 @@ export namespace Users {
         public name: string;
         public uuid: string;
         public static getSignature(): string { return 'User'; }
-        public static getId(): number { return 67; }
+        public static getId(): number { return 70; }
 
 
         constructor(params: IUser)  {
@@ -5098,12 +5214,12 @@ export namespace Users {
 
         public get(): User { return this; }
 
-        public getId(): number { return 67; }
+        public getId(): number { return 70; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(68, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.name),
-                () => this.getBufferFromBuf<string>(69, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.getBufferFromBuf<string>(71, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.name),
+                () => this.getBufferFromBuf<string>(72, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
             ]);
         }
 
@@ -5112,13 +5228,13 @@ export namespace Users {
             if (storage instanceof Error) {
                 return storage;
             }
-            const name: string | Error = this.getValue<string>(storage, 68, Protocol.Primitives.StrUTF8.decode);
+            const name: string | Error = this.getValue<string>(storage, 71, Protocol.Primitives.StrUTF8.decode);
             if (name instanceof Error) {
                 return name;
             } else {
                 this.name = name;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 69, Protocol.Primitives.StrUTF8.decode);
+            const uuid: string | Error = this.getValue<string>(storage, 72, Protocol.Primitives.StrUTF8.decode);
             if (uuid instanceof Error) {
                 return uuid;
             } else {
@@ -5179,7 +5295,7 @@ export namespace Users {
         }
 
         public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 70; }
+        public static getId(): number { return 73; }
 
 
         constructor(params: IRequest)  {
@@ -5195,7 +5311,7 @@ export namespace Users {
 
         public get(): Request { return this; }
 
-        public getId(): number { return 70; }
+        public getId(): number { return 73; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
@@ -5267,7 +5383,7 @@ export namespace Users {
 
         public users: Array<Users.User>;
         public static getSignature(): string { return 'Response'; }
-        public static getId(): number { return 71; }
+        public static getId(): number { return 74; }
 
 
         constructor(params: IResponse)  {
@@ -5283,11 +5399,11 @@ export namespace Users {
 
         public get(): Response { return this; }
 
-        public getId(): number { return 71; }
+        public getId(): number { return 74; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(72, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
+                () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(75, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
             ]);
         }
 
@@ -5297,7 +5413,7 @@ export namespace Users {
                 return storage;
             }
             const arrusersInst: Users.User = Users.User.defaults();
-            const arrusers: Array<any> | Error = this.getValue<User[]>(storage, 72, arrusersInst.decodeSelfArray.bind(arrusersInst));
+            const arrusers: Array<any> | Error = this.getValue<User[]>(storage, 75, arrusersInst.decodeSelfArray.bind(arrusersInst));
             if (arrusers instanceof Error) {
                 return arrusers;
             } else {
@@ -5363,7 +5479,7 @@ export namespace Users {
 
         public error: string;
         public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 73; }
+        public static getId(): number { return 76; }
 
 
         constructor(params: IErr)  {
@@ -5379,11 +5495,11 @@ export namespace Users {
 
         public get(): Err { return this; }
 
-        public getId(): number { return 73; }
+        public getId(): number { return 76; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(74, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.getBufferFromBuf<string>(77, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -5392,7 +5508,7 @@ export namespace Users {
             if (storage instanceof Error) {
                 return storage;
             }
-            const error: string | Error = this.getValue<string>(storage, 74, Protocol.Primitives.StrUTF8.decode);
+            const error: string | Error = this.getValue<string>(storage, 77, Protocol.Primitives.StrUTF8.decode);
             if (error instanceof Error) {
                 return error;
             } else {
@@ -5465,7 +5581,7 @@ export namespace InternalServiceGroup {
 
         public uuid: string;
         public static getSignature(): string { return 'SelfKeyResponse'; }
-        public static getId(): number { return 76; }
+        public static getId(): number { return 79; }
 
 
         constructor(params: ISelfKeyResponse)  {
@@ -5481,11 +5597,11 @@ export namespace InternalServiceGroup {
 
         public get(): SelfKeyResponse { return this; }
 
-        public getId(): number { return 76; }
+        public getId(): number { return 79; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(77, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.getBufferFromBuf<string>(80, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
             ]);
         }
 
@@ -5494,7 +5610,7 @@ export namespace InternalServiceGroup {
             if (storage instanceof Error) {
                 return storage;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 77, Protocol.Primitives.StrUTF8.decode);
+            const uuid: string | Error = this.getValue<string>(storage, 80, Protocol.Primitives.StrUTF8.decode);
             if (uuid instanceof Error) {
                 return uuid;
             } else {
@@ -5550,87 +5666,91 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 instance = ServerEvents.UserKickOff.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { ServerEvents: { UserKickOff: instance } }, getRef: () => instance };
-            case 29:
+            case 28:
+                instance = ServerEvents.UserAlert.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { ServerEvents: { UserAlert: instance } }, getRef: () => instance };
+            case 32:
                 instance = Message.Request.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Request: instance } }, getRef: () => instance };
-            case 32:
+            case 35:
                 instance = Message.Accepted.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Accepted: instance } }, getRef: () => instance };
-            case 34:
+            case 37:
                 instance = Message.Denied.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Denied: instance } }, getRef: () => instance };
-            case 36:
+            case 39:
                 instance = Message.Err.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Err: instance } }, getRef: () => instance };
-            case 39:
+            case 42:
                 instance = Messages.Message.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Message: instance } }, getRef: () => instance };
-            case 44:
+            case 47:
                 instance = Messages.Request.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Request: instance } }, getRef: () => instance };
-            case 45:
+            case 48:
                 instance = Messages.Response.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Response: instance } }, getRef: () => instance };
-            case 47:
+            case 50:
                 instance = Messages.Err.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Err: instance } }, getRef: () => instance };
-            case 50:
+            case 53:
                 instance = UserLogin.Request.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Request: instance } }, getRef: () => instance };
-            case 52:
+            case 55:
                 instance = UserLogin.Accepted.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Accepted: instance } }, getRef: () => instance };
-            case 54:
+            case 57:
                 instance = UserLogin.Denied.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Denied: instance } }, getRef: () => instance };
-            case 56:
+            case 59:
                 instance = UserLogin.Err.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Err: instance } }, getRef: () => instance };
-            case 59:
+            case 62:
                 instance = UserInfo.Request.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Request: instance } }, getRef: () => instance };
-            case 60:
+            case 63:
                 instance = UserInfo.Accepted.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Accepted: instance } }, getRef: () => instance };
-            case 62:
+            case 65:
                 instance = UserInfo.Denied.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Denied: instance } }, getRef: () => instance };
-            case 64:
+            case 67:
                 instance = UserInfo.Err.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Err: instance } }, getRef: () => instance };
-            case 67:
+            case 70:
                 instance = Users.User.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { User: instance } }, getRef: () => instance };
-            case 70:
+            case 73:
                 instance = Users.Request.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { Request: instance } }, getRef: () => instance };
-            case 71:
+            case 74:
                 instance = Users.Response.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { Response: instance } }, getRef: () => instance };
-            case 73:
+            case 76:
                 instance = Users.Err.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { Err: instance } }, getRef: () => instance };
-            case 76:
+            case 79:
                 instance = InternalServiceGroup.SelfKeyResponse.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { SelfKeyResponse: instance } }, getRef: () => instance };

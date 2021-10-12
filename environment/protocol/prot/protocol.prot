@@ -43,6 +43,10 @@ group ServerEvents {
         str reason?;
         str uuid;
     }
+    struct UserAlert {
+        str reason?;
+        str uuid;
+    }
 }
 
 group Message {

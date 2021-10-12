@@ -1,72 +1,25 @@
-#[path = "./render.request.rs"]
-pub mod render_request;
-
-#[path = "./render.event.rs"]
-pub mod render_event;
-
-#[path = "./render.identification.rs"]
-pub mod render_identification;
-
-#[path = "./render.consumer.rs"]
-pub mod render_consumer;
-
-#[path = "./render.event.connected.rs"]
-pub mod render_event_connected;
-
-#[path = "./render.event.disconnected.rs"]
-pub mod render_event_disconnected;
-
-#[path = "./render.broadcast.rs"]
-pub mod render_broadcast;
-
-#[path = "./render.producer.rs"]
-pub mod render_producer;
-
-#[path = "./render.app.rs"]
-pub mod render_app;
-
-#[path = "./render.protocol.rs"]
-pub mod render_protocol;
-
+pub mod render_event_emitter;
+pub mod render_event_emitters_mod;
+pub mod render_event_impl;
+pub mod render_event_impl_mod;
+pub mod render_request_handler;
+pub mod render_request_handlers_mod;
+pub mod render_request_response;
+pub mod render_request_responses_mod;
+pub mod render_static;
 use super::{
-    ImplementationRender,
-    helpers,
-    workflow,
-    workflow::{
-        store::{
-            Store as WorkflowStore
-        }
-    },
-    Protocol,
-    ProtocolRender,
-    ProtocolRustRender,
+    helpers, workflow, workflow::store::Store as WorkflowStore, ImplementationRender, Protocol,
+    ProtocolRender, ProtocolRustRender,
 };
-use render_request::{ RenderRequest };
-use render_event::{ RenderEvent };
-use render_identification::{ RenderIdentification };
-use render_producer::{ RenderProducer };
-use render_consumer::{ RenderConsumer };
-use render_event_connected::{ RenderEventConnected };
-use render_broadcast::{ RenderBroadcast };
-use render_event_disconnected::{ RenderEventDisconnected };
-use render_app::{ RenderApp };
-use render_protocol::{ RenderProtocol };
-use std::{
-    path::{
-        Path,
-    }
-};
+use std::path::Path;
 
-pub struct RustRender {
-}
+pub struct RustRender {}
 
-impl RustRender {
-}
+impl RustRender {}
 
 impl ImplementationRender<ProtocolRustRender> for RustRender {
     fn new() -> Self {
-        RustRender {
-        }
+        RustRender {}
     }
 
     fn render(
@@ -77,19 +30,18 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         protocol_render: ProtocolRustRender,
     ) -> Result<String, String> {
         for request in &store.requests {
-            (RenderRequest::new()).render(base, &request)?;
+            (render_request_response::Render::new()).render(base, &request)?;
+            (render_request_handler::Render::new()).render(base, &request)?;
         }
+        (render_request_responses_mod::Render::new()).render(base, &store.requests)?;
+        (render_request_handlers_mod::Render::new()).render(base, &store.requests)?;
         for event in &store.events {
-            (RenderEvent::new()).render(base, &event)?;
+            (render_event_impl::Render::new()).render(base, &event)?;
+            (render_event_emitter::Render::new()).render(base, &event)?;
         }
-        (RenderEventConnected::new()).render(base, &store.broadcast)?;
-        (RenderEventDisconnected::new()).render(base, &store.broadcast)?;
-        (RenderBroadcast::new()).render(base, &store.broadcast)?;
-        (RenderIdentification::new()).render(base, store.get_config()?, protocol)?;
-        (RenderConsumer::new()).render(base, store.get_config()?, protocol)?;
-        (RenderProducer::new()).render(base, store, protocol)?;
-        (RenderApp::new()).render(base, store, protocol)?;
-        (RenderProtocol::new()).render(base, protocol, &protocol_render)?;
+        (render_event_impl_mod::Render::new()).render(base, &store.events)?;
+        (render_event_emitters_mod::Render::new()).render(base, &store.events)?;
+        (render_static::Render::new()).render(base)?;
         Ok(String::new())
     }
 }

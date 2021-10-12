@@ -415,6 +415,7 @@ pub mod ServerEvents {
     #[derive(Debug, Clone)]
     pub enum AvailableMessages {
         UserKickOff(UserKickOff),
+        UserAlert(UserAlert),
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -466,6 +467,55 @@ pub mod ServerEvents {
     }
     impl PackingStruct for UserKickOff { }
 
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct UserAlert {
+        pub reason: Option<String>,
+        pub uuid: String,
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for UserAlert {
+        fn get_id() -> u32 {
+            28
+        }
+        fn defaults() -> UserAlert {
+            UserAlert {
+                reason: None,
+                uuid: String::from(""),
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.reason = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(29)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(30)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for UserAlert {
+        fn get_id(&self) -> u32 { 28 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.reason.get_buf_to_store(Some(29)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.uuid.get_buf_to_store(Some(30)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for UserAlert { }
+
 }
 
 pub mod Message {
@@ -489,7 +539,7 @@ pub mod Message {
     #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
-            29
+            32
         }
         fn defaults() -> Request {
             Request {
@@ -498,11 +548,11 @@ pub mod Message {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.user = match String::get_from_storage(Source::Storage(&mut storage), Some(30)) {
+            self.user = match String::get_from_storage(Source::Storage(&mut storage), Some(33)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.message = match String::get_from_storage(Source::Storage(&mut storage), Some(31)) {
+            self.message = match String::get_from_storage(Source::Storage(&mut storage), Some(34)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -512,15 +562,15 @@ pub mod Message {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Request {
-        fn get_id(&self) -> u32 { 29 }
+        fn get_id(&self) -> u32 { 32 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.user.get_buf_to_store(Some(30)) {
+            match self.user.get_buf_to_store(Some(33)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.message.get_buf_to_store(Some(31)) {
+            match self.message.get_buf_to_store(Some(34)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -537,7 +587,7 @@ pub mod Message {
     #[allow(unused_mut)]
     impl StructDecode for Accepted {
         fn get_id() -> u32 {
-            32
+            35
         }
         fn defaults() -> Accepted {
             Accepted {
@@ -545,7 +595,7 @@ pub mod Message {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(33)) {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(36)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -555,11 +605,11 @@ pub mod Message {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Accepted {
-        fn get_id(&self) -> u32 { 32 }
+        fn get_id(&self) -> u32 { 35 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.uuid.get_buf_to_store(Some(33)) {
+            match self.uuid.get_buf_to_store(Some(36)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -576,7 +626,7 @@ pub mod Message {
     #[allow(unused_mut)]
     impl StructDecode for Denied {
         fn get_id() -> u32 {
-            34
+            37
         }
         fn defaults() -> Denied {
             Denied {
@@ -584,7 +634,7 @@ pub mod Message {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.reason = match String::get_from_storage(Source::Storage(&mut storage), Some(35)) {
+            self.reason = match String::get_from_storage(Source::Storage(&mut storage), Some(38)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -594,11 +644,11 @@ pub mod Message {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Denied {
-        fn get_id(&self) -> u32 { 34 }
+        fn get_id(&self) -> u32 { 37 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.reason.get_buf_to_store(Some(35)) {
+            match self.reason.get_buf_to_store(Some(38)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -615,7 +665,7 @@ pub mod Message {
     #[allow(unused_mut)]
     impl StructDecode for Err {
         fn get_id() -> u32 {
-            36
+            39
         }
         fn defaults() -> Err {
             Err {
@@ -623,7 +673,7 @@ pub mod Message {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(37)) {
+            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(40)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -633,11 +683,11 @@ pub mod Message {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Err {
-        fn get_id(&self) -> u32 { 36 }
+        fn get_id(&self) -> u32 { 39 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(37)) {
+            match self.error.get_buf_to_store(Some(40)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -671,7 +721,7 @@ pub mod Messages {
     #[allow(unused_mut)]
     impl StructDecode for Message {
         fn get_id() -> u32 {
-            39
+            42
         }
         fn defaults() -> Message {
             Message {
@@ -682,19 +732,19 @@ pub mod Messages {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.timestamp = match u64::get_from_storage(Source::Storage(&mut storage), Some(40)) {
+            self.timestamp = match u64::get_from_storage(Source::Storage(&mut storage), Some(43)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.user = match String::get_from_storage(Source::Storage(&mut storage), Some(41)) {
+            self.user = match String::get_from_storage(Source::Storage(&mut storage), Some(44)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(42)) {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(45)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.message = match String::get_from_storage(Source::Storage(&mut storage), Some(43)) {
+            self.message = match String::get_from_storage(Source::Storage(&mut storage), Some(46)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -704,23 +754,23 @@ pub mod Messages {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Message {
-        fn get_id(&self) -> u32 { 39 }
+        fn get_id(&self) -> u32 { 42 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.timestamp.get_buf_to_store(Some(40)) {
+            match self.timestamp.get_buf_to_store(Some(43)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.user.get_buf_to_store(Some(41)) {
+            match self.user.get_buf_to_store(Some(44)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.uuid.get_buf_to_store(Some(42)) {
+            match self.uuid.get_buf_to_store(Some(45)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.message.get_buf_to_store(Some(43)) {
+            match self.message.get_buf_to_store(Some(46)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -736,7 +786,7 @@ pub mod Messages {
     #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
-            44
+            47
         }
         fn defaults() -> Request {
             Request {
@@ -749,7 +799,7 @@ pub mod Messages {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Request {
-        fn get_id(&self) -> u32 { 44 }
+        fn get_id(&self) -> u32 { 47 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
@@ -766,7 +816,7 @@ pub mod Messages {
     #[allow(unused_mut)]
     impl StructDecode for Response {
         fn get_id() -> u32 {
-            45
+            48
         }
         fn defaults() -> Response {
             Response {
@@ -774,7 +824,7 @@ pub mod Messages {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.messages = match Vec::<Message>::get_from_storage(Source::Storage(&mut storage), Some(46)) {
+            self.messages = match Vec::<Message>::get_from_storage(Source::Storage(&mut storage), Some(49)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -784,11 +834,11 @@ pub mod Messages {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Response {
-        fn get_id(&self) -> u32 { 45 }
+        fn get_id(&self) -> u32 { 48 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.messages.get_buf_to_store(Some(46)) {
+            match self.messages.get_buf_to_store(Some(49)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -805,7 +855,7 @@ pub mod Messages {
     #[allow(unused_mut)]
     impl StructDecode for Err {
         fn get_id() -> u32 {
-            47
+            50
         }
         fn defaults() -> Err {
             Err {
@@ -813,7 +863,7 @@ pub mod Messages {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(48)) {
+            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(51)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -823,11 +873,11 @@ pub mod Messages {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Err {
-        fn get_id(&self) -> u32 { 47 }
+        fn get_id(&self) -> u32 { 50 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(48)) {
+            match self.error.get_buf_to_store(Some(51)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -858,7 +908,7 @@ pub mod UserLogin {
     #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
-            50
+            53
         }
         fn defaults() -> Request {
             Request {
@@ -866,7 +916,7 @@ pub mod UserLogin {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.username = match String::get_from_storage(Source::Storage(&mut storage), Some(51)) {
+            self.username = match String::get_from_storage(Source::Storage(&mut storage), Some(54)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -876,11 +926,11 @@ pub mod UserLogin {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Request {
-        fn get_id(&self) -> u32 { 50 }
+        fn get_id(&self) -> u32 { 53 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.username.get_buf_to_store(Some(51)) {
+            match self.username.get_buf_to_store(Some(54)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -897,7 +947,7 @@ pub mod UserLogin {
     #[allow(unused_mut)]
     impl StructDecode for Accepted {
         fn get_id() -> u32 {
-            52
+            55
         }
         fn defaults() -> Accepted {
             Accepted {
@@ -905,7 +955,7 @@ pub mod UserLogin {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(53)) {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(56)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -915,11 +965,11 @@ pub mod UserLogin {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Accepted {
-        fn get_id(&self) -> u32 { 52 }
+        fn get_id(&self) -> u32 { 55 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.uuid.get_buf_to_store(Some(53)) {
+            match self.uuid.get_buf_to_store(Some(56)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -936,7 +986,7 @@ pub mod UserLogin {
     #[allow(unused_mut)]
     impl StructDecode for Denied {
         fn get_id() -> u32 {
-            54
+            57
         }
         fn defaults() -> Denied {
             Denied {
@@ -944,7 +994,7 @@ pub mod UserLogin {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.reason = match String::get_from_storage(Source::Storage(&mut storage), Some(55)) {
+            self.reason = match String::get_from_storage(Source::Storage(&mut storage), Some(58)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -954,11 +1004,11 @@ pub mod UserLogin {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Denied {
-        fn get_id(&self) -> u32 { 54 }
+        fn get_id(&self) -> u32 { 57 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.reason.get_buf_to_store(Some(55)) {
+            match self.reason.get_buf_to_store(Some(58)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -975,7 +1025,7 @@ pub mod UserLogin {
     #[allow(unused_mut)]
     impl StructDecode for Err {
         fn get_id() -> u32 {
-            56
+            59
         }
         fn defaults() -> Err {
             Err {
@@ -983,7 +1033,7 @@ pub mod UserLogin {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(57)) {
+            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(60)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -993,11 +1043,11 @@ pub mod UserLogin {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Err {
-        fn get_id(&self) -> u32 { 56 }
+        fn get_id(&self) -> u32 { 59 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(57)) {
+            match self.error.get_buf_to_store(Some(60)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1027,7 +1077,7 @@ pub mod UserInfo {
     #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
-            59
+            62
         }
         fn defaults() -> Request {
             Request {
@@ -1040,7 +1090,7 @@ pub mod UserInfo {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Request {
-        fn get_id(&self) -> u32 { 59 }
+        fn get_id(&self) -> u32 { 62 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
@@ -1057,7 +1107,7 @@ pub mod UserInfo {
     #[allow(unused_mut)]
     impl StructDecode for Accepted {
         fn get_id() -> u32 {
-            60
+            63
         }
         fn defaults() -> Accepted {
             Accepted {
@@ -1065,7 +1115,7 @@ pub mod UserInfo {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.browser = match String::get_from_storage(Source::Storage(&mut storage), Some(61)) {
+            self.browser = match String::get_from_storage(Source::Storage(&mut storage), Some(64)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1075,11 +1125,11 @@ pub mod UserInfo {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Accepted {
-        fn get_id(&self) -> u32 { 60 }
+        fn get_id(&self) -> u32 { 63 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.browser.get_buf_to_store(Some(61)) {
+            match self.browser.get_buf_to_store(Some(64)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1096,7 +1146,7 @@ pub mod UserInfo {
     #[allow(unused_mut)]
     impl StructDecode for Denied {
         fn get_id() -> u32 {
-            62
+            65
         }
         fn defaults() -> Denied {
             Denied {
@@ -1104,7 +1154,7 @@ pub mod UserInfo {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.reason = match String::get_from_storage(Source::Storage(&mut storage), Some(63)) {
+            self.reason = match String::get_from_storage(Source::Storage(&mut storage), Some(66)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1114,11 +1164,11 @@ pub mod UserInfo {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Denied {
-        fn get_id(&self) -> u32 { 62 }
+        fn get_id(&self) -> u32 { 65 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.reason.get_buf_to_store(Some(63)) {
+            match self.reason.get_buf_to_store(Some(66)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1135,7 +1185,7 @@ pub mod UserInfo {
     #[allow(unused_mut)]
     impl StructDecode for Err {
         fn get_id() -> u32 {
-            64
+            67
         }
         fn defaults() -> Err {
             Err {
@@ -1143,7 +1193,7 @@ pub mod UserInfo {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(65)) {
+            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(68)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1153,11 +1203,11 @@ pub mod UserInfo {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Err {
-        fn get_id(&self) -> u32 { 64 }
+        fn get_id(&self) -> u32 { 67 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(65)) {
+            match self.error.get_buf_to_store(Some(68)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1189,7 +1239,7 @@ pub mod Users {
     #[allow(unused_mut)]
     impl StructDecode for User {
         fn get_id() -> u32 {
-            67
+            70
         }
         fn defaults() -> User {
             User {
@@ -1198,11 +1248,11 @@ pub mod Users {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.name = match String::get_from_storage(Source::Storage(&mut storage), Some(68)) {
+            self.name = match String::get_from_storage(Source::Storage(&mut storage), Some(71)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(69)) {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(72)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1212,15 +1262,15 @@ pub mod Users {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for User {
-        fn get_id(&self) -> u32 { 67 }
+        fn get_id(&self) -> u32 { 70 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.name.get_buf_to_store(Some(68)) {
+            match self.name.get_buf_to_store(Some(71)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.uuid.get_buf_to_store(Some(69)) {
+            match self.uuid.get_buf_to_store(Some(72)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1236,7 +1286,7 @@ pub mod Users {
     #[allow(unused_mut)]
     impl StructDecode for Request {
         fn get_id() -> u32 {
-            70
+            73
         }
         fn defaults() -> Request {
             Request {
@@ -1249,7 +1299,7 @@ pub mod Users {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Request {
-        fn get_id(&self) -> u32 { 70 }
+        fn get_id(&self) -> u32 { 73 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
@@ -1266,7 +1316,7 @@ pub mod Users {
     #[allow(unused_mut)]
     impl StructDecode for Response {
         fn get_id() -> u32 {
-            71
+            74
         }
         fn defaults() -> Response {
             Response {
@@ -1274,7 +1324,7 @@ pub mod Users {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.users = match Vec::<User>::get_from_storage(Source::Storage(&mut storage), Some(72)) {
+            self.users = match Vec::<User>::get_from_storage(Source::Storage(&mut storage), Some(75)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1284,11 +1334,11 @@ pub mod Users {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Response {
-        fn get_id(&self) -> u32 { 71 }
+        fn get_id(&self) -> u32 { 74 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.users.get_buf_to_store(Some(72)) {
+            match self.users.get_buf_to_store(Some(75)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1305,7 +1355,7 @@ pub mod Users {
     #[allow(unused_mut)]
     impl StructDecode for Err {
         fn get_id() -> u32 {
-            73
+            76
         }
         fn defaults() -> Err {
             Err {
@@ -1313,7 +1363,7 @@ pub mod Users {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(74)) {
+            self.error = match String::get_from_storage(Source::Storage(&mut storage), Some(77)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1323,11 +1373,11 @@ pub mod Users {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for Err {
-        fn get_id(&self) -> u32 { 73 }
+        fn get_id(&self) -> u32 { 76 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(74)) {
+            match self.error.get_buf_to_store(Some(77)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1355,7 +1405,7 @@ pub mod InternalServiceGroup {
     #[allow(unused_mut)]
     impl StructDecode for SelfKeyResponse {
         fn get_id() -> u32 {
-            76
+            79
         }
         fn defaults() -> SelfKeyResponse {
             SelfKeyResponse {
@@ -1363,7 +1413,7 @@ pub mod InternalServiceGroup {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(77)) {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(80)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -1373,11 +1423,11 @@ pub mod InternalServiceGroup {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for SelfKeyResponse {
-        fn get_id(&self) -> u32 { 76 }
+        fn get_id(&self) -> u32 { 79 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.uuid.get_buf_to_store(Some(77)) {
+            match self.uuid.get_buf_to_store(Some(80)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -1423,87 +1473,91 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::ServerEvents(ServerEvents::AvailableMessages::UserKickOff(m))),
                 Err(e) => Err(e),
             },
-            29 => match Message::Request::extract(buf.to_vec()) {
+            28 => match ServerEvents::UserAlert::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::ServerEvents(ServerEvents::AvailableMessages::UserAlert(m))),
+                Err(e) => Err(e),
+            },
+            32 => match Message::Request::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Message(Message::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            32 => match Message::Accepted::extract(buf.to_vec()) {
+            35 => match Message::Accepted::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Message(Message::AvailableMessages::Accepted(m))),
                 Err(e) => Err(e),
             },
-            34 => match Message::Denied::extract(buf.to_vec()) {
+            37 => match Message::Denied::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Message(Message::AvailableMessages::Denied(m))),
                 Err(e) => Err(e),
             },
-            36 => match Message::Err::extract(buf.to_vec()) {
+            39 => match Message::Err::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Message(Message::AvailableMessages::Err(m))),
                 Err(e) => Err(e),
             },
-            39 => match Messages::Message::extract(buf.to_vec()) {
+            42 => match Messages::Message::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Messages(Messages::AvailableMessages::Message(m))),
                 Err(e) => Err(e),
             },
-            44 => match Messages::Request::extract(buf.to_vec()) {
+            47 => match Messages::Request::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Messages(Messages::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            45 => match Messages::Response::extract(buf.to_vec()) {
+            48 => match Messages::Response::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Messages(Messages::AvailableMessages::Response(m))),
                 Err(e) => Err(e),
             },
-            47 => match Messages::Err::extract(buf.to_vec()) {
+            50 => match Messages::Err::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Messages(Messages::AvailableMessages::Err(m))),
                 Err(e) => Err(e),
             },
-            50 => match UserLogin::Request::extract(buf.to_vec()) {
+            53 => match UserLogin::Request::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserLogin(UserLogin::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            52 => match UserLogin::Accepted::extract(buf.to_vec()) {
+            55 => match UserLogin::Accepted::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserLogin(UserLogin::AvailableMessages::Accepted(m))),
                 Err(e) => Err(e),
             },
-            54 => match UserLogin::Denied::extract(buf.to_vec()) {
+            57 => match UserLogin::Denied::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserLogin(UserLogin::AvailableMessages::Denied(m))),
                 Err(e) => Err(e),
             },
-            56 => match UserLogin::Err::extract(buf.to_vec()) {
+            59 => match UserLogin::Err::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserLogin(UserLogin::AvailableMessages::Err(m))),
                 Err(e) => Err(e),
             },
-            59 => match UserInfo::Request::extract(buf.to_vec()) {
+            62 => match UserInfo::Request::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserInfo(UserInfo::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            60 => match UserInfo::Accepted::extract(buf.to_vec()) {
+            63 => match UserInfo::Accepted::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserInfo(UserInfo::AvailableMessages::Accepted(m))),
                 Err(e) => Err(e),
             },
-            62 => match UserInfo::Denied::extract(buf.to_vec()) {
+            65 => match UserInfo::Denied::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserInfo(UserInfo::AvailableMessages::Denied(m))),
                 Err(e) => Err(e),
             },
-            64 => match UserInfo::Err::extract(buf.to_vec()) {
+            67 => match UserInfo::Err::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::UserInfo(UserInfo::AvailableMessages::Err(m))),
                 Err(e) => Err(e),
             },
-            67 => match Users::User::extract(buf.to_vec()) {
+            70 => match Users::User::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Users(Users::AvailableMessages::User(m))),
                 Err(e) => Err(e),
             },
-            70 => match Users::Request::extract(buf.to_vec()) {
+            73 => match Users::Request::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Users(Users::AvailableMessages::Request(m))),
                 Err(e) => Err(e),
             },
-            71 => match Users::Response::extract(buf.to_vec()) {
+            74 => match Users::Response::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Users(Users::AvailableMessages::Response(m))),
                 Err(e) => Err(e),
             },
-            73 => match Users::Err::extract(buf.to_vec()) {
+            76 => match Users::Err::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::Users(Users::AvailableMessages::Err(m))),
                 Err(e) => Err(e),
             },
-            76 => match InternalServiceGroup::SelfKeyResponse::extract(buf.to_vec()) {
+            79 => match InternalServiceGroup::SelfKeyResponse::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::SelfKeyResponse(m))),
                 Err(e) => Err(e),
             },

@@ -37,6 +37,11 @@ Messages.Request !Messages.Err {
    > Events.UserConnected;
 }
 
+@ServerEvents.UserAlert {
+   > Events.Message;
+   > Events.UserConnected?;
+}
+
 @broadcast {
    > Events.UserDisconnected;
    > Events.Message;
