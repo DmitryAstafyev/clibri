@@ -32,9 +32,14 @@ Messages.Request !Messages.Err {
    (Messages.Response);
 }
 
+@disconnected {
+   > Events.Message?;
+   > Events.UserDisconnected;
+}
+
 @ServerEvents.UserKickOff {
    > Events.Message;
-   > Events.UserConnected;
+   > Events.UserDisconnected;
 }
 
 @ServerEvents.UserAlert {

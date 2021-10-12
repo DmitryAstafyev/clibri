@@ -1,5 +1,12 @@
+pub mod disconnected;
 pub mod serverevents_userkickoff;
 pub mod serverevents_useralert;
+pub mod connected;
+pub mod disconnected;
+pub mod error;
+pub mod ready;
+pub mod shutdown;
+
 use super::*;
 use fiber::server;
 use protocol::PackingStruct;

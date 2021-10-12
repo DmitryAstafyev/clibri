@@ -1,6 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::broadcast::Broadcast, workflow::request::Request,
-};
+use super::{helpers, workflow::event::Event};
 use std::include_str;
 use std::{
     fs,
@@ -12,6 +10,8 @@ mod paths {
         pub const connected: &str = "connected.rs";
         pub const disconnected: &str = "disconnected.rs";
         pub const error: &str = "error.rs";
+        pub const ready: &str = "ready.rs";
+        pub const shutdown: &str = "shutdown.rs";
         pub const dest: &str = "events";
     }
     pub mod consumer {
@@ -23,6 +23,8 @@ mod paths {
         pub const connected: &str = "connected.rs";
         pub const disconnected: &str = "disconnected.rs";
         pub const error: &str = "error.rs";
+        pub const ready: &str = "ready.rs";
+        pub const shutdown: &str = "shutdown.rs";
         pub const dest: &str = "implementation/emitters";
     }
 }
@@ -39,20 +41,58 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path) -> Result<(), String> {
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
-            include_str!("./static/events/connected.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
-            include_str!("./static/events/disconnected.rs").to_owned(),
-            true,
-        )?;
+    pub fn render(&self, base: &Path, events: &Vec<Event>) -> Result<(), String> {
+        if events
+            .iter()
+            .find(|event| match event.get_reference() {
+                Ok(reference) => reference == "connected",
+                Err(_) => false,
+            })
+            .is_none()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
+                include_str!("./static/events/connected.rs").to_owned(),
+                true,
+            )?;
+            helpers::fs::write(
+                self.get_dest_file(base, paths::emitters::dest, paths::emitters::connected)?,
+                include_str!("./static/implementation/emitters/connected.rs").to_owned(),
+                true,
+            )?;
+        }
+        if events
+            .iter()
+            .find(|event| match event.get_reference() {
+                Ok(reference) => reference == "disconnected",
+                Err(_) => false,
+            })
+            .is_none()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
+                include_str!("./static/events/disconnected.rs").to_owned(),
+                true,
+            )?;
+            helpers::fs::write(
+                self.get_dest_file(base, paths::emitters::dest, paths::emitters::disconnected)?,
+                include_str!("./static/implementation/emitters/disconnected.rs").to_owned(),
+                true,
+            )?;
+        }
         helpers::fs::write(
             self.get_dest_file(base, paths::events::dest, paths::events::error)?,
             include_str!("./static/events/error.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::events::dest, paths::events::ready)?,
+            include_str!("./static/events/ready.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
+            include_str!("./static/events/shutdown.rs").to_owned(),
             true,
         )?;
         helpers::fs::write(
@@ -65,20 +105,19 @@ impl Render {
             include_str!("./static/implementation/consumer/mod.rs").to_owned(),
             true,
         )?;
-
-        helpers::fs::write(
-            self.get_dest_file(base, paths::emitters::dest, paths::emitters::connected)?,
-            include_str!("./static/implementation/emitters/connected.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::emitters::dest, paths::emitters::disconnected)?,
-            include_str!("./static/implementation/emitters/disconnected.rs").to_owned(),
-            true,
-        )?;
         helpers::fs::write(
             self.get_dest_file(base, paths::emitters::dest, paths::emitters::error)?,
             include_str!("./static/implementation/emitters/error.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::emitters::dest, paths::emitters::ready)?,
+            include_str!("./static/implementation/emitters/ready.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::emitters::dest, paths::emitters::shutdown)?,
+            include_str!("./static/implementation/emitters/shutdown.rs").to_owned(),
             true,
         )?;
         Ok(())

@@ -10,5 +10,5 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: Option<&mut identification::Identification>,
     control: &Control<E, C>,
 ) -> Result<(), String> {
-    Err(String::from("Event emitter \"error\" isn't implemented"))
+    Ok(())
 }

@@ -1,5 +1,9 @@
 use super::{broadcast::Broadcast, chars, ENext, EntityOut, EntityParser, Protocol};
 
+mod defaults {
+    pub const connected: &str = "connected";
+    pub const disconnected: &str = "disconnected";
+}
 #[derive(Debug, PartialEq, Clone)]
 enum EExpectation {
     Word,
@@ -32,7 +36,11 @@ impl Event {
         Self {
             reference: None,
             broadcasts: vec![],
-            expectation: vec![EExpectation::Word, EExpectation::PathDelimiter],
+            expectation: vec![
+                EExpectation::Word,
+                EExpectation::PathDelimiter,
+                EExpectation::Open,
+            ],
             pending: Pending::Reference(reference),
             closed: false,
         }
@@ -40,7 +48,10 @@ impl Event {
 
     fn close(&mut self, protocol: &Protocol) -> Result<(), String> {
         if let Some(reference) = self.reference.as_ref() {
-            if protocol.find_by_str_path(0, reference).is_none() {
+            if reference != defaults::connected
+                && reference != defaults::disconnected
+                && protocol.find_by_str_path(0, reference).is_none()
+            {
                 return Err(format!(
                     "Reference to event object/struct {} isn't defined in protocol",
                     reference

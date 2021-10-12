@@ -12,7 +12,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
-    let (mut broadcast_events_message, mut broadcast_events_userconnected) =
+    let (mut broadcast_events_message, mut broadcast_events_userdisconnected) =
         events::serverevents_userkickoff.rs::emit::<E, C>(event, filter, context, control)
             .await
             .map_err(EmitterError::Emitting)?;
@@ -21,8 +21,8 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         unbound_pack(&0, &mut broadcast_events_message.1)?,
     ));
     broadcasting.push((
-        broadcast_events_userconnected.0,
-        unbound_pack(&0, &mut broadcast_events_userconnected.1)?,
+        broadcast_events_userdisconnected.0,
+        unbound_pack(&0, &mut broadcast_events_userdisconnected.1)?,
     ));
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;

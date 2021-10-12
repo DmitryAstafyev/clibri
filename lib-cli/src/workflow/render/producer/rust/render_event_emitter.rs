@@ -48,6 +48,27 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         .await
         .map_err(EmitterError::Emitting)?
 }"#;
+    pub const DEFAULT_MODULE: &str = r#"use super::{broadcast, events, identification, pack, producer::Control, Context, EmitterError};
+use fiber::server;
+use uuid::Uuid;
+
+pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    identification: &mut identification::Identification,
+    filter: &identification::Filter,
+    context: &mut Context,
+    control: &Control<E, C>,
+) -> Result<(), EmitterError> {
+    let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
+    let ([[broadcast_vars]]) =
+        events::[[event_mod]]::emit::<E, C>(event, filter, context, control)
+            .await
+            .map_err(EmitterError::Emitting)?;
+[[broadcasts_processing]]
+    for msg in broadcasting.iter_mut() {
+        broadcast::<E, C>(msg, control).await?;
+    }
+    Ok(())
+}"#;
 }
 
 pub struct Render {}
@@ -69,6 +90,60 @@ impl Render {
             let mut out = templates::MODULE_WITHOUT_BROADCAST.to_owned();
             out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
             out = out.replace("[[event_mod]]", &event.as_filename()?);
+            out
+        } else if self.is_default(event)? {
+            let mut out = templates::DEFAULT_MODULE.to_owned();
+            out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
+            out = out.replace("[[event_mod]]", &event.as_filename()?);
+            let mut processing = String::new();
+            let mut vars = String::new();
+            for (pos, broadcast) in event.broadcasts.iter().enumerate() {
+                let var_name = self.get_broadcast_var_name(broadcast);
+                if broadcast.optional {
+                    processing = format!(
+                        r#"{}if let Some(mut broadcast_message) = broadcast_message.take() {{
+    broadcasting.push((
+        {}.0,
+        pack(&0, &identification.uuid(), &mut {}.1)?,
+    ));
+}}{}"#,
+                        processing,
+                        var_name,
+                        var_name,
+                        if pos == event.broadcasts.len() - 1 {
+                            ""
+                        } else {
+                            "\n"
+                        }
+                    );
+                } else {
+                    processing = format!(
+                        r#"{}broadcasting.push((
+    {}.0,
+    pack(&0, &identification.uuid(), &mut {}.1)?,
+));{}"#,
+                        processing,
+                        var_name,
+                        var_name,
+                        if pos == event.broadcasts.len() - 1 {
+                            ""
+                        } else {
+                            "\n"
+                        }
+                    );
+                }
+                vars = format!(
+                    "{}{}mut {}",
+                    vars,
+                    if pos == 0 { "" } else { ", " },
+                    var_name
+                );
+            }
+            out = out.replace(
+                "[[broadcasts_processing]]",
+                &tools::inject_tabs(1, processing),
+            );
+            out = out.replace("[[broadcast_vars]]", &vars);
             out
         } else {
             let mut out = templates::MODULE_WITH_BROADCAST.to_owned();
@@ -126,6 +201,14 @@ impl Render {
             out
         };
         helpers::fs::write(dest, output, true)
+    }
+
+    fn is_default(&self, event: &Event) -> Result<bool, String> {
+        if event.get_reference()? == "connected" || event.get_reference()? == "disconnected" {
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     fn into_rust_path(&self, input: &str) -> String {
