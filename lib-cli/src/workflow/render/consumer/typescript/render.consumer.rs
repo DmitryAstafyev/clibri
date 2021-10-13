@@ -1,28 +1,13 @@
 use super::{
     helpers,
-    helpers::{
-        render as tools,
-    },
+    helpers::render as tools,
+    workflow::{beacon::Broadcast, request::Request},
     WorkflowStore,
-    workflow::{
-        broadcast::{
-            Broadcast,
-        },
-        request::{
-            Request,
-        }
-    }
 };
-use std::{
-    path::{
-        Path,
-        PathBuf,
-    }
-};
+use std::path::{Path, PathBuf};
 
 mod templates {
-    pub const MODULE: &str =
-r#"// tslint:disable: max-classes-per-file
+    pub const MODULE: &str = r#"// tslint:disable: max-classes-per-file
 
 import { Client, Logger, Subscription, Subject, guid, globals } from 'fiber';
 import { IOptions, Options } from './options';
@@ -234,8 +219,7 @@ export class Consumer {
         } while (true);
     }
 }"#;
-    pub const BROADCAST_CHECKS: &str = 
-r#" else {
+    pub const BROADCAST_CHECKS: &str = r#" else {
     const id: number = msg.getRef<any>().getId();
     switch (id) {[[cases]]
         default:
@@ -245,8 +229,7 @@ r#" else {
 }"#;
 }
 
-pub struct RenderConsumer {
-}
+pub struct RenderConsumer {}
 
 impl Default for RenderConsumer {
     fn default() -> Self {
@@ -255,23 +238,30 @@ impl Default for RenderConsumer {
 }
 
 impl RenderConsumer {
-    
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn render(
-        &self,
-        base: &Path,
-        store: &WorkflowStore
-    ) -> Result<(), String> {
+    pub fn render(&self, base: &Path, store: &WorkflowStore) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base);
         let mut output: String = templates::MODULE.to_owned();
         let broadcasts: Vec<Broadcast> = self.get_all_broadcasts(store);
-        output = output.replace("[[broadcasts_declarations]]", &tools::inject_tabs(2, self.get_broadcasts_declarations(&broadcasts)));
-        output = output.replace("[[broadcasts_definitions]]", &tools::inject_tabs(2, self.get_broadcasts_definitions(&broadcasts)));
-        output = output.replace("[[broadcasts_checking]]", &self.get_broadcasts_checking(&broadcasts));
-        output = output.replace("[[request_exports]]", &self.get_request_exports(&store.requests)?);
+        output = output.replace(
+            "[[broadcasts_declarations]]",
+            &tools::inject_tabs(2, self.get_broadcasts_declarations(&broadcasts)),
+        );
+        output = output.replace(
+            "[[broadcasts_definitions]]",
+            &tools::inject_tabs(2, self.get_broadcasts_definitions(&broadcasts)),
+        );
+        output = output.replace(
+            "[[broadcasts_checking]]",
+            &self.get_broadcasts_checking(&broadcasts),
+        );
+        output = output.replace(
+            "[[request_exports]]",
+            &self.get_request_exports(&store.requests)?,
+        );
         helpers::fs::write(dest, output, true)
     }
 
@@ -280,7 +270,10 @@ impl RenderConsumer {
         for request in &store.requests {
             for action in &request.actions {
                 for broadcast in &action.broadcast {
-                    if broadcasts.iter().any(|i| i.reference == broadcast.reference) {
+                    if broadcasts
+                        .iter()
+                        .any(|i| i.reference == broadcast.reference)
+                    {
                         continue;
                     } else {
                         broadcasts.push(broadcast.clone());
@@ -288,8 +281,11 @@ impl RenderConsumer {
                 }
             }
         }
-        for broadcast in &store.broadcast {
-            if broadcasts.iter().any(|i| i.reference == broadcast.reference) {
+        for broadcast in &store.beacons {
+            if broadcasts
+                .iter()
+                .any(|i| i.reference == broadcast.reference)
+            {
                 continue;
             } else {
                 broadcasts.push(broadcast.clone());
@@ -301,7 +297,8 @@ impl RenderConsumer {
     fn get_broadcasts_declarations(&self, broadcasts: &Vec<Broadcast>) -> String {
         let mut output: String = String::new();
         for broadcast in broadcasts {
-            output = format!("{}\n{}: Subject<Protocol.{}>,",
+            output = format!(
+                "{}\n{}: Subject<Protocol.{}>,",
                 output,
                 broadcast.reference.replace(".", ""),
                 broadcast.reference
@@ -313,7 +310,8 @@ impl RenderConsumer {
     fn get_broadcasts_definitions(&self, broadcasts: &Vec<Broadcast>) -> String {
         let mut output: String = String::new();
         for broadcast in broadcasts {
-            output = format!("{}\n{}: new Subject<Protocol.{}>(),",
+            output = format!(
+                "{}\n{}: new Subject<Protocol.{}>(),",
                 output,
                 broadcast.reference.replace(".", ""),
                 broadcast.reference
@@ -325,13 +323,14 @@ impl RenderConsumer {
     fn get_broadcasts_checking(&self, broadcasts: &Vec<Broadcast>) -> String {
         let mut output: String = String::new();
         for broadcast in broadcasts {
-            output = format!("{}\n{}",
+            output = format!(
+                "{}\n{}",
                 output,
-r#"case Protocol.[[reference]].getId():
+                r#"case Protocol.[[reference]].getId():
     this.broadcast.[[subject]].emit(msg.getRef<Protocol.[[reference]]>());
     break;"#
-                .replace("[[reference]]", &broadcast.reference)
-                .replace("[[subject]]", &broadcast.reference.replace(".", ""))
+                    .replace("[[reference]]", &broadcast.reference)
+                    .replace("[[subject]]", &broadcast.reference.replace(".", ""))
             );
         }
         if !broadcasts.is_empty() {
@@ -348,7 +347,8 @@ r#"case Protocol.[[reference]].getId():
         let mut output: String = String::new();
         for request in requests {
             let reference = request.get_request()?;
-            output = format!("{}\nexport {{ {} }} from './requests/{}';",
+            output = format!(
+                "{}\nexport {{ {} }} from './requests/{}';",
                 output,
                 reference.replace(".", ""),
                 reference.to_lowercase(),
@@ -360,6 +360,4 @@ r#"case Protocol.[[reference]].getId():
     fn get_dest_file(&self, base: &Path) -> PathBuf {
         base.join("index.ts")
     }
-
 }
-

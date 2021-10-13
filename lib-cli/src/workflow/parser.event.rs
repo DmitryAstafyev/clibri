@@ -1,4 +1,4 @@
-use super::{broadcast::Broadcast, chars, ENext, EntityOut, EntityParser, Protocol};
+use super::{beacon::Broadcast, chars, ENext, EntityOut, EntityParser, Protocol};
 
 mod defaults {
     pub const connected: &str = "connected";

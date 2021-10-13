@@ -1,5 +1,5 @@
 use super::{
-    helpers, helpers::render as tools, workflow::broadcast::Broadcast, workflow::request::Request,
+    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::request::Request,
     workflow::store::Store,
 };
 use std::{
@@ -11,10 +11,16 @@ mod templates {
     pub const MODULE: &str = r#"
 pub mod consumer;
 pub mod emitters;
-#[path = "../events/mod.rs"]
-pub mod events;
 pub mod handlers;
 pub mod protocol;
+#[path = "./beacons/mod.rs"]
+pub mod beacons_callers;
+#[path = "../beacons/mod.rs"]
+pub mod beacons;
+#[path = "../events/mod.rs"]
+pub mod events;
+#[path = "../responses/mod.rs"]
+pub mod responses;
 #[path = "../responses/mod.rs"]
 pub mod responses;
 
@@ -47,6 +53,8 @@ pub enum ProducerError<E: std::error::Error> {
     ConsumerError(String),
     #[error("event emitter error: `{0}`")]
     EventEmitterError(emitters::EmitterError),
+    #[error("beacon emitter error: `{0}`")]
+    BeaconEmitterError(beacons_callers::EmitterError),
     #[error("responsing error: `{0}`")]
     ResponsingError(String),
     #[error("channel access error: `{0}`")]
@@ -520,6 +528,7 @@ pub mod producer {
                     } else {
                         match message {
 [[requests]]
+[[beacons]]
                             _ => {}
                         }
                     }
@@ -605,7 +614,7 @@ pub mod producer {
                     )
                     .await
                     .map_err(ProducerError::EventEmitterError)?,
-                    server::Events::ServerError(err) => emitters::error::emit(
+                    server::Events::ServerError(err) => emitters::error::emit::<E, C>(
                         ProducerError::ServerError(err),
                         None,
                         &mut context,
@@ -770,6 +779,31 @@ pub mod producer {
         .await?
     }
 },"#;
+    pub const BEACON: &str = r#"[[ref]] => {
+    if let Err(err) = beacons_callers::[[module]]::emit::<E, C>(
+        client.get_mut_identification(),
+        beacon,
+        &filter,
+        &mut context,
+        &control,
+    )
+    .await
+    {
+        error!(
+            target: logs::targets::PRODUCER,
+            "handeling beacon [[struct]] error: {}", err
+        );
+        emitters::error::emit::<E, C>(
+            ProducerError::BeaconEmitterError(err),
+            uuid,
+            &mut context,
+            client.get_mut_identification(),
+            &control,
+        )
+        .await
+        .map_err(ProducerError::EventEmitterError)?
+    }
+},"#;
     pub const EVENT: &str = r#"UnboundedEventsList::[[name]](event) => {
     if let Err(err) = emitters::[[module]]::emit::<E, C>(
         event,
@@ -812,6 +846,7 @@ impl Render {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output = templates::MODULE.to_owned();
         output = output.replace("[[requests]]", &self.get_requests(store)?);
+        output = output.replace("[[beacons]]", &self.get_beacons(store)?);
         output = output.replace("[[events]]", &self.get_events(store)?);
         output = output.replace("[[events_list]]", &self.get_events_list(store)?);
         output = output.replace("[[events_callers]]", &self.get_events_callers(store)?);
@@ -855,6 +890,50 @@ impl Render {
             );
             output = format!("{}{}", output, request_output);
             if pos < store.requests.len() - 1 {
+                output = format!("{}\n", output);
+            }
+        }
+        Ok(tools::inject_tabs(7, output))
+    }
+
+    fn get_beacons(&self, store: &Store) -> Result<String, String> {
+        let mut output: String = String::new();
+        for (pos, beacon) in store.beacons.iter().enumerate() {
+            let mut beacon_output: String = String::from(templates::BEACON);
+            let parts: Vec<String> = beacon
+                .reference
+                .split('.')
+                .collect::<Vec<&str>>()
+                .iter()
+                .map(|v| String::from(*v))
+                .collect();
+            let enum_ref: String = if parts.len() == 1 {
+                format!(
+                    "protocol::AvailableMessages::{}(protocol::{}(beacon))",
+                    parts[0], parts[0]
+                )
+            } else {
+                //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
+                //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(request))
+                let mut chain: String = String::from("");
+                for (pos, part) in parts.iter().enumerate() {
+                    let mut step: String = String::from("protocol");
+                    for n in 0..pos {
+                        step = format!("{}::{}", step, parts[n]);
+                    }
+                    step = format!("{}::AvailableMessages::{}(", step, part);
+                    chain = format!("{}{}", chain, step);
+                }
+                format!("{}beacon{}", chain, ")".repeat(parts.len()))
+            };
+            beacon_output = beacon_output.replace("[[ref]]", &enum_ref);
+            beacon_output = beacon_output.replace("[[struct]]", &beacon.as_struct_name());
+            beacon_output = beacon_output.replace(
+                "[[module]]",
+                &beacon.reference.to_lowercase().replace(".", "_"),
+            );
+            output = format!("{}{}", output, beacon_output);
+            if pos < store.beacons.len() - 1 {
                 output = format!("{}\n", output);
             }
         }

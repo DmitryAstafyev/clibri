@@ -1,10 +1,12 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::request::Request,
-};
+use super::{helpers, helpers::render as tools, workflow::beacon::Broadcast};
 use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+mod templates {
+    pub const MODULE: &str = r#"[[mods]]"#;
+}
 
 pub struct Render {}
 
@@ -19,23 +21,20 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, requests: &Vec<Request>) -> Result<(), String> {
+    pub fn render(&self, base: &Path, beacons: &Vec<Broadcast>) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
-        let mut output = String::from("use super::*;\n\n");
-        for request in requests.iter() {
-            output = format!(
-                "{}pub mod {};\n",
-                output,
-                request.get_request()?.to_lowercase().replace(".", "_")
-            );
+        let mut mods = String::new();
+        for beacon in beacons.iter() {
+            mods = format!("{}pub mod {};\n", mods, beacon.as_mod_name());
         }
+        let output = templates::MODULE.to_owned().replace("[[mods]]", &mods);
         helpers::fs::write(dest, output, true)
     }
 
     fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {
-        let dest = base.join("responses");
+        let dest = base.join("beacons");
         if !dest.exists() {
-            if let Err(e) = fs::create_dir(&dest) {
+            if let Err(e) = fs::create_dir_all(&dest) {
                 return Err(format!(
                     "Fail to create dest folder {}. Error: {}",
                     dest.to_string_lossy(),

@@ -1,5 +1,5 @@
 use super::{
-    helpers, helpers::render as tools, workflow::broadcast::Broadcast, workflow::event::Event,
+    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::event::Event,
 };
 use std::{
     fs,

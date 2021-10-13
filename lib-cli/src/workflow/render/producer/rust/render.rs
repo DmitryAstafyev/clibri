@@ -1,3 +1,7 @@
+pub mod render_beacon_emitter;
+pub mod render_beacon_emitters_mod;
+pub mod render_beacon_impl;
+pub mod render_beacon_impl_mod;
 pub mod render_event_emitter;
 pub mod render_event_emitters_mod;
 pub mod render_event_impl;
@@ -42,6 +46,12 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
             (render_event_impl::Render::new()).render(base, event)?;
             (render_event_emitter::Render::new()).render(base, event)?;
         }
+        for beacon in &store.beacons {
+            (render_beacon_impl::Render::new()).render(base, beacon)?;
+            (render_beacon_emitter::Render::new()).render(base, beacon)?;
+        }
+        (render_beacon_emitters_mod::Render::new()).render(base, &store.beacons)?;
+        (render_beacon_impl_mod::Render::new()).render(base, &store.beacons)?;
         (render_event_impl_mod::Render::new()).render(base, &store.events)?;
         (render_event_emitters_mod::Render::new()).render(base, &store.events)?;
         (render_static::Render::new()).render(base, &store.events)?;

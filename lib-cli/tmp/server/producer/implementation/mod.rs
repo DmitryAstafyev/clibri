@@ -1,10 +1,16 @@
 
 pub mod consumer;
 pub mod emitters;
-#[path = "../events/mod.rs"]
-pub mod events;
 pub mod handlers;
 pub mod protocol;
+#[path = "./beacons/mod.rs"]
+pub mod beacons_callers;
+#[path = "../beacons/mod.rs"]
+pub mod beacons;
+#[path = "../events/mod.rs"]
+pub mod events;
+#[path = "../responses/mod.rs"]
+pub mod responses;
 #[path = "../responses/mod.rs"]
 pub mod responses;
 
@@ -37,6 +43,8 @@ pub enum ProducerError<E: std::error::Error> {
     ConsumerError(String),
     #[error("event emitter error: `{0}`")]
     EventEmitterError(emitters::EmitterError),
+    #[error("beacon emitter error: `{0}`")]
+    BeaconEmitterError(beacons_callers::EmitterError),
     #[error("responsing error: `{0}`")]
     ResponsingError(String),
     #[error("channel access error: `{0}`")]
@@ -622,6 +630,56 @@ pub mod producer {
                                     .await?
                                 }
                             },
+                            protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserDisconnected(beacon)) => {
+                                if let Err(err) = beacons_callers::events_userdisconnected::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    &filter,
+                                    &mut context,
+                                    &control,
+                                )
+                                .await
+                                {
+                                    error!(
+                                        target: logs::targets::PRODUCER,
+                                        "handeling beacon EventsUserDisconnected error: {}", err
+                                    );
+                                    emitters::error::emit::<E, C>(
+                                        ProducerError::BeaconEmitterError(err),
+                                        uuid,
+                                        &mut context,
+                                        client.get_mut_identification(),
+                                        &control,
+                                    )
+                                    .await
+                                    .map_err(ProducerError::EventEmitterError)?
+                                }
+                            },
+                            protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::Message(beacon)) => {
+                                if let Err(err) = beacons_callers::events_message::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    &filter,
+                                    &mut context,
+                                    &control,
+                                )
+                                .await
+                                {
+                                    error!(
+                                        target: logs::targets::PRODUCER,
+                                        "handeling beacon EventsMessage error: {}", err
+                                    );
+                                    emitters::error::emit::<E, C>(
+                                        ProducerError::BeaconEmitterError(err),
+                                        uuid,
+                                        &mut context,
+                                        client.get_mut_identification(),
+                                        &control,
+                                    )
+                                    .await
+                                    .map_err(ProducerError::EventEmitterError)?
+                                }
+                            },
                             _ => {}
                         }
                     }
@@ -707,7 +765,7 @@ pub mod producer {
                     )
                     .await
                     .map_err(ProducerError::EventEmitterError)?,
-                    server::Events::ServerError(err) => emitters::error::emit(
+                    server::Events::ServerError(err) => emitters::error::emit::<E, C>(
                         ProducerError::ServerError(err),
                         None,
                         &mut context,

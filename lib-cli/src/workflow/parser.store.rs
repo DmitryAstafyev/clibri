@@ -1,26 +1,19 @@
-use super::{
-    Event,
-    Request,
-    Config,
-    Broadcast,
-    Broadcasts,
-};
+use super::{Beacons, Broadcast, Config, Event, Request};
 
 #[derive(Debug, Clone)]
 pub struct Store {
     pub events: Vec<Event>,
     pub requests: Vec<Request>,
-    pub broadcast: Vec<Broadcast>,
+    pub beacons: Vec<Broadcast>,
     pub config: Option<Config>,
 }
 
 impl Store {
-
     pub fn new() -> Self {
         Self {
             events: vec![],
             requests: vec![],
-            broadcast: vec![],
+            beacons: vec![],
             config: None,
         }
     }
@@ -38,13 +31,18 @@ impl Store {
         let reference = if let Some(reference) = event.reference.as_ref() {
             reference
         } else {
-            return Err(String::from("Fail to add event without reference to object/struct"));
+            return Err(String::from(
+                "Fail to add event without reference to object/struct",
+            ));
         };
         for stored in &self.events {
             if let Some(stored) = stored.reference.as_ref() {
                 if stored == reference {
-                    return Err(format!("Event with reference {} has been added already.", reference));
-                }      
+                    return Err(format!(
+                        "Event with reference {} has been added already.",
+                        reference
+                    ));
+                }
             }
         }
         self.events.push(event);
@@ -55,27 +53,35 @@ impl Store {
         let reference = if let Some(reference) = request.request.as_ref() {
             reference
         } else {
-            return Err(String::from("Fail to add request without reference to request object/struct"));
+            return Err(String::from(
+                "Fail to add request without reference to request object/struct",
+            ));
         };
         for stored in &self.requests {
             if let Some(stored) = stored.request.as_ref() {
                 if stored == reference {
-                    return Err(format!("Request with reference {} has been added already.", reference));
-                }   
+                    return Err(format!(
+                        "Request with reference {} has been added already.",
+                        reference
+                    ));
+                }
             }
         }
         self.requests.push(request);
         Ok(())
     }
 
-    pub fn add_broadcast(&mut self, mut broadcasts: Broadcasts) -> Result<(), String> {
-        while let Some(broadcast) = broadcasts.next_broadcast() {
-            for stored in &self.broadcast {
-                if stored.reference == broadcast.reference {
-                    return Err(format!("Broadcast with reference {} has been added already.", broadcast.reference));
-                }   
+    pub fn add_beacon(&mut self, mut beacons: Beacons) -> Result<(), String> {
+        while let Some(beacon) = beacons.next_beacon() {
+            for stored in &self.beacons {
+                if stored.reference == beacon.reference {
+                    return Err(format!(
+                        "Broadcast with reference {} has been added already.",
+                        beacon.reference
+                    ));
+                }
             }
-            self.broadcast.push(broadcast.clone());
+            self.beacons.push(beacon.clone());
         }
         Ok(())
     }
