@@ -32,6 +32,7 @@ Messages.Request !Messages.Err {
    (Messages.Response);
 }
 
+# Broadcast for default event
 @disconnected {
    > Events.Message?;
    > Events.UserDisconnected;
@@ -47,7 +48,8 @@ Messages.Request !Messages.Err {
    > Events.UserConnected?;
 }
 
-@broadcast {
+# No response required messages from client. It has to be events on producer side
+@beacons {
    > Events.UserDisconnected;
    > Events.Message;
 }
