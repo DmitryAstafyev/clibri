@@ -1,7 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::request::Request,
-    workflow::store::Store,
-};
+use super::{helpers, helpers::render as tools, workflow::store::Store};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -19,8 +16,6 @@ pub mod beacons_callers;
 pub mod beacons;
 #[path = "../events/mod.rs"]
 pub mod events;
-#[path = "../responses/mod.rs"]
-pub mod responses;
 #[path = "../responses/mod.rs"]
 pub mod responses;
 
@@ -795,9 +790,9 @@ pub mod producer {
         );
         emitters::error::emit::<E, C>(
             ProducerError::BeaconEmitterError(err),
-            uuid,
+            Some(uuid),
             &mut context,
-            client.get_mut_identification(),
+            Some(client.get_mut_identification()),
             &control,
         )
         .await
@@ -943,12 +938,14 @@ impl Render {
     fn get_events(&self, store: &Store) -> Result<String, String> {
         let mut output: String = String::new();
         for (pos, event) in store.events.iter().enumerate() {
-            let mut event_output: String = String::from(templates::EVENT);
-            event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
-            event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
-            output = format!("{}{}", output, event_output);
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
+            if !event.is_default() {
+                let mut event_output: String = String::from(templates::EVENT);
+                event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
+                event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
+                output = format!("{}{}", output, event_output);
+                if pos < store.events.len() - 1 {
+                    output = format!("{}\n", output);
+                }
             }
         }
         Ok(tools::inject_tabs(6, output))
@@ -957,17 +954,19 @@ impl Render {
     fn get_events_list(&self, store: &Store) -> Result<String, String> {
         let mut output: String = String::new();
         for (pos, event) in store.events.iter().enumerate() {
-            output = format!(
-                "{}{}(protocol::{}),{}",
-                output,
-                event.as_struct_name()?,
-                event.as_struct_path()?,
-                if pos < store.events.len() - 1 {
-                    "\n"
-                } else {
-                    ""
-                }
-            );
+            if !event.is_default() {
+                output = format!(
+                    "{}{}(protocol::{}),{}",
+                    output,
+                    event.as_struct_name()?,
+                    event.as_struct_path()?,
+                    if pos < store.events.len() - 1 {
+                        "\n"
+                    } else {
+                        ""
+                    }
+                );
+            }
         }
         Ok(tools::inject_tabs(2, output))
     }
@@ -975,13 +974,15 @@ impl Render {
     fn get_events_callers(&self, store: &Store) -> Result<String, String> {
         let mut output: String = String::new();
         for (pos, event) in store.events.iter().enumerate() {
-            let mut event_output: String = String::from(templates::EVENT_CALLER);
-            event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
-            event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
-            event_output = event_output.replace("[[ref]]", &event.as_struct_path()?);
-            output = format!("{}{}", output, event_output);
-            if pos < store.events.len() - 1 {
-                output = format!("{}\n", output);
+            if !event.is_default() {
+                let mut event_output: String = String::from(templates::EVENT_CALLER);
+                event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
+                event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
+                event_output = event_output.replace("[[ref]]", &event.as_struct_path()?);
+                output = format!("{}{}", output, event_output);
+                if pos < store.events.len() - 1 {
+                    output = format!("{}\n", output);
+                }
             }
         }
         Ok(tools::inject_tabs(2, output))

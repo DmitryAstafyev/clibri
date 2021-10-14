@@ -5,6 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[allow(non_upper_case_globals)]
 mod paths {
     pub mod events {
         pub const connected: &str = "connected.rs";
@@ -26,6 +27,10 @@ mod paths {
         pub const ready: &str = "ready.rs";
         pub const shutdown: &str = "shutdown.rs";
         pub const dest: &str = "implementation/emitters";
+    }
+    pub mod module {
+        pub const module: &str = "mod.rs";
+        pub const dest: &str = "";
     }
 }
 pub struct Render {}
@@ -118,6 +123,11 @@ impl Render {
         helpers::fs::write(
             self.get_dest_file(base, paths::emitters::dest, paths::emitters::shutdown)?,
             include_str!("./static/implementation/emitters/shutdown.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::module::dest, paths::module::module)?,
+            include_str!("./static/mod.rs").to_owned(),
             true,
         )?;
         Ok(())

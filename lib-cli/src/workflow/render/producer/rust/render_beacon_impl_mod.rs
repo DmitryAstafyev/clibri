@@ -1,11 +1,12 @@
-use super::{helpers, helpers::render as tools, workflow::beacon::Broadcast};
+use super::{helpers, workflow::beacon::Broadcast};
 use std::{
     fs,
     path::{Path, PathBuf},
 };
 
 mod templates {
-    pub const MODULE: &str = r#"[[mods]]"#;
+    pub const MODULE: &str = r#"use super::*;
+[[mods]]"#;
 }
 
 pub struct Render {}

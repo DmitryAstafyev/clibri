@@ -1,6 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::event::Event,
-};
+use super::{helpers, workflow::beacon::Broadcast};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -15,14 +13,14 @@ use fiber::server;
 
 pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
-    beacon: protocol::[[beacon]],
+    beacon: &protocol::[[beacon]],
     filter: &identification::Filter,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     beacons::[[beacon_mod]]::emit::<E, C>(identification, beacon, filter, context, control)
         .await
-        .map_err(EmitterError::Emitting)?
+        .map_err(EmitterError::Emitting)
 }"#;
 }
 

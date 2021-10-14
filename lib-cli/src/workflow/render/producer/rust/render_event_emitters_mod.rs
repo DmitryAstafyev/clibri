@@ -1,6 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::event::Event,
-};
+use super::{helpers, workflow::event::Event};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -71,7 +69,9 @@ impl Render {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut mods = String::new();
         for event in events.iter() {
-            mods = format!("{}pub mod {};\n", mods, event.as_mod_name()?);
+            if !event.is_default() {
+                mods = format!("{}pub mod {};\n", mods, event.as_mod_name()?);
+            }
         }
         let output = templates::MODULE.to_owned().replace("[[mods]]", &mods);
         helpers::fs::write(dest, output, true)

@@ -1,6 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::event::Event,
-};
+use super::{helpers, workflow::beacon::Broadcast, workflow::event::Event};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -9,7 +7,7 @@ use std::{
 mod templates {
     pub const MODULE_WITH_BROADCAST: &str = r#"use super::{identification, producer::Control, protocol, Context};
 use fiber::server;
-use std::str::FromStr;
+use uuid::Uuid;
 
 [[broadcast_types]]
 #[allow(unused_variables)]
@@ -23,7 +21,6 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
 }"#;
     pub const MODULE_WITHOUT_BROADCAST: &str = r#"use super::{identification, producer::Control, protocol, Context};
 use fiber::server;
-use std::str::FromStr;
 
 #[allow(unused_variables)]
 pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(

@@ -10,31 +10,26 @@ pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
-    request: &protocol::UserLogin::Request,
+    request: &protocol::Message::Request,
     sequence: u32,
     control: &Control<E, C>,
 ) -> Result<(), HandlerError> {
     let uuid = identification.uuid();
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let buffer =
-        match responses::userlogin_request::response(identification, filter, context, request, control).await {
+        match responses::message_request::response(identification, filter, context, request, control).await {
             Ok(conclusion) => match conclusion {
-                responses::userlogin_request::Response::Accept((
+                responses::message_request::Response::Accept((
                     mut response,
-                	mut broadcast_events_userconnected,
-                	mut broadcast_events_message,,
+                	mut broadcast_events_message,
                 )) => {
-                    broadcasting.push((
-                        broadcast_events_userconnected.0,
-                        pack(&0, &uuid, &mut broadcast_events_userconnected.1)?,
-                    ));
                     broadcasting.push((
                         broadcast_events_message.0,
                         pack(&0, &uuid, &mut broadcast_events_message.1)?,
                     ));
                     pack(&sequence, &uuid, &mut response)?
                 },
-                responses::userlogin_request::Response::Deny(mut response) => {
+                responses::message_request::Response::Deny(mut response) => {
                     pack(&sequence, &uuid, &mut response)?
                 },
             },

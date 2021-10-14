@@ -1,6 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::request::Request,
-};
+use super::{helpers, helpers::render as tools, workflow::request::Request};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -44,7 +42,7 @@ pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>
 "#;
     pub const CONCLUSION_WITH_BROADCAST: &str = r#"responses::[[response_mod]]::Response::[[conclusion]]((
     mut response,
-[[broadcasts_declaration]],
+[[broadcasts_declaration]]
 )) => {
 [[broadcasts_processing]]
     pack(&sequence, &uuid, &mut response)?

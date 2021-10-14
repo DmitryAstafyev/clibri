@@ -1,4 +1,3 @@
-pub mod disconnected;
 pub mod serverevents_userkickoff;
 pub mod serverevents_useralert;
 pub mod connected;

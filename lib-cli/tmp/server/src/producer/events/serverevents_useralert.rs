@@ -1,6 +1,6 @@
 use super::{identification, producer::Control, protocol, Context};
 use fiber::server;
-use std::str::FromStr;
+use uuid::Uuid;
 
 type BroadcastEventsMessage = (Vec<Uuid>, protocol::Events::Message);
 type BroadcastEventsUserConnected = Option<(Vec<Uuid>, protocol::Events::UserConnected)>;

@@ -46,7 +46,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
 ) -> Result<(), EmitterError> {
     events::[[event_mod]]::emit::<E, C>(event, filter, context, control)
         .await
-        .map_err(EmitterError::Emitting)?
+        .map_err(EmitterError::Emitting)
 }"#;
     pub const DEFAULT_MODULE: &str = r#"use super::{broadcast, events, identification, pack, producer::Control, Context, EmitterError};
 use fiber::server;
@@ -60,7 +60,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let ([[broadcast_vars]]) =
-        events::[[event_mod]]::emit::<E, C>(event, filter, context, control)
+        events::[[event_mod]]::emit::<E, C>(identification, filter, context, control)
             .await
             .map_err(EmitterError::Emitting)?;
 [[broadcasts_processing]]
@@ -89,26 +89,25 @@ impl Render {
         let output: String = if event.broadcasts.is_empty() {
             let mut out = templates::MODULE_WITHOUT_BROADCAST.to_owned();
             out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
-            out = out.replace("[[event_mod]]", &event.as_filename()?);
+            out = out.replace("[[event_mod]]", &event.as_mod_name()?);
             out
-        } else if self.is_default(event)? {
+        } else if event.is_default() {
             let mut out = templates::DEFAULT_MODULE.to_owned();
             out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
-            out = out.replace("[[event_mod]]", &event.as_filename()?);
+            out = out.replace("[[event_mod]]", &event.as_mod_name()?);
             let mut processing = String::new();
             let mut vars = String::new();
             for (pos, broadcast) in event.broadcasts.iter().enumerate() {
                 let var_name = self.get_broadcast_var_name(broadcast);
                 if broadcast.optional {
                     processing = format!(
-                        r#"{}if let Some(mut broadcast_message) = broadcast_message.take() {{
+                        r#"{}if let Some(mut broadcast_message) = {}.take() {{
     broadcasting.push((
-        {}.0,
-        pack(&0, &identification.uuid(), &mut {}.1)?,
+        broadcast_message.0,
+        pack(&0, &identification.uuid(), &mut broadcast_message.1)?,
     ));
 }}{}"#,
                         processing,
-                        var_name,
                         var_name,
                         if pos == event.broadcasts.len() - 1 {
                             ""
@@ -148,21 +147,20 @@ impl Render {
         } else {
             let mut out = templates::MODULE_WITH_BROADCAST.to_owned();
             out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
-            out = out.replace("[[event_mod]]", &event.as_filename()?);
+            out = out.replace("[[event_mod]]", &event.as_mod_name()?);
             let mut processing = String::new();
             let mut vars = String::new();
             for (pos, broadcast) in event.broadcasts.iter().enumerate() {
                 let var_name = self.get_broadcast_var_name(broadcast);
                 if broadcast.optional {
                     processing = format!(
-                        r#"{}if let Some(mut broadcast_message) = broadcast_message.take() {{
+                        r#"{}if let Some(mut broadcast_message) = {}.take() {{
     broadcasting.push((
-        {}.0,
-        unbound_pack(&0, &mut {}.1)?,
+        broadcast_message.0,
+        unbound_pack(&0, &mut broadcast_message.1)?,
     ));
 }}{}"#,
                         processing,
-                        var_name,
                         var_name,
                         if pos == event.broadcasts.len() - 1 {
                             ""
@@ -201,14 +199,6 @@ impl Render {
             out
         };
         helpers::fs::write(dest, output, true)
-    }
-
-    fn is_default(&self, event: &Event) -> Result<bool, String> {
-        if event.get_reference()? == "connected" || event.get_reference()? == "disconnected" {
-            Ok(true)
-        } else {
-            Ok(false)
-        }
     }
 
     fn into_rust_path(&self, input: &str) -> String {

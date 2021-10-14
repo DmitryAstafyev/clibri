@@ -11,8 +11,6 @@ pub mod beacons;
 pub mod events;
 #[path = "../responses/mod.rs"]
 pub mod responses;
-#[path = "../responses/mod.rs"]
-pub mod responses;
 
 use super::context;
 use consumer::{identification, Consumer};
@@ -67,7 +65,6 @@ pub mod producer {
     }
 
     enum UnboundedEventsList {
-        disconnected(protocol::disconnected),
         ServerEventsUserKickOff(protocol::ServerEvents::UserKickOff),
         ServerEventsUserAlert(protocol::ServerEvents::UserAlert),
     }
@@ -83,14 +80,6 @@ pub mod producer {
     }
 
     impl UnboundedEvents {
-        pub async fn disconnected(
-            &self,
-            event: protocol::disconnected,
-        ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::disconnected(event))
-                .map_err(|e| e.to_string())
-        }
         pub async fn serverevents_userkickoff(
             &self,
             event: protocol::ServerEvents::UserKickOff,
@@ -646,9 +635,9 @@ pub mod producer {
                                     );
                                     emitters::error::emit::<E, C>(
                                         ProducerError::BeaconEmitterError(err),
-                                        uuid,
+                                        Some(uuid),
                                         &mut context,
-                                        client.get_mut_identification(),
+                                        Some(client.get_mut_identification()),
                                         &control,
                                     )
                                     .await
@@ -671,9 +660,9 @@ pub mod producer {
                                     );
                                     emitters::error::emit::<E, C>(
                                         ProducerError::BeaconEmitterError(err),
-                                        uuid,
+                                        Some(uuid),
                                         &mut context,
-                                        client.get_mut_identification(),
+                                        Some(client.get_mut_identification()),
                                         &control,
                                     )
                                     .await
@@ -778,21 +767,6 @@ pub mod producer {
                 MergedChannel::UnboundedEventsList(event) => {
                     let filter = identification::Filter::new(&consumers).await;
                     match event {
-                        UnboundedEventsList::disconnected(event) => {
-                            if let Err(err) = emitters::disconnected::emit::<E, C>(
-                                event,
-                                &filter,
-                                &mut context,
-                                &control,
-                            )
-                            .await
-                            {
-                                warn!(
-                                    target: logs::targets::PRODUCER,
-                                    "fail call disconnected handler; error: {:?}", err,
-                                );
-                            }
-                        },
                         UnboundedEventsList::ServerEventsUserKickOff(event) => {
                             if let Err(err) = emitters::serverevents_userkickoff::emit::<E, C>(
                                 event,

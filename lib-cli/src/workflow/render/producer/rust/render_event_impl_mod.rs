@@ -1,6 +1,4 @@
-use super::{
-    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::event::Event,
-};
+use super::{helpers, workflow::event::Event};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -31,7 +29,9 @@ pub mod shutdown;
 "#,
         );
         for event in events.iter() {
-            output = format!("{}pub mod {};\n", output, event.as_mod_name()?);
+            if !event.is_default() {
+                output = format!("{}pub mod {};\n", output, event.as_mod_name()?);
+            }
         }
         helpers::fs::write(dest, output, true)
     }

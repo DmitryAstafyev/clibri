@@ -1,5 +1,6 @@
 use super::{beacon::Broadcast, chars, ENext, EntityOut, EntityParser, Protocol};
 
+#[allow(non_upper_case_globals)]
 mod defaults {
     pub const connected: &str = "connected";
     pub const disconnected: &str = "disconnected";
@@ -131,6 +132,15 @@ impl Event {
             Err(String::from(
                 "Reference to object/struct event isn't defined for action",
             ))
+        }
+    }
+
+    pub fn is_default(&self) -> bool {
+        match self.get_reference() {
+            Ok(reference) => {
+                reference == defaults::connected || reference == defaults::disconnected
+            }
+            Err(_) => false,
         }
     }
 }
@@ -306,7 +316,7 @@ impl EntityParser for Event {
                                 Ok(offset)
                             }
                         }
-                        Pending::Broadcast(mut broadcast) => {
+                        Pending::Broadcast(broadcast) => {
                             /* USECASES:
                             @ServerEvents.KickOff {
                                                 |
