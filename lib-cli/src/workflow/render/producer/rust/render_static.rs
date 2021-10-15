@@ -32,6 +32,10 @@ mod paths {
         pub const module: &str = "mod.rs";
         pub const dest: &str = "";
     }
+    pub mod context {
+        pub const module: &str = "context.rs";
+        pub const dest: &str = "";
+    }
 }
 pub struct Render {}
 
@@ -128,6 +132,11 @@ impl Render {
         helpers::fs::write(
             self.get_dest_file(base, paths::module::dest, paths::module::module)?,
             include_str!("./static/mod.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::context::dest, paths::context::module)?,
+            include_str!("./static/context.rs").to_owned(),
             true,
         )?;
         Ok(())

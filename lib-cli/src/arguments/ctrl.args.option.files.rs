@@ -1,35 +1,18 @@
 use super::{
     helpers,
-    CtrlArg,
-    EArgumentsNames,
-    EArgumentsValues,
-    protocol::{
-        Parser as ProtocolParser,
-    },
-    workflow::{
-        Parser as WorkflowParser,
-    },
-    render::{
-        Render,
-        rust::RustRender,
-        typescript::TypescriptRender,
-    },
-    workflow_render::{
-        puml::{
-            PumlRender,
-        },
-        render as workflow_render,
-    },
+    protocol::Parser as ProtocolParser,
+    render::{rust::RustRender, typescript::TypescriptRender, Render},
+    workflow::Parser as WorkflowParser,
+    workflow_render::{puml::PumlRender, render as workflow_render},
+    CtrlArg, EArgumentsNames, EArgumentsValues,
 };
 
 use std::{
     collections::HashMap,
+    fs,
     fs::remove_file,
+    path::{Path, PathBuf},
     time::Instant,
-    path::{
-        Path,
-        PathBuf,
-    }
 };
 
 mod keys {
@@ -64,7 +47,6 @@ pub struct ArgsOptionFiles {
 }
 
 impl ArgsOptionFiles {
-
     fn new() -> Self {
         Self {
             src: None,
@@ -133,10 +115,15 @@ impl ArgsOptionFiles {
 
     fn set_dest_producer(&mut self, path: PathBuf) {
         if !path.exists() {
-            self.set_err(format!(
-                "Producer destination doesn't exist. Path: {}",
-                path.as_path().display().to_string()
-            ));
+            if let Err(err) = fs::create_dir(path.clone()) {
+                self.set_err(format!(
+                    "Producer destination doesn't exist. Fail to create dest path: {}; error: {}",
+                    path.as_path().display().to_string(),
+                    err.to_string()
+                ));
+            } else {
+                self.dest_producer = Some(path);
+            }
         } else {
             self.dest_producer = Some(path);
         }
@@ -160,7 +147,10 @@ impl ArgsOptionFiles {
         !self.errs.is_empty()
     }
 
-    fn get_overwrite_flag(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> bool {
+    fn get_overwrite_flag(
+        &self,
+        ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>,
+    ) -> bool {
         if let Some(arg) = ctrls.get(&EArgumentsNames::OptionOverwrite) {
             if let EArgumentsValues::OptionOverwrite(overwrite) = arg.value() {
                 overwrite
@@ -172,7 +162,10 @@ impl ArgsOptionFiles {
         }
     }
 
-    fn get_embedded_flag(&self, ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>) -> bool {
+    fn get_embedded_flag(
+        &self,
+        ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>,
+    ) -> bool {
         if let Some(arg) = ctrls.get(&EArgumentsNames::OptionEmbedded) {
             if let EArgumentsValues::OptionEmbedded(embedded) = arg.value() {
                 embedded
@@ -183,11 +176,9 @@ impl ArgsOptionFiles {
             false
         }
     }
-
 }
 
 impl CtrlArg for ArgsOptionFiles {
-
     fn new(
         pwd: &Path,
         args: Vec<String>,
@@ -293,7 +284,9 @@ impl CtrlArg for ArgsOptionFiles {
         ctrls: &HashMap<EArgumentsNames, Box<dyn CtrlArg + 'static>>,
     ) -> Result<(), String> {
         if self.src.is_none() && self.workflow.is_some() {
-            return Err(String::from("Workflow cannot be generated without reference to protocol"));
+            return Err(String::from(
+                "Workflow cannot be generated without reference to protocol",
+            ));
         }
         if let Some(src) = self.src.clone() {
             let t_parsing = Instant::now();
@@ -312,7 +305,8 @@ impl CtrlArg for ArgsOptionFiles {
                     }
                     if let Some(workflow_path) = self.workflow.as_ref() {
                         // TODO: remove workflow dest folder
-                        let mut workflow: WorkflowParser = WorkflowParser::new(workflow_path.to_owned());
+                        let mut workflow: WorkflowParser =
+                            WorkflowParser::new(workflow_path.to_owned());
                         match workflow.parse(&mut protocol_store) {
                             Ok(workflow_store) => {
                                 if let Some(uml_path) = self.dest_uml.as_ref() {
@@ -326,10 +320,10 @@ impl CtrlArg for ArgsOptionFiles {
                                         self.dest_consumer.clone(),
                                         self.dest_producer.clone(),
                                         workflow_store,
-                                        &mut protocol_store
+                                        &mut protocol_store,
                                     )?;
                                 }
-                            },
+                            }
                             Err(err) => {
                                 return Err(err);
                             }
@@ -339,17 +333,14 @@ impl CtrlArg for ArgsOptionFiles {
                         if dest.exists() && !overwrite {
                             return Err(format!("File {:?} exists. Use key \"overwrite\" to overwrite file. -h to get more info", dest));
                         } else if dest.exists() {
-                            println!(
-                                "[INFO] {:?} will be overwritten",
-                                dest
-                            );
+                            println!("[INFO] {:?} will be overwritten", dest);
                             if let Err(err) = remove_file(dest.clone()) {
-                                return Err(format!("Fail to remove file {:?} due error: {}", dest, err));
+                                return Err(format!(
+                                    "Fail to remove file {:?} due error: {}",
+                                    dest, err
+                                ));
                             } else {
-                                println!(
-                                    "[INFO] {:?} clean",
-                                    dest
-                                );
+                                println!("[INFO] {:?} clean", dest);
                             }
                         }
                         RustRender::new(embedded, 0).render(&mut protocol_store, &dest)?;
@@ -358,17 +349,14 @@ impl CtrlArg for ArgsOptionFiles {
                         if dest.exists() && !overwrite {
                             return Err(format!("File {:?} exists. Use key \"overwrite\" to overwrite file. -h to get more info", dest));
                         } else if dest.exists() {
-                            println!(
-                                "[INFO] {:?} will be overwritten",
-                                dest
-                            );
+                            println!("[INFO] {:?} will be overwritten", dest);
                             if let Err(err) = remove_file(dest.clone()) {
-                                return Err(format!("Fail to remove file {:?} due error: {}", dest, err));
+                                return Err(format!(
+                                    "Fail to remove file {:?} due error: {}",
+                                    dest, err
+                                ));
                             } else {
-                                println!(
-                                    "[INFO] {:?} clean",
-                                    dest
-                                );
+                                println!("[INFO] {:?} clean", dest);
                             }
                         }
                         TypescriptRender::new(embedded, 0).render(&mut protocol_store, &dest)?;
@@ -414,7 +402,6 @@ impl CtrlArg for ArgsOptionFiles {
             )
         )
     }
-
 }
 
 pub fn get_cleaner() -> impl Fn(Vec<String>) -> Vec<String> {
