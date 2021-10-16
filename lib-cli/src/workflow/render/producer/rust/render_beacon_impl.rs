@@ -16,7 +16,8 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), String> {
-    panic!("Handler for protocol::[[beacon]] isn't implemented");
+    println!("Handler for protocol::[[beacon]] isn't implemented");
+    Ok(())
 }"#;
 }
 
@@ -35,6 +36,10 @@ impl Render {
 
     pub fn render(&self, base: &Path, beacon: &Broadcast) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base, beacon)?;
+        if dest.exists() {
+            println!("[SKIP]: {}", dest.to_string_lossy());
+            return Ok(());
+        }
         let mut output = templates::MODULE.to_owned();
         output = output.replace("[[beacon]]", &self.into_rust_path(&beacon.reference));
         helpers::fs::write(dest, output, true)

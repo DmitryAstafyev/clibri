@@ -59,6 +59,10 @@ impl Render {
 
     pub fn render(&self, base: &Path, request: &Request) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base, request)?;
+        if dest.exists() {
+            println!("[SKIP]: {}", dest.to_string_lossy());
+            return Ok(());
+        }
         let request_ref = request.get_request()?;
         let mut output: String = if request.actions.len() > 1 {
             let mut output = templates::MODULE_WITH_CONCLUSION.to_owned();

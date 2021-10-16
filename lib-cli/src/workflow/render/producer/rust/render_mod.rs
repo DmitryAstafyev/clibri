@@ -432,16 +432,14 @@ pub mod producer {
         };
         for (message, header) in messages.iter() {
             match message {
-                protocol::AvailableMessages::Identification(
-                    protocol::Identification::AvailableMessages::SelfKey(request),
-                ) => {
+                [[indentification_self_enum_ref]] => {
                     trace!(
                         target: logs::targets::PRODUCER,
                         "consumer {} requested identification",
                         uuid,
                     );
                     let assigned_uuid = client.key(request, true);
-                    if let Err(err) = match (protocol::Identification::SelfKeyResponse {
+                    if let Err(err) = match (protocol::[[indentification_self_response]] {
                         uuid: assigned_uuid.clone(),
                     })
                     .pack(header.sequence, Some(assigned_uuid.clone()))
@@ -845,6 +843,19 @@ impl Render {
         output = output.replace("[[events]]", &self.get_events(store)?);
         output = output.replace("[[events_list]]", &self.get_events_list(store)?);
         output = output.replace("[[events_callers]]", &self.get_events_callers(store)?);
+        output = output.replace(
+            "[[indentification_self_enum_ref]]",
+            &self.indentification_self_enum_ref(store)?,
+        );
+        output = output.replace(
+            "[[indentification_self_response]]",
+            &self.into_rust_path(&store.get_config()?.self_key_response),
+        );
+        output = output.replace(
+            "[[indentification_assigned_key]]",
+            &self.into_rust_path(&store.get_config()?.get_assigned()?),
+        );
+
         helpers::fs::write(dest, output, true)
     }
 
@@ -986,6 +997,38 @@ impl Render {
             }
         }
         Ok(tools::inject_tabs(2, output))
+    }
+
+    fn indentification_self_enum_ref(&self, store: &Store) -> Result<String, String> {
+        let parts: Vec<String> = store
+            .get_config()?
+            .get_self()?
+            .split('.')
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|v| String::from(*v))
+            .collect();
+        if parts.len() == 1 {
+            Ok(format!(
+                "protocol::AvailableMessages::{}(protocol::{}(request))",
+                parts[0], parts[0]
+            ))
+        } else {
+            let mut chain: String = String::from("");
+            for (pos, part) in parts.iter().enumerate() {
+                let mut step: String = String::from("protocol");
+                for n in 0..pos {
+                    step = format!("{}::{}", step, parts[n]);
+                }
+                step = format!("{}::AvailableMessages::{}(", step, part);
+                chain = format!("{}{}", chain, step);
+            }
+            Ok(format!("{}request{}", chain, ")".repeat(parts.len())))
+        }
+    }
+
+    fn into_rust_path(&self, input: &str) -> String {
+        input.to_string().replace(".", "::")
     }
 
     fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {

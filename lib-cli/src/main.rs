@@ -1,3 +1,6 @@
+// TODO:
+// - for protocol we need checksums to highlight situation when code was
+// generic from different protocols
 #[path = "./ctrl.args.rs"]
 pub mod ctrlargs;
 
@@ -25,7 +28,7 @@ macro_rules! stop {
 fn main() {
     let ctrl: ctrlargs::CtrlArgs = ctrlargs::CtrlArgs::new();
     match ctrl.errors() {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(_) => std::process::exit(1),
     }
     if let Err(errors) = ctrl.actions() {

@@ -97,14 +97,14 @@ impl Identification {
         }
     }
 
-    pub fn assign(&mut self, assigned: protocol::Identification::AssignedKey, overwrite: bool) {
+    pub fn assign(&mut self, key: protocol::Identification::AssignedKey, overwrite: bool) {
         if overwrite || self.assigned.is_none() {
-            self.assigned = Some(assigned);
+            self.assigned = Some(key);
         } else if let Some(existing) = &mut self.assigned {
-            if let Some(uuid) = assigned.uuid {
+            if let Some(uuid) = key.uuid {
                 existing.uuid = Some(uuid);
             }
-            if let Some(auth) = assigned.auth {
+            if let Some(auth) = key.auth {
                 existing.auth = Some(auth);
             }
         }

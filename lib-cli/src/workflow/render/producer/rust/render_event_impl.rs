@@ -62,6 +62,10 @@ impl Render {
 
     pub fn render(&self, base: &Path, event: &Event) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base, event)?;
+        if dest.exists() {
+            println!("[SKIP]: {}", dest.to_string_lossy());
+            return Ok(());
+        }
         let output: String = if event.broadcasts.is_empty() {
             let mut out = templates::MODULE_WITHOUT_BROADCAST.to_owned();
             out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));

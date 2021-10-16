@@ -6,6 +6,7 @@ pub mod render_event_emitter;
 pub mod render_event_emitters_mod;
 pub mod render_event_impl;
 pub mod render_event_impl_mod;
+pub mod render_identification;
 pub mod render_mod;
 pub mod render_protocol;
 pub mod render_request_handler;
@@ -58,6 +59,7 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_event_emitters_mod::Render::new()).render(base, &store.events)?;
         (render_static::Render::new()).render(base, &store.events)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
+        (render_identification::Render::new()).render(base, store, &protocol)?;
         (render_mod::Render::new()).render(base, store)?;
         Ok(String::new())
     }

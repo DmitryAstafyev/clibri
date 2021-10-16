@@ -1,4 +1,3 @@
-
 use super::{identification, producer::Control, protocol, Context};
 use fiber::server;
 
@@ -10,5 +9,7 @@ pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone
     request: &protocol::Messages::Request,
     control: &Control<E, C>,
 ) -> Result<protocol::Messages::Response, protocol::Messages::Err> {
-    panic!("Handler for protocol::Messages::Request isn't implemented");
+    Ok(protocol::Messages::Response {
+        messages: context.get_messages(),
+    })
 }

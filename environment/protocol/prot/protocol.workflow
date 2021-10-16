@@ -49,10 +49,10 @@ Messages.Request !Messages.Err {
 }
 
 # No response required messages from client. It has to be events on producer side
-@beacons {
-   > Events.UserDisconnected;
-   > Events.Message;
-}
+# @beacons {
+#    > Events.UserDisconnected;
+#    > Events.Message;
+#}
 
 # If messages are defined in group
 # UserLogin {

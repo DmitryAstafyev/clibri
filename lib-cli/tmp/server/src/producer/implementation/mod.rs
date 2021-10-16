@@ -441,16 +441,14 @@ pub mod producer {
         };
         for (message, header) in messages.iter() {
             match message {
-                protocol::AvailableMessages::Identification(
-                    protocol::Identification::AvailableMessages::SelfKey(request),
-                ) => {
+                protocol::AvailableMessages::Identification(protocol::Identification::AvailableMessages::SelfKey(request)) => {
                     trace!(
                         target: logs::targets::PRODUCER,
                         "consumer {} requested identification",
                         uuid,
                     );
                     let assigned_uuid = client.key(request, true);
-                    if let Err(err) = match (protocol::Identification::SelfKeyResponse {
+                    if let Err(err) = match (protocol::InternalServiceGroup::SelfKeyResponse {
                         uuid: assigned_uuid.clone(),
                     })
                     .pack(header.sequence, Some(assigned_uuid.clone()))
@@ -619,56 +617,7 @@ pub mod producer {
                                     .await?
                                 }
                             },
-                            protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserDisconnected(beacon)) => {
-                                if let Err(err) = beacons_callers::events_userdisconnected::emit::<E, C>(
-                                    client.get_mut_identification(),
-                                    beacon,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    error!(
-                                        target: logs::targets::PRODUCER,
-                                        "handeling beacon EventsUserDisconnected error: {}", err
-                                    );
-                                    emitters::error::emit::<E, C>(
-                                        ProducerError::BeaconEmitterError(err),
-                                        Some(uuid),
-                                        &mut context,
-                                        Some(client.get_mut_identification()),
-                                        &control,
-                                    )
-                                    .await
-                                    .map_err(ProducerError::EventEmitterError)?
-                                }
-                            },
-                            protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::Message(beacon)) => {
-                                if let Err(err) = beacons_callers::events_message::emit::<E, C>(
-                                    client.get_mut_identification(),
-                                    beacon,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    error!(
-                                        target: logs::targets::PRODUCER,
-                                        "handeling beacon EventsMessage error: {}", err
-                                    );
-                                    emitters::error::emit::<E, C>(
-                                        ProducerError::BeaconEmitterError(err),
-                                        Some(uuid),
-                                        &mut context,
-                                        Some(client.get_mut_identification()),
-                                        &control,
-                                    )
-                                    .await
-                                    .map_err(ProducerError::EventEmitterError)?
-                                }
-                            },
+                            
                             _ => {}
                         }
                     }

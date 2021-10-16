@@ -16,7 +16,6 @@ mod paths {
         pub const dest: &str = "events";
     }
     pub mod consumer {
-        pub const identification: &str = "identification.rs";
         pub const module: &str = "mod.rs";
         pub const dest: &str = "implementation/consumer";
     }
@@ -105,11 +104,6 @@ impl Render {
             true,
         )?;
         helpers::fs::write(
-            self.get_dest_file(base, paths::consumer::dest, paths::consumer::identification)?,
-            include_str!("./static/implementation/consumer/identification.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
             self.get_dest_file(base, paths::consumer::dest, paths::consumer::module)?,
             include_str!("./static/implementation/consumer/mod.rs").to_owned(),
             true,
@@ -134,11 +128,15 @@ impl Render {
             include_str!("./static/mod.rs").to_owned(),
             true,
         )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::context::dest, paths::context::module)?,
-            include_str!("./static/context.rs").to_owned(),
-            true,
-        )?;
+        let context_dest =
+            self.get_dest_file(base, paths::context::dest, paths::context::module)?;
+        if !context_dest.exists() {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::context::dest, paths::context::module)?,
+                include_str!("./static/context.rs").to_owned(),
+                true,
+            )?;
+        }
         Ok(())
     }
 
