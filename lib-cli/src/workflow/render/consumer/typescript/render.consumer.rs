@@ -281,6 +281,18 @@ impl RenderConsumer {
                 }
             }
         }
+        for event in &store.events {
+            for broadcast in &event.broadcasts {
+                if broadcasts
+                    .iter()
+                    .any(|i| i.reference == broadcast.reference)
+                {
+                    continue;
+                } else {
+                    broadcasts.push(broadcast.clone());
+                }
+            }
+        }
         for broadcast in &store.beacons {
             if broadcasts
                 .iter()
