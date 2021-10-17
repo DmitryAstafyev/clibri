@@ -93,712 +93,779 @@ export interface ISignedDecode<T> {
 }
 
 export class u8 extends Primitive<number> {
+	public static MIN: number = 0;
+	public static MAX: number = 255;
 
-    public static MIN: number = 0;
-    public static MAX: number = 255;
+	public static getSignature(): string {
+		return "u8";
+	}
 
-    public static getSignature(): string {
-        return 'u8';
-    }
+	public static getSize(): number {
+		return 8 / CBits;
+	}
 
-    public static getSize(): number {
-        return 8 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(u8.getSize());
+		try {
+			buffer.writeUInt8(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(u8.getSize());
-        try {
-            buffer.writeUInt8(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== u8.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${u8.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readUInt8(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== u8.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readUInt8(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		if (value < u8.MIN || value > u8.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        if (value < u8.MIN || value > u8.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return u8.getSignature();
+	}
 
-    public getSignature(): string {
-        return u8.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return u8.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return u8.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = u8.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = u8.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class u16 extends Primitive<number> {
+	public static MIN: number = 0;
+	public static MAX: number = 65535;
 
-    public static MIN: number = 0;
-    public static MAX: number = 65535;
+	public static getSignature(): string {
+		return "u16";
+	}
 
-    public static getSignature(): string {
-        return 'u16';
-    }
+	public static getSize(): number {
+		return 16 / CBits;
+	}
 
-    public static getSize(): number {
-        return 16 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(u16.getSize());
+		try {
+			buffer.writeUInt16LE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(u16.getSize());
-        try {
-            buffer.writeUInt16LE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== u16.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${u16.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readUInt16LE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== u16.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${u16.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readUInt16LE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		if (value < u16.MIN || value > u16.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        if (value < u16.MIN || value > u16.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return u16.getSignature();
+	}
 
-    public getSignature(): string {
-        return u16.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return u16.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return u16.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = u16.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = u16.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class u32 extends Primitive<number> {
+	public static MIN: number = 0;
+	public static MAX: number = 4294967295;
 
-    public static MIN: number = 0;
-    public static MAX: number = 4294967295;
+	public static getSignature(): string {
+		return "u32";
+	}
 
-    public static getSignature(): string {
-        return 'u32';
-    }
+	public static getSize(): number {
+		return 32 / CBits;
+	}
 
-    public static getSize(): number {
-        return 32 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(u32.getSize());
+		try {
+			buffer.writeUInt32LE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(u32.getSize());
-        try {
-            buffer.writeUInt32LE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== u32.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${u32.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readUInt32LE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== u32.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${u32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readUInt32LE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		if (value < u32.MIN || value > u32.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        if (value < u32.MIN || value > u32.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return u32.getSignature();
+	}
 
-    public getSignature(): string {
-        return u32.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return u32.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return u32.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = u32.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = u32.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class u64 extends Primitive<bigint> {
+	public static MIN: number = 0;
+	public static MAX: number = Number.MAX_SAFE_INTEGER;
 
-    public static MIN: number = 0;
-    public static MAX: number = Number.MAX_SAFE_INTEGER;
+	public static getSignature(): string {
+		return "u64";
+	}
 
-    public static getSignature(): string {
-        return 'u64';
-    }
+	public static getSize(): number {
+		return 64 / CBits;
+	}
 
-    public static getSize(): number {
-        return 64 / CBits;
-    }
+	public static encode(value: bigint): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(u64.getSize());
+		try {
+			buffer.writeBigUInt64LE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: bigint): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(u64.getSize());
-        try {
-            buffer.writeBigUInt64LE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): bigint | Error {
+		if (bytes.byteLength !== u64.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${u64.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readBigUInt64LE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): bigint | Error {
-        if (bytes.byteLength !== u64.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${u64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readBigUInt64LE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "bigint") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (value < u64.MIN || value > u64.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'bigint') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (value < u64.MIN || value > u64.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return u64.getSignature();
+	}
 
-    public getSignature(): string {
-        return u64.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return u64.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return u64.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): bigint | Error {
-        const value = u64.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
+	public decode(bytes: ArrayBufferLike): bigint | Error {
+		const value = u64.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class i8 extends Primitive<number> {
+	public static MIN: number = -128;
+	public static MAX: number = 127;
 
-    public static MIN: number = -128;
-    public static MAX: number = 127;
+	public static getSignature(): string {
+		return "i8";
+	}
 
-    public static getSignature(): string {
-        return 'i8';
-    }
+	public static getSize(): number {
+		return 8 / CBits;
+	}
 
-    public static getSize(): number {
-        return 8 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(i8.getSize());
+		try {
+			buffer.writeInt8(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(i8.getSize());
-        try {
-            buffer.writeInt8(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== i8.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${i8.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readInt8(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== i8.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${i8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readInt8(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		if (value < i8.MIN || value > i8.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        if (value < i8.MIN || value > i8.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return i8.getSignature();
+	}
 
-    public getSignature(): string {
-        return i8.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return i8.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return i8.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = i8.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = i8.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class i16 extends Primitive<number> {
+	public static MIN: number = -32768;
+	public static MAX: number = 32767;
 
-    public static MIN: number = -32768;
-    public static MAX: number = 32767;
+	public static getSignature(): string {
+		return "i16";
+	}
 
-    public static getSignature(): string {
-        return 'i16';
-    }
+	public static getSize(): number {
+		return 16 / CBits;
+	}
 
-    public static getSize(): number {
-        return 16 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(i16.getSize());
+		try {
+			buffer.writeInt16LE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(i16.getSize());
-        try {
-            buffer.writeInt16LE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== i16.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${i16.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readInt16LE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== i16.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${i16.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readInt16LE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		if (value < i16.MIN || value > i16.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        if (value < i16.MIN || value > i16.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return i16.getSignature();
+	}
 
-    public getSignature(): string {
-        return i16.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return i16.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return i16.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = i16.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = i16.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class i32 extends Primitive<number> {
+	public static MIN: number = -2147483648;
+	public static MAX: number = 2147483647;
 
-    public static MIN: number = -2147483648;
-    public static MAX: number = 2147483647;
+	public static getSignature(): string {
+		return "i32";
+	}
 
-    public static getSignature(): string {
-        return 'i32';
-    }
+	public static getSize(): number {
+		return 32 / CBits;
+	}
 
-    public static getSize(): number {
-        return 32 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(i32.getSize());
+		try {
+			buffer.writeInt32LE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(i32.getSize());
-        try {
-            buffer.writeInt32LE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== i32.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${i32.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readInt32LE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== i32.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${i32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readInt32LE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		if (value < i32.MIN || value > i32.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        if (value < i32.MIN || value > i32.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return i32.getSignature();
+	}
 
-    public getSignature(): string {
-        return i32.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return i32.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return i32.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = i32.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = i32.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class i64 extends Primitive<bigint> {
+	public static MIN: number = -Number.MAX_SAFE_INTEGER;
+	public static MAX: number = Number.MAX_SAFE_INTEGER;
 
-    public static MIN: number = -Number.MAX_SAFE_INTEGER;
-    public static MAX: number = Number.MAX_SAFE_INTEGER;
+	public static getSignature(): string {
+		return "i64";
+	}
 
-    public static getSignature(): string {
-        return 'i64';
-    }
+	public static getSize(): number {
+		return 64 / CBits;
+	}
 
-    public static getSize(): number {
-        return 64 / CBits;
-    }
+	public static encode(value: bigint): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(i64.getSize());
+		try {
+			buffer.writeBigInt64LE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: bigint): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(i64.getSize());
-        try {
-            buffer.writeBigInt64LE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): bigint | Error {
+		if (bytes.byteLength !== i64.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${i64.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readBigInt64LE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): bigint | Error {
-        if (bytes.byteLength !== i64.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${i64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readBigInt64LE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "bigint") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (value < i64.MIN || value > i64.MAX) {
+			return new Error(`Out of range.`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'bigint') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (value < i64.MIN || value > i64.MAX) {
-            return new Error(`Out of range.`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return i64.getSignature();
+	}
 
-    public getSignature(): string {
-        return i64.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return i64.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return i64.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): bigint | Error {
-        const value = i64.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): bigint | Error {
+		const value = i64.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class f32 extends Primitive<number> {
+	public static getSignature(): string {
+		return "f32";
+	}
 
-    public static getSignature(): string {
-        return 'f32';
-    }
+	public static getSize(): number {
+		return 32 / CBits;
+	}
 
-    public static getSize(): number {
-        return 32 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(f32.getSize());
+		try {
+			buffer.writeFloatLE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(f32.getSize());
-        try {
-            buffer.writeFloatLE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== f32.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${f32.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readFloatLE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== f32.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${f32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readFloatLE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return f32.getSignature();
+	}
 
-    public getSignature(): string {
-        return f32.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return f32.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return f32.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = f32.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = f32.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class f64 extends Primitive<number> {
+	public static getSignature(): string {
+		return "f64";
+	}
 
-    public static getSignature(): string {
-        return 'f64';
-    }
+	public static getSize(): number {
+		return 64 / CBits;
+	}
 
-    public static getSize(): number {
-        return 64 / CBits;
-    }
+	public static encode(value: number): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(f64.getSize());
+		try {
+			buffer.writeDoubleLE(value);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(f64.getSize());
-        try {
-            buffer.writeDoubleLE(value);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number | Error {
+		if (bytes.byteLength !== f64.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${f64.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return buffer.readDoubleLE(0);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number | Error {
-        if (bytes.byteLength !== f64.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${f64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return buffer.readDoubleLE(0);
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "number") {
+			return new Error(`Invalid type of variable`);
+		}
+		if (isNaN(value) || !isFinite(value)) {
+			return new Error(`Invalid value of variable: ${value}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'number') {
-            return new Error(`Invalid type of variable`);
-        }
-        if (isNaN(value) || !isFinite(value)) {
-            return new Error(`Invalid value of variable: ${value}`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return f64.getSignature();
+	}
 
-    public getSignature(): string {
-        return f64.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return f64.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return f64.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number | Error {
-        const value = f64.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number | Error {
+		const value = f64.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class bool extends Primitive<boolean> {
+	public static getSignature(): string {
+		return "bool";
+	}
 
-    public static getSignature(): string {
-        return 'bool';
-    }
+	public static getSize(): number {
+		return 8 / CBits;
+	}
 
-    public static getSize(): number {
-        return 8 / CBits;
-    }
+	public static encode(value: boolean): ArrayBufferLike | Error {
+		const buffer: Buffer = Buffer.alloc(bool.getSize());
+		try {
+			buffer.writeUInt8(value ? 1 : 0);
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: boolean): ArrayBufferLike | Error {
-        const buffer: Buffer = Buffer.alloc(bool.getSize());
-        try {
-            buffer.writeUInt8(value ? 1 : 0);
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): boolean | Error {
+		if (bytes.byteLength !== bool.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected ${bool.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			const buffer: Buffer = Buffer.from(bytes);
+			return Math.round(buffer.readUInt8(0)) === 1;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): boolean | Error {
-        if (bytes.byteLength !== bool.getSize()) {
-            return new Error(`Invalid buffer size. Expected ${bool.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            const buffer: Buffer = Buffer.from(bytes);
-            return Math.round(buffer.readUInt8(0)) === 1;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "boolean") {
+			return new Error(`Invalid type of variable`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'boolean') {
-            return new Error(`Invalid type of variable`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return bool.getSignature();
+	}
 
-    public getSignature(): string {
-        return bool.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return bool.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return bool.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): boolean | Error {
-        const value = bool.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): boolean | Error {
+		const value = bool.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class StrUTF8 extends Primitive<string> {
@@ -844,1139 +911,1293 @@ export class StrUTF8 extends Primitive<string> {
 }
 
 export class ArrayU8 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayU8";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayU8';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * u8.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeUInt8(val, offset);
+				offset += u8.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * u8.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeUInt8(val, offset);
-                offset += u8.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < u8.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readUInt8(offset));
+				offset += u8.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < u8.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readUInt8(offset));
-                offset += u8.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = u8.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = u8.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayU8.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayU8.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayU8.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayU8.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayU8.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayU8.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayU16 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayU16";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayU16';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * u16.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeUInt16LE(val, offset);
+				offset += u16.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * u16.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeUInt16LE(val, offset);
-                offset += u16.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < u16.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${u16.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readUInt16LE(offset));
+				offset += u16.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < u16.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${u16.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readUInt16LE(offset));
-                offset += u16.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = u16.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = u16.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayU16.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayU16.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayU16.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayU16.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayU16.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayU16.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayU32 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayU32";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayU32';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * u32.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeUInt32LE(val, offset);
+				offset += u32.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * u32.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeUInt32LE(val, offset);
-                offset += u32.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < u32.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${u32.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readUInt32LE(offset));
+				offset += u32.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < u32.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${u32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readUInt32LE(offset));
-                offset += u32.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = u32.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
+	public getSignature(): string {
+		return ArrayU32.getSignature();
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = u32.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
-    public getSignature(): string {
-        return ArrayU32.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayU32.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayU32.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayU32.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayU32.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayU64 extends Primitive<Array<bigint>> {
+	public static getSignature(): string {
+		return "ArrayU64";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayU64';
-    }
+	public static encode(value: Array<bigint>): ArrayBufferLike | Error {
+		const len: number = value.length * u64.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeBigUInt64LE(val, offset);
+				offset += u64.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: Array<bigint>): ArrayBufferLike | Error {
-        const len: number = value.length * u64.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeBigUInt64LE(val, offset);
-                offset += u64.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < u64.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${u64.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: Array<bigint> = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readBigUInt64LE(offset));
+				offset += u64.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < u64.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${u64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: Array<bigint> = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readBigUInt64LE(offset));
-                offset += u64.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = u64.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = u64.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayU64.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayU64.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayU64.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayU64.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): Array<bigint> | Error {
-        const value = ArrayU64.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+		const value = ArrayU64.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayI8 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayI8";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayI8';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * i8.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeInt8(val, offset);
+				offset += i8.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * i8.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeInt8(val, offset);
-                offset += i8.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < i8.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${i8.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readInt8(offset));
+				offset += i8.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < i8.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${i8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readInt8(offset));
-                offset += i8.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = i8.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = i8.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayI8.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayI8.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayI8.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayI8.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayI8.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayI8.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayI16 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayI16";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayI16';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * i16.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeInt16LE(val, offset);
+				offset += i16.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * i16.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeInt16LE(val, offset);
-                offset += i16.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < i16.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${i16.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readInt16LE(offset));
+				offset += i16.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < i16.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${i16.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readInt16LE(offset));
-                offset += i16.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = i16.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = i16.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayI16.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayI16.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayI16.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayI16.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayI16.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayI16.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayI32 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayI32";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayI32';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * i32.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeInt32LE(val, offset);
+				offset += i32.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * i32.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeInt32LE(val, offset);
-                offset += i32.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < i32.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${i32.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readInt32LE(offset));
+				offset += i32.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < i32.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${i32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readInt32LE(offset));
-                offset += i32.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = i32.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = i32.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayI32.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayI32.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayI32.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayI32.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayI32.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayI32.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayI64 extends Primitive<Array<bigint>> {
+	public static getSignature(): string {
+		return "ArrayI64";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayI64';
-    }
+	public static encode(value: Array<bigint>): ArrayBufferLike | Error {
+		const len: number = value.length * i64.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeBigInt64LE(val, offset);
+				offset += i64.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: Array<bigint>): ArrayBufferLike | Error {
-        const len: number = value.length * i64.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeBigInt64LE(val, offset);
-                offset += i64.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < i64.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${i64.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: Array<bigint> = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readBigInt64LE(offset));
+				offset += i64.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): Array<bigint> | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < i64.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${i64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: Array<bigint> = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readBigInt64LE(offset));
-                offset += i64.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = i64.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = i64.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayI64.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayI64.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayI64.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayI64.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): Array<bigint> | Error {
-        const value = ArrayI64.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): Array<bigint> | Error {
+		const value = ArrayI64.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayF32 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayF32";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayF32';
-    }
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * f32.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeFloatLE(val, offset);
+				offset += f32.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * f32.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeFloatLE(val, offset);
-                offset += f32.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < f32.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${f32.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readFloatLE(offset));
+				offset += f32.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < f32.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${f32.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readFloatLE(offset));
-                offset += f32.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = f32.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = f32.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayF32.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayF32.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayF32.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayF32.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayF32.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayF32.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayF64 extends Primitive<number[]> {
+	public static getSignature(): string {
+		return "ArrayF64";
+	}
+	public static encode(value: number[]): ArrayBufferLike | Error {
+		const len: number = value.length * f64.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeDoubleLE(val, offset);
+				offset += f64.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static getSignature(): string {
-        return 'ArrayF64';
-    }
-    public static encode(value: number[]): ArrayBufferLike | Error {
-        const len: number = value.length * f64.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeDoubleLE(val, offset);
-                offset += f64.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): number[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < f64.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${f64.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: number[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(buffer.readDoubleLE(offset));
+				offset += f64.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): number[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < f64.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${f64.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: number[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(buffer.readDoubleLE(offset));
-                offset += f64.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = f64.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = f64.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayF64.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayF64.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayF64.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayF64.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): number[] | Error {
-        const value = ArrayF64.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): number[] | Error {
+		const value = ArrayF64.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayBool extends Primitive<boolean[]> {
+	public static getSignature(): string {
+		return "ArrayBool";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayBool';
-    }
+	public static encode(value: boolean[]): ArrayBufferLike | Error {
+		const len: number = value.length * u8.getSize();
+		const buffer: Buffer = Buffer.alloc(len);
+		try {
+			let offset: number = 0;
+			value.forEach((val) => {
+				buffer.writeUInt8(val ? 1 : 0, offset);
+				offset += u8.getSize();
+			});
+			return buffer.buffer;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static encode(value: boolean[]): ArrayBufferLike | Error {
-        const len: number = value.length * u8.getSize();
-        const buffer: Buffer = Buffer.alloc(len);
-        try {
-            let offset: number = 0;
-            value.forEach((val) => {
-                buffer.writeUInt8(val ? 1 : 0, offset);
-                offset += u8.getSize();
-            });
-            return buffer.buffer;
-        } catch (err) {
-            return err;
-        }
-    }
+	public static decode(bytes: ArrayBufferLike): boolean[] | Error {
+		if (bytes.byteLength === 0) {
+			return [];
+		}
+		if (bytes.byteLength < u8.getSize()) {
+			return new Error(
+				`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${
+					bytes.byteLength
+				} bytes`
+			);
+		}
+		try {
+			let offset: number = 0;
+			const array: boolean[] = [];
+			const buffer: Buffer = Buffer.from(bytes);
+			do {
+				array.push(
+					Math.round(buffer.readUInt8(offset)) === 1 ? true : false
+				);
+				offset += u8.getSize();
+			} while (buffer.byteLength > offset);
+			return array;
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    public static decode(bytes: ArrayBufferLike): boolean[] | Error {
-        if (bytes.byteLength === 0) {
-            return [];
-        }
-        if (bytes.byteLength < u8.getSize()) {
-            return new Error(`Invalid buffer size. Expected at least ${u8.getSize()} bytes, actual ${bytes.byteLength} bytes`);
-        }
-        try {
-            let offset: number = 0;
-            const array: boolean[] = [];
-            const buffer: Buffer = Buffer.from(bytes);
-            do {
-                array.push(Math.round(buffer.readUInt8(offset)) === 1 ? true : false);
-                offset += u8.getSize();
-            } while (buffer.byteLength > offset);
-            return array;
-        } catch (e) {
-            return e;
-        }
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = bool.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = bool.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayBool.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayBool.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayBool.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayBool.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): boolean[] | Error {
-        const value = ArrayBool.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): boolean[] | Error {
+		const value = ArrayBool.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayStrUTF8 extends Primitive<string[]> {
+	public static getSignature(): string {
+		return "ArrayStrUTF8";
+	}
 
-    public static getSignature(): string {
-        return 'ArrayStrUTF8';
-    }
+	public static encode(value: string[]): ArrayBufferLike | Error {
+		let parts: ArrayBufferLike[] = [];
+		let len: number = 0;
+		try {
+			parts = value.map((val) => {
+				const buf = StrUTF8.encode(val);
+				if (buf instanceof Error) {
+					throw buf;
+				}
+				len += buf.byteLength;
+				return buf;
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		const pairs: ArrayBufferLike[] = [];
+		try {
+			parts.forEach((part) => {
+				const partLen = u32.encode(part.byteLength);
+				if (partLen instanceof Error) {
+					throw partLen;
+				}
+				pairs.push(partLen);
+				pairs.push(part);
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return Tools.append(pairs);
+	}
 
-    public static encode(value: string[]): ArrayBufferLike | Error {
-        let parts: ArrayBufferLike[] = [];
-        let len: number = 0;
-        try {
-            parts = value.map((val) => {
-                const buf = StrUTF8.encode(val);
-                if (buf instanceof Error) {
-                    throw buf;
-                }
-                len += buf.byteLength;
-                return buf;
-            });
-        } catch (e) {
-            return e;
-        }
-        const pairs: ArrayBufferLike[] = [];
-        try {
-            parts.forEach((part) => {
-                const partLen = u32.encode(part.byteLength);
-                if (partLen instanceof Error) {
-                    throw partLen;
-                }
-                pairs.push(partLen);
-                pairs.push(part);
-            });
-        } catch (e) {
-            return e;
-        }
-        return Tools.append(pairs);
-    }
+	public static decode(bytes: ArrayBufferLike): string[] | Error {
+		const buffer = Buffer.from(bytes);
+		const strings: string[] = [];
+		if (buffer.byteLength === 0) {
+			return strings;
+		} else if (buffer.byteLength < u32.getSize()) {
+			return new Error(
+				`Invalid size marker. Expecting u64 (size ${u32.getSize()} bytes), but size of buffer: ${
+					buffer.byteLength
+				} bytes.`
+			);
+		}
+		let offset: number = 0;
+		do {
+			const len = buffer.readUInt32LE(offset);
+			if (isNaN(len) || !isFinite(len)) {
+				return new Error(`Invalid length of string in an array`);
+			}
+			offset += u32.getSize();
+			const body = buffer.slice(offset, offset + len);
+			const str = StrUTF8.decode(body);
+			if (str instanceof Error) {
+				return str;
+			}
+			strings.push(str);
+			offset += body.byteLength;
+		} while (offset < buffer.byteLength);
+		return strings;
+	}
 
-    public static decode(bytes: ArrayBufferLike): string[] | Error {
-        const buffer = Buffer.from(bytes);
-        const strings: string[] = [];
-        if (buffer.byteLength === 0) {
-            return strings;
-        } else if (buffer.byteLength < u32.getSize()) {
-            return new Error(`Invalid size marker. Expecting u64 (size ${u32.getSize()} bytes), but size of buffer: ${buffer.byteLength} bytes.`);
-        }
-        let offset: number = 0;
-        do {
-            const len = buffer.readUInt32LE(offset);
-            if (isNaN(len) || !isFinite(len)) {
-                return new Error(`Invalid length of string in an array`);
-            }
-            offset += u32.getSize();
-            const body = buffer.slice(offset, offset + len);
-            const str = StrUTF8.decode(body);
-            if (str instanceof Error) {
-                return str;
-            }
-            strings.push(str);
-            offset += body.byteLength;
-        } while (offset < buffer.byteLength);
-        return strings;
-    }
+	public static validate(value: any): Error | undefined {
+		if (!(value instanceof Array)) {
+			return new Error(`Invalid type of variable`);
+		}
+		try {
+			value.forEach((val: any, index: number) => {
+				const err: Error | undefined = StrUTF8.validate(val);
+				if (err instanceof Error) {
+					throw new Error(`Error on index #${index}: ${err.message}`);
+				}
+			});
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (!(value instanceof Array)) {
-            return new Error(`Invalid type of variable`);
-        }
-        try {
-            value.forEach((val: any, index: number) => {
-                const err: Error | undefined = StrUTF8.validate(val);
-                if (err instanceof Error) {
-                    throw new Error(`Error on index #${index}: ${err.message}`);
-                }
-            });
-        } catch (e) {
-            return e;
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return ArrayStrUTF8.getSignature();
+	}
 
-    public getSignature(): string {
-        return ArrayStrUTF8.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return ArrayStrUTF8.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return ArrayStrUTF8.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): string[] | Error {
-        const value = ArrayStrUTF8.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): string[] | Error {
+		const value = ArrayStrUTF8.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class Option<T> {
+	private _value: ISigned<T>;
+	private _id: number;
 
-    private _value: ISigned<T>;
-    private _id: number;
+	constructor(id: number, value: ISigned<T>) {
+		if (
+			value === undefined ||
+			value === null ||
+			typeof value.encode !== "function" ||
+			typeof value.decode !== "function"
+		) {
+			throw new Error(
+				`Expected ISigned<T> as value. But has been gotten: ${JSON.stringify(
+					value
+				)}`
+			);
+		}
+		this._value = value;
+		this._id = id;
+	}
 
-    constructor(id: number, value: ISigned<T>) {
-        if (value === undefined || value === null || typeof value.encode !== 'function' || typeof value.decode !== 'function') {
-            throw new Error(`Expected ISigned<T> as value. But has been gotten: ${JSON.stringify(value)}`);
-        }
-        this._value = value;
-        this._id = id;
-    }
+	public get(): T {
+		return this._value.get();
+	}
 
-    public get(): T {
-        return this._value.get();
-    }
+	public getSigned(): ISigned<T> {
+		return this._value;
+	}
 
-    public getSigned(): ISigned<T> {
-        return this._value;
-    }
-
-    public getId(): number {
-        return this._id;
-    }
-
+	public getId(): number {
+		return this._id;
+	}
 }
 
 export abstract class Enum<T> {
+	private _value: Option<any> | undefined;
 
-    private _value: Option<any> | undefined;
+	public setValue(opt: Option<any>): Error | undefined {
+		const signature: string = opt.getSigned().getSignature();
+		if (!this.getAllowed().includes(signature)) {
+			return new Error(
+				`Fail to set value with signature "${signature}" because allows only: ${this.getAllowed().join(
+					", "
+				)}`
+			);
+		}
+		this._value = opt;
+	}
 
-    public setValue(opt: Option<any>): Error | undefined {
-        const signature: string = opt.getSigned().getSignature();
-        if (!this.getAllowed().includes(signature)) {
-            return new Error(`Fail to set value with signature "${signature}" because allows only: ${this.getAllowed().join(', ')}`);
-        }
-        this._value = opt;
-    }
+	public getValue<E>(): E {
+		if (this._value === undefined) {
+			throw new Error(`Value of enum isn't defined yet.`);
+		}
+		return this._value.get();
+	}
 
-    public getValue<E>(): E {
-        return this._value.get();
-    }
+	public getValueIndex(): number {
+		if (this._value === undefined) {
+			throw new Error(`Value of enum isn't defined yet.`);
+		}
+		return this._value.getId();
+	}
 
-    public getValueIndex(): number {
-        return this._value.getId();
-    }
+	public encode(): ArrayBufferLike {
+		if (this._value === undefined) {
+			return new Uint8Array();
+		}
+		const body: ArrayBufferLike | Error = this._value.getSigned().encode();
+		if (body instanceof Error) {
+			throw body;
+		}
+		const id = u16.encode(this._value.getId());
+		if (id instanceof Error) {
+			throw id;
+		}
+		return Tools.append([id, body]);
+	}
 
-    public encode(): ArrayBufferLike {
-        if (this._value === undefined) {
-            return new Uint8Array();
-        }
-        const body: ArrayBufferLike | Error = this._value.getSigned().encode();
-        if (body instanceof Error) {
-            throw body;
-        }
-        const id = u16.encode(this._value.getId());
-        if (id instanceof Error) {
-            throw id;
-        }
-        return Tools.append([id, body]);
-    }
+	public decode(bytes: ArrayBufferLike): Error | undefined {
+		const buffer = Buffer.from(bytes);
+		const id: number = buffer.readUInt16LE();
+		const target: ISigned<any> = this.getOptionValue(id);
+		const error: Error | undefined = target.decode(
+			bytes.slice(u16.getSize(), buffer.byteLength)
+		);
+		if (error instanceof Error) {
+			return error;
+		}
+		try {
+			this._value = new Option<any>(id, target);
+		} catch (e) {
+			return new Error(`Fail to decode due error: ${e}`);
+		}
+	}
 
-    public decode(bytes: ArrayBufferLike): Error | undefined {
-        const buffer = Buffer.from(bytes);
-        const id: number = buffer.readUInt16LE();
-        const target: ISigned<any> = this.getOptionValue(id);
-        const error: Error | undefined = target.decode(bytes.slice(u16.getSize(), buffer.byteLength));
-        if (error instanceof Error) {
-            return error;
-        }
-        try {
-            this._value = new Option<any>(id, target);
-        } catch (e) {
-            return new Error(`Fail to decode due error: ${e}`);
-        }
-    }
+	public pack(sequence: number, uuid?: string): ArrayBufferLike {
+		const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
+		const signature: ArrayBufferLike | Error = Primitives.u16.encode(
+			this.signature()
+		);
+		const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
+		const ts = BigInt(new Date().getTime());
+		const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
+		if (id instanceof Error) {
+			throw new Error(
+				`Fail to encode id (${this.getId()}) due error: ${id.message}`
+			);
+		}
+		if (signature instanceof Error) {
+			throw new Error(
+				`Fail to encode signature (${this.signature()}) due error: ${
+					signature.message
+				}`
+			);
+		}
+		if (seq instanceof Error) {
+			throw new Error(
+				`Fail to encode seq (${this.getId()}) due error: ${seq.message}`
+			);
+		}
+		if (timestamp instanceof Error) {
+			throw new Error(
+				`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`
+			);
+		}
+		const buffer: ArrayBufferLike | Error = (() => {
+			const middleware: PackingMiddleware | undefined =
+				getPackingMiddleware();
+			if (middleware instanceof PackingMiddleware) {
+				return middleware.encode(
+					this.encode(),
+					this.getId(),
+					sequence,
+					uuid
+				);
+			} else {
+				return this.encode();
+			}
+		})();
+		if (buffer instanceof Error) {
+			throw buffer;
+		}
+		const len: ArrayBufferLike | Error = Primitives.u64.encode(
+			BigInt(buffer.byteLength)
+		);
+		if (len instanceof Error) {
+			throw new Error(
+				`Fail to encode len (${ts}) due error: ${len.message}`
+			);
+		}
+		return Tools.append([id, signature, seq, timestamp, len, buffer]);
+	}
 
-    public pack(sequence: number, uuid?: string): ArrayBufferLike {
-        const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
-        const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
-        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
-        const ts = BigInt((new Date()).getTime());
-        const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
-        if (id instanceof Error) {
-            throw new Error(`Fail to encode id (${this.getId()}) due error: ${id.message}`);
-        }
-        if (signature instanceof Error) {
-            throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
-        }
-        if (seq instanceof Error) {
-            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
-        }
-        if (timestamp instanceof Error) {
-            throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
-        }
-        const buffer: ArrayBufferLike | Error = (() => {
-            const middleware: PackingMiddleware | undefined = getPackingMiddleware();
-            if (middleware instanceof PackingMiddleware) {
-                return middleware.encode(this.encode(), this.getId(), sequence, uuid);
-            } else {
-                return this.encode();
-            }
-        })();
-        if (buffer instanceof Error) {
-            throw buffer;
-        }
-        const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
-        if (len instanceof Error) {
-            throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
-        }
-        return Tools.append([id, signature, seq, timestamp, len, buffer]);
-    }
-
-    public abstract getAllowed(): string[];
-    public abstract getOptionValue(id: number): ISigned<any>;
-    public abstract get(): T;
-    public abstract set(src: T): Error | undefined;
-    public abstract signature(): number;
-    public abstract getId(): number;
-
+	public abstract getAllowed(): string[];
+	public abstract getOptionValue(id: number): ISigned<any>;
+	public abstract get(): T;
+	public abstract set(src: T): Error | undefined;
+	public abstract signature(): number;
+	public abstract getId(): number;
 }
 
 export interface IValidator {
-    validate(value: any): Error | undefined;
+	validate(value: any): Error | undefined;
 }
 
 export interface IPropScheme {
-    prop: string;
-    optional?: boolean;
-    types?: Required<IValidator>,
-    options?: IPropScheme[],
+	prop: string;
+	optional?: boolean;
+	types?: Required<IValidator>;
+	options?: IPropScheme[];
 }
 
 export function validate(obj: any, scheme: IPropScheme[]): Error | undefined {
-    if (typeof obj !== 'object' || obj === null) {
-        return new Error(`Expecting input to be object`);
-    }
-    const errors: string[] = scheme.map((property: IPropScheme) => {
-        if (property.optional && obj[property.prop] === undefined) {
-            return undefined;
-        }
-        if (property.types !== undefined) {
-            const err: Error | undefined = property.types.validate(obj[property.prop]);
-            if (err instanceof Error) {
-                return err.message;
-            } else {
-                return undefined;
-            }
-        } else if (property.options instanceof Array) {
-            if (typeof obj[property.prop] !== 'object' || obj[property.prop] === null) {
-                return `Property "${property.prop}" should be an object, because it's enum`;
-            }
-            const target: any = obj[property.prop];
-            const options: string[] = [];
-            try {
-                property.options.forEach((prop: IPropScheme) => {
-                    if (prop.types === undefined) {
-                        throw new Error(`Invalid option description for option "${prop.prop}" of option "${property.prop}"`);
-                    }
-                    if (target[prop.prop] !== undefined) {
-                        options.push(prop.prop);
-                        const err: Error | undefined = prop.types.validate(target[prop.prop]);
-                        if (err instanceof Error) {
-                            throw new Error(`Fail to validate option "${prop.prop}" of option "${property.prop}" due: ${err.message}`);
-                        }
-                    }
-                });
-            } catch (e) {
-                return e.message;
-            }
-            if (options.length > 1) {
-                return `Enum should have only one definition or nothing. Found values for: ${options.join(', ')}`;
-            }
-            return undefined;
-        } else {
-            return `Invalid map definition for property ${property.prop}`
-        }
-    }).filter(e => e !== undefined);
-    return errors.length > 0 ? new Error(errors.join('\n')) : undefined;
+	if (typeof obj !== "object" || obj === null) {
+		return new Error(`Expecting input to be object`);
+	}
+	const errors: string[] = scheme
+		.map((property: IPropScheme) => {
+			if (property.optional && obj[property.prop] === undefined) {
+				return undefined;
+			}
+			if (property.types !== undefined) {
+				const err: Error | undefined = property.types.validate(
+					obj[property.prop]
+				);
+				if (err instanceof Error) {
+					return err.message;
+				} else {
+					return undefined;
+				}
+			} else if (property.options instanceof Array) {
+				if (
+					typeof obj[property.prop] !== "object" ||
+					obj[property.prop] === null
+				) {
+					return `Property "${property.prop}" should be an object, because it's enum`;
+				}
+				const target: any = obj[property.prop];
+				const options: string[] = [];
+				try {
+					property.options.forEach((prop: IPropScheme) => {
+						if (prop.types === undefined) {
+							throw new Error(
+								`Invalid option description for option "${prop.prop}" of option "${property.prop}"`
+							);
+						}
+						if (target[prop.prop] !== undefined) {
+							options.push(prop.prop);
+							const err: Error | undefined = prop.types.validate(
+								target[prop.prop]
+							);
+							if (err instanceof Error) {
+								throw new Error(
+									`Fail to validate option "${prop.prop}" of option "${property.prop}" due: ${err.message}`
+								);
+							}
+						}
+					});
+				} catch (err) {
+					return err instanceof Error
+						? err.message
+						: `Unknown error: ${err}`;
+				}
+				if (options.length > 1) {
+					return `Enum should have only one definition or nothing. Found values for: ${options.join(
+						", "
+					)}`;
+				}
+				return undefined;
+			} else {
+				return `Invalid map definition for property ${property.prop}`;
+			}
+		})
+		.filter((err) => err !== undefined) as string[];
+	return errors.length > 0 ? new Error(errors.join("\n")) : undefined;
 }
 
 type u8Alias = u8; const u8Alias = u8;
@@ -2038,467 +2259,612 @@ export namespace Primitives {
 }
 
 interface INext {
-    id: number;
-    body: ArrayBufferLike;
-    position: number;
+	id: number;
+	body: ArrayBufferLike;
+	position: number;
 }
 
 export class Storage {
+	private _fields: Map<number, ArrayBufferLike> = new Map();
 
-    private _fields: Map<number, ArrayBufferLike> = new Map();
+	public read(bytes: ArrayBufferLike): Error | undefined {
+		const buffer = Buffer.from(bytes);
+		let position: number = 0;
+		do {
+			const field: INext | Error | undefined = this._next(
+				buffer,
+				position
+			);
+			if (field === undefined) {
+				return undefined;
+			}
+			if (field instanceof Error) {
+				return field;
+			}
+			position = field.position;
+			this._fields.set(field.id, field.body);
+		} while (true);
+	}
 
-    public read(bytes: ArrayBufferLike): Error | undefined {
-        const buffer = Buffer.from(bytes);
-        let position: number = 0;
-        do {
-            const field: INext | Error = this._next(buffer, position);
-            if (field === undefined) {
-                return undefined;
-            }
-            if (field instanceof Error) {
-                return field;
-            }
-            position = field.position;
-            this._fields.set(field.id, field.body);
-        } while (true);
-    }
+	public get(id: number): ArrayBufferLike | undefined {
+		return this._fields.get(id);
+	}
 
-    public get(id: number): ArrayBufferLike | undefined {
-        return this._fields.get(id);
-    }
+	private _getId(buffer: Buffer, position: number): number | Error {
+		try {
+			return buffer.readUInt8(position);
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    private _getId(buffer: Buffer, position: number): number | Error {
-        try {
-            return buffer.readUInt8(position);
-        } catch (e) {
-            return e;
-        }
-    }
+	private _getRank(buffer: Buffer, position: number): ESize | Error {
+		try {
+			const rank: number = buffer.readUInt8(position);
+			switch (rank) {
+				case 8:
+					return ESize.u8;
+				case 16:
+					return ESize.u16;
+				case 32:
+					return ESize.u32;
+				case 64:
+					return ESize.u64;
+				default:
+					return new Error(`Invalid size rank: ${rank}`);
+			}
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 
-    private _getRank(buffer: Buffer, position: number): ESize | Error {
-        try {
-            const rank: number = buffer.readUInt8(position);
-            switch(rank) {
-                case 8: return ESize.u8;
-                case 16: return ESize.u16;
-                case 32: return ESize.u32;
-                case 64: return ESize.u64;
-                default: return new Error(`Invalid size rank: ${rank}`);
-            }
-        } catch (e) {
-            return e;
-        }
-    }
-
-    private _next(buffer: Buffer, position: number): INext | Error | undefined {
-        if (buffer.byteLength === position) {
-            return undefined;
-        }
-        if (buffer.byteLength < position) {
-            return new Error(`Invalid position in buffer.`);
-        }
-        // Get id
-        const id: number | Error = this._getId(buffer, position);
-        if (id instanceof Error) {
-            return id;
-        }
-        position += 2;
-        const rank: ESize | Error = this._getRank(buffer, position);
-        if (rank instanceof Error) {
-            return rank;
-        }
-        position += 1;
-        try {
-            let length: number | bigint;
-            switch(rank) {
-                case ESize.u8:
-                    length = buffer.readUInt8(position);
-                    position += Primitives.u8.getSize();
-                    break;
-                case ESize.u16:
-                    length = buffer.readUInt16LE(position);
-                    position += Primitives.u16.getSize();
-                    break;
-                case ESize.u32:
-                    length = buffer.readUInt32LE(position);
-                    position += Primitives.u32.getSize();
-                    break;
-                case ESize.u64:
-                    length = buffer.readBigUInt64LE(position);
-                    position += Primitives.u64.getSize();
-                    break;
-            };
-            const body = buffer.slice(position, position + Number(length));
-            position += Number(length);
-            return { id, body, position };
-        } catch (e) {
-            return e;
-        }
-    }
-
+	private _next(buffer: Buffer, position: number): INext | Error | undefined {
+		if (buffer.byteLength === position) {
+			return undefined;
+		}
+		if (buffer.byteLength < position) {
+			return new Error(`Invalid position in buffer.`);
+		}
+		// Get id
+		const id: number | Error = this._getId(buffer, position);
+		if (id instanceof Error) {
+			return id;
+		}
+		position += 2;
+		const rank: ESize | Error = this._getRank(buffer, position);
+		if (rank instanceof Error) {
+			return rank;
+		}
+		position += 1;
+		try {
+			let length: number | bigint;
+			switch (rank) {
+				case ESize.u8:
+					length = buffer.readUInt8(position);
+					position += Primitives.u8.getSize();
+					break;
+				case ESize.u16:
+					length = buffer.readUInt16LE(position);
+					position += Primitives.u16.getSize();
+					break;
+				case ESize.u32:
+					length = buffer.readUInt32LE(position);
+					position += Primitives.u32.getSize();
+					break;
+				case ESize.u64:
+					length = buffer.readBigUInt64LE(position);
+					position += Primitives.u64.getSize();
+					break;
+			}
+			const body = buffer.slice(position, position + Number(length));
+			position += Number(length);
+			return { id, body, position };
+		} catch (err) {
+			return err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+	}
 }
 
 export class MessageHeader {
-    public static readonly ID_LENGTH = 4;
-    public static readonly SIGN_LENGTH = 2;
-    public static readonly SEQ_LENGTH = 4;
-    public static readonly TS_LENGTH = 8;
-    public static readonly LEN_LENGTH = 8;
-    public static readonly SIZE =
-        MessageHeader.ID_LENGTH +
-        MessageHeader.SIGN_LENGTH +
-        MessageHeader.SEQ_LENGTH +
-        MessageHeader.TS_LENGTH +
-        MessageHeader.LEN_LENGTH;
+	public static readonly ID_LENGTH = 4;
+	public static readonly SIGN_LENGTH = 2;
+	public static readonly SEQ_LENGTH = 4;
+	public static readonly TS_LENGTH = 8;
+	public static readonly LEN_LENGTH = 8;
+	public static readonly SIZE =
+		MessageHeader.ID_LENGTH +
+		MessageHeader.SIGN_LENGTH +
+		MessageHeader.SEQ_LENGTH +
+		MessageHeader.TS_LENGTH +
+		MessageHeader.LEN_LENGTH;
 
-    public readonly id: number;
-    public readonly signature: number;
-    public readonly sequence: number;
-    public readonly ts: BigInt;
-    public readonly len: number;
+	public readonly id: number;
+	public readonly signature: number;
+	public readonly sequence: number;
+	public readonly ts: BigInt;
+	public readonly len: number;
 
-    constructor(buffer: Buffer) {
-        if (MessageHeader.enow(buffer) === false) {
-            throw new Error(
-                `Cannot parse header because size problem. Buffer: ${buffer.byteLength} bytes; header size: ${MessageHeader.SIZE} bytes`
-            );
-        } else {
-            this.id = buffer.readUInt32LE(0);
-            this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
-            this.sequence = buffer.readUInt32LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH);
-            this.ts = buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH);
-            this.len = Number(buffer.readBigUInt64LE(MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH + MessageHeader.SEQ_LENGTH + MessageHeader.TS_LENGTH));
-        }
-    }
+	constructor(buffer: Buffer) {
+		if (MessageHeader.enow(buffer) === false) {
+			throw new Error(
+				`Cannot parse header because size problem. Buffer: ${buffer.byteLength} bytes; header size: ${MessageHeader.SIZE} bytes`
+			);
+		} else {
+			this.id = buffer.readUInt32LE(0);
+			this.signature = buffer.readUInt16LE(MessageHeader.ID_LENGTH);
+			this.sequence = buffer.readUInt32LE(
+				MessageHeader.ID_LENGTH + MessageHeader.SIGN_LENGTH
+			);
+			this.ts = buffer.readBigUInt64LE(
+				MessageHeader.ID_LENGTH +
+					MessageHeader.SIGN_LENGTH +
+					MessageHeader.SEQ_LENGTH
+			);
+			this.len = Number(
+				buffer.readBigUInt64LE(
+					MessageHeader.ID_LENGTH +
+						MessageHeader.SIGN_LENGTH +
+						MessageHeader.SEQ_LENGTH +
+						MessageHeader.TS_LENGTH
+				)
+			);
+		}
+	}
 
-    public static enow(buffer: Buffer): boolean {
-        return buffer.byteLength >= MessageHeader.SIZE;
-    }
-
+	public static enow(buffer: Buffer): boolean {
+		return buffer.byteLength >= MessageHeader.SIZE;
+	}
 }
 
 declare var window: Window | undefined;
 declare var global: any | undefined;
 
 export function globals(): Window | any | Error {
-    if (typeof window === 'object' && window !== null) {
-        return window;
-    } else if (typeof global === 'object' && global !== null) {
-        return global;
-    } else {
-        return new Error(`Fail to find global namespece ()`);
-    }
+	if (typeof window === "object" && window !== null) {
+		return window;
+	} else if (typeof global === "object" && global !== null) {
+		return global;
+	} else {
+		return new Error(`Fail to find global namespece ()`);
+	}
 }
 
 export function getPackingMiddleware(): PackingMiddleware | undefined {
-    const space = globals();
-    if (space instanceof Error) {
-        return undefined;
-    }
-    return space[PackingMiddleware.GUID];
+	const space = globals();
+	if (space instanceof Error) {
+		return undefined;
+	}
+	return space[PackingMiddleware.GUID];
 }
 
 export abstract class PackingMiddleware {
+	static GUID: string = "___FiberPackingMiddleware___";
 
-    static GUID: string = '___FiberPackingMiddleware___';
+	constructor() {
+		const space = globals();
+		if (space instanceof Error) {
+			console.error(
+				`Fail to bind PackingMiddleware as soon as fail to find global object (window or NodeJS global)`
+			);
+			return;
+		}
+		if (space[PackingMiddleware.GUID] !== undefined) {
+			console.warn(`PackingMiddleware instance is overwritten.`);
+		}
+		space[PackingMiddleware.GUID] = this;
+	}
 
-    constructor() {
-        const space = globals();
-        if (space instanceof Error) {
-            console.error(`Fail to bind PackingMiddleware as soon as fail to find global object (window or NodeJS global)`);
-            return;
-        }
-        if (space[PackingMiddleware.GUID] !== undefined) {
-            console.warn(`PackingMiddleware instance is overwritten.`);
-        }
-        space[PackingMiddleware.GUID] = this;
-    }
+	public decode(
+		buffer: ArrayBufferLike,
+		id: number,
+		sequence: number,
+		uuid?: string
+	): ArrayBufferLike | Error {
+		return buffer;
+	}
 
-    public decode(buffer: ArrayBufferLike, id: number, sequence: number, uuid?: string): ArrayBufferLike | Error {
-        return buffer;
-    }
-
-    public encode(buffer: ArrayBufferLike, id: number, sequence: number, uuid?: string): ArrayBufferLike | Error {
-        return buffer;
-    }
-
+	public encode(
+		buffer: ArrayBufferLike,
+		id: number,
+		sequence: number,
+		uuid?: string
+	): ArrayBufferLike | Error {
+		return buffer;
+	}
 }
 
 
 export interface IAvailableMessage<T> {
-    header: {
-        id: number;
-        sequence: number;
-        timestamp: BigInt;
-    },
-    msg: T,
-    getRef: <Z>() => Z,
+	header: {
+		id: number;
+		sequence: number;
+		timestamp: BigInt;
+	};
+	msg: T;
+	getRef: <Z>() => Z;
 }
 
 export abstract class BufferReader<T> {
+	private _buffer: Buffer = Buffer.alloc(0);
+	private _queue: T[] = [];
 
-    private _buffer: Buffer = Buffer.alloc(0);
-    private _queue: T[] = [];
+	public abstract signature(): number;
 
-    public abstract signature(): number;
+	public abstract getMessage(
+		header: MessageHeader,
+		buffer: Buffer | ArrayBuffer | ArrayBufferLike
+	): T | Error;
 
-    public abstract getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): T | Error;
+	public chunk(
+		buffer: Buffer | ArrayBuffer | ArrayBufferLike,
+		uuid?: string
+	): Error[] | undefined {
+		const errors: Error[] = [];
+		this._buffer = Buffer.concat([
+			this._buffer,
+			buffer instanceof Buffer ? buffer : Buffer.from(buffer),
+		]);
+		do {
+			if (!MessageHeader.enow(this._buffer)) {
+				break;
+			}
+			const header: MessageHeader = new MessageHeader(
+				this._buffer.slice(0, MessageHeader.SIZE)
+			);
+			if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
+				break;
+			}
+			if (header.signature !== this.signature()) {
+				errors.push(
+					new Error(
+						`Dismatch of signature for message id="${
+							header.id
+						}". Expected signature: ${this.signature()}; gotten: ${
+							header.signature
+						}`
+					)
+				);
+			} else {
+				const body: ArrayBufferLike | Error = (() => {
+					const middleware: PackingMiddleware | undefined =
+						getPackingMiddleware();
+					if (middleware instanceof PackingMiddleware) {
+						return middleware.decode(
+							this._buffer.slice(
+								MessageHeader.SIZE,
+								MessageHeader.SIZE + header.len
+							),
+							header.id,
+							header.sequence,
+							uuid
+						);
+					} else {
+						return this._buffer.slice(
+							MessageHeader.SIZE,
+							MessageHeader.SIZE + header.len
+						);
+					}
+				})();
+				if (body instanceof Error) {
+					errors.push(body);
+				} else {
+					const msg = this.getMessage(header, body);
+					if (msg instanceof Error) {
+						errors.push(msg);
+					} else {
+						this._queue.push(msg);
+					}
+				}
+				this._buffer = this._buffer.slice(
+					MessageHeader.SIZE + header.len
+				);
+			}
+		} while (true);
+		return errors.length > 0 ? errors : undefined;
+	}
 
-    public chunk(buffer: Buffer | ArrayBuffer | ArrayBufferLike, uuid?: string): Error[] | undefined {
-        const errors: Error[] = [];
-        this._buffer = Buffer.concat([this._buffer, buffer instanceof Buffer ? buffer : Buffer.from(buffer)]);
-        do {
-            if (!MessageHeader.enow(this._buffer)) {
-                break;
-            }
-            const header: MessageHeader = new MessageHeader(this._buffer.slice(0, MessageHeader.SIZE));
-            if (this._buffer.byteLength < header.len + MessageHeader.SIZE) {
-                break;
-            }
-            if (header.signature !== this.signature()) {
-                errors.push(new Error(`Dismatch of signature for message id="${header.id}". Expected signature: ${this.signature()}; gotten: ${header.signature}`));
-            } else {
-                const body: ArrayBufferLike | Error = (() => {
-                    const middleware: PackingMiddleware | undefined = getPackingMiddleware();
-                    if (middleware instanceof PackingMiddleware) {
-                        return middleware.decode(this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len), header.id, header.sequence, uuid);
-                    } else {
-                        return this._buffer.slice(MessageHeader.SIZE, MessageHeader.SIZE + header.len);
-                    }
-                })();
-                if (body instanceof Error) {
-                    errors.push(body);
-                } else {
-                    const msg = this.getMessage(header, body);
-                    if (msg instanceof Error) {
-                        errors.push(msg);
-                    } else {
-                        this._queue.push(msg);
-                    }
-                }
-                this._buffer = this._buffer.slice(MessageHeader.SIZE + header.len);
-            }
-        } while (true);
-        return errors.length > 0 ? errors : undefined;
-    }
+	public destroy() {
+		// Drop buffer
+		this._buffer = Buffer.alloc(0);
+		this._queue = [];
+	}
 
-    public destroy() {
-        // Drop buffer
-        this._buffer = Buffer.alloc(0);
-        this._queue = [];
-    }
+	public pending(): number {
+		return this._queue.length;
+	}
 
-    public pending(): number {
-        return this._queue.length;
-    }
+	public len(): number {
+		return this._buffer.byteLength;
+	}
 
-    public len(): number {
-        return this._buffer.byteLength;
-    }
-
-    public next(): T | undefined {
-        return this._queue.length === 0 ? undefined : this._queue.splice(0, 1)[0];
-    }
-
-}
-export abstract class Convertor {
-
-    public collect(getters: Array<() => ArrayBufferLike | Error>): ArrayBufferLike {
-        const buffers: ArrayBufferLike[] = [];
-        try {
-            getters.forEach((getter: () => ArrayBufferLike | Error) => {
-                const buf: ArrayBufferLike | Error = getter();
-                if (buf instanceof Error) {
-                    throw buf;
-                }
-                buffers.push(buf);
-            });
-        } catch (e) {
-            return e;
-        }
-        return Tools.append(buffers);
-    }
-
-    public getBuffer(id: number, esize: ESize, size: number | bigint, value: ArrayBufferLike | Error): ArrayBufferLike | Error {
-        if (value instanceof Error) {
-            return value;
-        }
-        const idBuf: ArrayBufferLike | Error = Primitives.u16.encode(id);
-        if (idBuf instanceof Error) {
-            return idBuf;
-        }
-        let sizeType: ArrayBufferLike | Error;
-        let sizeValue: ArrayBufferLike | Error;
-        if (esize === ESize.u64 && typeof size !== 'bigint') {
-            return new Error(`For size ${ESize.u64}, size should be defined as BigInt`);
-        } else if ((esize === ESize.u8 || esize === ESize.u16 || esize === ESize.u32) && typeof size === 'bigint') {
-            return new Error(`For sizes ${ESize.u8}, ${ESize.u16}, ${ESize.u32}, size should be defined as Number`);
-        }
-        switch(esize) {
-            case ESize.u8:
-                sizeType = Primitives.u8.encode(Primitives.u8.getSize() * CBits);
-                sizeValue = Primitives.u8.encode(size as number);
-                break;
-            case ESize.u16:
-                sizeType = Primitives.u8.encode(Primitives.u16.getSize() * CBits);
-                sizeValue = Primitives.u16.encode(size as number);
-                break;
-            case ESize.u32:
-                sizeType = Primitives.u8.encode(Primitives.u32.getSize() * CBits);
-                sizeValue = Primitives.u32.encode(size as number);
-                break;
-            case ESize.u64:
-                sizeType = Primitives.u8.encode(Primitives.u64.getSize() * CBits);
-                sizeValue = Primitives.u64.encode(BigInt(size));
-                break;
-        }
-        if (sizeType instanceof Error) {
-            return sizeType;
-        }
-        if (sizeValue instanceof Error) {
-            return sizeValue;
-        }
-        if (sizeType === undefined || sizeValue === undefined) {
-            return new Error(`Size type or size value aren't defined`);
-        }
-        return Tools.append([idBuf, sizeType, sizeValue, value]);
-    }
-
-    public getBufferFromBuf<T>(id: number, esize: ESize, encoder: (...args: any[]) => ArrayBufferLike | Error, value: T): ArrayBufferLike | Error {
-        const buffer = encoder(value);
-        if (buffer instanceof Error) {
-            return buffer;
-        }
-        return this.getBuffer(id, esize, esize === ESize.u64 ? BigInt(buffer.byteLength) : buffer.byteLength, buffer);
-    }
-
-    public getStorage(buffer: ArrayBufferLike): Storage | Error {
-        const storage: Storage = new Storage();
-        const error: Error | undefined = storage.read(buffer);
-        if (error instanceof Error) {
-            return error;
-        }
-        return storage;
-    }
-
-    public getValue<T>(storage: Storage, id: number, decoder: (buf: ArrayBufferLike) => T | Error): T | Error {
-        const buffer = storage.get(id);
-        if (buffer === undefined) {
-            return new Error(`Fail to find field with ID "${id}"`);
-        }
-        return decoder(buffer);
-    }
-
-    public encodeSelfArray(items: Array<Required<Convertor>>): ArrayBufferLike | Error {
-        let error: Error | undefined;
-        const buffers: ArrayBufferLike[] = [];
-        items.forEach((item: Required<Convertor>) => {
-            if (error !== undefined) {
-                return;
-            }
-            const buffer = item.encode();
-            if (buffer instanceof Error) {
-                error = buffer;
-                return;
-            }
-            const len = u64.encode(BigInt(buffer.byteLength));
-            if (len instanceof Error) {
-                error = len;
-                return;
-            }
-            buffers.push(len);
-            buffers.push(buffer);
-        });
-        if (error !== undefined) {
-            return error;
-        }
-        return Tools.append(buffers);
-    }
-
-    public decodeSelfArray(bytes: ArrayBufferLike): Array<Required<Convertor>> | Error {
-        const buffer = Buffer.from(bytes);
-        const selfs: Array<Required<Convertor>> = [];
-        if (buffer.byteLength === 0) {
-            return selfs;
-        } else if (buffer.byteLength < u64.getSize()) {
-            return new Error(`Invalid size marker. Expecting u64 (size ${u64.getSize()} bytes), but size of buffer: ${buffer.byteLength} bytes.`);
-        }
-        let offset: number = 0;
-        do {
-            const len = buffer.readBigUInt64LE(offset);
-            if (isNaN(Number(len)) || !isFinite(Number(len))) {
-                return new Error(`Invalid length of ${this.getSignature()}/${this.getId()} in an array`);
-            }
-            offset += u64.getSize();
-            const body = buffer.slice(offset, offset + Number(len));
-            const self = this.defaults();
-            const err = self.decode(body);
-            if (err instanceof Error) {
-                return err;
-            }
-            selfs.push(self);
-            offset += body.byteLength;
-        } while (offset < buffer.byteLength);
-        return selfs;
-    }
-
-    public pack(sequence: number, uuid?: string): ArrayBufferLike {
-        const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
-        const signature: ArrayBufferLike | Error = Primitives.u16.encode(this.signature());
-        const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
-        const ts = BigInt((new Date()).getTime());
-        const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
-        if (id instanceof Error) {
-            throw new Error(`Fail to encode id (${this.getId()}) due error: ${id.message}`);
-        }
-        if (signature instanceof Error) {
-            throw new Error(`Fail to encode signature (${this.signature()}) due error: ${signature.message}`);
-        }
-        if (seq instanceof Error) {
-            throw new Error(`Fail to encode seq (${this.getId()}) due error: ${seq.message}`);
-        }
-        if (timestamp instanceof Error) {
-            throw new Error(`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`);
-        }
-        const buffer: ArrayBufferLike | Error = (() => {
-            const middleware: PackingMiddleware | undefined = getPackingMiddleware();
-            if (middleware instanceof PackingMiddleware) {
-                return middleware.encode(this.encode(), this.getId(), sequence, uuid);
-            } else {
-                return this.encode();
-            }
-        })();
-        if (buffer instanceof Error) {
-            throw buffer;
-        }
-        const len: ArrayBufferLike | Error = Primitives.u64.encode(BigInt(buffer.byteLength));
-        if (len instanceof Error) {
-            throw new Error(`Fail to encode len (${ts}) due error: ${len.message}`);
-        }
-        return Tools.append([id, signature, seq, timestamp, len, buffer]);
-    }
-
-    public abstract getSignature(): string;
-    public abstract signature(): number;
-    public abstract getId(): number;
-    public abstract encode(): ArrayBufferLike;
-    public abstract decode(buffer: ArrayBufferLike): Error | undefined;
-    public abstract defaults(): Convertor;
-
+	public next(): T | undefined {
+		return this._queue.length === 0
+			? undefined
+			: this._queue.splice(0, 1)[0];
+	}
 }
 
-type ESizeAlias = ESize; const ESizeAlias = ESize;
-type ConvertorAlias = Convertor; const ConvertorAlias = Convertor;
+export abstract class Convertor<T> {
+	public collect(
+		getters: Array<() => ArrayBufferLike | Error>
+	): ArrayBufferLike {
+		const buffers: ArrayBufferLike[] = [];
+		try {
+			getters.forEach((getter: () => ArrayBufferLike | Error) => {
+				const buf: ArrayBufferLike | Error = getter();
+				if (buf instanceof Error) {
+					throw buf;
+				}
+				buffers.push(buf);
+			});
+		} catch (err) {
+			throw err instanceof Error
+				? err
+				: new Error(`Unknown error: ${err}`);
+		}
+		return Tools.append(buffers);
+	}
+
+	public getBuffer(
+		id: number,
+		esize: ESize,
+		size: number | bigint,
+		value: ArrayBufferLike | Error
+	): ArrayBufferLike | Error {
+		if (value instanceof Error) {
+			return value;
+		}
+		const idBuf: ArrayBufferLike | Error = Primitives.u16.encode(id);
+		if (idBuf instanceof Error) {
+			return idBuf;
+		}
+		let sizeType: ArrayBufferLike | Error;
+		let sizeValue: ArrayBufferLike | Error;
+		if (esize === ESize.u64 && typeof size !== "bigint") {
+			return new Error(
+				`For size ${ESize.u64}, size should be defined as BigInt`
+			);
+		} else if (
+			(esize === ESize.u8 ||
+				esize === ESize.u16 ||
+				esize === ESize.u32) &&
+			typeof size === "bigint"
+		) {
+			return new Error(
+				`For sizes ${ESize.u8}, ${ESize.u16}, ${ESize.u32}, size should be defined as Number`
+			);
+		}
+		switch (esize) {
+			case ESize.u8:
+				sizeType = Primitives.u8.encode(
+					Primitives.u8.getSize() * CBits
+				);
+				sizeValue = Primitives.u8.encode(size as number);
+				break;
+			case ESize.u16:
+				sizeType = Primitives.u8.encode(
+					Primitives.u16.getSize() * CBits
+				);
+				sizeValue = Primitives.u16.encode(size as number);
+				break;
+			case ESize.u32:
+				sizeType = Primitives.u8.encode(
+					Primitives.u32.getSize() * CBits
+				);
+				sizeValue = Primitives.u32.encode(size as number);
+				break;
+			case ESize.u64:
+				sizeType = Primitives.u8.encode(
+					Primitives.u64.getSize() * CBits
+				);
+				sizeValue = Primitives.u64.encode(BigInt(size));
+				break;
+		}
+		if (sizeType instanceof Error) {
+			return sizeType;
+		}
+		if (sizeValue instanceof Error) {
+			return sizeValue;
+		}
+		if (sizeType === undefined || sizeValue === undefined) {
+			return new Error(`Size type or size value aren't defined`);
+		}
+		return Tools.append([idBuf, sizeType, sizeValue, value]);
+	}
+
+	public getBufferFromBuf<T>(
+		id: number,
+		esize: ESize,
+		encoder: (...args: any[]) => ArrayBufferLike | Error,
+		value: T
+	): ArrayBufferLike | Error {
+		const buffer = encoder(value);
+		if (buffer instanceof Error) {
+			return buffer;
+		}
+		return this.getBuffer(
+			id,
+			esize,
+			esize === ESize.u64 ? BigInt(buffer.byteLength) : buffer.byteLength,
+			buffer
+		);
+	}
+
+	public getStorage(buffer: ArrayBufferLike): Storage | Error {
+		const storage: Storage = new Storage();
+		const error: Error | undefined = storage.read(buffer);
+		if (error instanceof Error) {
+			return error;
+		}
+		return storage;
+	}
+
+	public getValue<T>(
+		storage: Storage,
+		id: number,
+		decoder: (buf: ArrayBufferLike) => T | Error
+	): T | Error {
+		const buffer = storage.get(id);
+		if (buffer === undefined) {
+			return new Error(`Fail to find field with ID "${id}"`);
+		}
+		return decoder(buffer);
+	}
+
+	public encodeSelfArray(
+		items: Array<Required<Convertor<T>>>
+	): ArrayBufferLike | Error {
+		let error: Error | undefined;
+		const buffers: ArrayBufferLike[] = [];
+		items.forEach((item: Required<Convertor<T>>) => {
+			if (error !== undefined) {
+				return;
+			}
+			const buffer = item.encode();
+			if (buffer instanceof Error) {
+				error = buffer;
+				return;
+			}
+			const len = u64.encode(BigInt(buffer.byteLength));
+			if (len instanceof Error) {
+				error = len;
+				return;
+			}
+			buffers.push(len);
+			buffers.push(buffer);
+		});
+		if (error !== undefined) {
+			return error;
+		}
+		return Tools.append(buffers);
+	}
+
+	public decodeSelfArray(bytes: ArrayBufferLike): T[] | Error {
+		const buffer = Buffer.from(bytes);
+		const selfs: T[] = [];
+		if (buffer.byteLength === 0) {
+			return selfs;
+		} else if (buffer.byteLength < u64.getSize()) {
+			return new Error(
+				`Invalid size marker. Expecting u64 (size ${u64.getSize()} bytes), but size of buffer: ${
+					buffer.byteLength
+				} bytes.`
+			);
+		}
+		let offset: number = 0;
+		do {
+			const len = buffer.readBigUInt64LE(offset);
+			if (isNaN(Number(len)) || !isFinite(Number(len))) {
+				return new Error(
+					`Invalid length of ${this.getSignature()}/${this.getId()} in an array`
+				);
+			}
+			offset += u64.getSize();
+			const body = buffer.slice(offset, offset + Number(len));
+			const self = this.defaults();
+			if (typeof (self as any).decode !== "function") {
+				throw new Error(
+					`Object ${self} isn't instance of Convertor<T>`
+				);
+			}
+			const err = (self as any).decode(body);
+			if (err instanceof Error) {
+				return err;
+			}
+			selfs.push(self);
+			offset += body.byteLength;
+		} while (offset < buffer.byteLength);
+		return selfs;
+	}
+
+	public pack(sequence: number, uuid?: string): ArrayBufferLike {
+		const id: ArrayBufferLike | Error = Primitives.u32.encode(this.getId());
+		const signature: ArrayBufferLike | Error = Primitives.u16.encode(
+			this.signature()
+		);
+		const seq: ArrayBufferLike | Error = Primitives.u32.encode(sequence);
+		const ts = BigInt(new Date().getTime());
+		const timestamp: ArrayBufferLike | Error = Primitives.u64.encode(ts);
+		if (id instanceof Error) {
+			throw new Error(
+				`Fail to encode id (${this.getId()}) due error: ${id.message}`
+			);
+		}
+		if (signature instanceof Error) {
+			throw new Error(
+				`Fail to encode signature (${this.signature()}) due error: ${
+					signature.message
+				}`
+			);
+		}
+		if (seq instanceof Error) {
+			throw new Error(
+				`Fail to encode seq (${this.getId()}) due error: ${seq.message}`
+			);
+		}
+		if (timestamp instanceof Error) {
+			throw new Error(
+				`Fail to encode timestamp (${ts}) due error: ${timestamp.message}`
+			);
+		}
+		const buffer: ArrayBufferLike | Error = (() => {
+			const middleware: PackingMiddleware | undefined =
+				getPackingMiddleware();
+			if (middleware instanceof PackingMiddleware) {
+				return middleware.encode(
+					this.encode(),
+					this.getId(),
+					sequence,
+					uuid
+				);
+			} else {
+				return this.encode();
+			}
+		})();
+		if (buffer instanceof Error) {
+			throw buffer;
+		}
+		const len: ArrayBufferLike | Error = Primitives.u64.encode(
+			BigInt(buffer.byteLength)
+		);
+		if (len instanceof Error) {
+			throw new Error(
+				`Fail to encode len (${ts}) due error: ${len.message}`
+			);
+		}
+		return Tools.append([id, signature, seq, timestamp, len, buffer]);
+	}
+
+	public abstract getSignature(): string;
+	public abstract signature(): number;
+	public abstract getId(): number;
+	public abstract encode(): ArrayBufferLike;
+	public abstract decode(buffer: ArrayBufferLike): Error | T;
+	public abstract defaults(): T;
+}
+
+type ESizeAlias = ESize;
+const ESizeAlias = ESize;
+type ConvertorAlias<T> = Convertor<T>;
+const ConvertorAlias = Convertor;
 type IPropSchemeAlias = IPropScheme;
 const PrimitivesAlias = Primitives;
 const validateAlias = validate;
 
-namespace Protocol {
-    export const ESize = ESizeAlias; export type ESize = ESizeAlias;
-    export const Convertor = ConvertorAlias; export type Convertor = ConvertorAlias;
-    export type IPropScheme = IPropSchemeAlias;
-    export const Primitives = PrimitivesAlias;
-    export const validate = validateAlias;
+export namespace Protocol {
+	export const ESize = ESizeAlias;
+	export type ESize = ESizeAlias;
+	export const Convertor = ConvertorAlias;
+	export type Convertor<T> = ConvertorAlias<T>;
+	export type IPropScheme = IPropSchemeAlias;
+	export const Primitives = PrimitivesAlias;
+	export const validate = validateAlias;
 }
 
 
@@ -2551,6 +2917,7 @@ export class EnumExampleA extends Protocol.Primitives.Enum<IEnumExampleA> {
         switch (id) {
             case 0: return new Protocol.Primitives.StrUTF8('');
             case 1: return new Protocol.Primitives.StrUTF8('');
+            default: throw new Error(`No option with id=${id}`);
         }
     }
     public get(): IEnumExampleA {
@@ -2639,6 +3006,7 @@ export class EnumExampleB extends Protocol.Primitives.Enum<IEnumExampleB> {
             case 8: return new Protocol.Primitives.i64(BigInt(0));
             case 9: return new Protocol.Primitives.f32(0);
             case 10: return new Protocol.Primitives.f64(0);
+            default: throw new Error(`No option with id=${id}`);
         }
     }
     public get(): IEnumExampleB {
@@ -2790,6 +3158,7 @@ export class EnumExampleC extends Protocol.Primitives.Enum<IEnumExampleC> {
             case 8: return new Protocol.Primitives.ArrayI64([BigInt(0)]);
             case 9: return new Protocol.Primitives.ArrayF32([0]);
             case 10: return new Protocol.Primitives.ArrayF64([0]);
+            default: throw new Error(`No option with id=${id}`);
         }
     }
     public get(): IEnumExampleC {
@@ -2897,7 +3266,7 @@ export interface IStructExampleA {
     field_f64: number;
     field_bool: boolean;
 }
-export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
+export class StructExampleA extends Protocol.Convertor<StructExampleA> implements IStructExampleA, ISigned<StructExampleA> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.StrUTF8, optional: false, },
@@ -2945,8 +3314,8 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleA on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -2981,19 +3350,19 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_str: string;
-    public field_str_empty: string;
-    public field_u8: number;
-    public field_u16: number;
-    public field_u32: number;
-    public field_u64: bigint;
-    public field_i8: number;
-    public field_i16: number;
-    public field_i32: number;
-    public field_i64: bigint;
-    public field_f32: number;
-    public field_f64: number;
-    public field_bool: boolean;
+    public field_str!: string;
+    public field_str_empty!: string;
+    public field_u8!: number;
+    public field_u16!: number;
+    public field_u32!: number;
+    public field_u64!: bigint;
+    public field_i8!: number;
+    public field_i16!: number;
+    public field_i32!: number;
+    public field_i64!: bigint;
+    public field_f32!: number;
+    public field_f64!: number;
+    public field_bool!: boolean;
     public static getSignature(): string { return 'StructExampleA'; }
     public static getId(): number { return 4; }
 
@@ -3001,7 +3370,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleA)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -3031,7 +3400,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleA {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
@@ -3114,6 +3483,7 @@ export class StructExampleA extends Protocol.Convertor implements IStructExample
         } else {
             this.field_bool = field_bool;
         }
+        return this;
     }
 
     public defaults(): StructExampleA {
@@ -3149,7 +3519,7 @@ export interface IStructExampleB {
     field_bool_empty: Array<boolean>;
     field_struct_empty: Array<StructExampleA>;
 }
-export class StructExampleB extends Protocol.Convertor implements IStructExampleB, ISigned<StructExampleB> {
+export class StructExampleB extends Protocol.Convertor<StructExampleB> implements IStructExampleB, ISigned<StructExampleB> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.ArrayStrUTF8, optional: false, },
@@ -3223,8 +3593,8 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleB on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -3272,32 +3642,32 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_str: Array<string>;
-    public field_u8: Array<number>;
-    public field_u16: Array<number>;
-    public field_u32: Array<number>;
-    public field_u64: Array<bigint>;
-    public field_i8: Array<number>;
-    public field_i16: Array<number>;
-    public field_i32: Array<number>;
-    public field_i64: Array<bigint>;
-    public field_f32: Array<number>;
-    public field_f64: Array<number>;
-    public field_bool: Array<boolean>;
-    public field_struct: Array<StructExampleA>;
-    public field_str_empty: Array<string>;
-    public field_u8_empty: Array<number>;
-    public field_u16_empty: Array<number>;
-    public field_u32_empty: Array<number>;
-    public field_u64_empty: Array<bigint>;
-    public field_i8_empty: Array<number>;
-    public field_i16_empty: Array<number>;
-    public field_i32_empty: Array<number>;
-    public field_i64_empty: Array<bigint>;
-    public field_f32_empty: Array<number>;
-    public field_f64_empty: Array<number>;
-    public field_bool_empty: Array<boolean>;
-    public field_struct_empty: Array<StructExampleA>;
+    public field_str!: Array<string>;
+    public field_u8!: Array<number>;
+    public field_u16!: Array<number>;
+    public field_u32!: Array<number>;
+    public field_u64!: Array<bigint>;
+    public field_i8!: Array<number>;
+    public field_i16!: Array<number>;
+    public field_i32!: Array<number>;
+    public field_i64!: Array<bigint>;
+    public field_f32!: Array<number>;
+    public field_f64!: Array<number>;
+    public field_bool!: Array<boolean>;
+    public field_struct!: Array<StructExampleA>;
+    public field_str_empty!: Array<string>;
+    public field_u8_empty!: Array<number>;
+    public field_u16_empty!: Array<number>;
+    public field_u32_empty!: Array<number>;
+    public field_u64_empty!: Array<bigint>;
+    public field_i8_empty!: Array<number>;
+    public field_i16_empty!: Array<number>;
+    public field_i32_empty!: Array<number>;
+    public field_i64_empty!: Array<bigint>;
+    public field_f32_empty!: Array<number>;
+    public field_f64_empty!: Array<number>;
+    public field_bool_empty!: Array<boolean>;
+    public field_struct_empty!: Array<StructExampleA>;
     public static getSignature(): string { return 'StructExampleB'; }
     public static getId(): number { return 18; }
 
@@ -3305,7 +3675,7 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleB)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -3348,7 +3718,7 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleB {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
@@ -3511,6 +3881,7 @@ export class StructExampleB extends Protocol.Convertor implements IStructExample
         } else {
             this.field_struct_empty = arrfield_struct_empty as StructExampleA[];
         }
+        return this;
     }
 
     public defaults(): StructExampleB {
@@ -3532,7 +3903,7 @@ export interface IStructExampleC {
     field_f64: number | undefined;
     field_bool: boolean | undefined;
 }
-export class StructExampleC extends Protocol.Convertor implements IStructExampleC, ISigned<StructExampleC> {
+export class StructExampleC extends Protocol.Convertor<StructExampleC> implements IStructExampleC, ISigned<StructExampleC> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.StrUTF8, optional: true, },
@@ -3578,8 +3949,8 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleC on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -3613,18 +3984,18 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_str: string | undefined;
-    public field_u8: number | undefined;
-    public field_u16: number | undefined;
-    public field_u32: number | undefined;
-    public field_u64: bigint | undefined;
-    public field_i8: number | undefined;
-    public field_i16: number | undefined;
-    public field_i32: number | undefined;
-    public field_i64: bigint | undefined;
-    public field_f32: number | undefined;
-    public field_f64: number | undefined;
-    public field_bool: boolean | undefined;
+    public field_str!: string | undefined;
+    public field_u8!: number | undefined;
+    public field_u16!: number | undefined;
+    public field_u32!: number | undefined;
+    public field_u64!: bigint | undefined;
+    public field_i8!: number | undefined;
+    public field_i16!: number | undefined;
+    public field_i32!: number | undefined;
+    public field_i64!: bigint | undefined;
+    public field_f32!: number | undefined;
+    public field_f64!: number | undefined;
+    public field_bool!: boolean | undefined;
     public static getSignature(): string { return 'StructExampleC'; }
     public static getId(): number { return 45; }
 
@@ -3632,7 +4003,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleC)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -3661,14 +4032,14 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleC {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
         }
         const field_strBuf: ArrayBufferLike | undefined = storage.get(46);
         if (field_strBuf === undefined) {
-            return new Error(`Fail to get property field_str`);
+            return new Error(`Fail to get property field_str (id=46)`);
         }
         if (field_strBuf.byteLength === 0) {
             this.field_str = undefined;
@@ -3682,7 +4053,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_u8Buf: ArrayBufferLike | undefined = storage.get(47);
         if (field_u8Buf === undefined) {
-            return new Error(`Fail to get property field_u8`);
+            return new Error(`Fail to get property field_u8 (id=47)`);
         }
         if (field_u8Buf.byteLength === 0) {
             this.field_u8 = undefined;
@@ -3696,7 +4067,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_u16Buf: ArrayBufferLike | undefined = storage.get(48);
         if (field_u16Buf === undefined) {
-            return new Error(`Fail to get property field_u16`);
+            return new Error(`Fail to get property field_u16 (id=48)`);
         }
         if (field_u16Buf.byteLength === 0) {
             this.field_u16 = undefined;
@@ -3710,7 +4081,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_u32Buf: ArrayBufferLike | undefined = storage.get(49);
         if (field_u32Buf === undefined) {
-            return new Error(`Fail to get property field_u32`);
+            return new Error(`Fail to get property field_u32 (id=49)`);
         }
         if (field_u32Buf.byteLength === 0) {
             this.field_u32 = undefined;
@@ -3724,7 +4095,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_u64Buf: ArrayBufferLike | undefined = storage.get(50);
         if (field_u64Buf === undefined) {
-            return new Error(`Fail to get property field_u64`);
+            return new Error(`Fail to get property field_u64 (id=50)`);
         }
         if (field_u64Buf.byteLength === 0) {
             this.field_u64 = undefined;
@@ -3738,7 +4109,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_i8Buf: ArrayBufferLike | undefined = storage.get(51);
         if (field_i8Buf === undefined) {
-            return new Error(`Fail to get property field_i8`);
+            return new Error(`Fail to get property field_i8 (id=51)`);
         }
         if (field_i8Buf.byteLength === 0) {
             this.field_i8 = undefined;
@@ -3752,7 +4123,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_i16Buf: ArrayBufferLike | undefined = storage.get(52);
         if (field_i16Buf === undefined) {
-            return new Error(`Fail to get property field_i16`);
+            return new Error(`Fail to get property field_i16 (id=52)`);
         }
         if (field_i16Buf.byteLength === 0) {
             this.field_i16 = undefined;
@@ -3766,7 +4137,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_i32Buf: ArrayBufferLike | undefined = storage.get(53);
         if (field_i32Buf === undefined) {
-            return new Error(`Fail to get property field_i32`);
+            return new Error(`Fail to get property field_i32 (id=53)`);
         }
         if (field_i32Buf.byteLength === 0) {
             this.field_i32 = undefined;
@@ -3780,7 +4151,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_i64Buf: ArrayBufferLike | undefined = storage.get(54);
         if (field_i64Buf === undefined) {
-            return new Error(`Fail to get property field_i64`);
+            return new Error(`Fail to get property field_i64 (id=54)`);
         }
         if (field_i64Buf.byteLength === 0) {
             this.field_i64 = undefined;
@@ -3794,7 +4165,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_f32Buf: ArrayBufferLike | undefined = storage.get(55);
         if (field_f32Buf === undefined) {
-            return new Error(`Fail to get property field_f32`);
+            return new Error(`Fail to get property field_f32 (id=55)`);
         }
         if (field_f32Buf.byteLength === 0) {
             this.field_f32 = undefined;
@@ -3808,7 +4179,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_f64Buf: ArrayBufferLike | undefined = storage.get(56);
         if (field_f64Buf === undefined) {
-            return new Error(`Fail to get property field_f64`);
+            return new Error(`Fail to get property field_f64 (id=56)`);
         }
         if (field_f64Buf.byteLength === 0) {
             this.field_f64 = undefined;
@@ -3822,7 +4193,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
         }
         const field_boolBuf: ArrayBufferLike | undefined = storage.get(57);
         if (field_boolBuf === undefined) {
-            return new Error(`Fail to get property field_bool`);
+            return new Error(`Fail to get property field_bool (id=57)`);
         }
         if (field_boolBuf.byteLength === 0) {
             this.field_bool = undefined;
@@ -3834,6 +4205,7 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
                 this.field_bool = field_bool;
             }
         }
+        return this;
     }
 
     public defaults(): StructExampleC {
@@ -3842,20 +4214,20 @@ export class StructExampleC extends Protocol.Convertor implements IStructExample
 }
 
 export interface IStructExampleD {
-    field_str: Array<string | undefined>;
-    field_u8: Array<number | undefined>;
-    field_u16: Array<number | undefined>;
-    field_u32: Array<number | undefined>;
-    field_u64: Array<bigint | undefined>;
-    field_i8: Array<number | undefined>;
-    field_i16: Array<number | undefined>;
-    field_i32: Array<number | undefined>;
-    field_i64: Array<bigint | undefined>;
-    field_f32: Array<number | undefined>;
-    field_f64: Array<number | undefined>;
-    field_bool: Array<boolean | undefined>;
+    field_str: Array<string> | undefined;
+    field_u8: Array<number> | undefined;
+    field_u16: Array<number> | undefined;
+    field_u32: Array<number> | undefined;
+    field_u64: Array<bigint> | undefined;
+    field_i8: Array<number> | undefined;
+    field_i16: Array<number> | undefined;
+    field_i32: Array<number> | undefined;
+    field_i64: Array<bigint> | undefined;
+    field_f32: Array<number> | undefined;
+    field_f64: Array<number> | undefined;
+    field_bool: Array<boolean> | undefined;
 }
-export class StructExampleD extends Protocol.Convertor implements IStructExampleD, ISigned<StructExampleD> {
+export class StructExampleD extends Protocol.Convertor<StructExampleD> implements IStructExampleD, ISigned<StructExampleD> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_str', types: Protocol.Primitives.ArrayStrUTF8, optional: true, },
@@ -3901,8 +4273,8 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleD on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -3936,18 +4308,18 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_str: Array<string | undefined>;
-    public field_u8: Array<number | undefined>;
-    public field_u16: Array<number | undefined>;
-    public field_u32: Array<number | undefined>;
-    public field_u64: Array<bigint | undefined>;
-    public field_i8: Array<number | undefined>;
-    public field_i16: Array<number | undefined>;
-    public field_i32: Array<number | undefined>;
-    public field_i64: Array<bigint | undefined>;
-    public field_f32: Array<number | undefined>;
-    public field_f64: Array<number | undefined>;
-    public field_bool: Array<boolean | undefined>;
+    public field_str!: Array<string> | undefined;
+    public field_u8!: Array<number> | undefined;
+    public field_u16!: Array<number> | undefined;
+    public field_u32!: Array<number> | undefined;
+    public field_u64!: Array<bigint> | undefined;
+    public field_i8!: Array<number> | undefined;
+    public field_i16!: Array<number> | undefined;
+    public field_i32!: Array<number> | undefined;
+    public field_i64!: Array<bigint> | undefined;
+    public field_f32!: Array<number> | undefined;
+    public field_f64!: Array<number> | undefined;
+    public field_bool!: Array<boolean> | undefined;
     public static getSignature(): string { return 'StructExampleD'; }
     public static getId(): number { return 58; }
 
@@ -3955,7 +4327,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleD)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -3984,14 +4356,14 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleD {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
         }
         const field_strBuf: ArrayBufferLike | undefined = storage.get(59);
         if (field_strBuf === undefined) {
-            return new Error(`Fail to get property field_str`);
+            return new Error(`Fail to get property field_str (id=59)`);
         }
         if (field_strBuf.byteLength === 0) {
             this.field_str = undefined;
@@ -4005,7 +4377,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_u8Buf: ArrayBufferLike | undefined = storage.get(60);
         if (field_u8Buf === undefined) {
-            return new Error(`Fail to get property field_u8`);
+            return new Error(`Fail to get property field_u8 (id=60)`);
         }
         if (field_u8Buf.byteLength === 0) {
             this.field_u8 = undefined;
@@ -4019,7 +4391,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_u16Buf: ArrayBufferLike | undefined = storage.get(61);
         if (field_u16Buf === undefined) {
-            return new Error(`Fail to get property field_u16`);
+            return new Error(`Fail to get property field_u16 (id=61)`);
         }
         if (field_u16Buf.byteLength === 0) {
             this.field_u16 = undefined;
@@ -4033,7 +4405,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_u32Buf: ArrayBufferLike | undefined = storage.get(62);
         if (field_u32Buf === undefined) {
-            return new Error(`Fail to get property field_u32`);
+            return new Error(`Fail to get property field_u32 (id=62)`);
         }
         if (field_u32Buf.byteLength === 0) {
             this.field_u32 = undefined;
@@ -4047,7 +4419,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_u64Buf: ArrayBufferLike | undefined = storage.get(63);
         if (field_u64Buf === undefined) {
-            return new Error(`Fail to get property field_u64`);
+            return new Error(`Fail to get property field_u64 (id=63)`);
         }
         if (field_u64Buf.byteLength === 0) {
             this.field_u64 = undefined;
@@ -4061,7 +4433,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_i8Buf: ArrayBufferLike | undefined = storage.get(64);
         if (field_i8Buf === undefined) {
-            return new Error(`Fail to get property field_i8`);
+            return new Error(`Fail to get property field_i8 (id=64)`);
         }
         if (field_i8Buf.byteLength === 0) {
             this.field_i8 = undefined;
@@ -4075,7 +4447,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_i16Buf: ArrayBufferLike | undefined = storage.get(65);
         if (field_i16Buf === undefined) {
-            return new Error(`Fail to get property field_i16`);
+            return new Error(`Fail to get property field_i16 (id=65)`);
         }
         if (field_i16Buf.byteLength === 0) {
             this.field_i16 = undefined;
@@ -4089,7 +4461,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_i32Buf: ArrayBufferLike | undefined = storage.get(66);
         if (field_i32Buf === undefined) {
-            return new Error(`Fail to get property field_i32`);
+            return new Error(`Fail to get property field_i32 (id=66)`);
         }
         if (field_i32Buf.byteLength === 0) {
             this.field_i32 = undefined;
@@ -4103,7 +4475,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_i64Buf: ArrayBufferLike | undefined = storage.get(67);
         if (field_i64Buf === undefined) {
-            return new Error(`Fail to get property field_i64`);
+            return new Error(`Fail to get property field_i64 (id=67)`);
         }
         if (field_i64Buf.byteLength === 0) {
             this.field_i64 = undefined;
@@ -4117,7 +4489,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_f32Buf: ArrayBufferLike | undefined = storage.get(68);
         if (field_f32Buf === undefined) {
-            return new Error(`Fail to get property field_f32`);
+            return new Error(`Fail to get property field_f32 (id=68)`);
         }
         if (field_f32Buf.byteLength === 0) {
             this.field_f32 = undefined;
@@ -4131,7 +4503,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_f64Buf: ArrayBufferLike | undefined = storage.get(69);
         if (field_f64Buf === undefined) {
-            return new Error(`Fail to get property field_f64`);
+            return new Error(`Fail to get property field_f64 (id=69)`);
         }
         if (field_f64Buf.byteLength === 0) {
             this.field_f64 = undefined;
@@ -4145,7 +4517,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
         }
         const field_boolBuf: ArrayBufferLike | undefined = storage.get(70);
         if (field_boolBuf === undefined) {
-            return new Error(`Fail to get property field_bool`);
+            return new Error(`Fail to get property field_bool (id=70)`);
         }
         if (field_boolBuf.byteLength === 0) {
             this.field_bool = undefined;
@@ -4157,6 +4529,7 @@ export class StructExampleD extends Protocol.Convertor implements IStructExample
                 this.field_bool = field_bool;
             }
         }
+        return this;
     }
 
     public defaults(): StructExampleD {
@@ -4169,7 +4542,7 @@ export interface IStructExampleE {
     field_b: IEnumExampleB;
     field_c: IEnumExampleC;
 }
-export class StructExampleE extends Protocol.Convertor implements IStructExampleE, ISigned<StructExampleE> {
+export class StructExampleE extends Protocol.Convertor<StructExampleE> implements IStructExampleE, ISigned<StructExampleE> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', optional: false, options: [
@@ -4224,8 +4597,8 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleE on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -4250,9 +4623,9 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_a: IEnumExampleA;
-    public field_b: IEnumExampleB;
-    public field_c: IEnumExampleC;
+    public field_a!: IEnumExampleA;
+    public field_b!: IEnumExampleB;
+    public field_c!: IEnumExampleC;
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
@@ -4263,7 +4636,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleE)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
         this._field_a = new EnumExampleA()
         this._field_a.set(this.field_a);
@@ -4289,13 +4662,13 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleE {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
         }
         this.field_a = {};
-        const field_aBuf: ArrayBufferLike = storage.get(72);
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(72);
         if (field_aBuf === undefined) {
             return new Error(`Fail to get property "field_a"`);
         }
@@ -4308,7 +4681,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             }
         }
         this.field_b = {};
-        const field_bBuf: ArrayBufferLike = storage.get(73);
+        const field_bBuf: ArrayBufferLike | undefined = storage.get(73);
         if (field_bBuf === undefined) {
             return new Error(`Fail to get property "field_b"`);
         }
@@ -4321,7 +4694,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
             }
         }
         this.field_c = {};
-        const field_cBuf: ArrayBufferLike = storage.get(74);
+        const field_cBuf: ArrayBufferLike | undefined = storage.get(74);
         if (field_cBuf === undefined) {
             return new Error(`Fail to get property "field_c"`);
         }
@@ -4333,6 +4706,7 @@ export class StructExampleE extends Protocol.Convertor implements IStructExample
                 this.field_c = this._field_c.get();
             }
         }
+        return this;
     }
 
     public defaults(): StructExampleE {
@@ -4345,7 +4719,7 @@ export interface IStructExampleF {
     field_b: IEnumExampleB | undefined;
     field_c: IEnumExampleC | undefined;
 }
-export class StructExampleF extends Protocol.Convertor implements IStructExampleF, ISigned<StructExampleF> {
+export class StructExampleF extends Protocol.Convertor<StructExampleF> implements IStructExampleF, ISigned<StructExampleF> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', optional: true, options: [
@@ -4400,8 +4774,8 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleF on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -4426,9 +4800,9 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_a: IEnumExampleA | undefined;
-    public field_b: IEnumExampleB | undefined;
-    public field_c: IEnumExampleC | undefined;
+    public field_a!: IEnumExampleA | undefined;
+    public field_b!: IEnumExampleB | undefined;
+    public field_c!: IEnumExampleC | undefined;
     private _field_a: Primitives.Enum;
     private _field_b: Primitives.Enum;
     private _field_c: Primitives.Enum;
@@ -4439,7 +4813,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleF)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
         this._field_a = new EnumExampleA()
         this.field_a !== undefined && this._field_a.set(this.field_a);
@@ -4465,20 +4839,20 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleF {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
         }
         const field_aBuf: ArrayBufferLike | undefined = storage.get(76);
         if (field_aBuf === undefined) {
-            return new Error(`Fail to get property field_a`);
+            return new Error(`Fail to get property field_a (id=76)`);
         }
         if (field_aBuf.byteLength === 0) {
             this.field_a = undefined;
         } else {
             this.field_a = {};
-            const field_aBuf: ArrayBufferLike = storage.get(76);
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(76);
             if (field_aBuf === undefined) {
                 return new Error(`Fail to get property "field_a"`);
             }
@@ -4493,13 +4867,13 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         }
         const field_bBuf: ArrayBufferLike | undefined = storage.get(77);
         if (field_bBuf === undefined) {
-            return new Error(`Fail to get property field_b`);
+            return new Error(`Fail to get property field_b (id=77)`);
         }
         if (field_bBuf.byteLength === 0) {
             this.field_b = undefined;
         } else {
             this.field_b = {};
-            const field_bBuf: ArrayBufferLike = storage.get(77);
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(77);
             if (field_bBuf === undefined) {
                 return new Error(`Fail to get property "field_b"`);
             }
@@ -4514,13 +4888,13 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
         }
         const field_cBuf: ArrayBufferLike | undefined = storage.get(78);
         if (field_cBuf === undefined) {
-            return new Error(`Fail to get property field_c`);
+            return new Error(`Fail to get property field_c (id=78)`);
         }
         if (field_cBuf.byteLength === 0) {
             this.field_c = undefined;
         } else {
             this.field_c = {};
-            const field_cBuf: ArrayBufferLike = storage.get(78);
+            const field_cBuf: ArrayBufferLike | undefined = storage.get(78);
             if (field_cBuf === undefined) {
                 return new Error(`Fail to get property "field_c"`);
             }
@@ -4533,6 +4907,7 @@ export class StructExampleF extends Protocol.Convertor implements IStructExample
                 }
             }
         }
+        return this;
     }
 
     public defaults(): StructExampleF {
@@ -4544,7 +4919,7 @@ export interface IStructExampleG {
     field_a: StructExampleA;
     field_b: StructExampleB;
 }
-export class StructExampleG extends Protocol.Convertor implements IStructExampleG, ISigned<StructExampleG> {
+export class StructExampleG extends Protocol.Convertor<StructExampleG> implements IStructExampleG, ISigned<StructExampleG> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', types: StructExampleA.getValidator(false), optional: false },
@@ -4611,8 +4986,8 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleG on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -4636,8 +5011,8 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_a: StructExampleA;
-    public field_b: StructExampleB;
+    public field_a!: StructExampleA;
+    public field_b!: StructExampleB;
     public static getSignature(): string { return 'StructExampleG'; }
     public static getId(): number { return 79; }
 
@@ -4645,7 +5020,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleG)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -4664,7 +5039,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleG {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
@@ -4684,11 +5059,11 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
             field_f64: 0,
             field_bool: true,
         });
-        const field_aBuf: ArrayBufferLike = storage.get(80);
-        if (field_aBuf instanceof Error) {
-            return field_aBuf;
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(80);
+        if (field_aBuf === undefined) {
+            return new Error(`Fail to find field "field_a" (id=80).`);
         }
-        const field_aErr: Error | undefined = field_a.decode(field_aBuf);
+        const field_aErr: Error | StructExampleA = field_a.decode(field_aBuf);
         if (field_aErr instanceof Error) {
             return field_aErr;
         } else {
@@ -4722,16 +5097,17 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
             field_bool_empty: [],
             field_struct_empty: [],
         });
-        const field_bBuf: ArrayBufferLike = storage.get(81);
-        if (field_bBuf instanceof Error) {
-            return field_bBuf;
+        const field_bBuf: ArrayBufferLike | undefined = storage.get(81);
+        if (field_bBuf === undefined) {
+            return new Error(`Fail to find field "field_b" (id=81).`);
         }
-        const field_bErr: Error | undefined = field_b.decode(field_bBuf);
+        const field_bErr: Error | StructExampleB = field_b.decode(field_bBuf);
         if (field_bErr instanceof Error) {
             return field_bErr;
         } else {
             this.field_b = field_b;
         }
+        return this;
     }
 
     public defaults(): StructExampleG {
@@ -4741,7 +5117,7 @@ export class StructExampleG extends Protocol.Convertor implements IStructExample
 
 export interface IStructExampleEmpty {
 }
-export class StructExampleEmpty extends Protocol.Convertor implements IStructExampleEmpty, ISigned<StructExampleEmpty> {
+export class StructExampleEmpty extends Protocol.Convertor<StructExampleEmpty> implements IStructExampleEmpty, ISigned<StructExampleEmpty> {
 
     public static scheme: Protocol.IPropScheme[] = [
     ];
@@ -4763,8 +5139,8 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
                             throw new Error(`Expecting instance of StructExampleEmpty on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -4793,7 +5169,7 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
     constructor(params: IStructExampleEmpty)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -4810,11 +5186,12 @@ export class StructExampleEmpty extends Protocol.Convertor implements IStructExa
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleEmpty {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
         }
+        return this;
     }
 
     public defaults(): StructExampleEmpty {
@@ -4827,7 +5204,7 @@ export interface IStructExampleJ {
     field_b: StructExampleB | undefined;
     field_c: StructExampleEmpty;
 }
-export class StructExampleJ extends Protocol.Convertor implements IStructExampleJ, ISigned<StructExampleJ> {
+export class StructExampleJ extends Protocol.Convertor<StructExampleJ> implements IStructExampleJ, ISigned<StructExampleJ> {
 
     public static scheme: Protocol.IPropScheme[] = [
         { prop: 'field_a', types: StructExampleA.getValidator(false), optional: true },
@@ -4856,8 +5233,8 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
                             throw new Error(`Expecting instance of StructExampleJ on index #${index}`);
                         }
                     });
-                } catch (e) {
-                    return e;
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                 }
             }};
         } else {
@@ -4882,9 +5259,9 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         }
     }
 
-    public field_a: StructExampleA | undefined;
-    public field_b: StructExampleB | undefined;
-    public field_c: StructExampleEmpty;
+    public field_a!: StructExampleA | undefined;
+    public field_b!: StructExampleB | undefined;
+    public field_c!: StructExampleEmpty;
     public static getSignature(): string { return 'StructExampleJ'; }
     public static getId(): number { return 83; }
 
@@ -4892,7 +5269,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
     constructor(params: IStructExampleJ)  {
         super();
         Object.keys(params).forEach((key: string) => {
-            this[key] = params[key];
+            (this as any)[key] = (params as any)[key];
         });
     }
 
@@ -4912,14 +5289,14 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         ]);
     }
 
-    public decode(buffer: ArrayBufferLike): Error | undefined {
+    public decode(buffer: ArrayBufferLike): Error | StructExampleJ {
         const storage = this.getStorage(buffer);
         if (storage instanceof Error) {
             return storage;
         }
         const field_aBuf: ArrayBufferLike | undefined = storage.get(84);
         if (field_aBuf === undefined) {
-            return new Error(`Fail to get property field_a`);
+            return new Error(`Fail to get property field_a (id=84)`);
         }
         if (field_aBuf.byteLength === 0) {
             this.field_a = undefined;
@@ -4939,11 +5316,11 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
                 field_f64: 0,
                 field_bool: true,
             });
-            const field_aBuf: ArrayBufferLike = storage.get(84);
-            if (field_aBuf instanceof Error) {
-                return field_aBuf;
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(84);
+            if (field_aBuf === undefined) {
+                return new Error(`Fail to find field "field_a" (id=84).`);
             }
-            const field_aErr: Error | undefined = field_a.decode(field_aBuf);
+            const field_aErr: Error | StructExampleA = field_a.decode(field_aBuf);
             if (field_aErr instanceof Error) {
                 return field_aErr;
             } else {
@@ -4952,7 +5329,7 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         }
         const field_bBuf: ArrayBufferLike | undefined = storage.get(85);
         if (field_bBuf === undefined) {
-            return new Error(`Fail to get property field_b`);
+            return new Error(`Fail to get property field_b (id=85)`);
         }
         if (field_bBuf.byteLength === 0) {
             this.field_b = undefined;
@@ -4985,11 +5362,11 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
                 field_bool_empty: [],
                 field_struct_empty: [],
             });
-            const field_bBuf: ArrayBufferLike = storage.get(85);
-            if (field_bBuf instanceof Error) {
-                return field_bBuf;
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(85);
+            if (field_bBuf === undefined) {
+                return new Error(`Fail to find field "field_b" (id=85).`);
             }
-            const field_bErr: Error | undefined = field_b.decode(field_bBuf);
+            const field_bErr: Error | StructExampleB = field_b.decode(field_bBuf);
             if (field_bErr instanceof Error) {
                 return field_bErr;
             } else {
@@ -4998,16 +5375,17 @@ export class StructExampleJ extends Protocol.Convertor implements IStructExample
         }
         const field_c: StructExampleEmpty = new StructExampleEmpty({
         });
-        const field_cBuf: ArrayBufferLike = storage.get(86);
-        if (field_cBuf instanceof Error) {
-            return field_cBuf;
+        const field_cBuf: ArrayBufferLike | undefined = storage.get(86);
+        if (field_cBuf === undefined) {
+            return new Error(`Fail to find field "field_c" (id=86).`);
         }
-        const field_cErr: Error | undefined = field_c.decode(field_cBuf);
+        const field_cErr: Error | StructExampleEmpty = field_c.decode(field_cBuf);
         if (field_cErr instanceof Error) {
             return field_cErr;
         } else {
             this.field_c = field_c;
         }
+        return this;
     }
 
     public defaults(): StructExampleJ {
@@ -5054,6 +5432,7 @@ export namespace GroupA {
             switch (id) {
                 case 0: return new Protocol.Primitives.StrUTF8('');
                 case 1: return new Protocol.Primitives.StrUTF8('');
+                default: throw new Error(`No option with id=${id}`);
             }
         }
         public get(): IEnumExampleA {
@@ -5088,7 +5467,7 @@ export namespace GroupA {
         field_u16: number;
         opt: IEnumExampleA;
     }
-    export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
+    export class StructExampleA extends Protocol.Convertor<StructExampleA> implements IStructExampleA, ISigned<StructExampleA> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -5119,8 +5498,8 @@ export namespace GroupA {
                                 throw new Error(`Expecting instance of StructExampleA on index #${index}`);
                             }
                         });
-                    } catch (e) {
-                        return e;
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                     }
                 }};
             } else {
@@ -5145,9 +5524,9 @@ export namespace GroupA {
             }
         }
 
-        public field_u8: number;
-        public field_u16: number;
-        public opt: IEnumExampleA;
+        public field_u8!: number;
+        public field_u16!: number;
+        public opt!: IEnumExampleA;
         private _opt: Primitives.Enum;
         public static getSignature(): string { return 'StructExampleA'; }
         public static getId(): number { return 89; }
@@ -5156,7 +5535,7 @@ export namespace GroupA {
         constructor(params: IStructExampleA)  {
             super();
             Object.keys(params).forEach((key: string) => {
-                this[key] = params[key];
+                (this as any)[key] = (params as any)[key];
             });
             this._opt = new EnumExampleA()
             this._opt.set(this.opt);
@@ -5178,7 +5557,7 @@ export namespace GroupA {
             ]);
         }
 
-        public decode(buffer: ArrayBufferLike): Error | undefined {
+        public decode(buffer: ArrayBufferLike): Error | StructExampleA {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
                 return storage;
@@ -5196,7 +5575,7 @@ export namespace GroupA {
                 this.field_u16 = field_u16;
             }
             this.opt = {};
-            const optBuf: ArrayBufferLike = storage.get(92);
+            const optBuf: ArrayBufferLike | undefined = storage.get(92);
             if (optBuf === undefined) {
                 return new Error(`Fail to get property "opt"`);
             }
@@ -5208,6 +5587,7 @@ export namespace GroupA {
                     this.opt = this._opt.get();
                 }
             }
+            return this;
         }
 
         public defaults(): StructExampleA {
@@ -5220,7 +5600,7 @@ export namespace GroupA {
         field_u16: number;
         strct: GroupA.StructExampleA;
     }
-    export class StructExampleB extends Protocol.Convertor implements IStructExampleB, ISigned<StructExampleB> {
+    export class StructExampleB extends Protocol.Convertor<StructExampleB> implements IStructExampleB, ISigned<StructExampleB> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -5252,8 +5632,8 @@ export namespace GroupA {
                                 throw new Error(`Expecting instance of StructExampleB on index #${index}`);
                             }
                         });
-                    } catch (e) {
-                        return e;
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                     }
                 }};
             } else {
@@ -5278,9 +5658,9 @@ export namespace GroupA {
             }
         }
 
-        public field_u8: number;
-        public field_u16: number;
-        public strct: GroupA.StructExampleA;
+        public field_u8!: number;
+        public field_u16!: number;
+        public strct!: GroupA.StructExampleA;
         public static getSignature(): string { return 'StructExampleB'; }
         public static getId(): number { return 93; }
 
@@ -5288,7 +5668,7 @@ export namespace GroupA {
         constructor(params: IStructExampleB)  {
             super();
             Object.keys(params).forEach((key: string) => {
-                this[key] = params[key];
+                (this as any)[key] = (params as any)[key];
             });
         }
 
@@ -5308,7 +5688,7 @@ export namespace GroupA {
             ]);
         }
 
-        public decode(buffer: ArrayBufferLike): Error | undefined {
+        public decode(buffer: ArrayBufferLike): Error | StructExampleB {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
                 return storage;
@@ -5330,16 +5710,17 @@ export namespace GroupA {
                 field_u16: 0,
                 opt: {},
             });
-            const strctBuf: ArrayBufferLike = storage.get(96);
-            if (strctBuf instanceof Error) {
-                return strctBuf;
+            const strctBuf: ArrayBufferLike | undefined = storage.get(96);
+            if (strctBuf === undefined) {
+                return new Error(`Fail to find field "strct" (id=96).`);
             }
-            const strctErr: Error | undefined = strct.decode(strctBuf);
+            const strctErr: Error | StructExampleA = strct.decode(strctBuf);
             if (strctErr instanceof Error) {
                 return strctErr;
             } else {
                 this.strct = strct;
             }
+            return this;
         }
 
         public defaults(): StructExampleB {
@@ -5359,7 +5740,7 @@ export namespace GroupB {
         field_u8: number;
         field_u16: number;
     }
-    export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
+    export class StructExampleA extends Protocol.Convertor<StructExampleA> implements IStructExampleA, ISigned<StructExampleA> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -5385,8 +5766,8 @@ export namespace GroupB {
                                 throw new Error(`Expecting instance of StructExampleA on index #${index}`);
                             }
                         });
-                    } catch (e) {
-                        return e;
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                     }
                 }};
             } else {
@@ -5410,8 +5791,8 @@ export namespace GroupB {
             }
         }
 
-        public field_u8: number;
-        public field_u16: number;
+        public field_u8!: number;
+        public field_u16!: number;
         public static getSignature(): string { return 'StructExampleA'; }
         public static getId(): number { return 98; }
 
@@ -5419,7 +5800,7 @@ export namespace GroupB {
         constructor(params: IStructExampleA)  {
             super();
             Object.keys(params).forEach((key: string) => {
-                this[key] = params[key];
+                (this as any)[key] = (params as any)[key];
             });
         }
 
@@ -5438,7 +5819,7 @@ export namespace GroupB {
             ]);
         }
 
-        public decode(buffer: ArrayBufferLike): Error | undefined {
+        public decode(buffer: ArrayBufferLike): Error | StructExampleA {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
                 return storage;
@@ -5455,6 +5836,7 @@ export namespace GroupB {
             } else {
                 this.field_u16 = field_u16;
             }
+            return this;
         }
 
         public defaults(): StructExampleA {
@@ -5472,7 +5854,7 @@ export namespace GroupB {
             field_u8: number;
             field_u16: number;
         }
-        export class StructExampleA extends Protocol.Convertor implements IStructExampleA, ISigned<StructExampleA> {
+        export class StructExampleA extends Protocol.Convertor<StructExampleA> implements IStructExampleA, ISigned<StructExampleA> {
 
             public static scheme: Protocol.IPropScheme[] = [
                 { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -5498,8 +5880,8 @@ export namespace GroupB {
                                     throw new Error(`Expecting instance of StructExampleA on index #${index}`);
                                 }
                             });
-                        } catch (e) {
-                            return e;
+                        } catch (err) {
+                            return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                         }
                     }};
                 } else {
@@ -5523,8 +5905,8 @@ export namespace GroupB {
                 }
             }
 
-            public field_u8: number;
-            public field_u16: number;
+            public field_u8!: number;
+            public field_u16!: number;
             public static getSignature(): string { return 'StructExampleA'; }
             public static getId(): number { return 102; }
 
@@ -5532,7 +5914,7 @@ export namespace GroupB {
             constructor(params: IStructExampleA)  {
                 super();
                 Object.keys(params).forEach((key: string) => {
-                    this[key] = params[key];
+                    (this as any)[key] = (params as any)[key];
                 });
             }
 
@@ -5551,7 +5933,7 @@ export namespace GroupB {
                 ]);
             }
 
-            public decode(buffer: ArrayBufferLike): Error | undefined {
+            public decode(buffer: ArrayBufferLike): Error | StructExampleA {
                 const storage = this.getStorage(buffer);
                 if (storage instanceof Error) {
                     return storage;
@@ -5568,6 +5950,7 @@ export namespace GroupB {
                 } else {
                     this.field_u16 = field_u16;
                 }
+                return this;
             }
 
             public defaults(): StructExampleA {
@@ -5580,7 +5963,7 @@ export namespace GroupB {
             field_u16: number;
             strct: GroupB.GroupC.StructExampleA;
         }
-        export class StructExampleB extends Protocol.Convertor implements IStructExampleB, ISigned<StructExampleB> {
+        export class StructExampleB extends Protocol.Convertor<StructExampleB> implements IStructExampleB, ISigned<StructExampleB> {
 
             public static scheme: Protocol.IPropScheme[] = [
                 { prop: 'field_u8', types: Protocol.Primitives.u8, optional: false, },
@@ -5611,8 +5994,8 @@ export namespace GroupB {
                                     throw new Error(`Expecting instance of StructExampleB on index #${index}`);
                                 }
                             });
-                        } catch (e) {
-                            return e;
+                        } catch (err) {
+                            return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                         }
                     }};
                 } else {
@@ -5637,9 +6020,9 @@ export namespace GroupB {
                 }
             }
 
-            public field_u8: number;
-            public field_u16: number;
-            public strct: GroupB.GroupC.StructExampleA;
+            public field_u8!: number;
+            public field_u16!: number;
+            public strct!: GroupB.GroupC.StructExampleA;
             public static getSignature(): string { return 'StructExampleB'; }
             public static getId(): number { return 105; }
 
@@ -5647,7 +6030,7 @@ export namespace GroupB {
             constructor(params: IStructExampleB)  {
                 super();
                 Object.keys(params).forEach((key: string) => {
-                    this[key] = params[key];
+                    (this as any)[key] = (params as any)[key];
                 });
             }
 
@@ -5667,7 +6050,7 @@ export namespace GroupB {
                 ]);
             }
 
-            public decode(buffer: ArrayBufferLike): Error | undefined {
+            public decode(buffer: ArrayBufferLike): Error | StructExampleB {
                 const storage = this.getStorage(buffer);
                 if (storage instanceof Error) {
                     return storage;
@@ -5688,16 +6071,17 @@ export namespace GroupB {
                     field_u8: 0,
                     field_u16: 0,
                 });
-                const strctBuf: ArrayBufferLike = storage.get(108);
-                if (strctBuf instanceof Error) {
-                    return strctBuf;
+                const strctBuf: ArrayBufferLike | undefined = storage.get(108);
+                if (strctBuf === undefined) {
+                    return new Error(`Fail to find field "strct" (id=108).`);
                 }
-                const strctErr: Error | undefined = strct.decode(strctBuf);
+                const strctErr: Error | StructExampleA = strct.decode(strctBuf);
                 if (strctErr instanceof Error) {
                     return strctErr;
                 } else {
                     this.strct = strct;
                 }
+                return this;
             }
 
             public defaults(): StructExampleB {
@@ -5753,6 +6137,7 @@ export namespace GroupD {
                 case 1: return GroupD.StructExampleP.defaults();
                 case 2: return GroupB.StructExampleA.defaults();
                 case 3: return GroupB.GroupC.StructExampleA.defaults();
+                default: throw new Error(`No option with id=${id}`);
             }
         }
         public get(): IEnumExampleP {
@@ -5801,7 +6186,7 @@ export namespace GroupD {
         field_b: GroupB.StructExampleA;
         field_c: GroupB.GroupC.StructExampleA;
     }
-    export class StructExampleP extends Protocol.Convertor implements IStructExampleP, ISigned<StructExampleP> {
+    export class StructExampleP extends Protocol.Convertor<StructExampleP> implements IStructExampleP, ISigned<StructExampleP> {
 
         public static scheme: Protocol.IPropScheme[] = [
             { prop: 'field_a', types: StructExampleA.getValidator(false), optional: false },
@@ -5849,8 +6234,8 @@ export namespace GroupD {
                                 throw new Error(`Expecting instance of StructExampleP on index #${index}`);
                             }
                         });
-                    } catch (e) {
-                        return e;
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
                     }
                 }};
             } else {
@@ -5875,9 +6260,9 @@ export namespace GroupD {
             }
         }
 
-        public field_a: StructExampleA;
-        public field_b: GroupB.StructExampleA;
-        public field_c: GroupB.GroupC.StructExampleA;
+        public field_a!: StructExampleA;
+        public field_b!: GroupB.StructExampleA;
+        public field_c!: GroupB.GroupC.StructExampleA;
         public static getSignature(): string { return 'StructExampleP'; }
         public static getId(): number { return 110; }
 
@@ -5885,7 +6270,7 @@ export namespace GroupD {
         constructor(params: IStructExampleP)  {
             super();
             Object.keys(params).forEach((key: string) => {
-                this[key] = params[key];
+                (this as any)[key] = (params as any)[key];
             });
         }
 
@@ -5905,7 +6290,7 @@ export namespace GroupD {
             ]);
         }
 
-        public decode(buffer: ArrayBufferLike): Error | undefined {
+        public decode(buffer: ArrayBufferLike): Error | StructExampleP {
             const storage = this.getStorage(buffer);
             if (storage instanceof Error) {
                 return storage;
@@ -5925,11 +6310,11 @@ export namespace GroupD {
                 field_f64: 0,
                 field_bool: true,
             });
-            const field_aBuf: ArrayBufferLike = storage.get(111);
-            if (field_aBuf instanceof Error) {
-                return field_aBuf;
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(111);
+            if (field_aBuf === undefined) {
+                return new Error(`Fail to find field "field_a" (id=111).`);
             }
-            const field_aErr: Error | undefined = field_a.decode(field_aBuf);
+            const field_aErr: Error | StructExampleA = field_a.decode(field_aBuf);
             if (field_aErr instanceof Error) {
                 return field_aErr;
             } else {
@@ -5939,11 +6324,11 @@ export namespace GroupD {
                 field_u8: 0,
                 field_u16: 0,
             });
-            const field_bBuf: ArrayBufferLike = storage.get(112);
-            if (field_bBuf instanceof Error) {
-                return field_bBuf;
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(112);
+            if (field_bBuf === undefined) {
+                return new Error(`Fail to find field "field_b" (id=112).`);
             }
-            const field_bErr: Error | undefined = field_b.decode(field_bBuf);
+            const field_bErr: Error | GroupB.StructExampleA = field_b.decode(field_bBuf);
             if (field_bErr instanceof Error) {
                 return field_bErr;
             } else {
@@ -5953,16 +6338,17 @@ export namespace GroupD {
                 field_u8: 0,
                 field_u16: 0,
             });
-            const field_cBuf: ArrayBufferLike = storage.get(113);
-            if (field_cBuf instanceof Error) {
-                return field_cBuf;
+            const field_cBuf: ArrayBufferLike | undefined = storage.get(113);
+            if (field_cBuf === undefined) {
+                return new Error(`Fail to find field "field_c" (id=113).`);
             }
-            const field_cErr: Error | undefined = field_c.decode(field_cBuf);
+            const field_cErr: Error | GroupB.GroupC.StructExampleA = field_c.decode(field_cBuf);
             if (field_cErr instanceof Error) {
                 return field_cErr;
             } else {
                 this.field_c = field_c;
             }
+            return this;
         }
 
         public defaults(): StructExampleP {
@@ -5981,31 +6367,36 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
         switch (header.id) {
             case 1:
                 instance = new EnumExampleA();
-                if (instance.decode(buffer) instanceof Error) { return err; }
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleA: instance }, getRef: () => instance };
             case 2:
                 instance = new EnumExampleB();
-                if (instance.decode(buffer) instanceof Error) { return err; }
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleB: instance }, getRef: () => instance };
             case 3:
                 instance = new EnumExampleC();
-                if (instance.decode(buffer) instanceof Error) { return err; }
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumExampleC: instance }, getRef: () => instance };
             case 88:
                 instance = new GroupA.EnumExampleA();
-                if (instance.decode(buffer) instanceof Error) { return err; }
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { EnumExampleA: instance } }, getRef: () => instance };
             case 114:
                 instance = new GroupD.EnumExampleP();
-                if (instance.decode(buffer) instanceof Error) { return err; }
+                err = instance.decode(buffer);
+                if (err instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { EnumExampleP: instance } }, getRef: () => instance };
@@ -6069,6 +6460,7 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 instance = GroupD.StructExampleP.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { StructExampleP: instance } }, getRef: () => instance };
+            default: throw new Error(`Unknown message id=${header.id}`);
         }
     }
 }

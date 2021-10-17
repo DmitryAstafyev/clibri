@@ -4,14 +4,9 @@ use super::protocol::groups::Group;
 use super::protocol::store::Store;
 use super::protocol::structs::Struct;
 use super::protocol::types::PrimitiveTypes;
-use super::{ Render, stop, helpers };
+use super::{helpers, stop, Render};
 use regex::Regex;
-use std::{
-    include_str,
-    path::{
-        Path,
-    }
-};
+use std::{include_str, path::Path};
 
 pub struct TypescriptRender {
     embedded: bool,
@@ -71,9 +66,10 @@ impl TypescriptRender {
         }
         body = format!("{}\n{}}}\n", body, self.spaces(level));
         body = format!(
-            "{}{}export class {} extends Protocol.Convertor implements I{}, ISigned<{}> {{\n",
+            "{}{}export class {} extends Protocol.Convertor<{}> implements I{}, ISigned<{}> {{\n",
             body,
             self.spaces(level),
+            strct.name,
             strct.name,
             strct.name,
             strct.name,
@@ -108,7 +104,7 @@ impl TypescriptRender {
                 body,
                 self.spaces(level + 1),
                 format!(
-                    "public {}: {};",
+                    "public {}!: {};",
                     field.name,
                     self.get_declare_type_ref(field, &mut store.clone())
                 ),
@@ -193,9 +189,10 @@ impl TypescriptRender {
         body = format!("{}{}}}\n", body, self.spaces(level + 1));
         body = format!("{}\n", body);
         body = format!(
-            "{}{}public decode(buffer: ArrayBufferLike): Error | undefined {{\n",
+            "{}{}public decode(buffer: ArrayBufferLike): Error | {} {{\n",
             body,
-            self.spaces(level + 1)
+            self.spaces(level + 1),
+            strct.name,
         );
         body = format!(
             "{}{}const storage = this.getStorage(buffer);",
@@ -216,6 +213,7 @@ impl TypescriptRender {
                 self.get_field_decode_wrap(field, &mut store.clone(), level + 2),
             );
         }
+        body = format!("{}\n{}return this;", body, self.spaces(level + 2));
         body = format!("{}\n{}}}", body, self.spaces(level + 1));
         body = format!("{}\n", body);
         body = format!(
@@ -257,7 +255,9 @@ impl TypescriptRender {
                 } else {
                     stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {} ",
-                        enums.name, variant.name, ref_type_id
+                        enums.name,
+                        variant.name,
+                        ref_type_id
                     );
                 }
             }
@@ -290,11 +290,18 @@ impl TypescriptRender {
                 } else {
                     stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {} ",
-                        enums.name, variant.name, ref_type_id
+                        enums.name,
+                        variant.name,
+                        ref_type_id
                     );
                 }
             }
         }
+        body = format!(
+            "{}\n{}default: throw new Error(`No option with id=${{id}}`);",
+            body,
+            self.spaces(level + 1)
+        );
         body = format!("{}\n{}}}", body, self.spaces(level));
         body
     }
@@ -319,7 +326,8 @@ impl TypescriptRender {
             } else {
                 stop!(
                     "Unknown type of data in scope of enum {} / {}",
-                    enums.name, variant.name
+                    enums.name,
+                    variant.name
                 );
             };
             //
@@ -334,7 +342,8 @@ impl TypescriptRender {
             } else {
                 stop!(
                     "Unknown type of data in scope of enum {} / {}",
-                    enums.name, variant.name
+                    enums.name,
+                    variant.name
                 );
             };
             body = format!(
@@ -370,7 +379,8 @@ impl TypescriptRender {
             } else {
                 stop!(
                     "Unknown type of data in scope of enum {} / {}",
-                    enums.name, variant.name
+                    enums.name,
+                    variant.name
                 );
             };
             body = format!(
@@ -399,7 +409,7 @@ impl TypescriptRender {
             self.spaces(level + 1)
         );
         body = format!(
-            "{}{}this[key] = params[key];\n",
+            "{}{}(this as any)[key] = (params as any)[key];\n",
             body,
             self.spaces(level + 2)
         );
@@ -490,8 +500,12 @@ impl TypescriptRender {
         );
         body = format!("{}\n{}}}", body, self.spaces(level + 5));
         body = format!("{}\n{}}});", body, self.spaces(level + 4));
-        body = format!("{}\n{}}} catch (e) {{", body, self.spaces(level + 3));
-        body = format!("{}\n{}return e;", body, self.spaces(level + 4));
+        body = format!("{}\n{}}} catch (err) {{", body, self.spaces(level + 3));
+        body = format!(
+            "{}\n{}return err instanceof Error ? err : new Error(`Unknown error: ${{err}}`);",
+            body,
+            self.spaces(level + 4)
+        );
         body = format!("{}\n{}}}", body, self.spaces(level + 3));
         body = format!("{}\n{}}}}};", body, self.spaces(level + 2));
         body = format!("{}\n{}}} else {{", body, self.spaces(level + 1));
@@ -579,13 +593,16 @@ impl TypescriptRender {
                 } else {
                     stop!(
                         "Unknown type of data in scope of enum {} / {}, ref_type_id: {}",
-                        enums.name, variant.name, ref_type_id
+                        enums.name,
+                        variant.name,
+                        ref_type_id
                     );
                 }
             } else {
                 stop!(
                     "Unknown type of data in scope of enum {} / {} ",
-                    enums.name, variant.name
+                    enums.name,
+                    variant.name
                 );
             };
             body = format!(
@@ -1098,10 +1115,11 @@ impl TypescriptRender {
                 field.name
             );
             body = format!(
-                "{}\n{}return new Error(`Fail to get property {}`);",
+                "{}\n{}return new Error(`Fail to get property {} (id={})`);",
                 body,
                 self.spaces(level + 1),
-                field.name
+                field.name,
+                field.id
             );
             body = format!("{}\n{}}}", body, self.spaces(level));
             body = format!(
@@ -1173,30 +1191,32 @@ impl TypescriptRender {
                         self.entity_default(entity_id, &mut store.clone(), level)
                     );
                     body = format!(
-                        "{}\n{}const {}Buf: ArrayBufferLike = storage.get({});",
+                        "{}\n{}const {}Buf: ArrayBufferLike | undefined = storage.get({});",
                         body,
                         self.spaces(level),
                         field.name,
                         field.id
                     );
                     body = format!(
-                        "{}\n{}if ({}Buf instanceof Error) {{",
+                        "{}\n{}if ({}Buf === undefined) {{",
                         body,
                         self.spaces(level),
                         field.name
                     );
                     body = format!(
-                        "{}\n{}return {}Buf;",
+                        "{}\n{}return new Error(`Fail to find field \"{}\" (id={}).`);",
                         body,
                         self.spaces(level + 1),
-                        field.name
+                        field.name,
+                        field.id,
                     );
                     body = format!("{}\n{}}}", body, self.spaces(level));
                     body = format!(
-                        "{}\n{}const {}Err: Error | undefined = {}.decode({}Buf);",
+                        "{}\n{}const {}Err: Error | {} = {}.decode({}Buf);",
                         body,
                         self.spaces(level),
                         field.name,
+                        field.get_full_name().join("."),
                         field.name,
                         field.name
                     );
@@ -1225,7 +1245,7 @@ impl TypescriptRender {
             } else if let Some(_enums) = store.get_enum(entity_id) {
                 body = format!("{}this.{} = {{}};", self.spaces(level), field.name);
                 body = format!(
-                    "{}\n{}const {}Buf: ArrayBufferLike = storage.get({});",
+                    "{}\n{}const {}Buf: ArrayBufferLike | undefined = storage.get({});",
                     body,
                     self.spaces(level),
                     field.name,
@@ -1283,7 +1303,8 @@ impl TypescriptRender {
             } else {
                 stop!(
                     "Fail to find a type by ref {} for field {}",
-                    entity_id, field.name
+                    entity_id,
+                    field.name
                 );
             }
         } else {
@@ -1332,7 +1353,8 @@ impl TypescriptRender {
             } else {
                 stop!(
                     "Fail to find a type by ref {} for field {}",
-                    entity_id, field.name
+                    entity_id,
+                    field.name
                 );
             }
         } else {
@@ -1376,14 +1398,18 @@ impl TypescriptRender {
     }
 
     fn get_declare_type_ref(&self, field: &Field, store: &mut Store) -> String {
-        let mut type_str = self.get_type_ref(field, &mut store.clone());
-        if field.optional {
-            type_str = format!("{} | undefined", type_str);
-        }
+        let type_str = self.get_type_ref(field, &mut store.clone());
         if field.repeated {
-            type_str = format!("Array<{}>", type_str);
+            format!(
+                "Array<{}>{}",
+                type_str,
+                if field.optional { " | undefined" } else { "" }
+            )
+        } else if field.optional {
+            format!("{} | undefined", type_str)
+        } else {
+            type_str
         }
-        type_str
     }
 
     fn get_type_ref(&self, field: &Field, store: &mut Store) -> String {
@@ -1409,7 +1435,8 @@ impl TypescriptRender {
                     } else {
                         stop!(
                             "Fail to find a struct/enum id: {} for field {}",
-                            ref_type_id, field.name
+                            ref_type_id,
+                            field.name
                         );
                     }
                 } else {
@@ -1617,8 +1644,9 @@ impl TypescriptRender {
                 self.spaces(4),
                 store.get_enum_path(enums.id).join(".")
             );
+            body = format!("{}{}err = instance.decode(buffer);\n", body, self.spaces(4));
             body = format!(
-                "{}{}if (instance.decode(buffer) instanceof Error) {{ return err; }}\n",
+                "{}{}if (err instanceof Error) {{ return err; }}\n",
                 body,
                 self.spaces(4)
             );
@@ -1641,6 +1669,11 @@ impl TypescriptRender {
             body = format!("{}{}err = instance.decode(buffer);\n", body, self.spaces(4));
             body = format!("{}{}return err instanceof Error ? err : {{ header: {{ id: header.id, sequence: header.sequence, timestamp: header.ts }}, msg: {{ {}}}, getRef: () => instance }};\n", body, self.spaces(4), self.get_available_entity(structs.parent, &structs.name, &mut store.clone()));
         }
+        body = format!(
+            "{}{}default: throw new Error(`Unknown message id=${{header.id}}`);\n",
+            body,
+            self.spaces(3)
+        );
         body = format!("{}{}}}\n", body, self.spaces(2));
         body = format!("{}{}}}\n", body, self.spaces(1));
         body = format!("{}{}}}\n", body, self.spaces(0));
@@ -1690,8 +1723,10 @@ impl TypescriptRender {
                 self.get_injectable(include_str!("../../../../protocol/implementations/typescript/src/index.ts")),
             )
         } else {
-            include_str!("../../../../protocol/implementations/typescript/src/protocol.injection.ts")
-                .to_string()
+            include_str!(
+                "../../../../protocol/implementations/typescript/src/protocol.injection.ts"
+            )
+            .to_string()
         }
     }
 
