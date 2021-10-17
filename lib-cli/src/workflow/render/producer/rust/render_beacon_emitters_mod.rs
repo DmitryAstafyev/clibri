@@ -34,7 +34,7 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, beacons: &Vec<Broadcast>) -> Result<(), String> {
+    pub fn render(&self, base: &Path, beacons: &[Broadcast]) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut mods = String::new();
         for beacon in beacons.iter() {

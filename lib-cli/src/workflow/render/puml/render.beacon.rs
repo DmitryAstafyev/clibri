@@ -21,7 +21,7 @@ impl RenderBeacons {
         Self {}
     }
 
-    pub fn render(&self, beacons: &Vec<Broadcast>) -> Result<String, String> {
+    pub fn render(&self, beacons: &[Broadcast]) -> Result<String, String> {
         let mut output: String = templates::MODULE.to_owned();
         output = output.replace(
             "[[broadcasts]]",
@@ -30,7 +30,7 @@ impl RenderBeacons {
         Ok(output)
     }
 
-    fn get_beacons(&self, beacons: &Vec<Broadcast>) -> Result<String, String> {
+    fn get_beacons(&self, beacons: &[Broadcast]) -> Result<String, String> {
         let mut output: String = String::new();
         for broadcast in beacons {
             output = format!("{}\nConsumer --> Producer: {}", output, broadcast.reference,);

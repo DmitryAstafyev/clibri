@@ -1,4 +1,4 @@
-use super::{ Field, Enum, Struct, Group, stop };
+use super::{stop, Enum, Field, Group, Struct};
 
 pub const INTERNAL_SERVICE_GROUP: &str = "InternalServiceGroup";
 
@@ -16,7 +16,6 @@ pub struct Store {
 }
 
 impl Store {
-
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Store {
@@ -33,11 +32,24 @@ impl Store {
     }
 
     pub fn add_service_struct(&mut self, name: String, mut fields: Vec<Field>) {
-        if (self.groups.iter().find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0)).is_none() {
+        if (self
+            .groups
+            .iter()
+            .find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0))
+        .is_none()
+        {
             self.sequence += 1;
-            self.groups.push(Group::new(self.sequence, 0, String::from(INTERNAL_SERVICE_GROUP)));
+            self.groups.push(Group::new(
+                self.sequence,
+                0,
+                String::from(INTERNAL_SERVICE_GROUP),
+            ));
         }
-        if let Some(service_group) = self.groups.iter_mut().find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0) {
+        if let Some(service_group) = self
+            .groups
+            .iter_mut()
+            .find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0)
+        {
             self.sequence += 1;
             let mut strct: Struct = Struct::new(self.sequence, service_group.id, name);
             for field in fields.iter_mut() {
@@ -51,31 +63,19 @@ impl Store {
     }
 
     pub fn get_struct(&self, id: usize) -> Option<Struct> {
-        if let Some(strct) = self.structs.iter().find(|s| s.id == id) {
-            Some(strct.clone())
-        } else {
-            None
-        }
+        self.structs.iter().find(|s| s.id == id).cloned()
     }
 
     pub fn get_enum(&self, id: usize) -> Option<Enum> {
-        if let Some(enums) = self.enums.iter().find(|s| s.id == id) {
-            Some(enums.clone())
-        } else {
-            None
-        }
+        self.enums.iter().find(|s| s.id == id).cloned()
     }
 
     pub fn get_group(&self, id: usize) -> Option<Group> {
-        if let Some(group) = self.groups.iter().find(|s| s.id == id) {
-            Some(group.clone())
-        } else {
-            None
-        }
+        self.groups.iter().find(|s| s.id == id).cloned()
     }
 
     pub fn get_child_groups(&mut self, parent_id: usize) -> Vec<Group> {
-        let mut groups = vec!();
+        let mut groups = vec![];
         for group in self.groups.iter() {
             if group.parent == parent_id {
                 groups.push(group.clone());
@@ -137,26 +137,43 @@ impl Store {
     }
 
     pub fn find_by_str_path(&self, from: usize, path: &str) -> Option<Vec<(String, usize)>> {
-        let parts: Vec<String> = path.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
+        let parts: Vec<String> = path
+            .split('.')
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|v| String::from(*v))
+            .collect();
         self.find_by_path(from, &parts)
     }
 
-    pub fn find_by_path(&self, from: usize, path: &Vec<String>) -> Option<Vec<(String, usize)>> {
+    pub fn find_by_path(&self, from: usize, path: &[String]) -> Option<Vec<(String, usize)>> {
         let mut results: Vec<(String, usize)> = vec![];
         let last = path.len() - 1;
         let mut parent: usize = from;
         for (pos, type_str) in path.iter().enumerate() {
             if pos == last {
-                if let Some(enum_ref) = self.enums.iter().find(|i| i.name == *type_str && i.parent == parent) {
+                if let Some(enum_ref) = self
+                    .enums
+                    .iter()
+                    .find(|i| i.name == *type_str && i.parent == parent)
+                {
                     // Check enum in own group
                     results.push((String::from(type_str), enum_ref.id));
-                } else if let Some(struct_ref) = self.structs.iter().find(|i| i.name == *type_str && i.parent == parent) {
+                } else if let Some(struct_ref) = self
+                    .structs
+                    .iter()
+                    .find(|i| i.name == *type_str && i.parent == parent)
+                {
                     // Check struct in own group
                     results.push((String::from(type_str), struct_ref.id));
                 } else {
                     return None;
                 }
-            } else if let Some(group_ref) = self.groups.iter().find(|i| i.name == *type_str && i.parent == parent) {
+            } else if let Some(group_ref) = self
+                .groups
+                .iter()
+                .find(|i| i.name == *type_str && i.parent == parent)
+            {
                 results.push((String::from(type_str), group_ref.id));
                 parent = group_ref.id;
             } else {
@@ -167,17 +184,30 @@ impl Store {
     }
 
     pub fn get_struct_by_str_path(&self, from: usize, path: &str) -> Option<&Struct> {
-        let path: Vec<String> = path.split('.').collect::<Vec<&str>>().iter().map(|v| String::from(*v)).collect();
+        let path: Vec<String> = path
+            .split('.')
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|v| String::from(*v))
+            .collect();
         let last = path.len() - 1;
         let mut parent: usize = from;
         for (pos, type_str) in path.iter().enumerate() {
             if pos == last {
-                if let Some(struct_ref) = self.structs.iter().find(|i| i.name == *type_str && i.parent == parent) {
+                if let Some(struct_ref) = self
+                    .structs
+                    .iter()
+                    .find(|i| i.name == *type_str && i.parent == parent)
+                {
                     return Some(struct_ref);
                 } else {
                     return None;
                 }
-            } else if let Some(group_ref) = self.groups.iter().find(|i| i.name == *type_str && i.parent == parent) {
+            } else if let Some(group_ref) = self
+                .groups
+                .iter()
+                .find(|i| i.name == *type_str && i.parent == parent)
+            {
                 parent = group_ref.id;
             } else {
                 return None;
@@ -213,7 +243,14 @@ impl Store {
         }
         if let Some(mut c_field) = self.c_field.take() {
             c_field.set_name(name_str.to_string());
-            c_field.accept_type(&self, if let Some(group) = self.c_group.clone() { group.id } else { 0 });
+            c_field.accept_type(
+                &self,
+                if let Some(group) = self.c_group.clone() {
+                    group.id
+                } else {
+                    0
+                },
+            );
             self.c_field = Some(c_field);
         } else {
             stop!("Fail to set name of field, while it wasn't opened.");
@@ -254,7 +291,14 @@ impl Store {
 
     pub fn set_enum_name(&mut self, name: &str) {
         if let Some(mut c_enum) = self.c_enum.take() {
-            c_enum.accept_type(&self, if let Some(group) = self.c_group.clone() { group.id } else { 0 });
+            c_enum.accept_type(
+                &self,
+                if let Some(group) = self.c_group.clone() {
+                    group.id
+                } else {
+                    0
+                },
+            );
             c_enum.set_name(name.to_string());
             self.c_enum = Some(c_enum);
         } else {
@@ -291,7 +335,11 @@ impl Store {
             self.path.remove(self.path.len() - 1);
             if self.path.is_empty() {
                 self.c_group = None;
-            } else if let Some(pos) = self.groups.iter().position(|s| s.id == self.path[self.path.len() - 1]) {
+            } else if let Some(pos) = self
+                .groups
+                .iter()
+                .position(|s| s.id == self.path[self.path.len() - 1])
+            {
                 self.c_group = Some(self.groups.remove(pos));
             } else {
                 stop!("Cannot find group from path");
@@ -300,7 +348,7 @@ impl Store {
     }
 
     pub fn order(&mut self) -> Result<(), String> {
-        let mut parents: Vec<usize> = vec!();
+        let mut parents: Vec<usize> = vec![];
         for strct in &self.structs {
             if strct.parent != 0 && parents.iter().find(|id| id == &&strct.parent).is_none() {
                 parents.push(strct.parent);
@@ -321,7 +369,11 @@ impl Store {
                     path.push(group.name.clone());
                     parent = group.parent;
                 } else {
-                    stop!("Fail to find a group id: {} for struct {}", strct.parent, strct.name);
+                    stop!(
+                        "Fail to find a group id: {} for struct {}",
+                        strct.parent,
+                        strct.name
+                    );
                 }
             }
             path.reverse();
@@ -343,7 +395,11 @@ impl Store {
                     path.push(group.name.clone());
                     parent = group.parent;
                 } else {
-                    stop!("Fail to find a group id: {} for struct {}", strct.parent, strct.name);
+                    stop!(
+                        "Fail to find a group id: {} for struct {}",
+                        strct.parent,
+                        strct.name
+                    );
                 }
             }
             path.reverse();
@@ -382,5 +438,4 @@ impl Store {
             self.groups.push(c_group);
         }
     }
-
 }

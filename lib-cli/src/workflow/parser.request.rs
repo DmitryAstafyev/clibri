@@ -1,10 +1,4 @@
-use super::{
-    EntityOut,
-    ENext,
-    EntityParser,
-    Protocol,
-    Broadcast,
-};
+use super::{Broadcast, ENext, EntityOut, EntityParser, Protocol};
 
 #[derive(Debug, PartialEq, Clone)]
 enum EExpectation {
@@ -57,8 +51,15 @@ impl Action {
     }
 
     fn add_broadcast(&mut self, broadcast: Broadcast) -> Result<(), String> {
-        if self.broadcast.iter().any(|b| b.reference == broadcast.reference) {
-            Err(format!("Broadcast {} has been already added", broadcast.reference))
+        if self
+            .broadcast
+            .iter()
+            .any(|b| b.reference == broadcast.reference)
+        {
+            Err(format!(
+                "Broadcast {} has been already added",
+                broadcast.reference
+            ))
         } else {
             self.broadcast.push(broadcast);
             Ok(())
@@ -67,9 +68,14 @@ impl Action {
 
     fn valid(&self) -> Result<(), String> {
         if self.response.is_none() {
-            Err(String::from("For request at least response should be defined."))
-        } else if !self.current.is_empty() { 
-            Err(format!("Cannot close action as soon as there is not accepted part: {}", self.current))
+            Err(String::from(
+                "For request at least response should be defined.",
+            ))
+        } else if !self.current.is_empty() {
+            Err(format!(
+                "Cannot close action as soon as there is not accepted part: {}",
+                self.current
+            ))
         } else {
             Ok(())
         }
@@ -94,16 +100,15 @@ impl Action {
     pub fn get_last_response_entity(&self) -> Result<String, String> {
         if let Some(response) = self.response.as_ref() {
             let parts: Vec<&str> = response.split('.').collect();
-            Ok(String::from(if !parts.is_empty() { 
+            Ok(String::from(if !parts.is_empty() {
                 parts[parts.len() - 1]
             } else {
-                return Err(String::from("Response isn't valid"));    
+                return Err(String::from("Response isn't valid"));
             }))
         } else {
             Err(String::from("Response name isn't defined"))
         }
     }
-
 }
 
 #[derive(Debug, Clone)]
@@ -124,7 +129,11 @@ impl Request {
             error: None,
             actions: vec![],
             broadcasts: vec![],
-            expectation: vec![EExpectation::Word, EExpectation::PathDelimiter, EExpectation::Exclamation],
+            expectation: vec![
+                EExpectation::Word,
+                EExpectation::PathDelimiter,
+                EExpectation::Exclamation,
+            ],
             pending: Pending::Request(request),
             closed: false,
         }
@@ -136,18 +145,25 @@ impl Request {
                 return Err(format!("Request {} isn't defined in protocol", request));
             }
         } else {
-            return Err(String::from("For request should be defined at least reference to request object/struct"));
+            return Err(String::from(
+                "For request should be defined at least reference to request object/struct",
+            ));
         }
         if let Some(error) = self.error.as_ref() {
             if protocol.find_by_str_path(0, error).is_none() {
                 return Err(format!("Error {} isn't defined in protocol", error));
             }
         } else if !self.actions.is_empty() {
-            return Err(String::from("As soon as request has actions, error usecase should be defined."));
+            return Err(String::from(
+                "As soon as request has actions, error usecase should be defined.",
+            ));
         }
         for broadcast in self.broadcasts.iter() {
             if protocol.find_by_str_path(0, broadcast).is_none() {
-                return Err(format!("Broadcast object/struct {} isn't defined in protocol", broadcast));
+                return Err(format!(
+                    "Broadcast object/struct {} isn't defined in protocol",
+                    broadcast
+                ));
             }
         }
         for action in self.actions.iter() {
@@ -156,14 +172,22 @@ impl Request {
             }
             if let Some(response) = action.response.as_ref() {
                 if protocol.find_by_str_path(0, response).is_none() {
-                    return Err(format!("Response object/struct {} isn't defined in protocol", response));
+                    return Err(format!(
+                        "Response object/struct {} isn't defined in protocol",
+                        response
+                    ));
                 }
             } else {
-                return Err(String::from("Response should have reference to response object/struct"));
+                return Err(String::from(
+                    "Response should have reference to response object/struct",
+                ));
             }
             for broadcast in action.broadcast.iter() {
                 if protocol.find_by_str_path(0, &broadcast.reference).is_none() {
-                    return Err(format!("Response broadcast object/struct {} isn't defined in protocol", broadcast.reference));
+                    return Err(format!(
+                        "Response broadcast object/struct {} isn't defined in protocol",
+                        broadcast.reference
+                    ));
                 }
             }
         }
@@ -177,15 +201,22 @@ impl Request {
         if let Some(request) = self.request.as_ref() {
             Ok(String::from(request))
         } else {
-            Err(String::from("Reference to object/struct request isn't defined for action"))
+            Err(String::from(
+                "Reference to object/struct request isn't defined for action",
+            ))
         }
     }
 
     pub fn as_filename(&self) -> Result<String, String> {
         if let Some(request) = self.request.as_ref() {
-            Ok(format!("{}.rs", String::from(request).to_lowercase().replace(".", "_")))
+            Ok(format!(
+                "{}.rs",
+                String::from(request).to_lowercase().replace(".", "_")
+            ))
         } else {
-            Err(String::from("Reference to object/struct request isn't defined for action"))
+            Err(String::from(
+                "Reference to object/struct request isn't defined for action",
+            ))
         }
     }
 
@@ -193,7 +224,9 @@ impl Request {
         if let Some(request) = self.request.as_ref() {
             Ok(String::from(request).replace(".", "::"))
         } else {
-            Err(String::from("Reference to object/struct request isn't defined for action"))
+            Err(String::from(
+                "Reference to object/struct request isn't defined for action",
+            ))
         }
     }
 
@@ -201,7 +234,9 @@ impl Request {
         if let Some(request) = self.request.as_ref() {
             Ok(String::from(request).replace(".", ""))
         } else {
-            Err(String::from("Reference to object/struct request isn't defined for action"))
+            Err(String::from(
+                "Reference to object/struct request isn't defined for action",
+            ))
         }
     }
 
@@ -209,19 +244,21 @@ impl Request {
         if let Some(request) = self.request.as_ref() {
             Ok(String::from(request).to_lowercase().replace(".", "_"))
         } else {
-            Err(String::from("Reference to object/struct request isn't defined for action"))
+            Err(String::from(
+                "Reference to object/struct request isn't defined for action",
+            ))
         }
     }
 
     pub fn get_response(&self) -> Result<String, String> {
         if self.actions.is_empty() {
-            Err(String::from("No any actions/responses are defined for this request"))
+            Err(String::from(
+                "No any actions/responses are defined for this request",
+            ))
+        } else if let Some(response) = self.actions[0].response.as_ref() {
+            Ok(response.to_string())
         } else {
-            if let Some(response) = self.actions[0].response.as_ref() {
-                Ok(response.to_string())
-            } else {
-                Err(String::from("Action doesn't have defined response"))
-            }
+            Err(String::from("Action doesn't have defined response"))
         }
     }
 
@@ -232,11 +269,9 @@ impl Request {
             Err(String::from("Action doesn't have defined error"))
         }
     }
-
 }
 
 impl EntityParser for Request {
-    
     fn open(word: String) -> Option<Self> {
         if word.chars().all(char::is_alphanumeric) {
             Some(Self::new(word))
@@ -253,46 +288,55 @@ impl EntityParser for Request {
             ENext::Open(offset) => {
                 if is_in(&self.expectation, &EExpectation::Open) {
                     match self.pending.clone() {
-                        Pending::Request(path_to_struct) => if path_to_struct.is_empty() {
-                            Err(String::from("Request isn't defined"))
-                        } else {
-                            /* USECASES:
-                                                   |
-                            Event.UserDisconnected {
-                                > ...;
+                        Pending::Request(path_to_struct) => {
+                            if path_to_struct.is_empty() {
+                                Err(String::from("Request isn't defined"))
+                            } else {
+                                /* USECASES:
+                                                       |
+                                Event.UserDisconnected {
+                                    > ...;
+                                }
+                                */
+                                self.request = Some(path_to_struct);
+                                self.pending = Pending::Nothing;
+                                self.expectation = vec![EExpectation::Arrow];
+                                Ok(offset)
                             }
-                            */
-                            self.request = Some(path_to_struct);
-                            self.pending = Pending::Nothing;
-                            self.expectation = vec![EExpectation::Arrow];
-                            Ok(offset)
-                        },
-                        Pending::Error(path_to_struct) => if self.request.is_none() {
-                            Err(String::from("Request isn't defined"))
-                        } else {
-                            /* USECASES:
-                                                           |
-                            Messages.Request !Messages.Err {
-                                (...) > ...;
+                        }
+                        Pending::Error(path_to_struct) => {
+                            if self.request.is_none() {
+                                Err(String::from("Request isn't defined"))
+                            } else {
+                                /* USECASES:
+                                                               |
+                                Messages.Request !Messages.Err {
+                                    (...) > ...;
+                                }
+                                */
+                                self.error = Some(path_to_struct);
+                                self.pending = Pending::Nothing;
+                                self.expectation = vec![EExpectation::OpenBracket];
+                                Ok(offset)
                             }
-                            */
-                            self.error = Some(path_to_struct);
-                            self.pending = Pending::Nothing;
-                            self.expectation = vec![EExpectation::OpenBracket];
-                            Ok(offset)
-                        },
-                        _ => Err(String::from("Listing of conclusions can be done only after Error would be defined."))
+                        }
+                        _ => Err(String::from(
+                            "Listing of conclusions can be done only after Error would be defined.",
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol Open isn't expected. Expectation: {:?}.", self.expectation))
+                    Err(format!(
+                        "Symbol Open isn't expected. Expectation: {:?}.",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::Word((word, offset, _next_char)) => {
                 match self.pending.clone() {
-                    Pending::Nothing => {
-                    }
+                    Pending::Nothing => {}
                     Pending::Request(path_to_struct) => {
-                        self.pending = Pending::Request(format!("{}{}{}",
+                        self.pending = Pending::Request(format!(
+                            "{}{}{}",
                             path_to_struct,
                             if path_to_struct.is_empty() { "" } else { "." },
                             word
@@ -304,9 +348,10 @@ impl EntityParser for Request {
                             EExpectation::Exclamation,
                             EExpectation::Open,
                         ];
-                    },
+                    }
                     Pending::Error(path_to_struct) => {
-                        self.pending = Pending::Error(format!("{}{}{}",
+                        self.pending = Pending::Error(format!(
+                            "{}{}{}",
                             path_to_struct,
                             if path_to_struct.is_empty() { "" } else { "." },
                             word
@@ -316,7 +361,7 @@ impl EntityParser for Request {
                             EExpectation::PathDelimiter,
                             EExpectation::Open,
                         ];
-                    },
+                    }
                     Pending::Action(mut action) => {
                         if action.response.is_none() && action.conclusion.is_none() {
                             /* USECASES:
@@ -325,11 +370,12 @@ impl EntityParser for Request {
                                 (Accept    > Message.Accepted) > Events.Message;
                                  |
                                 (Deny      > Message.Denied);
-                                 |        | 
+                                 |        |
                                 (Messages.Response);
                             }
                             */
-                            action.current = format!("{}{}{}",
+                            action.current = format!(
+                                "{}{}{}",
                                 action.current,
                                 if action.current.is_empty() { "" } else { "." },
                                 word
@@ -349,7 +395,8 @@ impl EntityParser for Request {
                                 (Deny      > Message.Denied);
                             }
                             */
-                            action.current = format!("{}{}{}",
+                            action.current = format!(
+                                "{}{}{}",
                                 action.current,
                                 if action.current.is_empty() { "" } else { "." },
                                 word
@@ -366,7 +413,8 @@ impl EntityParser for Request {
                                 (Accept    > Message.Accepted) > Events.Message;
                             }
                             */
-                            action.current = format!("{}{}{}",
+                            action.current = format!(
+                                "{}{}{}",
                                 action.current,
                                 if action.current.is_empty() { "" } else { "." },
                                 word
@@ -381,9 +429,10 @@ impl EntityParser for Request {
                             return Err(format!("Unexpected place for {}", word));
                         }
                         self.pending = Pending::Action(action);
-                    },
+                    }
                     Pending::Broadcast(path_to_struct) => {
-                        self.pending = Pending::Broadcast(format!("{}{}{}",
+                        self.pending = Pending::Broadcast(format!(
+                            "{}{}{}",
                             path_to_struct,
                             if path_to_struct.is_empty() { "" } else { "." },
                             word
@@ -393,10 +442,10 @@ impl EntityParser for Request {
                             EExpectation::PathDelimiter,
                             EExpectation::Semicolon,
                         ];
-                    },
+                    }
                 };
                 Ok(offset)
-            },
+            }
             ENext::Question(offset) => {
                 if is_in(&self.expectation, &EExpectation::Question) {
                     match self.pending.clone() {
@@ -413,39 +462,50 @@ impl EntityParser for Request {
                                 self.expectation = vec![EExpectation::Semicolon];
                                 Ok(offset)
                             } else {
-                                Err(format!("Symbol ? isn't expected. Expectation: {:?}", self.expectation))
+                                Err(format!(
+                                    "Symbol ? isn't expected. Expectation: {:?}",
+                                    self.expectation
+                                ))
                             }
-                        },
-                        _ => {
-                            Err(format!("Symbol ? isn't expected. Expectation: {:?}", self.expectation))
-
                         }
+                        _ => Err(format!(
+                            "Symbol ? isn't expected. Expectation: {:?}",
+                            self.expectation
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol ? isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol ? isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::PathDelimiter(offset) => {
                 if is_in(&self.expectation, &EExpectation::PathDelimiter) {
                     self.expectation = vec![EExpectation::Word];
                     Ok(offset)
                 } else {
-                    Err(format!("Symbol . isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol . isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::Semicolon(offset) => {
                 if is_in(&self.expectation, &EExpectation::Semicolon) {
                     match self.pending.clone() {
                         Pending::Request(path_to_struct) => {
                             if path_to_struct.is_empty() {
-                                return Err(String::from("Cannot close request as soon as request isn't defined"));
+                                return Err(String::from(
+                                    "Cannot close request as soon as request isn't defined",
+                                ));
                             }
                             self.request = Some(path_to_struct);
                             if let Err(e) = self.close(protocol) {
                                 return Err(e);
                             }
                             Ok(offset)
-                        },
+                        }
                         Pending::Action(mut action) => {
                             if action.current.is_empty() {
                                 /* USECASES:
@@ -458,10 +518,8 @@ impl EntityParser for Request {
                                     (Messages.Response);
                                 }
                                 */
-                                self.expectation = vec![
-                                    EExpectation::Close,
-                                    EExpectation::OpenBracket,
-                                ];
+                                self.expectation =
+                                    vec![EExpectation::Close, EExpectation::OpenBracket];
                                 if let Err(e) = action.valid() {
                                     return Err(e);
                                 }
@@ -482,7 +540,10 @@ impl EntityParser for Request {
                                                         > Events.Message;
                                 }
                                 */
-                                if let Err(e) = action.add_broadcast(Broadcast::new(action.current.clone(), action.optional)) {
+                                if let Err(e) = action.add_broadcast(Broadcast::new(
+                                    action.current.clone(),
+                                    action.optional,
+                                )) {
                                     return Err(e);
                                 }
                                 action.optional = false;
@@ -495,7 +556,7 @@ impl EntityParser for Request {
                                 ];
                             }
                             Ok(offset)
-                        },
+                        }
                         Pending::Broadcast(path_to_struct) => {
                             /* USECASES:
                             Event.UserDisconnected {
@@ -506,36 +567,41 @@ impl EntityParser for Request {
                             }
                             */
                             self.broadcasts.push(path_to_struct);
-                            self.expectation = vec![
-                                EExpectation::Arrow,
-                                EExpectation::Close,
-                            ];
+                            self.expectation = vec![EExpectation::Arrow, EExpectation::Close];
                             self.pending = Pending::Nothing;
                             Ok(offset)
-                        },
-                        _ => Err(String::from("Symbol ; expected only after request definition."))
+                        }
+                        _ => Err(String::from(
+                            "Symbol ; expected only after request definition.",
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol ; isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol ; isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::Exclamation(offset) => {
                 if is_in(&self.expectation, &EExpectation::Exclamation) {
                     match self.pending.clone() {
                         Pending::Request(path_to_struct) => {
                             self.request = Some(path_to_struct);
                             self.pending = Pending::Error(String::new());
-                            self.expectation = vec![
-                                EExpectation::Word,
-                            ];
+                            self.expectation = vec![EExpectation::Word];
                             Ok(offset)
-                        },
-                        _ => Err(String::from("Symbol ! expected only after request definition."))
+                        }
+                        _ => Err(String::from(
+                            "Symbol ! expected only after request definition.",
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol ! isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol ! isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::OpenBracket(offset) => {
                 if is_in(&self.expectation, &EExpectation::OpenBracket) {
                     match self.pending.clone() {
@@ -553,7 +619,7 @@ impl EntityParser for Request {
                             self.pending = Pending::Action(Action::new());
                             self.expectation = vec![EExpectation::Word];
                             Ok(offset)
-                        },
+                        }
                         Pending::Action(action) => {
                             /* USECASES:
                             Message.Request !Message.Err {
@@ -571,13 +637,19 @@ impl EntityParser for Request {
                                 self.expectation = vec![EExpectation::Word];
                                 Ok(offset)
                             }
-                        },
-                        _ => Err(format!("Incorrect position to open conclusion. Pending: {:?}", self.pending)),
+                        }
+                        _ => Err(format!(
+                            "Incorrect position to open conclusion. Pending: {:?}",
+                            self.pending
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol ( isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol ( isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::CloseBracket(offset) => {
                 if is_in(&self.expectation, &EExpectation::CloseBracket) {
                     match self.pending.clone() {
@@ -593,7 +665,9 @@ impl EntityParser for Request {
                             }
                             */
                             if action.current.is_empty() {
-                                return Err(String::from("Cannot close action without at least definition of response"));
+                                return Err(String::from(
+                                    "Cannot close action without at least definition of response",
+                                ));
                             } else if action.response.is_none() {
                                 action.response = Some(action.current.clone());
                                 action.current = String::new();
@@ -601,18 +675,21 @@ impl EntityParser for Request {
                                 return Err(String::from("Cannot close action multiple times"));
                             }
                             self.pending = Pending::Action(action);
-                            self.expectation = vec![
-                                EExpectation::Arrow,
-                                EExpectation::Semicolon,
-                            ];
+                            self.expectation = vec![EExpectation::Arrow, EExpectation::Semicolon];
                             Ok(offset)
-                        },
-                        _ => Err(format!("Incorrect position for close conclusion. Pending: {:?}", self.pending)),
+                        }
+                        _ => Err(format!(
+                            "Incorrect position for close conclusion. Pending: {:?}",
+                            self.pending
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol ) isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol ) isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::Arrow(offset) => {
                 if is_in(&self.expectation, &EExpectation::Arrow) {
                     match self.pending.clone() {
@@ -625,14 +702,15 @@ impl EntityParser for Request {
                             }
                             */
                             self.pending = Pending::Broadcast(String::new());
-                            self.expectation = vec![
-                                EExpectation::Word,
-                                EExpectation::PathDelimiter,
-                            ];
+                            self.expectation =
+                                vec![EExpectation::Word, EExpectation::PathDelimiter];
                             Ok(offset)
-                        },
+                        }
                         Pending::Action(mut action) => {
-                            if action.conclusion.is_none() && action.response.is_none() && !action.current.is_empty() {
+                            if action.conclusion.is_none()
+                                && action.response.is_none()
+                                && !action.current.is_empty()
+                            {
                                 /* USECASES:
                                 Message.Request !Message.Err {
                                                |
@@ -643,9 +721,7 @@ impl EntityParser for Request {
                                 */
                                 action.conclusion = Some(action.current);
                                 action.current = String::new();
-                                self.expectation = vec![
-                                    EExpectation::Word,
-                                ];
+                                self.expectation = vec![EExpectation::Word];
                             } else if action.response.is_some() && action.current.is_empty() {
                                 /* USECASES:
                                 Message.Request !Message.Err {
@@ -658,19 +734,23 @@ impl EntityParser for Request {
                                     (Messages.Response) > Events.Message;
                                 }
                                 */
-                                self.expectation = vec![
-                                    EExpectation::Word,
-                                ];
+                                self.expectation = vec![EExpectation::Word];
                             }
                             self.pending = Pending::Action(action);
                             Ok(offset)
-                        },
-                        _ => Err(format!("Incorrect position of >. Pending: {:?}", self.pending)),
+                        }
+                        _ => Err(format!(
+                            "Incorrect position of >. Pending: {:?}",
+                            self.pending
+                        )),
                     }
                 } else {
-                    Err(format!("Symbol > isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol > isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
+            }
             ENext::Close(offset) => {
                 if is_in(&self.expectation, &EExpectation::Close) {
                     match self.pending.clone() {
@@ -678,7 +758,7 @@ impl EntityParser for Request {
                             /* USECASES:
                             Message.Request !Message.Err {
                                 (Accept    > Message.Accepted) > Events.Message;
-                            |    
+                            |
                             }
                             Messages.Request !Messages.Err {
                                 (Messages.Response) > Events.Message;
@@ -693,7 +773,7 @@ impl EntityParser for Request {
                                 return Err(e);
                             }
                             self.actions.push(action);
-                        },
+                        }
                         Pending::Broadcast(path_to_struct) => {
                             /* USECASES:
                             Messages.Request {
@@ -702,26 +782,27 @@ impl EntityParser for Request {
                             }
                             */
                             if path_to_struct.is_empty() {
-                                return Err(String::from("Fail to add broadcast without reference to struct"));
+                                return Err(String::from(
+                                    "Fail to add broadcast without reference to struct",
+                                ));
                             }
                             self.pending = Pending::Nothing;
                             self.broadcasts.push(path_to_struct);
-                        },
-                        _ => {
-
-                        },
+                        }
+                        _ => {}
                     }
                     if let Err(e) = self.close(protocol) {
                         return Err(e);
                     }
                     Ok(offset)
                 } else {
-                    Err(format!("Symbol CLOSE isn't expected. Expectation: {:?}", self.expectation))
+                    Err(format!(
+                        "Symbol CLOSE isn't expected. Expectation: {:?}",
+                        self.expectation
+                    ))
                 }
-            },
-            _ => {
-                Err(format!("Isn't expected value: {:?}", enext))
             }
+            _ => Err(format!("Isn't expected value: {:?}", enext)),
         }
     }
 
@@ -736,5 +817,4 @@ impl EntityParser for Request {
     fn extract(&mut self) -> EntityOut {
         EntityOut::Request(self.clone())
     }
-
 }

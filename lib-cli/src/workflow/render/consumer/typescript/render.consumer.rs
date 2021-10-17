@@ -306,7 +306,7 @@ impl RenderConsumer {
         broadcasts
     }
 
-    fn get_broadcasts_declarations(&self, broadcasts: &Vec<Broadcast>) -> String {
+    fn get_broadcasts_declarations(&self, broadcasts: &[Broadcast]) -> String {
         let mut output: String = String::new();
         for broadcast in broadcasts {
             output = format!(
@@ -319,7 +319,7 @@ impl RenderConsumer {
         output
     }
 
-    fn get_broadcasts_definitions(&self, broadcasts: &Vec<Broadcast>) -> String {
+    fn get_broadcasts_definitions(&self, broadcasts: &[Broadcast]) -> String {
         let mut output: String = String::new();
         for broadcast in broadcasts {
             output = format!(
@@ -332,7 +332,7 @@ impl RenderConsumer {
         output
     }
 
-    fn get_broadcasts_checking(&self, broadcasts: &Vec<Broadcast>) -> String {
+    fn get_broadcasts_checking(&self, broadcasts: &[Broadcast]) -> String {
         let mut output: String = String::new();
         for broadcast in broadcasts {
             output = format!(
@@ -355,7 +355,7 @@ impl RenderConsumer {
         output
     }
 
-    fn get_request_exports(&self, requests: &Vec<Request>) -> Result<String, String> {
+    fn get_request_exports(&self, requests: &[Request]) -> Result<String, String> {
         let mut output: String = String::new();
         for request in requests {
             let reference = request.get_request()?;

@@ -1,4 +1,4 @@
-use super::{ PrimitiveTypes, stop, Store };
+use super::{stop, PrimitiveTypes, Store};
 
 #[derive(Debug, Clone)]
 pub enum EReferenceToType {
@@ -21,7 +21,6 @@ pub struct Field {
 }
 
 impl Field {
-
     pub fn new(id: usize, parent: usize, kind: String) -> Self {
         Field {
             id,
@@ -37,7 +36,11 @@ impl Field {
         }
     }
 
-    pub fn create_not_assigned_primitive(name: String, kind: PrimitiveTypes::ETypes, optional: bool) -> Self {
+    pub fn create_not_assigned_primitive(
+        name: String,
+        kind: PrimitiveTypes::ETypes,
+        optional: bool,
+    ) -> Self {
         let kind = if let Some(primitive) = PrimitiveTypes::get_entity_as_string(kind) {
             primitive
         } else {
@@ -56,7 +59,6 @@ impl Field {
             type_path: vec![kind],
         }
     }
-
 
     pub fn set_name(&mut self, name: String) {
         self.name = name;
@@ -114,8 +116,10 @@ impl Field {
             let (type_name, type_id) = path[path.len() - 1].clone();
             self.ref_type_id = Some(type_id);
             self.kind = type_name;
-            self.ref_type_path = path[0..path.len() - 1].iter().map(|(_name, id)| id.clone() ).collect();
+            self.ref_type_path = path[0..path.len() - 1]
+                .iter()
+                .map(|(_name, id)| *id)
+                .collect();
         }
     }
-
 }

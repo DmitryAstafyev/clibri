@@ -49,7 +49,7 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, events: &Vec<Event>) -> Result<(), String> {
+    pub fn render(&self, base: &Path, events: &[Event]) -> Result<(), String> {
         if events
             .iter()
             .find(|event| match event.get_reference() {

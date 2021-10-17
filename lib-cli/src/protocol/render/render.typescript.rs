@@ -1402,7 +1402,7 @@ impl TypescriptRender {
             "str" => String::from("string"),
             _ => {
                 if let Some(ref_type_id) = field.ref_type_id {
-                    if let Some(_) = store.get_struct(ref_type_id) {
+                    if store.get_struct(ref_type_id).is_some() {
                         store.get_struct_path(ref_type_id).join(".")
                     } else if let Some(enums) = store.get_enum(ref_type_id) {
                         format!("I{}", enums.name)

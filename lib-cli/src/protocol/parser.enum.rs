@@ -1,5 +1,4 @@
-
-use super::{ PrimitiveTypes, stop, Store };
+use super::{stop, PrimitiveTypes, Store};
 
 #[derive(Debug, Clone)]
 pub struct EnumItem {
@@ -12,9 +11,8 @@ pub struct EnumItem {
 }
 
 impl EnumItem {
-
     pub fn accept_type(&mut self, store: &Store, own_group_id: usize) {
-        if self.type_path.len() == 0 {
+        if self.type_path.is_empty() {
             stop!("Fail to accept field type because no any type references were provided");
         }
         let first = self.type_path[0].clone();
@@ -36,7 +34,10 @@ impl EnumItem {
             };
             let (_, type_id) = path[path.len() - 1].clone();
             self.ref_type_id = Some(type_id);
-            self.ref_type_path = path[0..path.len() - 1].iter().map(|(_name, id)| id.clone() ).collect();
+            self.ref_type_path = path[0..path.len() - 1]
+                .iter()
+                .map(|(_name, id)| *id)
+                .collect();
         }
     }
 
@@ -51,7 +52,6 @@ impl EnumItem {
     pub fn get_full_name(&self) -> String {
         self.type_path.join("::")
     }
-
 }
 
 #[derive(Debug, Clone)]
@@ -64,7 +64,6 @@ pub struct Enum {
 }
 
 impl Enum {
-
     pub fn new(id: usize, parent: usize, name: String) -> Self {
         Enum {
             id,
@@ -96,7 +95,7 @@ impl Enum {
                 self.current = Some(current);
             }
         } else {
-            self.current = Some(EnumItem{
+            self.current = Some(EnumItem {
                 types: None,
                 ref_type_id: Some(ref_type_id),
                 name: String::new(),
@@ -133,7 +132,7 @@ impl Enum {
 
     pub fn add_type_path(&mut self, type_str: &str) {
         if self.current.is_none() {
-            self.current = Some(EnumItem{
+            self.current = Some(EnumItem {
                 types: None,
                 ref_type_id: None,
                 name: String::new(),
@@ -141,7 +140,7 @@ impl Enum {
                 repeated: false,
                 type_path: vec![],
             });
-        } 
+        }
         if let Some(current) = self.current.as_mut() {
             current.add_type_path(type_str);
         } else {
@@ -160,5 +159,4 @@ impl Enum {
             stop!("Attempt to accept type of enum item as soon as it isn't created");
         }
     }
-
 }

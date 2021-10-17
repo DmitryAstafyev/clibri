@@ -65,7 +65,7 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, events: &Vec<Event>) -> Result<(), String> {
+    pub fn render(&self, base: &Path, events: &[Event]) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut mods = String::new();
         for event in events.iter() {

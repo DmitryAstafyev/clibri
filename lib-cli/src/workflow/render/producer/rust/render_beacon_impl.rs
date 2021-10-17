@@ -1,4 +1,4 @@
-use super::{helpers, workflow::beacon::Broadcast};
+use super::{helpers, helpers::render as tools, workflow::beacon::Broadcast};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -41,12 +41,8 @@ impl Render {
             return Ok(());
         }
         let mut output = templates::MODULE.to_owned();
-        output = output.replace("[[beacon]]", &self.into_rust_path(&beacon.reference));
+        output = output.replace("[[beacon]]", &tools::into_rust_path(&beacon.reference));
         helpers::fs::write(dest, output, true)
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn get_dest_file(&self, base: &Path, beacon: &Broadcast) -> Result<PathBuf, String> {

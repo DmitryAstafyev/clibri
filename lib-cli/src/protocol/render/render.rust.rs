@@ -1,3 +1,4 @@
+use super::helpers;
 use super::protocol::enums::{Enum, EnumItem};
 use super::protocol::fields::Field;
 use super::protocol::groups::Group;
@@ -5,14 +6,8 @@ use super::protocol::store::Store;
 use super::protocol::structs::Struct;
 use super::protocol::types::PrimitiveTypes;
 use super::Render;
-use super::helpers;
 use regex::Regex;
-use std::{
-    include_str,
-    path::{
-        Path,
-    }
-};
+use std::{include_str, path::Path};
 pub struct RustRender {
     embedded: bool,
     signature: u16,
@@ -31,11 +26,7 @@ impl RustRender {
         );
         for enum_id in &group.enums {
             if let Some(enums) = store.get_enum(*enum_id) {
-                body = format!(
-                    "{}\n{}",
-                    body,
-                    self.enums(&enums, level + 1)
-                );
+                body = format!("{}\n{}", body, self.enums(&enums, level + 1));
             }
         }
         for struct_id in &group.structs {
@@ -66,11 +57,7 @@ impl RustRender {
                 "{}\n{}{}",
                 body,
                 self.spaces(level + 1),
-                format!(
-                    "pub {}: {},",
-                    field.name,
-                    self.get_declare_type_ref(field)
-                ),
+                format!("pub {}: {},", field.name, self.get_declare_type_ref(field)),
             );
         }
         body = format!("{}\n{}}}\n", body, self.spaces(level));
@@ -480,7 +467,7 @@ impl RustRender {
             }
             .to_string();
         } else {
-            return item.get_full_name();
+            item.get_full_name()
         }
     }
 
@@ -504,7 +491,11 @@ impl RustRender {
     }
 
     fn field_default(&self, field: &Field, store: &mut Store, level: u8) -> String {
-        let path: String = if field.get_path().is_empty() { String::from("") } else { format!("{}::", field.get_path().join("::")) };
+        let path: String = if field.get_path().is_empty() {
+            String::from("")
+        } else {
+            format!("{}::", field.get_path().join("::"))
+        };
         let mut body = format!("{}: {}", field.name, path);
         if field.repeated && !field.optional {
             body = format!("{}vec![],", body);
@@ -725,23 +716,14 @@ impl RustRender {
         } else {
             let mut chain = String::from("");
             for part in path.iter() {
-                result = format!(
-                    "{}{}AvailableMessages::{}(",
-                    result,
-                    chain,
-                    part
-                );
-                chain = format!(
-                    "{}{}::",
-                    chain,
-                    part
-                );
+                result = format!("{}{}AvailableMessages::{}(", result, chain, part);
+                chain = format!("{}{}::", chain, part);
             }
             result = format!(
                 "{}{}AvailableMessages::{}(m){}",
                 result,
                 chain,
-                name, 
+                name,
                 ")".repeat(path.len())
             );
         }
@@ -753,7 +735,11 @@ impl RustRender {
             "{}impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {{\n",
             self.spaces(0)
         );
-        body = format!("{}{}fn get_msg(&self, id: u32, buf: &[u8]) -> Result<AvailableMessages, String> {{\n", body, self.spaces(1));
+        body = format!(
+            "{}{}fn get_msg(&self, id: u32, buf: &[u8]) -> Result<AvailableMessages, String> {{\n",
+            body,
+            self.spaces(1)
+        );
         body = format!("{}{}match id {{\n", body, self.spaces(2));
         for enums in &store.enums {
             body = format!(
@@ -796,7 +782,12 @@ impl RustRender {
         );
         body = format!("{}{}}}\n", body, self.spaces(2));
         body = format!("{}{}}}\n", body, self.spaces(1));
-        body = format!("{}{}fn get_signature(&self) -> u16 {{ {} }}\n", body, self.spaces(1), self.signature);
+        body = format!(
+            "{}{}fn get_signature(&self) -> u16 {{ {} }}\n",
+            body,
+            self.spaces(1),
+            self.signature
+        );
         body = format!("{}{}}}\n", body, self.spaces(0));
         body
     }

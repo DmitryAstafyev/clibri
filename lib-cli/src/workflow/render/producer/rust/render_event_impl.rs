@@ -1,4 +1,6 @@
-use super::{helpers, workflow::beacon::Broadcast, workflow::event::Event};
+use super::{
+    helpers, helpers::render as tools, workflow::beacon::Broadcast, workflow::event::Event,
+};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -68,7 +70,7 @@ impl Render {
         }
         let output: String = if event.broadcasts.is_empty() {
             let mut out = templates::MODULE_WITHOUT_BROADCAST.to_owned();
-            out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
+            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
             out
         } else {
             let mut out = if self.is_default(event)? {
@@ -76,7 +78,7 @@ impl Render {
             } else {
                 templates::MODULE_WITH_BROADCAST.to_owned()
             };
-            out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
+            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
             let mut types = String::new();
             let mut refs = String::new();
             for (pos, broadcast) in event.broadcasts.iter().enumerate() {
@@ -86,14 +88,14 @@ impl Render {
                         "{}type {} = Option<(Vec<Uuid>, protocol::{})>;\n",
                         types,
                         type_name,
-                        self.into_rust_path(&broadcast.reference),
+                        tools::into_rust_path(&broadcast.reference),
                     );
                 } else {
                     types = format!(
                         "{}type {} = (Vec<Uuid>, protocol::{});\n",
                         types,
                         type_name,
-                        self.into_rust_path(&broadcast.reference),
+                        tools::into_rust_path(&broadcast.reference),
                     );
                 }
                 refs = format!("{}{}{}", refs, if pos == 0 { "" } else { ", " }, type_name);
@@ -111,10 +113,6 @@ impl Render {
         } else {
             Ok(false)
         }
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn get_broadcast_type_name(&self, broadcast: &Broadcast) -> String {

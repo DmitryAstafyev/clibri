@@ -88,12 +88,12 @@ impl Render {
         let dest: PathBuf = self.get_dest_file(base, event)?;
         let output: String = if event.broadcasts.is_empty() {
             let mut out = templates::MODULE_WITHOUT_BROADCAST.to_owned();
-            out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
+            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
             out = out.replace("[[event_mod]]", &event.as_mod_name()?);
             out
         } else if event.is_default() {
             let mut out = templates::DEFAULT_MODULE.to_owned();
-            out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
+            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
             out = out.replace("[[event_mod]]", &event.as_mod_name()?);
             let mut processing = String::new();
             let mut vars = String::new();
@@ -146,7 +146,7 @@ impl Render {
             out
         } else {
             let mut out = templates::MODULE_WITH_BROADCAST.to_owned();
-            out = out.replace("[[event]]", &self.into_rust_path(&event.get_reference()?));
+            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
             out = out.replace("[[event_mod]]", &event.as_mod_name()?);
             let mut processing = String::new();
             let mut vars = String::new();
@@ -199,10 +199,6 @@ impl Render {
             out
         };
         helpers::fs::write(dest, output, true)
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn get_broadcast_var_name(&self, broadcast: &Broadcast) -> String {

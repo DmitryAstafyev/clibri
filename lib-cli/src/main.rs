@@ -27,9 +27,8 @@ macro_rules! stop {
 
 fn main() {
     let ctrl: ctrlargs::CtrlArgs = ctrlargs::CtrlArgs::new();
-    match ctrl.errors() {
-        Ok(_) => {}
-        Err(_) => std::process::exit(1),
+    if ctrl.has_errors() {
+        std::process::exit(1);
     }
     if let Err(errors) = ctrl.actions() {
         println!("{}", errors.join("\n"))

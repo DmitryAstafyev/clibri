@@ -23,6 +23,12 @@ pub struct PumlRender {}
 
 impl PumlRender {}
 
+impl Default for PumlRender {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PumlRender {
     pub fn new() -> Self {
         PumlRender {}

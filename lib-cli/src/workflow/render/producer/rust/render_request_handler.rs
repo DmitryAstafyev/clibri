@@ -112,7 +112,7 @@ impl Render {
             output = output.replace("[[response_mod]]", &self.get_response_mod_name(&request)?);
             output
         };
-        output = output.replace("[[request]]", &self.into_rust_path(&request_ref));
+        output = output.replace("[[request]]", &tools::into_rust_path(&request_ref));
         helpers::fs::write(dest, output, true)
     }
 
@@ -206,10 +206,6 @@ impl Render {
             }
         }
         Ok(tools::inject_tabs(1, output))
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn get_response_mod_name(&self, request: &Request) -> Result<String, String> {

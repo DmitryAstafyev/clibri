@@ -161,11 +161,11 @@ impl Render {
         let config = store.get_config()?;
         output = output.replace(
             "[[assign_key]]",
-            &self.into_rust_path(&store.get_config()?.get_assigned()?),
+            &tools::into_rust_path(&store.get_config()?.get_assigned()?),
         );
         output = output.replace(
             "[[self_key]]",
-            &self.into_rust_path(&store.get_config()?.get_self()?),
+            &tools::into_rust_path(&store.get_config()?.get_self()?),
         );
         output = output.replace(
             "[[self_key_overwrite]]",
@@ -176,10 +176,6 @@ impl Render {
             &tools::inject_tabs(3, self.assign_key_overwrite(&config, protocol)?),
         );
         helpers::fs::write(dest, output, true)
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn self_key_overwrite(&self, config: &Config, protocol: &Protocol) -> Result<String, String> {

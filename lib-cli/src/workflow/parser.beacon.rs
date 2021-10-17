@@ -35,11 +35,7 @@ impl Broadcast {
     }
 
     pub fn validate(&self, protocol: &Protocol) -> bool {
-        if protocol.find_by_str_path(0, &self.reference).is_none() {
-            false
-        } else {
-            true
-        }
+        protocol.find_by_str_path(0, &self.reference).is_some()
     }
 
     pub fn as_filename(&self) -> String {
@@ -65,6 +61,12 @@ pub struct Beacons {
     expectation: Vec<EExpectation>,
     pending: Pending,
     closed: bool,
+}
+
+impl Default for Beacons {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Beacons {

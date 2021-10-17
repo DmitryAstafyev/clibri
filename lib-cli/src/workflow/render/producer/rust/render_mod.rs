@@ -849,11 +849,11 @@ impl Render {
         );
         output = output.replace(
             "[[indentification_self_response]]",
-            &self.into_rust_path(&store.get_config()?.self_key_response),
+            &tools::into_rust_path(&store.get_config()?.self_key_response),
         );
         output = output.replace(
             "[[indentification_assigned_key]]",
-            &self.into_rust_path(&store.get_config()?.get_assigned()?),
+            &tools::into_rust_path(&store.get_config()?.get_assigned()?),
         );
 
         helpers::fs::write(dest, output, true)
@@ -881,8 +881,8 @@ impl Render {
                 let mut chain: String = String::from("");
                 for (pos, part) in parts.iter().enumerate() {
                     let mut step: String = String::from("protocol");
-                    for n in 0..pos {
-                        step = format!("{}::{}", step, parts[n]);
+                    for part in parts.iter().take(pos) {
+                        step = format!("{}::{}", step, part);
                     }
                     step = format!("{}::AvailableMessages::{}(", step, part);
                     chain = format!("{}{}", chain, step);
@@ -924,8 +924,8 @@ impl Render {
                 let mut chain: String = String::from("");
                 for (pos, part) in parts.iter().enumerate() {
                     let mut step: String = String::from("protocol");
-                    for n in 0..pos {
-                        step = format!("{}::{}", step, parts[n]);
+                    for part in parts.iter().take(pos) {
+                        step = format!("{}::{}", step, part);
                     }
                     step = format!("{}::AvailableMessages::{}(", step, part);
                     chain = format!("{}{}", chain, step);
@@ -1017,18 +1017,14 @@ impl Render {
             let mut chain: String = String::from("");
             for (pos, part) in parts.iter().enumerate() {
                 let mut step: String = String::from("protocol");
-                for n in 0..pos {
-                    step = format!("{}::{}", step, parts[n]);
+                for part in parts.iter().take(pos) {
+                    step = format!("{}::{}", step, part);
                 }
                 step = format!("{}::AvailableMessages::{}(", step, part);
                 chain = format!("{}{}", chain, step);
             }
             Ok(format!("{}request{}", chain, ")".repeat(parts.len())))
         }
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn get_dest_file(&self, base: &Path) -> Result<PathBuf, String> {

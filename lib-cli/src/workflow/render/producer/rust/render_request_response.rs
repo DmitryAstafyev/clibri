@@ -76,13 +76,13 @@ impl Render {
             let mut output = templates::MODULE_NO_CONCLUSION.to_owned();
             output = output.replace(
                 "[[response]]",
-                &self.into_rust_path(&request.get_response()?),
+                &tools::into_rust_path(&request.get_response()?),
             );
             output
         };
-        output = output.replace("[[request]]", &self.into_rust_path(&request_ref));
+        output = output.replace("[[request]]", &tools::into_rust_path(&request_ref));
         if let Some(error_ref) = request.error.as_ref() {
-            output = output.replace("[[error]]", &self.into_rust_path(error_ref));
+            output = output.replace("[[error]]", &tools::into_rust_path(error_ref));
         }
         helpers::fs::write(dest, output, true)
     }
@@ -95,7 +95,7 @@ impl Render {
                     "{}{}(protocol::{}),{}",
                     output,
                     action.get_conclusion()?,
-                    self.into_rust_path(&action.get_response()?),
+                    tools::into_rust_path(&action.get_response()?),
                     if pos == request.actions.len() - 1 {
                         ""
                     } else {
@@ -120,7 +120,7 @@ impl Render {
                     "{}\n{}(\n\t(\n\t\tprotocol::{},\n{}\n\t)\n),{}",
                     output,
                     action.get_conclusion()?,
-                    self.into_rust_path(&action.get_response()?),
+                    tools::into_rust_path(&action.get_response()?),
                     tools::inject_tabs(2, brodcast_output),
                     if pos == request.actions.len() - 1 {
                         ""
@@ -143,24 +143,20 @@ impl Render {
                             "{}type {} = Option<(Vec<Uuid>, protocol::{})>;\n",
                             output,
                             self.get_broadcast_type_name(broadcast),
-                            self.into_rust_path(&broadcast.reference),
+                            tools::into_rust_path(&broadcast.reference),
                         );
                     } else {
                         output = format!(
                             "{}type {} = (Vec<Uuid>, protocol::{});\n",
                             output,
                             self.get_broadcast_type_name(broadcast),
-                            self.into_rust_path(&broadcast.reference),
+                            tools::into_rust_path(&broadcast.reference),
                         );
                     }
                 }
             }
         }
         Ok(output)
-    }
-
-    fn into_rust_path(&self, input: &str) -> String {
-        input.to_string().replace(".", "::")
     }
 
     fn get_broadcast_type_name(&self, broadcast: &Broadcast) -> String {

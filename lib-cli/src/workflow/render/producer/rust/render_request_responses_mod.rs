@@ -17,7 +17,7 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, requests: &Vec<Request>) -> Result<(), String> {
+    pub fn render(&self, base: &Path, requests: &[Request]) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output = String::from("use super::*;\n\n");
         for request in requests.iter() {
