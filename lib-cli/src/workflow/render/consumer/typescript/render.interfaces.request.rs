@@ -1,43 +1,32 @@
-use super::{
-    helpers,
-};
+use super::helpers;
 
 use std::{
     fs,
-    path::{
-        Path,
-        PathBuf,
-    }
+    path::{Path, PathBuf},
 };
 
 mod templates {
-    pub const MODULE: &str =
-r#"export enum ERequestState {
+    pub const MODULE: &str = r#"export enum ERequestState {
     Ready,
     Pending,
     Destroyed,
 }"#;
 }
 
-pub struct RenderInterfacesRequest {
-}
+pub struct Render {}
 
-impl Default for RenderInterfacesRequest {
+impl Default for Render {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RenderInterfacesRequest {
-    
+impl Render {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn render(
-        &self,
-        base: &Path,
-    ) -> Result<(), String> {
+    pub fn render(&self, base: &Path) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         helpers::fs::write(dest, templates::MODULE.to_owned(), true)
     }
@@ -46,11 +35,13 @@ impl RenderInterfacesRequest {
         let dest = base.join("interfaces");
         if !dest.exists() {
             if let Err(e) = fs::create_dir(&dest) {
-                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+                return Err(format!(
+                    "Fail to create dest folder {}. Error: {}",
+                    dest.to_string_lossy(),
+                    e
+                ));
             }
         }
         Ok(dest.join("request.ts"))
     }
-
 }
-

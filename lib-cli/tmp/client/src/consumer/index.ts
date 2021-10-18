@@ -10,6 +10,8 @@ export { UserLoginRequest } from './requests/userlogin.request';
 export { UsersRequest } from './requests/users.request';
 export { MessageRequest } from './requests/message.request';
 export { MessagesRequest } from './requests/messages.request';
+export { BeaconsLikeUser } from './beacons/beacons.likeuser';
+export { BeaconsLikeMessage } from './beacons/beacons.likemessage';
 
 // tslint:disable-next-line: no-namespace
 export namespace ExtError {
@@ -34,8 +36,8 @@ export namespace ExtError {
 
 export class Consumer {
 
-    public static PROTOCOL_HASH: string = "0DDAFC5D9CDDFDEA2C39633685030CB826898CEF7BA386E89FB6F57E8DCEA73B";
-    public static WORKFLOW_HASH: string = "6222E5808F05F1239B2A3F88246AC27B1514ABEE1EDBA29B6F5ACA972B661B3C";
+    public static PROTOCOL_HASH: string = "F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE";
+    public static WORKFLOW_HASH: string = "497F08C6B69D62FB7B05CB1FC27CD9BF5D516578D9D845C3C5D1FDD0A5097672";
     public static GUID: string = guid();
     public static GUID_SUBS: string = guid();
 

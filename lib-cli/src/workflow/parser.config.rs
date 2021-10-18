@@ -16,6 +16,7 @@ pub mod names {
     pub const DEFAULT_SELF_KEY_REQUEST_STRUCT: &str = "SelfKeyRequest";
     pub const DEFAULT_SELF_KEY_RESPONSE_STRUCT: &str = "SelfKeyResponse";
     pub const DEFAULT_ASSIGNED_KEY_STRUCT: &str = "AssignedKey";
+    pub const BEACON_CONFIRMATION_RESPONSE: &str = "BeaconConfirmation";
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -210,6 +211,14 @@ impl Config {
             );
             protocol.add_service_struct(
                 names::HASH_RESPONSE_STRUCT.to_owned(),
+                vec![Field::create_not_assigned_primitive(
+                    String::from("error"),
+                    PrimitiveTypes::ETypes::Estr,
+                    true,
+                )],
+            );
+            protocol.add_service_struct(
+                names::BEACON_CONFIRMATION_RESPONSE.to_owned(),
                 vec![Field::create_not_assigned_primitive(
                     String::from("error"),
                     PrimitiveTypes::ETypes::Estr,

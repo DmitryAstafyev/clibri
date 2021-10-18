@@ -1,17 +1,9 @@
-use super::{
-    helpers,
-};
+use super::helpers;
 
-use std::{
-    path::{
-        Path,
-        PathBuf,
-    }
-};
+use std::path::{Path, PathBuf};
 
 mod templates {
-    pub const MODULE: &str =
-r#"import { Logger, DefaultLogger } from 'fiber';
+    pub const MODULE: &str = r#"import { Logger, DefaultLogger } from 'fiber';
 
 export interface IOptions {
     logger?: Logger;
@@ -34,25 +26,20 @@ export class Options {
 }"#;
 }
 
-pub struct RenderOptions {
-}
+pub struct Render {}
 
-impl Default for RenderOptions {
+impl Default for Render {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RenderOptions {
-    
+impl Render {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn render(
-        &self,
-        base: &Path,
-    ) -> Result<(), String> {
+    pub fn render(&self, base: &Path) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base);
         helpers::fs::write(dest, templates::MODULE.to_owned(), true)
     }
@@ -60,6 +47,4 @@ impl RenderOptions {
     fn get_dest_file(&self, base: &Path) -> PathBuf {
         base.join("options.ts")
     }
-
 }
-

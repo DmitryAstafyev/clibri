@@ -14,7 +14,7 @@ import { IOptions, Options } from './options';
 
 import * as Protocol from './protocol/protocol';
 
-export { Protocol };[[request_exports]]
+export { Protocol };[[request_exports]][[beacons_exports]]
 
 // tslint:disable-next-line: no-namespace
 export namespace ExtError {
@@ -264,15 +264,15 @@ export class Consumer {
 }"#;
 }
 
-pub struct RenderConsumer {}
+pub struct Render {}
 
-impl Default for RenderConsumer {
+impl Default for Render {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RenderConsumer {
+impl Render {
     pub fn new() -> Self {
         Self {}
     }
@@ -301,6 +301,10 @@ impl RenderConsumer {
         output = output.replace(
             "[[request_exports]]",
             &self.get_request_exports(&store.requests)?,
+        );
+        output = output.replace(
+            "[[beacons_exports]]",
+            &self.get_beacons_exports(&store.beacons)?,
         );
         output = output.replace("[[protocol_hash]]", &protocol.get_hash());
         output = output.replace("[[workflow_hash]]", &store.get_hash());
@@ -333,16 +337,6 @@ impl RenderConsumer {
                 } else {
                     broadcasts.push(broadcast.clone());
                 }
-            }
-        }
-        for broadcast in &store.beacons {
-            if broadcasts
-                .iter()
-                .any(|i| i.reference == broadcast.reference)
-            {
-                continue;
-            } else {
-                broadcasts.push(broadcast.clone());
             }
         }
         broadcasts
@@ -406,6 +400,19 @@ impl RenderConsumer {
                 output,
                 reference.replace(".", ""),
                 reference.to_lowercase(),
+            );
+        }
+        Ok(output)
+    }
+
+    fn get_beacons_exports(&self, beacons: &[Broadcast]) -> Result<String, String> {
+        let mut output: String = String::new();
+        for beacon in beacons {
+            output = format!(
+                "{}\nexport {{ {} }} from './beacons/{}';",
+                output,
+                beacon.reference.replace(".", ""),
+                beacon.reference.to_lowercase(),
             );
         }
         Ok(output)

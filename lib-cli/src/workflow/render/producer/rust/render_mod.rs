@@ -876,6 +876,7 @@ pub mod producer {
     if let Err(err) = beacons_callers::[[module]]::emit::<E, C>(
         client.get_mut_identification(),
         beacon,
+        header.sequence,
         &filter,
         &mut context,
         &control,

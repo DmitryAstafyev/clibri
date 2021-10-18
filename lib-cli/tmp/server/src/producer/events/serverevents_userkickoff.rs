@@ -21,7 +21,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
             (
                 filter.except(uuid),
                 protocol::Events::UserDisconnected {
-                    username: msg.user.clone(),
+                    username: msg.user,
                     uuid: uuid.to_string(),
                 },
             ),

@@ -32,8 +32,8 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 pub mod hash {
-    pub const PROTOCOL: &str = "0DDAFC5D9CDDFDEA2C39633685030CB826898CEF7BA386E89FB6F57E8DCEA73B";
-    pub const WORKFLOW: &str = "6222E5808F05F1239B2A3F88246AC27B1514ABEE1EDBA29B6F5ACA972B661B3C";
+    pub const PROTOCOL: &str = "F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE";
+    pub const WORKFLOW: &str = "497F08C6B69D62FB7B05CB1FC27CD9BF5D516578D9D845C3C5D1FDD0A5097672";
 }
 
 #[derive(Error, Debug)]
@@ -717,7 +717,58 @@ pub mod producer {
                                     .await?
                                 }
                             },
-                            
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::LikeUser(beacon)) => {
+                                if let Err(err) = beacons_callers::beacons_likeuser::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    header.sequence,
+                                    &filter,
+                                    &mut context,
+                                    &control,
+                                )
+                                .await
+                                {
+                                    error!(
+                                        target: logs::targets::PRODUCER,
+                                        "handeling beacon BeaconsLikeUser error: {}", err
+                                    );
+                                    emitters::error::emit::<E, C>(
+                                        ProducerError::BeaconEmitterError(err),
+                                        Some(uuid),
+                                        &mut context,
+                                        Some(client.get_mut_identification()),
+                                        &control,
+                                    )
+                                    .await
+                                    .map_err(ProducerError::EventEmitterError)?
+                                }
+                            },
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::LikeMessage(beacon)) => {
+                                if let Err(err) = beacons_callers::beacons_likemessage::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    header.sequence,
+                                    &filter,
+                                    &mut context,
+                                    &control,
+                                )
+                                .await
+                                {
+                                    error!(
+                                        target: logs::targets::PRODUCER,
+                                        "handeling beacon BeaconsLikeMessage error: {}", err
+                                    );
+                                    emitters::error::emit::<E, C>(
+                                        ProducerError::BeaconEmitterError(err),
+                                        Some(uuid),
+                                        &mut context,
+                                        Some(client.get_mut_identification()),
+                                        &control,
+                                    )
+                                    .await
+                                    .map_err(ProducerError::EventEmitterError)?
+                                }
+                            },
                             _ => {}
                         }
                     }

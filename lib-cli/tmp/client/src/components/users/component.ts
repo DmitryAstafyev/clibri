@@ -1,5 +1,10 @@
 import { Component } from "../component";
-import { Consumer, Protocol, UsersRequest } from "../../consumer/index";
+import {
+	Consumer,
+	Protocol,
+	UsersRequest,
+	BeaconsLikeUser,
+} from "../../consumer/index";
 import { Subscription } from "fiber";
 import { StatComponent } from "../stat/component";
 
@@ -8,12 +13,15 @@ interface IUser {
 	uuid: string;
 }
 
+const USER_ELEMENT_SELECTOR = `li[data-uuid]`;
+
 export class UsersComponent extends Component {
 	private _instance: HTMLElement | undefined;
 	private _users: IUser[] = [];
 	private _consumer: Consumer;
 	private _subscriptions: { [key: string]: Subscription } = {};
 	private _stat: StatComponent;
+	private _refs: Array<() => void> = [];
 
 	constructor(consumer: Consumer, stat: StatComponent) {
 		super();
@@ -41,6 +49,7 @@ export class UsersComponent extends Component {
 			return new Error(`Fail find holder DOM element`);
 		}
 		holder.appendChild(this._instance);
+		this._bind();
 		this._request();
 	}
 
@@ -83,6 +92,7 @@ export class UsersComponent extends Component {
 		}
 		this.umount();
 		this.unlink();
+		this._unbind();
 		this._instance = undefined;
 	}
 
@@ -102,6 +112,48 @@ export class UsersComponent extends Component {
 		} else {
 			this._instance.innerHTML = this.element().innerHTML;
 		}
+		this._bind();
+	}
+
+	private _bind() {
+		this._unbind();
+		document
+			.querySelectorAll<HTMLElement>(USER_ELEMENT_SELECTOR)
+			.forEach((user: HTMLElement) => {
+				const uuid = user.getAttribute("data-uuid");
+				if (uuid === null) {
+					return;
+				}
+				const handler = this._onUserClick.bind(this, uuid);
+				this._refs.push(
+					// tslint:disable-next-line: only-arrow-functions
+					function (
+						cb: (uuid: string) => void,
+						node: HTMLElement
+					): void {
+						node.removeEventListener("click", cb as any);
+					}.bind(this, handler, user)
+				);
+				user.addEventListener("click", handler);
+			});
+	}
+
+	private _unbind() {
+		this._refs.forEach((ref: () => void) => {
+			ref();
+		});
+		this._refs = [];
+	}
+
+	private _onUserClick(uuid: string) {
+		new BeaconsLikeUser(new Protocol.Beacons.LikeUser({ uuid }))
+			.send()
+			.then(() => {
+				console.log(`Beacon LikeUser has been deliveried`);
+			})
+			.catch((err: Error) => {
+				console.log(err);
+			});
 	}
 
 	private _onUserConnected(event: Protocol.Events.UserConnected) {

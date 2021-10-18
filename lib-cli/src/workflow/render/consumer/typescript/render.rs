@@ -13,15 +13,13 @@ pub mod render_options;
 #[path = "./render.protocol.rs"]
 pub mod render_protocol;
 
+#[path = "./render.beacon.rs"]
+pub mod render_beacon;
+
 use super::{
     helpers, workflow, workflow::store::Store as WorkflowStore, ImplementationRender, Protocol,
     ProtocolRender, ProtocolTypescriptRender,
 };
-use render_consumer::RenderConsumer;
-use render_interfaces_request::RenderInterfacesRequest;
-use render_options::RenderOptions;
-use render_protocol::RenderProtocol;
-use render_request::RenderRequest;
 use std::path::Path;
 
 pub struct TypescriptRender {}
@@ -41,12 +39,15 @@ impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
         protocol_render: ProtocolTypescriptRender,
     ) -> Result<String, String> {
         for request in &store.requests {
-            (RenderRequest::new()).render(base, &request)?;
+            (render_request::Render::new()).render(base, &request)?;
         }
-        (RenderConsumer::new()).render(base, store, &protocol)?;
-        (RenderInterfacesRequest::new()).render(base)?;
-        (RenderOptions::new()).render(base)?;
-        (RenderProtocol::new()).render(base, protocol, &protocol_render)?;
+        for beacon in &store.beacons {
+            (render_beacon::Render::new()).render(base, &beacon)?;
+        }
+        (render_consumer::Render::new()).render(base, store, &protocol)?;
+        (render_interfaces_request::Render::new()).render(base)?;
+        (render_options::Render::new()).render(base)?;
+        (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
         Ok(String::new())
     }
 }

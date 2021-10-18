@@ -1,27 +1,18 @@
-use super::{
-    ProtocolRender,
-    ProtocolTypescriptRender,
-    Protocol,
-};
+use super::{Protocol, ProtocolRender, ProtocolTypescriptRender};
 use std::{
     fs,
-    path::{
-        Path,
-        PathBuf,
-    }
+    path::{Path, PathBuf},
 };
 
-pub struct RenderProtocol {
-}
+pub struct Render {}
 
-impl Default for RenderProtocol {
+impl Default for Render {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RenderProtocol {
-    
+impl Render {
     pub fn new() -> Self {
         Self {}
     }
@@ -40,11 +31,13 @@ impl RenderProtocol {
         let dest = base.join("protocol");
         if !dest.exists() {
             if let Err(e) = fs::create_dir(&dest) {
-                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+                return Err(format!(
+                    "Fail to create dest folder {}. Error: {}",
+                    dest.to_string_lossy(),
+                    e
+                ));
             }
         }
         Ok(dest.join("protocol.ts"))
     }
-
 }
-

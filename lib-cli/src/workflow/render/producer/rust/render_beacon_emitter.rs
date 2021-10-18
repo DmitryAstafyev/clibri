@@ -6,21 +6,29 @@ use std::{
 
 mod templates {
     pub const MODULE: &str = r#"use super::{
-    beacons, identification, producer::Control, protocol, Context,
-    EmitterError,
+    beacons, identification, pack, producer::Control, protocol, Context, EmitterError,
+    ProducerError,
 };
 use fiber::server;
 
 pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     beacon: &protocol::[[beacon]],
+    sequence: u32,
     filter: &identification::Filter,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     beacons::[[beacon_mod]]::emit::<E, C>(identification, beacon, filter, context, control)
         .await
-        .map_err(EmitterError::Emitting)
+        .map_err(EmitterError::Emitting)?;
+    let mut response = protocol::InternalServiceGroup::BeaconConfirmation { error: None };
+    let buffer = pack(&sequence, &identification.uuid(), &mut response)?;
+    control
+        .send(buffer, Some(identification.uuid()))
+        .await
+        .map_err(|e: ProducerError<E>| EmitterError::Emitting(e.to_string()))?;
+    Ok(())
 }"#;
 }
 

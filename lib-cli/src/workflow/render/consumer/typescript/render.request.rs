@@ -1,25 +1,11 @@
-use super::{
-    helpers,
-    helpers::{
-        render as tools,
-    },
-    workflow::{
-        request::{
-            Request
-        }
-    }
-};
+use super::{helpers, helpers::render as tools, workflow::request::Request};
 use std::{
     fs,
-    path::{
-        Path,
-        PathBuf,
-    }
+    path::{Path, PathBuf},
 };
 
 mod templates {
-    pub const MODULE: &str =
-r#"import * as Protocol from '../protocol/protocol';
+    pub const MODULE: &str = r#"import * as Protocol from '../protocol/protocol';
 
 import { Consumer } from '../index';
 import { ERequestState } from '../interfaces/request';
@@ -78,50 +64,57 @@ export class [[reference]] extends Protocol.[[struct_ref]] {
 
 }
 "#;
-    pub const HANDLERS: &str = 
-r#"private _handlers: {[[declarations]]
+    pub const HANDLERS: &str = r#"private _handlers: {[[declarations]]
     err: TErrHandler | undefined;
 } = {[[init]]
     err: undefined,
 };"#;
-    pub const HANDLER_SETTER: &str =
-r#"public [[name]](handler: T[[type]]Handler): [[reference]] {
+    pub const HANDLER_SETTER: &str = r#"public [[name]](handler: T[[type]]Handler): [[reference]] {
     this._handlers.[[name]] = handler;
     return this;
 }"#;
 }
 
-pub struct RenderRequest {
-}
+pub struct Render {}
 
-impl Default for RenderRequest {
+impl Default for Render {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RenderRequest {
-    
+impl Render {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn render(
-        &self,
-        base: &Path,
-        request: &Request
-    ) -> Result<(), String> {
+    pub fn render(&self, base: &Path, request: &Request) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base, request)?;
         let mut output: String = templates::MODULE.to_owned();
-        output = output.replace("[[types_declarations]]", &self.get_types_declarations(request)?);
+        output = output.replace(
+            "[[types_declarations]]",
+            &self.get_types_declarations(request)?,
+        );
         output = output.replace("[[reference]]", &(request.get_request()?).replace(".", ""));
         output = output.replace("[[struct_ref]]", &request.get_request()?);
         output = output.replace("[[struct_interface]]", &self.get_struct_interface(request)?);
         output = output.replace("[[resolver]]", &self.get_resolver_type(request)?);
-        output = output.replace("[[handlers]]", &tools::inject_tabs(1, self.get_handlers(request)?));
-        output = output.replace("[[handlers_defs]]", &tools::inject_tabs(3, self.get_handlers_defs(request)?));
-        output = output.replace("[[handlers_setters]]", &tools::inject_tabs(1, self.get_handlers_setters(request)?));
-        output = output.replace("[[response_handler]]", &tools::inject_tabs(6, self.get_response_handler(request)?));
+        output = output.replace(
+            "[[handlers]]",
+            &tools::inject_tabs(1, self.get_handlers(request)?),
+        );
+        output = output.replace(
+            "[[handlers_defs]]",
+            &tools::inject_tabs(3, self.get_handlers_defs(request)?),
+        );
+        output = output.replace(
+            "[[handlers_setters]]",
+            &tools::inject_tabs(1, self.get_handlers_setters(request)?),
+        );
+        output = output.replace(
+            "[[response_handler]]",
+            &tools::inject_tabs(6, self.get_response_handler(request)?),
+        );
         helpers::fs::write(dest, output, true)
     }
 
@@ -139,7 +132,11 @@ impl RenderRequest {
     }
 
     fn get_types_declarations(&self, request: &Request) -> Result<String, String> {
-        let mut output: String = format!("export type {} = Protocol.{}", self.get_resolver_type(request)?, request.get_err()?);
+        let mut output: String = format!(
+            "export type {} = Protocol.{}",
+            self.get_resolver_type(request)?,
+            request.get_err()?
+        );
         if request.actions.len() > 1 {
             for action in &request.actions {
                 let reference = if let Some(reference) = action.response.as_ref() {
@@ -147,11 +144,7 @@ impl RenderRequest {
                 } else {
                     return Err(String::from("Action doesn't have bound response reference"));
                 };
-                output = format!(
-                    "{} | Protocol.{}",
-                    output,
-                    reference,
-                );
+                output = format!("{} | Protocol.{}", output, reference,);
             }
             output = format!("{};", output);
             for action in &request.actions {
@@ -168,23 +161,17 @@ impl RenderRequest {
                 };
                 output = format!(
                     "{}\nexport type T{}Handler = (response: Protocol.{}) => void",
-                    output,
-                    name,
-                    reference,
+                    output, name, reference,
                 );
             }
         } else {
-            output = format!(
-                "{} | Protocol.{};",
-                output,
-                request.get_response()?,
-            );
+            output = format!("{} | Protocol.{};", output, request.get_response()?,);
             output = format!(
                 "{}\nexport type TResponseHandler = (response: Protocol.{}) => void",
                 output,
                 request.get_response()?,
             );
-            }
+        }
         output = format!(
             "{}\nexport type TErrHandler = (response: Protocol.{}) => void",
             output,
@@ -206,11 +193,7 @@ impl RenderRequest {
                         name.to_lowercase(),
                         name,
                     );
-                    init = format!(
-                        "{}\n{}: undefined,",
-                        init,
-                        name.to_lowercase(),
-                    );
+                    init = format!("{}\n{}: undefined,", init, name.to_lowercase(),);
                 } else {
                     return Err(String::from("Action doesn't have bound conclusion name"));
                 };
@@ -229,11 +212,7 @@ impl RenderRequest {
         if request.actions.len() > 1 {
             for action in &request.actions {
                 if let Some(name) = action.conclusion.as_ref() {
-                    output = format!(
-                        "{}\n{}: undefined,",
-                        output,
-                        name.to_lowercase(),
-                    );
+                    output = format!("{}\n{}: undefined,", output, name.to_lowercase(),);
                 } else {
                     return Err(String::from("Action doesn't have bound conclusion name"));
                 };
@@ -286,34 +265,48 @@ impl RenderRequest {
             }
         }
         let mut output: String = format!(
-r#"{}) {{
+            r#"{}) {{
     return reject(new Error(`Expecting message from "{}" group.`));
-}} "#, check_group, group);
+}} "#,
+            check_group, group
+        );
         if request.actions.len() > 1 {
             for action in &request.actions {
-                output = format!("{}{}", output,
-r#"else if ([[group]].[[response]] !== undefined) {
+                output = format!(
+                    "{}{}",
+                    output,
+                    r#"else if ([[group]].[[response]] !== undefined) {
     this._handlers.[[handler]] !== undefined && this._handlers.[[handler]]([[group]].[[response]]);
     return resolve([[group]].[[response]]);
-} "#.replace("[[group]]", &group)
-    .replace("[[response]]", &action.get_last_response_entity()?)
-    .replace("[[handler]]", &action.get_conclusion()?.to_lowercase()));
+} "#
+                    .replace("[[group]]", &group)
+                    .replace("[[response]]", &action.get_last_response_entity()?)
+                    .replace("[[handler]]", &action.get_conclusion()?.to_lowercase())
+                );
             }
         } else {
-            output = format!("{}{}", output,
-r#"else if (message.[[response]] !== undefined) {
+            output = format!(
+                "{}{}",
+                output,
+                r#"else if (message.[[response]] !== undefined) {
     this._handlers.response !== undefined && this._handlers.response(message.[[response]]);
     return resolve(message.[[response]]);
-} "#.replace("[[response]]", &request.get_response()?));
+} "#
+                .replace("[[response]]", &request.get_response()?)
+            );
         }
-        output = format!("{}{}", output,
-r#"else if (message.[[error]] !== undefined) {
+        output = format!(
+            "{}{}",
+            output,
+            r#"else if (message.[[error]] !== undefined) {
     this._handlers.err !== undefined && this._handlers.err(message.[[error]]);
     return resolve(message.[[error]]);
 } else {
     return reject(new Error(`No message in "[[group]]" group.`));
-}"#.replace("[[error]]", &request.get_err()?)
-    .replace("[[group]]", &group));
+}"#
+            .replace("[[error]]", &request.get_err()?)
+            .replace("[[group]]", &group)
+        );
         Ok(output)
     }
 
@@ -321,7 +314,11 @@ r#"else if (message.[[error]] !== undefined) {
         let dest = base.join("requests");
         if !dest.exists() {
             if let Err(e) = fs::create_dir(&dest) {
-                return Err(format!("Fail to create dest folder {}. Error: {}", dest.to_string_lossy(), e));
+                return Err(format!(
+                    "Fail to create dest folder {}. Error: {}",
+                    dest.to_string_lossy(),
+                    e
+                ));
             }
         }
         let request = request.get_request()?;
@@ -329,8 +326,9 @@ r#"else if (message.[[error]] !== undefined) {
     }
 
     fn get_resolver_type(&self, request: &Request) -> Result<String, String> {
-        Ok(format!("T{}Resolver", request.get_request()?.replace(".", "")))
+        Ok(format!(
+            "T{}Resolver",
+            request.get_request()?.replace(".", "")
+        ))
     }
-
 }
-
