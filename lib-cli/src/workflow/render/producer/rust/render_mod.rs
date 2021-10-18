@@ -540,6 +540,18 @@ pub mod producer {
                         )
                         .await?
                     }
+                    if !valid {
+                        disconnect(uuid, client, control).await?;
+                        emitters::error::emit::<E, C>(
+                            ProducerError::NoConsumerKey(uuid),
+                            Some(uuid),
+                            &mut context,
+                            Some(client.get_mut_identification()),
+                            control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?;
+                    }
                 },
                 message => {
                     if !client.is_hash_accepted() {
