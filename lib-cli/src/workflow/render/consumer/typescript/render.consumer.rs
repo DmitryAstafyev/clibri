@@ -2,7 +2,7 @@ use super::{
     helpers,
     helpers::render as tools,
     workflow::{beacon::Broadcast, request::Request},
-    WorkflowStore,
+    Protocol, WorkflowStore,
 };
 use std::path::{Path, PathBuf};
 
@@ -16,6 +16,7 @@ import * as Protocol from './protocol/protocol';
 
 export { Protocol };[[request_exports]]
 
+// tslint:disable-next-line: no-namespace
 export namespace ExtError {
 
     export type TError = ClientError | ConsumerError;
@@ -38,6 +39,8 @@ export namespace ExtError {
 
 export class Consumer {
 
+    public static PROTOCOL_HASH: string = "[[protocol_hash]]";
+    public static WORKFLOW_HASH: string = "[[workflow_hash]]";
     public static GUID: string = guid();
     public static GUID_SUBS: string = guid();
 
@@ -178,12 +181,42 @@ export class Consumer {
         return this._sequence ++;
     }
 
+    private _hash(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const request: Protocol.InternalServiceGroup.HashRequest = new Protocol.InternalServiceGroup.HashRequest({
+                protocol: Consumer.PROTOCOL_HASH,
+                workflow: Consumer.WORKFLOW_HASH,
+            });
+            const sequence: number = this.getSequence();
+            this.request(request.pack(sequence), sequence).then((response: Protocol.IAvailableMessages) => {
+                if (response.InternalServiceGroup === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message from "InternalServiceGroup" group.`)));
+                }
+                if (response.InternalServiceGroup.HashResponse === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message "InternalServiceGroup.HashResponse".`)));
+                }
+                if (response.InternalServiceGroup.HashResponse.error !== undefined) {
+                    reject(new Error(response.InternalServiceGroup.HashResponse.error));
+                } else {
+                    resolve(undefined);
+                }
+            }).catch((err: Error) => {
+                reject(new Error(this._logger.err(`Fail check consumer's hash due error: ${err.message}`)));
+            });
+        });
+    }
+
     private _onClientConnected() {
         this._logger.debug(`Client is connected`);
         this.assign(this._key).then((uuid: string) => {
-            this.ready.emit(uuid);
+            this._hash().then(() => {
+                this._logger.debug(`Protocol and workflow hashes has been accepted`);
+                this.ready.emit(uuid);
+            }).catch((err: Error) => {
+                this._logger.err(`Consumer has isn't accepted: ${err.message}\n\t- protocol hash: ${Consumer.PROTOCOL_HASH}\n\t- workflow hash: ${Consumer.WORKFLOW_HASH}`);
+            });
         }).catch((err: Error) => {
-            this._logger.err(`Default assign prodecure is failed.`);
+            this._logger.err(`Default assign prodecure is failed: ${err.message}`);
         });
         this.connected.emit();
     }
@@ -242,7 +275,12 @@ impl RenderConsumer {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, store: &WorkflowStore) -> Result<(), String> {
+    pub fn render(
+        &self,
+        base: &Path,
+        store: &WorkflowStore,
+        protocol: &Protocol,
+    ) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base);
         let mut output: String = templates::MODULE.to_owned();
         let broadcasts: Vec<Broadcast> = self.get_all_broadcasts(store);
@@ -262,6 +300,8 @@ impl RenderConsumer {
             "[[request_exports]]",
             &self.get_request_exports(&store.requests)?,
         );
+        output = output.replace("[[protocol_hash]]", &protocol.get_hash());
+        output = output.replace("[[workflow_hash]]", &store.get_hash());
         helpers::fs::write(dest, output, true)
     }
 

@@ -18,6 +18,7 @@ pub struct Consumer {
     uuid: Uuid,
     buffer: protocol::Buffer<protocol::AvailableMessages>,
     identification: identification::Identification,
+    hash_accepted: bool,
 }
 
 impl Consumer {
@@ -26,7 +27,16 @@ impl Consumer {
             uuid,
             buffer: protocol::Buffer::new(),
             identification: identification::Identification::new(uuid, options),
+            hash_accepted: false,
         }
+    }
+
+    pub fn accept_hash(&mut self) {
+        self.hash_accepted = true;
+    }
+
+    pub fn is_hash_accepted(&self) -> bool {
+        self.hash_accepted
     }
 
     pub fn get_uuid(&self) -> Uuid {

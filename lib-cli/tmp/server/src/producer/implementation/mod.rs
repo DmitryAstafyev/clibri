@@ -31,6 +31,11 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
+pub mod hash {
+    pub const PROTOCOL: &str = "0DDAFC5D9CDDFDEA2C39633685030CB826898CEF7BA386E89FB6F57E8DCEA73B";
+    pub const WORKFLOW: &str = "6222E5808F05F1239B2A3F88246AC27B1514ABEE1EDBA29B6F5ACA972B661B3C";
+}
+
 #[derive(Error, Debug)]
 pub enum ProducerError<E: std::error::Error> {
     #[error("server error: `{0}`")]
@@ -477,8 +482,91 @@ pub mod producer {
                         .await?
                     }
                 }
+                protocol::AvailableMessages::InternalServiceGroup(
+                    protocol::InternalServiceGroup::AvailableMessages::HashRequest(request),
+                ) => {
+                    trace!(
+                        target: logs::targets::PRODUCER,
+                        "consumer {} requested hash check",
+                        uuid,
+                    );
+                    let valid = if request.protocol != hash::PROTOCOL {
+                        warn!(
+                            target: logs::targets::PRODUCER,
+                            "consumer {} uses invalid protocol hash ({}); valid protocol hash: {}",
+                            uuid,
+                            request.protocol,
+                            hash::PROTOCOL
+                        );
+                        false
+                    } else if request.workflow != hash::WORKFLOW {
+                        warn!(
+                            target: logs::targets::PRODUCER,
+                            "consumer {} uses invalid workflow hash ({}); valid workflow hash: {}",
+                            uuid,
+                            request.workflow,
+                            hash::WORKFLOW
+                        );
+                        false
+                    } else {
+                        trace!(
+                            target: logs::targets::PRODUCER,
+                            "consumer {} hash has been accepted",
+                            uuid,
+                        );
+                        client.accept_hash();
+                        true
+                    };
+                    if let Err(err) = match (protocol::InternalServiceGroup::HashResponse {
+                        error: if !valid {
+                            Some(String::from("Hash is invalid"))
+                        } else {
+                            None
+                        },
+                    })
+                    .pack(header.sequence, Some(uuid.to_string()))
+                    {
+                        Ok(buffer) => {
+                            if let Err(err) = control.send(buffer, Some(uuid)).await {
+                                Err(err.to_string())
+                            } else {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "{}:: hash check results has been sent", uuid,
+                                );
+                                Ok(())
+                            }
+                        }
+                        Err(err) => Err(err),
+                    } {
+                        responsing_err(
+                            format!("fail to send hash check results response: {}", err),
+                            uuid,
+                            &mut context,
+                            control,
+                            options,
+                            &mut Some(client),
+                        )
+                        .await?
+                    }
+                },
                 message => {
-                    if !has_key {
+                    if !client.is_hash_accepted() {
+                        warn!(
+                            target: logs::targets::PRODUCER,
+                            "consumer {} tries to send data, but hash of client invalid", uuid
+                        );
+                        disconnect(uuid, client, control).await?;
+                        emitters::error::emit::<E, C>(
+                            ProducerError::NoConsumerKey(uuid),
+                            Some(uuid),
+                            &mut context,
+                            Some(client.get_mut_identification()),
+                            control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?;
+                    } else if !has_key {
                         warn!(
                             target: logs::targets::PRODUCER,
                             "consumer {} tries to send data, but it doesn't have a key", uuid

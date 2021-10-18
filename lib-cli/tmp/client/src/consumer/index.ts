@@ -11,6 +11,7 @@ export { UsersRequest } from './requests/users.request';
 export { MessageRequest } from './requests/message.request';
 export { MessagesRequest } from './requests/messages.request';
 
+// tslint:disable-next-line: no-namespace
 export namespace ExtError {
 
     export type TError = ClientError | ConsumerError;
@@ -33,6 +34,8 @@ export namespace ExtError {
 
 export class Consumer {
 
+    public static PROTOCOL_HASH: string = "0DDAFC5D9CDDFDEA2C39633685030CB826898CEF7BA386E89FB6F57E8DCEA73B";
+    public static WORKFLOW_HASH: string = "6222E5808F05F1239B2A3F88246AC27B1514ABEE1EDBA29B6F5ACA972B661B3C";
     public static GUID: string = guid();
     public static GUID_SUBS: string = guid();
 
@@ -179,12 +182,42 @@ export class Consumer {
         return this._sequence ++;
     }
 
+    private _hash(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const request: Protocol.InternalServiceGroup.HashRequest = new Protocol.InternalServiceGroup.HashRequest({
+                protocol: Consumer.PROTOCOL_HASH,
+                workflow: Consumer.WORKFLOW_HASH,
+            });
+            const sequence: number = this.getSequence();
+            this.request(request.pack(sequence), sequence).then((response: Protocol.IAvailableMessages) => {
+                if (response.InternalServiceGroup === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message from "InternalServiceGroup" group.`)));
+                }
+                if (response.InternalServiceGroup.HashResponse === undefined) {
+                    return reject(new Error(this._logger.err(`Expecting message "InternalServiceGroup.HashResponse".`)));
+                }
+                if (response.InternalServiceGroup.HashResponse.error !== undefined) {
+                    reject(new Error(response.InternalServiceGroup.HashResponse.error));
+                } else {
+                    resolve(undefined);
+                }
+            }).catch((err: Error) => {
+                reject(new Error(this._logger.err(`Fail check consumer's hash due error: ${err.message}`)));
+            });
+        });
+    }
+
     private _onClientConnected() {
         this._logger.debug(`Client is connected`);
         this.assign(this._key).then((uuid: string) => {
-            this.ready.emit(uuid);
+            this._hash().then(() => {
+                this._logger.debug(`Protocol and workflow hashes has been accepted`);
+                this.ready.emit(uuid);
+            }).catch((err: Error) => {
+                this._logger.err(`Consumer has isn't accepted: ${err.message}\n\t- protocol hash: ${Consumer.PROTOCOL_HASH}\n\t- workflow hash: ${Consumer.WORKFLOW_HASH}`);
+            });
         }).catch((err: Error) => {
-            this._logger.err(`Default assign prodecure is failed.`);
+            this._logger.err(`Default assign prodecure is failed: ${err.message}`);
         });
         this.connected.emit();
     }

@@ -1395,6 +1395,8 @@ pub mod InternalServiceGroup {
     #[derive(Debug, Clone)]
     pub enum AvailableMessages {
         SelfKeyResponse(SelfKeyResponse),
+        HashRequest(HashRequest),
+        HashResponse(HashResponse),
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -1435,6 +1437,94 @@ pub mod InternalServiceGroup {
         }
     }
     impl PackingStruct for SelfKeyResponse { }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct HashRequest {
+        pub protocol: String,
+        pub workflow: String,
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for HashRequest {
+        fn get_id() -> u32 {
+            81
+        }
+        fn defaults() -> HashRequest {
+            HashRequest {
+                protocol: String::from(""),
+                workflow: String::from(""),
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.protocol = match String::get_from_storage(Source::Storage(&mut storage), Some(82)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.workflow = match String::get_from_storage(Source::Storage(&mut storage), Some(83)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for HashRequest {
+        fn get_id(&self) -> u32 { 81 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.protocol.get_buf_to_store(Some(82)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.workflow.get_buf_to_store(Some(83)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for HashRequest { }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct HashResponse {
+        pub error: Option<String>,
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for HashResponse {
+        fn get_id() -> u32 {
+            84
+        }
+        fn defaults() -> HashResponse {
+            HashResponse {
+                error: None,
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.error = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(85)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for HashResponse {
+        fn get_id(&self) -> u32 { 84 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.error.get_buf_to_store(Some(85)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for HashResponse { }
 
 }
 
@@ -1561,9 +1651,18 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::SelfKeyResponse(m))),
                 Err(e) => Err(e),
             },
+            81 => match InternalServiceGroup::HashRequest::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::HashRequest(m))),
+                Err(e) => Err(e),
+            },
+            84 => match InternalServiceGroup::HashResponse::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::HashResponse(m))),
+                Err(e) => Err(e),
+            },
             _ => Err(String::from("No message has been found"))
         }
     }
     fn get_signature(&self) -> u16 { 0 }
 }
 
+pub fn hash() -> String { String::from("0DDAFC5D9CDDFDEA2C39633685030CB826898CEF7BA386E89FB6F57E8DCEA73B") }
