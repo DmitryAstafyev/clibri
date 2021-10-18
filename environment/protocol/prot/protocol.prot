@@ -38,6 +38,15 @@ group Events {
     }
 }
 
+group Beacons {
+    struct LikeUser {
+        str uuid;
+    }
+    struct LikeMessage {
+        str uuid;
+    }
+}
+
 group ServerEvents {
     struct UserKickOff {
         str reason?;
