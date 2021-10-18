@@ -14,7 +14,7 @@ pub mod beacon;
 pub mod store;
 
 use super::{
-    helpers::chars,
+    helpers::{chars, hash},
     protocol::{
         fields::Field,
         store::{Store as Protocol, INTERNAL_SERVICE_GROUP},
@@ -78,13 +78,13 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(src: PathBuf) -> Parser {
-        Self {
-            src,
+    pub fn new(src: PathBuf) -> Result<Parser, String> {
+        Ok(Self {
+            src: src.clone(),
             cursor: 0,
             content: String::new(),
-            store: Store::new(),
-        }
+            store: Store::new(hash::get(&src)?),
+        })
     }
 
     pub fn parse(&mut self, protocol: &mut Protocol) -> Result<Store, String> {

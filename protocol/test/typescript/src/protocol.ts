@@ -6465,3 +6465,4 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
     }
 }
 
+export function hash(): string { return `156DE162AA1210095CDAB2912D619327D2541381BFF5A3B282B6E0AEB5627C1A`; }

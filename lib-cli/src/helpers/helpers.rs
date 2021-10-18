@@ -9,3 +9,6 @@ pub mod render;
 
 #[path = "./helper.fs.rs"]
 pub mod fs;
+
+#[path = "./helper.hash.rs"]
+pub mod hash;

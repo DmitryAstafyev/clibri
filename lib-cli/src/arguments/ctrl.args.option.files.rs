@@ -306,7 +306,7 @@ impl CtrlArg for ArgsOptionFiles {
                     if let Some(workflow_path) = self.workflow.as_ref() {
                         // TODO: remove workflow dest folder
                         let mut workflow: WorkflowParser =
-                            WorkflowParser::new(workflow_path.to_owned());
+                            WorkflowParser::new(workflow_path.to_owned())?;
                         match workflow.parse(&mut protocol_store) {
                             Ok(workflow_store) => {
                                 if let Some(uml_path) = self.dest_uml.as_ref() {

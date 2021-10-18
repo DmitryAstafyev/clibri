@@ -1,9 +1,9 @@
-use super::{ stop, helpers };
-use helpers::{chars};
+use super::{helpers, stop};
 use entities::Entities;
 use enums::Enum;
-use fields::{ Field };
+use fields::Field;
 use groups::Group;
+use helpers::{chars, hash};
 use std::fs;
 use std::path::PathBuf;
 use store::Store;
@@ -75,10 +75,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(src: PathBuf) -> Parser {
-        Parser {
-            src,
-            prev: None,
-        }
+        Parser { src, prev: None }
     }
 
     pub fn parse(&mut self) -> Result<Store, Vec<String>> {
@@ -95,7 +92,7 @@ impl Parser {
             EExpectation::GroupDef,
             EExpectation::EnumDef,
         ];
-        let mut store: Store = Store::new();
+        let mut store: Store = Store::new(hash::get(&self.src).map_err(|e| vec![e])?);
         loop {
             match self.next(content.clone()) {
                 Ok(enext) => {
@@ -290,11 +287,13 @@ impl Parser {
                                 break;
                             }
                             if !store.is_field_opened() && !store.is_enum_opened() {
-                                errs.push("Unexpecting : as soon as no open field or enum".to_owned());
+                                errs.push(
+                                    "Unexpecting : as soon as no open field or enum".to_owned(),
+                                );
                             }
                             expectation = vec![EExpectation::FieldType];
                             offset
-                        },
+                        }
                         ENext::End() => {
                             break;
                         }
@@ -332,15 +331,10 @@ impl Parser {
             chars::OPEN,
             chars::CLOSE,
             chars::QUESTION,
-            chars::DOT
+            chars::DOT,
         ];
-        let special_chars: Vec<char> = vec![
-            chars::OPEN_SQ_BRACKET, 
-            chars::CLOSE_SQ_BRACKET,
-        ];
-        let allowed_chars: Vec<char> = vec![
-            chars::UNDERLINE
-        ];
+        let special_chars: Vec<char> = vec![chars::OPEN_SQ_BRACKET, chars::CLOSE_SQ_BRACKET];
+        let allowed_chars: Vec<char> = vec![chars::UNDERLINE];
         for char in content.chars() {
             pass += 1;
             if !char.is_ascii() {

@@ -1,15 +1,20 @@
 #[path = "./protocol.rs"]
 pub mod protocol;
 
+use super::state;
+use protocol::PackingMiddleware;
 use protocol::*;
-use std::fs::{OpenOptions, remove_file, create_dir};
-use std::path::{PathBuf};
+use std::fs::{create_dir, remove_file, OpenOptions};
 use std::io::prelude::*;
-use protocol::{ PackingMiddleware };
-use super::{ state };
+use std::path::PathBuf;
 
 impl PackingMiddleware {
-    fn encode(buffer: Vec<u8>, _id: u32, _sequence: u32, _uuid: Option<String>) -> Result<Vec<u8>, String> {
+    fn encode(
+        buffer: Vec<u8>,
+        _id: u32,
+        _sequence: u32,
+        _uuid: Option<String>,
+    ) -> Result<Vec<u8>, String> {
         match state::state.lock() {
             Ok(state) => {
                 if state.middleware {
@@ -19,7 +24,7 @@ impl PackingMiddleware {
                 } else {
                     Ok(buffer)
                 }
-            },
+            }
             Err(e) => {
                 panic!("Fail get state due error {}", e);
             }
@@ -27,14 +32,14 @@ impl PackingMiddleware {
     }
 }
 
-fn write_file(mut dest: PathBuf, buf: &Vec<u8>) -> Result<(), String> {
+fn write_file(mut dest: PathBuf, buf: &[u8]) -> Result<(), String> {
     let dest: PathBuf = match state::state.lock() {
         Ok(state) => {
             if state.middleware {
                 dest.set_extension("middleware");
             }
             dest
-        },
+        }
         Err(e) => {
             panic!("Fail get state due error {}", e);
         }
@@ -53,12 +58,16 @@ fn write_file(mut dest: PathBuf, buf: &Vec<u8>) -> Result<(), String> {
             if let Err(e) = file.write_all(buf) {
                 return Err(e.to_string());
             }
-            println!("[OK]\t[RS]: File {:?} has beed written {} bytes.", dest, buf.len());
+            println!(
+                "[OK]\t[RS]: File {:?} has beed written {} bytes.",
+                dest,
+                buf.len()
+            );
             Ok(())
         }
-        Err(e) => Err(e.to_string())
+        Err(e) => Err(e.to_string()),
     }
-} 
+}
 
 pub fn get_root_dir() -> Result<PathBuf, String> {
     if let Ok(exe) = std::env::current_exe() {
@@ -253,7 +262,7 @@ pub fn write() -> Result<(), String> {
         field_c: GroupB::GroupC::StructExampleA {
             field_u8: 1,
             field_u16: 2,
-        }
+        },
     });
     if let Ok(buf) = usecase.encode() {
         if !middleware {
@@ -369,7 +378,7 @@ pub fn write() -> Result<(), String> {
                 field_f32: 0.1,
                 field_f64: 0.2,
                 field_bool: true,
-            }
+            },
         ],
         field_str_empty: vec![],
         field_u8_empty: vec![],
@@ -537,7 +546,7 @@ pub fn write() -> Result<(), String> {
                     field_f32: 0.1,
                     field_f64: 0.2,
                     field_bool: true,
-                }
+                },
             ],
             field_str_empty: vec![],
             field_u8_empty: vec![],
@@ -590,8 +599,7 @@ pub fn write() -> Result<(), String> {
     }
     buffer.append(&mut usecase.pack(0, None).unwrap());
 
-    let mut usecase = StructExampleEmpty {
-    };
+    let mut usecase = StructExampleEmpty {};
     if let Ok(buf) = usecase.encode() {
         if !middleware {
             if let Err(e) = write_file(root.join("./StructExampleEmpty.prot.bin"), &buf) {
@@ -661,7 +669,7 @@ pub fn write() -> Result<(), String> {
         strct: GroupB::GroupC::StructExampleA {
             field_u8: 1,
             field_u16: 2,
-        }
+        },
     };
     if let Ok(buf) = usecase.encode() {
         if !middleware {
@@ -694,7 +702,7 @@ pub fn write() -> Result<(), String> {
         field_c: GroupB::GroupC::StructExampleA {
             field_u8: 1,
             field_u16: 2,
-        }
+        },
     };
     if let Ok(buf) = usecase.encode() {
         if !middleware {

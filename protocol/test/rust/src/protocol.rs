@@ -37,8 +37,10 @@ pub enum Source<'a> {
     Buffer(&'a Vec<u8>),
 }
 
-pub trait StructDecode where Self: Sized {
-
+pub trait StructDecode
+where
+    Self: Sized,
+{
     fn get_id() -> u32;
     fn defaults() -> Self;
     fn extract_from_storage(&mut self, storage: Storage) -> Result<(), String>;
@@ -58,14 +60,13 @@ pub trait StructDecode where Self: Sized {
 }
 
 pub trait EnumDecode {
-
     fn get_id(&self) -> u32;
-    fn extract(buf: Vec<u8>) -> Result<Self, String> where Self: std::marker::Sized;
-
+    fn extract(buf: Vec<u8>) -> Result<Self, String>
+    where
+        Self: std::marker::Sized;
 }
 
 pub trait DecodeEnum<T> {
-
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String>;
     fn get_buf_from_source(source: Source, id: Option<u16>) -> Result<&Vec<u8>, String> {
         match source {
@@ -79,16 +80,19 @@ pub trait DecodeEnum<T> {
                 } else {
                     Err("Storage defined as source, but no id is defined".to_string())
                 }
-            },
+            }
             Source::Buffer(buf) => Ok(buf),
         }
     }
-    fn decode(buf: &Vec<u8>) -> Result<T, String> {
-        Self::get_from_storage(Source::Buffer(buf), None)
+    fn decode(buf: &[u8]) -> Result<T, String> {
+        Self::get_from_storage(Source::Buffer(&buf.to_vec()), None)
     }
 }
 
-impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
+impl<T> DecodeEnum<T> for T
+where
+    T: EnumDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
             Self::extract(buf.clone())
@@ -98,10 +102,13 @@ impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
     }
 }
 
-impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
+impl<T> DecodeEnum<Vec<T>> for Vec<T>
+where
+    T: EnumDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<T>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<T> = vec!();
+            let mut res: Vec<T> = vec![];
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
             loop {
@@ -117,11 +124,16 @@ impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
                     return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U64_LEN)));
                 }
                 let mut item_buf = vec![0; item_len as usize];
-                item_buf.copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
-                buffer = buffer.drain((sizes::U64_LEN + item_len as usize)..).collect();
+                item_buf
+                    .copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer
+                    .drain((sizes::U64_LEN + item_len as usize)..)
+                    .collect();
                 match T::extract(item_buf) {
                     Ok(i) => res.push(i),
-                    Err(e) => { return Err(e); },
+                    Err(e) => {
+                        return Err(e);
+                    }
                 }
             }
             Ok(res)
@@ -132,7 +144,6 @@ impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
 }
 
 pub trait Decode<T> {
-
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String>;
     fn get_buf_from_source(source: Source, id: Option<u16>) -> Result<&Vec<u8>, String> {
         match source {
@@ -146,14 +157,13 @@ pub trait Decode<T> {
                 } else {
                     Err("Storage defined as source, but no id is defined".to_string())
                 }
-            },
+            }
             Source::Buffer(buf) => Ok(buf),
         }
     }
-    fn decode(buf: &Vec<u8>) -> Result<T, String> {
-        Self::get_from_storage(Source::Buffer(buf), None)
+    fn decode(buf: &[u8]) -> Result<T, String> {
+        Self::get_from_storage(Source::Buffer(&buf.to_vec()), None)
     }
-
 }
 
 impl Decode<u8> for u8 {
@@ -320,7 +330,10 @@ impl Decode<String> for String {
     }
 }
 
-impl<T> Decode<T> for T where T: StructDecode,  {
+impl<T> Decode<T> for T
+where
+    T: StructDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let sctruct_storage = match Storage::new(buf.to_vec()) {
@@ -343,7 +356,7 @@ impl<T> Decode<T> for T where T: StructDecode,  {
 impl Decode<Vec<u8>> for Vec<u8> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u8>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u8> = vec!();
+            let mut res: Vec<u8> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
                 if cursor.position() == buf.len() as u64 {
@@ -361,7 +374,7 @@ impl Decode<Vec<u8>> for Vec<u8> {
 impl Decode<Vec<u16>> for Vec<u16> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u16>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u16> = vec!();
+            let mut res: Vec<u16> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -383,7 +396,7 @@ impl Decode<Vec<u16>> for Vec<u16> {
 impl Decode<Vec<u32>> for Vec<u32> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u32>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u32> = vec!();
+            let mut res: Vec<u32> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -405,7 +418,7 @@ impl Decode<Vec<u32>> for Vec<u32> {
 impl Decode<Vec<u64>> for Vec<u64> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u64>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u64> = vec!();
+            let mut res: Vec<u64> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -427,7 +440,7 @@ impl Decode<Vec<u64>> for Vec<u64> {
 impl Decode<Vec<i8>> for Vec<i8> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i8>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i8> = vec!();
+            let mut res: Vec<i8> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
                 if cursor.position() == buf.len() as u64 {
@@ -445,7 +458,7 @@ impl Decode<Vec<i8>> for Vec<i8> {
 impl Decode<Vec<i16>> for Vec<i16> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i16>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i16> = vec!();
+            let mut res: Vec<i16> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -467,7 +480,7 @@ impl Decode<Vec<i16>> for Vec<i16> {
 impl Decode<Vec<i32>> for Vec<i32> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i32>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i32> = vec!();
+            let mut res: Vec<i32> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -489,7 +502,7 @@ impl Decode<Vec<i32>> for Vec<i32> {
 impl Decode<Vec<i64>> for Vec<i64> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i64>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i64> = vec!();
+            let mut res: Vec<i64> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -511,7 +524,7 @@ impl Decode<Vec<i64>> for Vec<i64> {
 impl Decode<Vec<f32>> for Vec<f32> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<f32>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<f32> = vec!();
+            let mut res: Vec<f32> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -533,7 +546,7 @@ impl Decode<Vec<f32>> for Vec<f32> {
 impl Decode<Vec<f64>> for Vec<f64> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<f64>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<f64> = vec!();
+            let mut res: Vec<f64> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -555,7 +568,7 @@ impl Decode<Vec<f64>> for Vec<f64> {
 impl Decode<Vec<bool>> for Vec<bool> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<bool>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<bool> = vec!();
+            let mut res: Vec<bool> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
                 if cursor.position() == buf.len() as u64 {
@@ -573,7 +586,7 @@ impl Decode<Vec<bool>> for Vec<bool> {
 impl Decode<Vec<String>> for Vec<String> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<String>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<String> = vec!();
+            let mut res: Vec<String> = vec![];
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
             loop {
@@ -589,8 +602,11 @@ impl Decode<Vec<String>> for Vec<String> {
                     return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U32_LEN)));
                 }
                 let mut item_buf = vec![0; item_len as usize];
-                item_buf.copy_from_slice(&buffer[sizes::U32_LEN..(sizes::U32_LEN + item_len as usize)]);
-                buffer = buffer.drain((sizes::U32_LEN + item_len as usize)..).collect();
+                item_buf
+                    .copy_from_slice(&buffer[sizes::U32_LEN..(sizes::U32_LEN + item_len as usize)]);
+                buffer = buffer
+                    .drain((sizes::U32_LEN + item_len as usize)..)
+                    .collect();
                 res.push(String::from_utf8_lossy(&item_buf).to_string());
             }
             Ok(res)
@@ -600,10 +616,13 @@ impl Decode<Vec<String>> for Vec<String> {
     }
 }
 
-impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
+impl<T> Decode<Vec<T>> for Vec<T>
+where
+    T: StructDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<T>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<T> = vec!();
+            let mut res: Vec<T> = vec![];
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
             loop {
@@ -619,8 +638,11 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                     return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U64_LEN)));
                 }
                 let mut item_buf = vec![0; item_len as usize];
-                item_buf.copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
-                buffer = buffer.drain((sizes::U64_LEN + item_len as usize)..).collect();
+                item_buf
+                    .copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer
+                    .drain((sizes::U64_LEN + item_len as usize)..)
+                    .collect();
                 let sctruct_storage = match Storage::new(item_buf) {
                     Ok(storage) => storage,
                     Err(e) => {
@@ -629,8 +651,10 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                 };
                 let mut strct: T = T::defaults();
                 match strct.extract_from_storage(sctruct_storage) {
-                    Ok(_) => {},
-                    Err(e) => { return Err(e); },
+                    Ok(_) => {}
+                    Err(e) => {
+                        return Err(e);
+                    }
                 }
                 res.push(strct);
             }
@@ -641,7 +665,10 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
     }
 }
 
-impl<T> Decode<Option<T>> for Option<T> where T: Decode<T> {
+impl<T> Decode<Option<T>> for Option<T>
+where
+    T: Decode<T>,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Option<T>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.is_empty() {
@@ -655,31 +682,30 @@ impl<T> Decode<Option<T>> for Option<T> where T: Decode<T> {
         } else {
             Err("Fail get buffer".to_string())
         }
-        
     }
 }
 
 fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<Vec<u8>, String> {
-    let mut buffer: Vec<u8> = vec!();
+    let mut buffer: Vec<u8> = vec![];
     if let Some(id) = id {
         buffer.append(&mut id.to_le_bytes().to_vec());
         match size {
             ESize::U8(size) => {
-                buffer.append(&mut (8 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 8_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
-            },
+            }
             ESize::U16(size) => {
-                buffer.append(&mut (16 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 16_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
-            },
+            }
             ESize::U32(size) => {
-                buffer.append(&mut (32 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 32_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
-            },
+            }
             ESize::U64(size) => {
-                buffer.append(&mut (64 as u8).to_le_bytes().to_vec());
+                buffer.append(&mut 64_u8.to_le_bytes().to_vec());
                 buffer.append(&mut size.to_le_bytes().to_vec());
-            },
+            }
         };
     }
     buffer.append(&mut value);
@@ -687,49 +713,52 @@ fn get_value_buffer(id: Option<u16>, size: ESize, mut value: Vec<u8>) -> Result<
 }
 
 pub fn get_empty_buffer_val(id: Option<u16>) -> Result<Vec<u8>, String> {
-    get_value_buffer(id, ESize::U8(0), vec!())
+    get_value_buffer(id, ESize::U8(0), vec![])
 }
 
 pub trait StructEncode {
-
     fn get_id(&self) -> u32;
     fn get_signature(&self) -> u16;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
-
 }
 
 pub trait EnumEncode {
-    
     fn get_id(&self) -> u32;
     fn get_signature(&self) -> u16;
     fn abduct(&mut self) -> Result<Vec<u8>, String>;
-
 }
 
 pub trait EncodeEnum {
-
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String>;
     fn encode(&mut self) -> Result<Vec<u8>, String> {
         self.get_buf_to_store(None)
     }
 }
 
-impl<T> EncodeEnum for T where T: EnumEncode {
+impl<T> EncodeEnum for T
+where
+    T: EnumEncode,
+{
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 }
 
-impl<T> EncodeEnum for Vec<T> where T: EnumEncode {
+impl<T> EncodeEnum for Vec<T>
+where
+    T: EnumEncode,
+{
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter_mut() {
             let val_as_bytes = match val.abduct() {
                 Ok(buf) => buf,
-                Err(e) => { return Err(e); }
+                Err(e) => {
+                    return Err(e);
+                }
             };
             buffer.append(&mut (val_as_bytes.len() as u64).to_le_bytes().to_vec());
             buffer.append(&mut val_as_bytes.to_vec());
@@ -739,7 +768,6 @@ impl<T> EncodeEnum for Vec<T> where T: EnumEncode {
 }
 
 pub trait Encode {
-
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String>;
     fn encode(&mut self) -> Result<Vec<u8>, String> {
         self.get_buf_to_store(None)
@@ -748,67 +776,111 @@ pub trait Encode {
 
 impl Encode for u8 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::U8_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::U8_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for u16 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::U16_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::U16_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for u32 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::U32_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::U32_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for u64 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::U64_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::U64_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for i8 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::I8_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::I8_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for i16 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::I16_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::I16_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for i32 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::I32_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::I32_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for i64 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::I64_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::I64_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for f32 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::F32_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::F32_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for f64 {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::F64_LEN as u8), self.to_le_bytes().to_vec())
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::F64_LEN as u8),
+            self.to_le_bytes().to_vec(),
+        )
     }
 }
 
 impl Encode for bool {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        get_value_buffer(id, ESize::U8(sizes::BOOL_LEN as u8), if self == &true { vec![1] } else { vec![0] })
+        get_value_buffer(
+            id,
+            ESize::U8(sizes::BOOL_LEN as u8),
+            if self == &true { vec![1] } else { vec![0] },
+        )
     }
 }
 
@@ -819,11 +891,14 @@ impl Encode for String {
     }
 }
 
-impl<T> Encode for T where T: StructEncode {
+impl<T> Encode for T
+where
+    T: StructEncode,
+{
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         match self.abduct() {
             Ok(buf) => get_value_buffer(id, ESize::U64(buf.len() as u64), buf.to_vec()),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 }
@@ -831,7 +906,7 @@ impl<T> Encode for T where T: StructEncode {
 impl Encode for Vec<u8> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U8_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -842,7 +917,7 @@ impl Encode for Vec<u8> {
 impl Encode for Vec<u16> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U16_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -853,7 +928,7 @@ impl Encode for Vec<u16> {
 impl Encode for Vec<u32> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U32_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -864,7 +939,7 @@ impl Encode for Vec<u32> {
 impl Encode for Vec<u64> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U64_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -875,7 +950,7 @@ impl Encode for Vec<u64> {
 impl Encode for Vec<i8> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I8_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -886,7 +961,7 @@ impl Encode for Vec<i8> {
 impl Encode for Vec<i16> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I16_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -897,7 +972,7 @@ impl Encode for Vec<i16> {
 impl Encode for Vec<i32> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I32_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -908,7 +983,7 @@ impl Encode for Vec<i32> {
 impl Encode for Vec<i64> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::I64_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -919,7 +994,7 @@ impl Encode for Vec<i64> {
 impl Encode for Vec<f32> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::F32_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -930,7 +1005,7 @@ impl Encode for Vec<f32> {
 impl Encode for Vec<f64> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::F64_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             buffer.append(&mut val.to_le_bytes().to_vec());
         }
@@ -940,7 +1015,7 @@ impl Encode for Vec<f64> {
 
 impl Encode for Vec<String> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
             let val_as_bytes = val.as_bytes();
             buffer.append(&mut (val_as_bytes.len() as u32).to_le_bytes().to_vec());
@@ -953,26 +1028,27 @@ impl Encode for Vec<String> {
 impl Encode for Vec<bool> {
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         let len = self.len() * sizes::U8_LEN;
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter() {
-            let byte: u8 = if val.clone() {
-                1
-            } else {
-                0
-            };
+            let byte: u8 = if *val { 1 } else { 0 };
             buffer.append(&mut byte.to_le_bytes().to_vec());
         }
         get_value_buffer(id, ESize::U64(len as u64), buffer.to_vec())
     }
 }
 
-impl<T> Encode for Vec<T> where T: StructEncode {
+impl<T> Encode for Vec<T>
+where
+    T: StructEncode,
+{
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
-        let mut buffer: Vec<u8> = vec!();
+        let mut buffer: Vec<u8> = vec![];
         for val in self.iter_mut() {
             let val_as_bytes = match val.abduct() {
                 Ok(buf) => buf,
-                Err(e) => { return Err(e); }
+                Err(e) => {
+                    return Err(e);
+                }
             };
             buffer.append(&mut (val_as_bytes.len() as u64).to_le_bytes().to_vec());
             buffer.append(&mut val_as_bytes.to_vec());
@@ -981,7 +1057,10 @@ impl<T> Encode for Vec<T> where T: StructEncode {
     }
 }
 
-impl<T> Encode for Option<T> where T: Encode {
+impl<T> Encode for Option<T>
+where
+    T: Encode,
+{
     fn get_buf_to_store(&mut self, id: Option<u16>) -> Result<Vec<u8>, String> {
         match self {
             Some(v) => v.get_buf_to_store(id),
@@ -997,19 +1076,18 @@ pub struct Storage {
 
 #[allow(dead_code)]
 impl Storage {
-
     pub fn from(map: HashMap<u16, Vec<u8>>) -> Self {
         Storage { map }
     }
 
     pub fn new(buf: Vec<u8>) -> Result<Self, String> {
-        /* 
+        /*
         | PROP_ID  | PROP_BODY_LEN_GRAD | PROP_BODY_LEN | PROP_BODY | ... |
         | 2 bytes  | 1 byte             | 1 - 8 bytes   | n bytes   | ... |
         */
         let mut position: usize = 0;
         let mut map: HashMap<u16, Vec<u8>> = HashMap::new();
-        if buf.len() > 0 {
+        if !buf.is_empty() {
             loop {
                 match Storage::next(&buf, position) {
                     Ok((id, body, pos)) => {
@@ -1018,16 +1096,14 @@ impl Storage {
                         if pos == buf.len() {
                             break;
                         }
-                    },
+                    }
                     Err(e) => {
                         return Err(e);
                     }
                 }
             }
         }
-        Ok(Storage {
-            map
-        })
+        Ok(Storage { map })
     }
 
     fn id(buf: &[u8], pos: usize) -> Result<(u16, usize), String> {
@@ -1053,46 +1129,58 @@ impl Storage {
         let prop_rank_len: usize = 1;
         let prop_size_len: usize;
         match prop_body_len_rank {
-            8 => if let Ok(val) = usize::try_from(cursor.get_u8()) {
-                prop_body_len_usize = val;
-                prop_size_len = sizes::U8_LEN;
-            } else {
-                return Err("Fail convert length of name from u8 to usize".to_string());
+            8 => {
+                if let Ok(val) = usize::try_from(cursor.get_u8()) {
+                    prop_body_len_usize = val;
+                    prop_size_len = sizes::U8_LEN;
+                } else {
+                    return Err("Fail convert length of name from u8 to usize".to_string());
+                }
             }
-            16 => if let Ok(val) = usize::try_from(cursor.get_u16_le()) {
-                prop_body_len_usize = val;
-                prop_size_len = sizes::U16_LEN;
-            } else {
-                return Err("Fail convert length of name from u16 to usize".to_string());
-            },
-            32 => if let Ok(val) = usize::try_from(cursor.get_u32_le()) {
-                prop_body_len_usize = val;
-                prop_size_len = sizes::U32_LEN;
-            } else {
-                return Err("Fail convert length of name from u32 to usize".to_string());
-            },
-            64 => if let Ok(val) = usize::try_from(cursor.get_u64_le()) {
-                prop_body_len_usize = val;
-                prop_size_len = sizes::U64_LEN;
-            } else {
-                return Err("Fail convert length of name from u64 to usize".to_string());
-            },
+            16 => {
+                if let Ok(val) = usize::try_from(cursor.get_u16_le()) {
+                    prop_body_len_usize = val;
+                    prop_size_len = sizes::U16_LEN;
+                } else {
+                    return Err("Fail convert length of name from u16 to usize".to_string());
+                }
+            }
+            32 => {
+                if let Ok(val) = usize::try_from(cursor.get_u32_le()) {
+                    prop_body_len_usize = val;
+                    prop_size_len = sizes::U32_LEN;
+                } else {
+                    return Err("Fail convert length of name from u32 to usize".to_string());
+                }
+            }
+            64 => {
+                if let Ok(val) = usize::try_from(cursor.get_u64_le()) {
+                    prop_body_len_usize = val;
+                    prop_size_len = sizes::U64_LEN;
+                } else {
+                    return Err("Fail convert length of name from u64 to usize".to_string());
+                }
+            }
             v => {
                 return Err(format!("Unknown rank has been gotten: {}", v));
             }
         };
         let mut prop_body_buf = vec![0; prop_body_len_usize];
-        prop_body_buf.copy_from_slice(&buf[(pos + prop_rank_len + prop_size_len)..(pos + prop_rank_len + prop_size_len + prop_body_len_usize)]);
-        Ok((prop_body_buf, pos + prop_rank_len + prop_size_len + prop_body_len_usize))
+        prop_body_buf.copy_from_slice(
+            &buf[(pos + prop_rank_len + prop_size_len)
+                ..(pos + prop_rank_len + prop_size_len + prop_body_len_usize)],
+        );
+        Ok((
+            prop_body_buf,
+            pos + prop_rank_len + prop_size_len + prop_body_len_usize,
+        ))
     }
 
     fn next(buf: &[u8], pos: usize) -> Result<(u16, Vec<u8>, usize), String> {
         match Storage::id(buf, pos) {
-            Ok((id, pos)) => {
-                match Storage::body(buf, pos) {
-                    Ok((body, pos)) => Ok((id, body, pos)),
-                    Err(e) => Err(e)
-                }
+            Ok((id, pos)) => match Storage::body(buf, pos) {
+                Ok((body, pos)) => Ok((id, body, pos)),
+                Err(e) => Err(e),
             },
             Err(e) => Err(e),
         }
@@ -1101,7 +1189,6 @@ impl Storage {
     pub fn get(&mut self, id: u16) -> Option<&Vec<u8>> {
         self.map.get(&id)
     }
-
 }
 
 const MSG_HEADER_LEN: usize = sizes::U32_LEN + // {u32} message ID
@@ -1189,8 +1276,8 @@ pub fn get_header_from_buffer(buf: &[u8]) -> Result<PackageHeader, String> {
         id,
         signature,
         sequence,
-        ts,
         len,
+        ts,
         len_usize,
     })
 }
@@ -3364,3 +3451,4 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
     fn get_signature(&self) -> u16 { 0 }
 }
 
+pub fn hash() -> String { String::from("156DE162AA1210095CDAB2912D619327D2541381BFF5A3B282B6E0AEB5627C1A") }

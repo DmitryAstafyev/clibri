@@ -6,22 +6,22 @@ pub struct Store {
     pub requests: Vec<Request>,
     pub beacons: Vec<Broadcast>,
     pub config: Option<Config>,
-}
-
-impl Default for Store {
-    fn default() -> Self {
-        Self::new()
-    }
+    hash: String,
 }
 
 impl Store {
-    pub fn new() -> Self {
+    pub fn new(hash: String) -> Self {
         Self {
             events: vec![],
             requests: vec![],
             beacons: vec![],
             config: None,
+            hash,
         }
+    }
+
+    pub fn get_hash(&self) -> String {
+        self.hash.clone()
     }
 
     pub fn set_config(&mut self, config: Config) -> Result<(), String> {

@@ -13,11 +13,12 @@ pub struct Store {
     c_enum: Option<Enum>,
     c_field: Option<Field>,
     path: Vec<usize>,
+    hash: String,
 }
 
 impl Store {
     #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(hash: String) -> Self {
         Store {
             sequence: 0,
             structs: vec![],
@@ -28,7 +29,12 @@ impl Store {
             c_field: None,
             c_group: None,
             path: vec![],
+            hash,
         }
+    }
+
+    pub fn get_hash(&self) -> String {
+        self.hash.clone()
     }
 
     pub fn add_service_struct(&mut self, name: String, mut fields: Vec<Field>) {

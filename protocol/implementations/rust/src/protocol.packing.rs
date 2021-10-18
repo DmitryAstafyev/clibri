@@ -91,8 +91,8 @@ pub fn get_header_from_buffer(buf: &[u8]) -> Result<PackageHeader, String> {
         id,
         signature,
         sequence,
-        ts,
         len,
+        ts,
         len_usize,
     })
 }

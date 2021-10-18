@@ -864,6 +864,11 @@ impl Render for RustRender {
             }
         }
         body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
+        body = format!(
+            "{}pub fn hash() -> String {{ String::from(\"{}\") }}\n",
+            body,
+            store.get_hash()
+        );
         helpers::fs::write(dest.to_path_buf(), body, true)
     }
 }

@@ -1774,6 +1774,11 @@ impl Render for TypescriptRender {
             }
         }
         body = format!("{}{}\n", body, self.buffer(&mut store.clone()));
+        body = format!(
+            "{}export function hash(): string {{ return `{}`; }}\n",
+            body,
+            store.get_hash()
+        );
         helpers::fs::write(dest.to_path_buf(), body, true)
     }
 }

@@ -1,7 +1,7 @@
-use super::{ sizes, storage };
-use storage::{ Storage };
+use super::{sizes, storage};
+use bytes::Buf;
 use std::io::Cursor;
-use bytes::{ Buf };
+use storage::Storage;
 
 // injectable
 pub enum Source<'a> {
@@ -9,8 +9,10 @@ pub enum Source<'a> {
     Buffer(&'a Vec<u8>),
 }
 
-pub trait StructDecode where Self: Sized {
-
+pub trait StructDecode
+where
+    Self: Sized,
+{
     fn get_id() -> u32;
     fn defaults() -> Self;
     fn extract_from_storage(&mut self, storage: Storage) -> Result<(), String>;
@@ -30,14 +32,13 @@ pub trait StructDecode where Self: Sized {
 }
 
 pub trait EnumDecode {
-
     fn get_id(&self) -> u32;
-    fn extract(buf: Vec<u8>) -> Result<Self, String> where Self: std::marker::Sized;
-
+    fn extract(buf: Vec<u8>) -> Result<Self, String>
+    where
+        Self: std::marker::Sized;
 }
 
 pub trait DecodeEnum<T> {
-
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String>;
     fn get_buf_from_source(source: Source, id: Option<u16>) -> Result<&Vec<u8>, String> {
         match source {
@@ -51,16 +52,19 @@ pub trait DecodeEnum<T> {
                 } else {
                     Err("Storage defined as source, but no id is defined".to_string())
                 }
-            },
+            }
             Source::Buffer(buf) => Ok(buf),
         }
     }
-    fn decode(buf: &Vec<u8>) -> Result<T, String> {
-        Self::get_from_storage(Source::Buffer(buf), None)
+    fn decode(buf: &[u8]) -> Result<T, String> {
+        Self::get_from_storage(Source::Buffer(&buf.to_vec()), None)
     }
 }
 
-impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
+impl<T> DecodeEnum<T> for T
+where
+    T: EnumDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
             Self::extract(buf.clone())
@@ -70,10 +74,13 @@ impl<T> DecodeEnum<T> for T where T: EnumDecode,  {
     }
 }
 
-impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
+impl<T> DecodeEnum<Vec<T>> for Vec<T>
+where
+    T: EnumDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<T>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<T> = vec!();
+            let mut res: Vec<T> = vec![];
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
             loop {
@@ -89,11 +96,16 @@ impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
                     return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U64_LEN)));
                 }
                 let mut item_buf = vec![0; item_len as usize];
-                item_buf.copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
-                buffer = buffer.drain((sizes::U64_LEN + item_len as usize)..).collect();
+                item_buf
+                    .copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer
+                    .drain((sizes::U64_LEN + item_len as usize)..)
+                    .collect();
                 match T::extract(item_buf) {
                     Ok(i) => res.push(i),
-                    Err(e) => { return Err(e); },
+                    Err(e) => {
+                        return Err(e);
+                    }
                 }
             }
             Ok(res)
@@ -104,7 +116,6 @@ impl<T> DecodeEnum<Vec<T>> for Vec<T> where T: EnumDecode {
 }
 
 pub trait Decode<T> {
-
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String>;
     fn get_buf_from_source(source: Source, id: Option<u16>) -> Result<&Vec<u8>, String> {
         match source {
@@ -118,14 +129,13 @@ pub trait Decode<T> {
                 } else {
                     Err("Storage defined as source, but no id is defined".to_string())
                 }
-            },
+            }
             Source::Buffer(buf) => Ok(buf),
         }
     }
-    fn decode(buf: &Vec<u8>) -> Result<T, String> {
-        Self::get_from_storage(Source::Buffer(buf), None)
+    fn decode(buf: &[u8]) -> Result<T, String> {
+        Self::get_from_storage(Source::Buffer(&buf.to_vec()), None)
     }
-
 }
 
 impl Decode<u8> for u8 {
@@ -292,7 +302,10 @@ impl Decode<String> for String {
     }
 }
 
-impl<T> Decode<T> for T where T: StructDecode,  {
+impl<T> Decode<T> for T
+where
+    T: StructDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<T, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
             let sctruct_storage = match Storage::new(buf.to_vec()) {
@@ -315,7 +328,7 @@ impl<T> Decode<T> for T where T: StructDecode,  {
 impl Decode<Vec<u8>> for Vec<u8> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u8>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u8> = vec!();
+            let mut res: Vec<u8> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
                 if cursor.position() == buf.len() as u64 {
@@ -333,7 +346,7 @@ impl Decode<Vec<u8>> for Vec<u8> {
 impl Decode<Vec<u16>> for Vec<u16> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u16>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u16> = vec!();
+            let mut res: Vec<u16> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -355,7 +368,7 @@ impl Decode<Vec<u16>> for Vec<u16> {
 impl Decode<Vec<u32>> for Vec<u32> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u32>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u32> = vec!();
+            let mut res: Vec<u32> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -377,7 +390,7 @@ impl Decode<Vec<u32>> for Vec<u32> {
 impl Decode<Vec<u64>> for Vec<u64> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<u64>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<u64> = vec!();
+            let mut res: Vec<u64> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -399,7 +412,7 @@ impl Decode<Vec<u64>> for Vec<u64> {
 impl Decode<Vec<i8>> for Vec<i8> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i8>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i8> = vec!();
+            let mut res: Vec<i8> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
                 if cursor.position() == buf.len() as u64 {
@@ -417,7 +430,7 @@ impl Decode<Vec<i8>> for Vec<i8> {
 impl Decode<Vec<i16>> for Vec<i16> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i16>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i16> = vec!();
+            let mut res: Vec<i16> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -439,7 +452,7 @@ impl Decode<Vec<i16>> for Vec<i16> {
 impl Decode<Vec<i32>> for Vec<i32> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i32>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i32> = vec!();
+            let mut res: Vec<i32> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -461,7 +474,7 @@ impl Decode<Vec<i32>> for Vec<i32> {
 impl Decode<Vec<i64>> for Vec<i64> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<i64>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<i64> = vec!();
+            let mut res: Vec<i64> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -483,7 +496,7 @@ impl Decode<Vec<i64>> for Vec<i64> {
 impl Decode<Vec<f32>> for Vec<f32> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<f32>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<f32> = vec!();
+            let mut res: Vec<f32> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -505,7 +518,7 @@ impl Decode<Vec<f32>> for Vec<f32> {
 impl Decode<Vec<f64>> for Vec<f64> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<f64>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<f64> = vec!();
+            let mut res: Vec<f64> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             let len = buf.len() as u64;
             loop {
@@ -527,7 +540,7 @@ impl Decode<Vec<f64>> for Vec<f64> {
 impl Decode<Vec<bool>> for Vec<bool> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<bool>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<bool> = vec!();
+            let mut res: Vec<bool> = vec![];
             let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
             loop {
                 if cursor.position() == buf.len() as u64 {
@@ -545,7 +558,7 @@ impl Decode<Vec<bool>> for Vec<bool> {
 impl Decode<Vec<String>> for Vec<String> {
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<String>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<String> = vec!();
+            let mut res: Vec<String> = vec![];
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
             loop {
@@ -561,8 +574,11 @@ impl Decode<Vec<String>> for Vec<String> {
                     return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U32_LEN)));
                 }
                 let mut item_buf = vec![0; item_len as usize];
-                item_buf.copy_from_slice(&buffer[sizes::U32_LEN..(sizes::U32_LEN + item_len as usize)]);
-                buffer = buffer.drain((sizes::U32_LEN + item_len as usize)..).collect();
+                item_buf
+                    .copy_from_slice(&buffer[sizes::U32_LEN..(sizes::U32_LEN + item_len as usize)]);
+                buffer = buffer
+                    .drain((sizes::U32_LEN + item_len as usize)..)
+                    .collect();
                 res.push(String::from_utf8_lossy(&item_buf).to_string());
             }
             Ok(res)
@@ -572,10 +588,13 @@ impl Decode<Vec<String>> for Vec<String> {
     }
 }
 
-impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
+impl<T> Decode<Vec<T>> for Vec<T>
+where
+    T: StructDecode,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Vec<T>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
-            let mut res: Vec<T> = vec!();
+            let mut res: Vec<T> = vec![];
             let mut buffer = vec![0; buf.len()];
             buffer.copy_from_slice(&buf[0..buf.len()]);
             loop {
@@ -591,8 +610,11 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                     return Err(format!("Cannot extract string, because expecting {} bytes, but length of buffer is {}", item_len, (buffer.len() - sizes::U64_LEN)));
                 }
                 let mut item_buf = vec![0; item_len as usize];
-                item_buf.copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
-                buffer = buffer.drain((sizes::U64_LEN + item_len as usize)..).collect();
+                item_buf
+                    .copy_from_slice(&buffer[sizes::U64_LEN..(sizes::U64_LEN + item_len as usize)]);
+                buffer = buffer
+                    .drain((sizes::U64_LEN + item_len as usize)..)
+                    .collect();
                 let sctruct_storage = match Storage::new(item_buf) {
                     Ok(storage) => storage,
                     Err(e) => {
@@ -601,8 +623,10 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
                 };
                 let mut strct: T = T::defaults();
                 match strct.extract_from_storage(sctruct_storage) {
-                    Ok(_) => {},
-                    Err(e) => { return Err(e); },
+                    Ok(_) => {}
+                    Err(e) => {
+                        return Err(e);
+                    }
                 }
                 res.push(strct);
             }
@@ -613,7 +637,10 @@ impl<T> Decode<Vec<T>> for Vec<T> where T: StructDecode {
     }
 }
 
-impl<T> Decode<Option<T>> for Option<T> where T: Decode<T> {
+impl<T> Decode<Option<T>> for Option<T>
+where
+    T: Decode<T>,
+{
     fn get_from_storage(source: Source, id: Option<u16>) -> Result<Option<T>, String> {
         if let Ok(buf) = Self::get_buf_from_source(source, id) {
             if buf.is_empty() {
@@ -627,6 +654,5 @@ impl<T> Decode<Option<T>> for Option<T> where T: Decode<T> {
         } else {
             Err("Fail get buffer".to_string())
         }
-        
     }
 }
