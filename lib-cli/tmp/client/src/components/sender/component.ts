@@ -82,17 +82,20 @@ export class SenderComponent extends Component {
     }
 
     private _onKeyUp(event: KeyboardEvent) {
+        if (this._instance === undefined) {
+            return;
+        }
         if (event.key === 'Enter' && event.ctrlKey) {
             const value: string = this._instance.value.replace(/</gi, '(').replace(/>/gi, ')');
             if (value.trim() !== '') {
                 this._instance.disabled = true;
                 this._send(value).then(() => {
-                    this._instance.value = '';
-                    this._instance.focus();
+                    this._instance !== undefined && (this._instance.value = '');
+                    this._instance !== undefined && this._instance.focus();
                 }).catch((err: Error) => {
                     console.log(err);
                 }).finally(() => {
-                    this._instance.disabled = false;
+                    this._instance !== undefined && (this._instance.disabled = false);
                 });
             }
         }
@@ -100,6 +103,9 @@ export class SenderComponent extends Component {
 
     private _send(message: string): Promise<void> {
         return new Promise((resolve, reject) => {
+            if (this._username === undefined) {
+                return reject(new Error(`Username isn't defined`));
+            }
             (new MessageRequest(new Protocol.Message.Request({
                 user: this._username,
                 message: message,
@@ -109,6 +115,9 @@ export class SenderComponent extends Component {
                 }
                 if (response instanceof Protocol.Message.Denied) {
                     return reject(new Error(`Message cannot be posted because: ${response.reason}`));
+                }
+                if (this._messages === undefined || this._uuid === undefined || this._username === undefined) {
+                    return reject(new Error(`Fail to add own message`));
                 }
                 this._messages.addOwnMessage({
                     uuid: this._uuid,

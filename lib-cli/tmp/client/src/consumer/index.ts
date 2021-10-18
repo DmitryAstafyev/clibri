@@ -90,12 +90,14 @@ export class Consumer {
 
     public get uuid(): string {
         if (this._uuid === undefined) {
-            this._logger.warn(`Consumer UUID is requested, but it isn't defined yet.`);
+			throw new Error(
+				`Consumer UUID is requested, but it isn't defined yet.`
+			);
         }
         return this._uuid;
     }
 
-    public set uuid(value: string) {
+    public set uuid(value: string | undefined) {
         if (value === undefined) {
             this._uuid = undefined;
             this._logger.debug(`Consumer UUID is dropped`);

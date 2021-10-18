@@ -79,9 +79,11 @@ export class MessagesComponent extends Component {
         this._stat.setMessages(this._messages.length);
         if (this._instance.nodeName.toLowerCase() === 'p') {
             const parent = this._instance.parentNode;
-            parent.removeChild(this._instance);
-            this._instance = this.element();
-            parent.appendChild(this._instance);
+            if (parent !== null) {
+                parent.removeChild(this._instance);
+                this._instance = this.element();
+                parent.appendChild(this._instance);    
+            }
         } else {
             this._instance.innerHTML = this.element().innerHTML;
         }

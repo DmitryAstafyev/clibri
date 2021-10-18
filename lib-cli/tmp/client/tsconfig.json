@@ -10,6 +10,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "emitDeclarationOnly": true,
+    "strict": true,
     "typeRoots": [
       "node_modules/@types"
     ],
