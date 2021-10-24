@@ -4,14 +4,14 @@ import {
 	Producer,
 	Identification,
 	Filter,
-} from "implementation/responses";
+} from "implementation/beacons";
 
 export function emit(
 	beacon: Protocol.Beacons.LikeUser,
 	consumer: Identification,
 	filter: Filter,
 	context: Context,
-	producer: Producer
+	producer: Producer<Context>
 ): Promise<void> {
 	return Promise.reject(
 		new Error(`Handler for Protocol.Beacons.LikeUser isn't implemented.`)

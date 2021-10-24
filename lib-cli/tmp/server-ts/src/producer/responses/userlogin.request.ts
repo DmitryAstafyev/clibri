@@ -12,7 +12,7 @@ export function response(
 	consumer: Identification,
 	filter: Filter,
 	context: Context,
-	producer: Producer
+	producer: Producer<Context>
 ): Promise<Response> {
 	return Promise.reject(
 		new Error(`Handler for Protocol.UserLogin.Request isn't implemented.`)

@@ -10,8 +10,8 @@ export { Identification, Filter } from "../consumer";
 export { Context } from "../../context";
 export { Producer } from "../index";
 
-export function broadcastAll(
-	producer: Producer,
+export function broadcastAll<C>(
+	producer: Producer<C>,
 	broadcasts: Array<[string[], Protocol.Convertor<any>]>
 ): Promise<void> {
 	return new Promise((resolve, reject) => {

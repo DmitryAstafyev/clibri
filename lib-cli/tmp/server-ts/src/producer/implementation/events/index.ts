@@ -14,8 +14,8 @@ export { handler as shutdownHandler } from "./shutdown";
 export { handler as servereventsUseralertHandler } from "./serverevents.useralert";
 export { handler as servereventsUserkickoffHandler } from "./serverevents.userkickoff";
 
-export function broadcastAll(
-	producer: Producer,
+export function broadcastAll<C>(
+	producer: Producer<C>,
 	broadcasts: Array<[string[], Protocol.Convertor<any>]>
 ): Promise<void> {
 	return new Promise((resolve, reject) => {

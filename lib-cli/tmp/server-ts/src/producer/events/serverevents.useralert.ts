@@ -1,6 +1,5 @@
 import * as Protocol from "implementation/protocol";
 import {
-	Identification,
 	Filter,
 	Producer,
 	Context,
@@ -11,7 +10,7 @@ export function emit(
 	event: Protocol.ServerEvents.UserAlert,
 	filter: Filter,
 	context: Context,
-	producer: Producer
+	producer: Producer<Context>
 ): Promise<Output> {
 	return Promise.reject(
 		new Error(`Handler for event "useralert" isn't implemented`)

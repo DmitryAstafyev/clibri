@@ -10,7 +10,7 @@ export function emit(
 	consumer: Identification,
 	filter: Filter,
 	context: Context,
-	producer: Producer
+	producer: Producer<Context>
 ): Promise<void> {
 	return Promise.reject(
 		new Error(`Handler for event "connected" isn't implemented`)

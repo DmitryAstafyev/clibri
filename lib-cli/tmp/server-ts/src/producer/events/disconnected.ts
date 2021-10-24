@@ -11,7 +11,7 @@ export function emit(
 	consumer: Identification,
 	filter: Filter,
 	context: Context,
-	producer: Producer
+	producer: Producer<Context>
 ): Promise<Output> {
 	return Promise.reject(
 		new Error(`Handler for event "disconnected" isn't implemented`)

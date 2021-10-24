@@ -11,7 +11,7 @@ import {
 export function emit(
 	error: ProducerError | IServerError,
 	context: Context,
-	producer: Producer,
+	producer: Producer<Context>,
 	consumer: Identification | undefined,
 	filter: Filter | undefined
 ): Promise<void> {

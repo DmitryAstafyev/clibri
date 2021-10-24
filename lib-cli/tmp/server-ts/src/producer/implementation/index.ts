@@ -1,5 +1,4 @@
 import { Consumer, Filter } from "./consumer";
-import { Context } from "../context";
 import { ProducerError, ProducerErrorType } from "./events";
 
 import * as Events from "./events";
@@ -19,8 +18,7 @@ import {
 	ProducerIdentificationStrategy,
 } from "fiber";
 
-// TODO: Context generic. Like Producer<Context>
-export class Producer {
+export class Producer<C> {
 	static hash: {
 		PROTOCOL: "";
 		WORKFLOW: "";
@@ -30,7 +28,7 @@ export class Producer {
 	private readonly _consumers: Map<string, Consumer> = new Map();
 	private readonly _options: Options;
 	private readonly _logger: Logger;
-	private readonly _context: Context;
+	private readonly _context: C;
 
 	public readonly events: {
 		useralert: Subject<Protocol.ServerEvents.UserAlert>;
@@ -40,9 +38,9 @@ export class Producer {
 		userkickoff: new Subject<Protocol.ServerEvents.UserKickOff>(),
 	};
 
-	constructor(server: Server, context: Context, options?: Options) {
+	constructor(server: Server, context: C, options?: Options) {
 		this._server = server;
-		this._context = Context;
+		this._context = context;
 		this._options = options === undefined ? new Options({}) : options;
 		this._logger = this._options.logger.clone(`Producer`);
 		this._subscriptions.ready = this._server

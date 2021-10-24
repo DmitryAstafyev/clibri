@@ -1,9 +1,6 @@
-import { Context, Producer } from "./index";
+import { Producer } from "./index";
 import { emit } from "../../events/ready";
 
-export function handler(
-	context: Context,
-	producer: Producer
-): Promise<void> {
+export function handler<C>(context: C, producer: Producer<C>): Promise<void> {
 	return emit(context, producer);
 }
