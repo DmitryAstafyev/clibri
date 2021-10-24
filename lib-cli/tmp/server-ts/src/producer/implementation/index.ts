@@ -1,5 +1,6 @@
 import { Consumer, Filter } from "./consumer";
 import { ProducerError, ProducerErrorType } from "./events";
+import { Context } from '../context';
 
 import * as Events from "./events";
 import * as Responses from "./responses";
@@ -18,17 +19,22 @@ import {
 	ProducerIdentificationStrategy,
 } from "fiber";
 
-export class Producer<C> {
+export class Producer {
 	static hash: {
-		PROTOCOL: "";
-		WORKFLOW: "";
+		PROTOCOL: string;
+		WORKFLOW: string;
+	} = {
+		PROTOCOL:
+			"F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE",
+		WORKFLOW:
+			"497F08C6B69D62FB7B05CB1FC27CD9BF5D516578D9D845C3C5D1FDD0A5097672",
 	};
 	private readonly _server: Server;
 	private readonly _subscriptions: { [key: string]: Subscription } = {};
 	private readonly _consumers: Map<string, Consumer> = new Map();
 	private readonly _options: Options;
 	private readonly _logger: Logger;
-	private readonly _context: C;
+	private readonly _context: Context;
 
 	public readonly events: {
 		useralert: Subject<Protocol.ServerEvents.UserAlert>;
@@ -38,7 +44,7 @@ export class Producer<C> {
 		userkickoff: new Subject<Protocol.ServerEvents.UserKickOff>(),
 	};
 
-	constructor(server: Server, context: C, options?: Options) {
+	constructor(server: Server, context: Context, options?: Options) {
 		this._server = server;
 		this._context = context;
 		this._options = options === undefined ? new Options({}) : options;
@@ -54,7 +60,7 @@ export class Producer<C> {
 			.disconnected.subscribe(this._onClientDisconnected.bind(this));
 		this._subscriptions.error = this._server
 			.getEvents()
-			.error.subscribe(this._onServiceError.bind(this));
+			.error.subscribe(this._onServerError.bind(this));
 		this._subscriptions.shutdown = this._server
 			.getEvents()
 			.shutdown.subscribe(this._onServerShutdown.bind(this));
@@ -91,7 +97,38 @@ export class Producer<C> {
 		Object.keys(this._subscriptions).forEach((key: string) => {
 			this._subscriptions[key].destroy();
 		});
-		return Promise.resolve();
+		return this._server.shutdown();
+	}
+
+	public listen(): Promise<void> {
+		let error: Error | undefined;
+		return this._server
+			.listen()
+			.catch((err: Error) => {
+				error = err;
+			})
+			.finally(() => {
+				if (error !== undefined) {
+					const errMsg = error.message;
+					return this.destroy()
+						.catch((err: Error) => {
+							this._logger.err(
+								`Fail shutdown server: ${err.message}`
+							);
+						})
+						.finally(() => {
+							return Promise.reject(
+								new Error(
+									this._logger.err(
+										`Fail to start server; error: ${errMsg}`
+									)
+								)
+							);
+						});
+				} else {
+					return Promise.resolve();
+				}
+			});
 	}
 
 	public send(uuid: string, buffer: ArrayBufferLike): Promise<void> {
@@ -127,7 +164,7 @@ export class Producer<C> {
 		this._checkErr(Events.shutdownHandler(this._context, this));
 	}
 
-	private _onServiceError(error: IServerError) {
+	private _onServerError(error: IServerError) {
 		this._checkErr(
 			Events.errorHandler(
 				error,
@@ -621,8 +658,13 @@ export class Producer<C> {
 	}
 
 	private _checkErr(handler: Promise<void>) {
-		handler.catch((error: Error) => {
-			this._logger.err(error.message);
-		});
+		handler
+			.catch((error: Error) => {
+				this._logger.err(error.message);
+				console.log(`_checkErr done with error`);
+			})
+			.then(() => {
+				console.log(`_checkErr done`);
+			});
 	}
 }

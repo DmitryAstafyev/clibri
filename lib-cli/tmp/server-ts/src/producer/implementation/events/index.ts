@@ -1,11 +1,11 @@
-import * as Protocol from "implementation/protocol";
+import * as Protocol from "@implementation/protocol";
 import { Producer } from "../index";
 
 export { Identification, Filter } from "../consumer";
 export { Context } from "../../context";
 export { Producer } from "../index";
 export { ProducerError, ProducerErrorType } from "./error";
-
+export { Protocol };
 export { handler as disconnectedHandler } from "./disconnected";
 export { handler as connectedHandler } from "./connected";
 export { handler as errorHandler } from "./error";
@@ -14,8 +14,8 @@ export { handler as shutdownHandler } from "./shutdown";
 export { handler as servereventsUseralertHandler } from "./serverevents.useralert";
 export { handler as servereventsUserkickoffHandler } from "./serverevents.userkickoff";
 
-export function broadcastAll<C>(
-	producer: Producer<C>,
+export function broadcastAll(
+	producer: Producer,
 	broadcasts: Array<[string[], Protocol.Convertor<any>]>
 ): Promise<void> {
 	return new Promise((resolve, reject) => {

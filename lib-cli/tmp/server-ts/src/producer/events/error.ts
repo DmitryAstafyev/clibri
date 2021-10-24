@@ -5,13 +5,13 @@ import {
 	Producer,
 	Context,
 	ProducerError,
-} from "implementation/events";
+} from "@implementation/events";
 
 // it should be constructed in implementation
 export function emit(
 	error: ProducerError | IServerError,
 	context: Context,
-	producer: Producer<Context>,
+	producer: Producer,
 	consumer: Identification | undefined,
 	filter: Filter | undefined
 ): Promise<void> {

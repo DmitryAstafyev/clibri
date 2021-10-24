@@ -1,4 +1,4 @@
-import * as Protocol from "implementation/protocol";
+import * as Protocol from "@implementation/protocol";
 import { Producer } from "../index";
 
 export { handler as userLoginRequestHandler } from "./userlogin.request";
@@ -9,9 +9,10 @@ export { handler as messagesRequestHandler } from "./messages.request";
 export { Identification, Filter } from "../consumer";
 export { Context } from "../../context";
 export { Producer } from "../index";
+export { Protocol };
 
-export function broadcastAll<C>(
-	producer: Producer<C>,
+export function broadcastAll(
+	producer: Producer,
 	broadcasts: Array<[string[], Protocol.Convertor<any>]>
 ): Promise<void> {
 	return new Promise((resolve, reject) => {

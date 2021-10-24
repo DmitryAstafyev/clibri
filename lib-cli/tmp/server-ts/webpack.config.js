@@ -1,26 +1,20 @@
-const path = require("path");
-
 module.exports = {
     entry: "./src/index.ts",
     mode: "production",
+    target: "node",
     output: {
         filename: "index.js",
         path: __dirname + "/dist",
+        library: 'fiber-websocket-server',
         libraryTarget: 'umd',
-        library: 'fiber-consumer',
-        umdNamedDefine: true
-    },
-    node: {
-        global: false,
-        __filename: false,
-        __dirname: false,
+        globalObject: 'this',
     },
     // Enable sourcemaps for debugging webpack's output.
     devtool: "source-map",
 
     resolve: {
         // Add '.ts' and '.tsx' as resolvable extensions.
-        extensions: [".ts", ".tsx", ".js", ".json"],
+        extensions: [".ts", ".tsx", ".js", ".json"]
     },
 
     module: {

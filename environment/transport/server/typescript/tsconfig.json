@@ -9,6 +9,7 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "strict": true,
     "typeRoots": [
       "node_modules/@types"
     ],

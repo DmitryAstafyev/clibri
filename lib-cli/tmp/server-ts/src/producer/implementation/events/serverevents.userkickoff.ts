@@ -1,5 +1,4 @@
-import * as Protocol from "implementation/protocol";
-import { Producer, Filter, broadcastAll } from "./index";
+import { Producer, Filter, broadcastAll, Context, Protocol } from "./index";
 import { emit } from "../../events/serverevents.userkickoff";
 
 export interface Output {
@@ -7,11 +6,11 @@ export interface Output {
 	disconnected: [string[], Protocol.Events.UserDisconnected];
 }
 
-export function handler<C>(
+export function handler(
 	event: Protocol.ServerEvents.UserKickOff,
 	filter: Filter,
-	context: C,
-	producer: Producer<C>
+	context: Context,
+	producer: Producer
 ): Promise<void> {
 	const broadcasts: Array<[string[], Protocol.Convertor<any>]> = [];
 	return emit(event, filter, context, producer).then((output) => {

@@ -4,12 +4,11 @@
     "outDir": "./dist",
     "sourceMap": true,
     "declaration": true,
-    "module": "commonjs",
+    "module": "CommonJS",
     "target": "ESNEXT",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "emitDeclarationOnly": true,
     "strict": true,
     "typeRoots": [
       "node_modules/@types"
@@ -20,8 +19,8 @@
       "DOM"
     ],
     "paths": {
-      "implementation/*": ["src/producer/implementation/*"],
-      "producer/*": ["src/producer/*"]
+      "@implementation/*": ["src/producer/implementation/*"],
+      "@producer/*": ["src/producer/*"]
     }
   },
   "files": [

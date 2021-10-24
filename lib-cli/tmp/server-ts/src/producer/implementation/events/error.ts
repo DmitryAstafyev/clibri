@@ -1,5 +1,5 @@
 import { IServerError } from "fiber";
-import { Producer, Identification, Filter } from "./index";
+import { Producer, Identification, Filter, Context } from "./index";
 import { emit } from "../../events/error";
 
 export enum ProducerErrorType {
@@ -26,10 +26,10 @@ export class ProducerError extends Error {
 	}
 }
 
-export function handler<C>(
+export function handler(
 	error: ProducerError | IServerError,
-	context: C,
-	producer: Producer<C>,
+	context: Context,
+	producer: Producer,
 	consumer: Identification | undefined,
 	filter: Filter | undefined
 ): Promise<void> {

@@ -1,5 +1,4 @@
-import * as Protocol from "../protocol";
-import { Producer, Identification, Filter } from "./index";
+import { Producer, Identification, Filter, Context, Protocol } from "./index";
 import { response } from "../../responses/messages.request";
 
 export class Response {
@@ -14,12 +13,12 @@ export class Response {
 	}
 }
 
-export function handler<C>(
+export function handler(
 	request: Protocol.Messages.Request,
 	consumer: Identification,
 	filter: Filter,
-	context: C,
-	producer: Producer<C>,
+	context: Context,
+	producer: Producer,
 	sequence: number
 ): Promise<void> {
 	return response(request, consumer, filter, context, producer).then(

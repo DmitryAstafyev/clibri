@@ -1,13 +1,12 @@
-import * as Protocol from "../protocol";
-import { Producer, Identification, Filter } from "./index";
+import { Producer, Identification, Filter, Context, Protocol } from "./index";
 import { emit } from "../../beacons/beacons.likemessage";
 
-export function handler<C>(
+export function handler(
 	beacon: Protocol.Beacons.LikeMessage,
 	consumer: Identification,
 	filter: Filter,
-	context: C,
-	producer: Producer<C>,
+	context: Context,
+	producer: Producer,
 	sequence: number
 ): Promise<void> {
 	return emit(beacon, consumer, filter, context, producer).then(() => {

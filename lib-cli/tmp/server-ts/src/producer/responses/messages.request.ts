@@ -1,20 +1,27 @@
-import * as Protocol from "implementation/protocol";
-import { Response } from "implementation/responses/messages.request";
+import { Response } from "@implementation/responses/messages.request";
 import {
 	Context,
 	Producer,
 	Identification,
 	Filter,
-} from "implementation/responses";
+	Protocol,
+} from "@implementation/responses";
 
 export function response(
-	reqeust: Protocol.Messages.Request,
+	request: Protocol.Messages.Request,
 	consumer: Identification,
 	filter: Filter,
 	context: Context,
-	producer: Producer<Context>
+	producer: Producer
 ): Promise<Response> {
-	return Promise.reject(
-		new Error(`Handler for Protocol.Messages.Request isn't implemented.`)
+	return Promise.resolve(
+		new Response(
+			new Protocol.Messages.Response({
+				messages: context.getMessages(),
+			})
+		)
 	);
+	// return Promise.reject(
+	// 	new Error(`Handler for Protocol.Messages.Request isn't implemented.`)
+	// );
 }
