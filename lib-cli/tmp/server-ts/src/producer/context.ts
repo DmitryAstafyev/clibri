@@ -1,4 +1,4 @@
-import * as Protocol from "@implementation/protocol";
+import * as Protocol from "./implementation/protocol";
 
 export class Context {
 	private _messages: Map<number, Protocol.Messages.Message> = new Map();
@@ -15,8 +15,13 @@ export class Context {
 		);
 	}
 
-	public removeUser(uuid: string) {
+	public removeUser(uuid: string): Protocol.Users.User | Error {
+		const user = this._users.get(uuid);
+		if (user === undefined) {
+			return new Error(`User ${uuid} isn't found`);
+		}
 		this._users.delete(uuid);
+		return user;
 	}
 
 	public getUsers(): Protocol.Users.User[] {

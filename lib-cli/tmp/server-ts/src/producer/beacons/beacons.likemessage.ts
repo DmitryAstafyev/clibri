@@ -4,7 +4,7 @@ import {
 	Identification,
 	Filter,
 	Protocol,
-} from "@implementation/beacons";
+} from "../implementation/beacons";
 
 export function emit(
 	beacon: Protocol.Beacons.LikeMessage,

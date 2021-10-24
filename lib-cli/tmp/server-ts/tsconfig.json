@@ -17,11 +17,7 @@
       "ESNEXT.BigInt",
       "ESNEXT",
       "DOM"
-    ],
-    "paths": {
-      "@implementation/*": ["src/producer/implementation/*"],
-      "@producer/*": ["src/producer/*"]
-    }
+    ]
   },
   "files": [
     "src/index.ts",

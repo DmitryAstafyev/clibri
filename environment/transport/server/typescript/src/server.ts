@@ -166,7 +166,6 @@ export class Server extends ServerInterface {
 	}
 
 	private _onConnection(socket: WebSocket): void {
-		this._logger.debug(`Attempt to connect from ${socket.url}`);
 		const connection: Connection = new Connection(socket, this._extLogger);
 		connection
 			.established()

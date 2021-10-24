@@ -1,6 +1,6 @@
 import { Consumer, Filter } from "./consumer";
 import { ProducerError, ProducerErrorType } from "./events";
-import { Context } from '../context';
+import { Context } from "../context";
 
 import * as Events from "./events";
 import * as Responses from "./responses";
@@ -658,13 +658,8 @@ export class Producer {
 	}
 
 	private _checkErr(handler: Promise<void>) {
-		handler
-			.catch((error: Error) => {
-				this._logger.err(error.message);
-				console.log(`_checkErr done with error`);
-			})
-			.then(() => {
-				console.log(`_checkErr done`);
-			});
+		handler.catch((error: Error) => {
+			this._logger.err(error.message);
+		});
 	}
 }

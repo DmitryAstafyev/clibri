@@ -52,9 +52,9 @@ export class Response {
 
 	public error(): Error | undefined {
 		if (this._response instanceof Protocol.Message.Accepted) {
-			if (this._broadcasts.length !== 2) {
+			if (this._broadcasts.length !== 1) {
 				return new Error(
-					`For "Protocol.Message.Accepted" should be defined next broadcasts:\n - Protocol.Events.UserConnected;\n - Protocol.Events.Message`
+					`For "Protocol.Message.Accepted" should be defined next broadcasts:\n - Protocol.Events.Message`
 				);
 			}
 		}

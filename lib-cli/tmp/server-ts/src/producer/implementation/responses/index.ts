@@ -1,4 +1,4 @@
-import * as Protocol from "@implementation/protocol";
+import * as Protocol from "../../implementation/protocol";
 import { Producer } from "../index";
 
 export { handler as userLoginRequestHandler } from "./userlogin.request";

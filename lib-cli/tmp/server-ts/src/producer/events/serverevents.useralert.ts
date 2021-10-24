@@ -1,5 +1,5 @@
-import { Filter, Producer, Context, Protocol } from "@implementation/events";
-import { Output } from "@implementation/events/serverevents.useralert";
+import { Filter, Producer, Context, Protocol } from "../implementation/events";
+import { Output } from "../implementation/events/serverevents.useralert";
 
 export function emit(
 	event: Protocol.ServerEvents.UserAlert,

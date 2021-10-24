@@ -1,5 +1,5 @@
-import { Filter, Producer, Context, Protocol } from "@implementation/events";
-import { Output } from "@implementation/events/serverevents.userkickoff";
+import { Filter, Producer, Context, Protocol } from "../implementation/events";
+import { Output } from "../implementation/events/serverevents.userkickoff";
 
 export function emit(
 	event: Protocol.ServerEvents.UserKickOff,

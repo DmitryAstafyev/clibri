@@ -1,11 +1,11 @@
-import { Response } from "@implementation/responses/userlogin.request";
+import { Response } from "../implementation/responses/userlogin.request";
 import {
 	Context,
 	Producer,
 	Identification,
 	Filter,
 	Protocol,
-} from "@implementation/responses";
+} from "../implementation/responses";
 
 export function response(
 	request: Protocol.UserLogin.Request,

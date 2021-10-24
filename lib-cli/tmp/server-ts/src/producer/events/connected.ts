@@ -4,7 +4,7 @@ import {
 	Producer,
 	Context,
 	Protocol,
-} from "@implementation/events";
+} from "../implementation/events";
 
 export function emit(
 	consumer: Identification,
