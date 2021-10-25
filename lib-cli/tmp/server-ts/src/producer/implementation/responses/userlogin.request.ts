@@ -9,6 +9,10 @@ import {
 import { response } from "../../responses/userlogin.request";
 
 export class Response {
+	static REQUIRED_ACCEPTED = [
+		Protocol.Events.Message,
+		Protocol.Events.UserConnected,
+	];
 	private _response!:
 		| Protocol.UserLogin.Accepted
 		| Protocol.UserLogin.Denied
@@ -31,14 +35,19 @@ export class Response {
 		const self = this;
 		return {
 			connected(msg: Protocol.Events.UserConnected): Response {
-				if (!(self._response instanceof Protocol.UserLogin.Accepted)) {
+				if (
+					self._response.getSignature() !==
+					Protocol.UserLogin.Accepted.getSignature()
+				) {
 					throw new Error(
 						`Message "Protocol.Events.UserConnected" can be used only with "Protocol.UserLogin.Accepted"`
 					);
 				}
 				if (
 					self._broadcasts.find(
-						(b) => b[1] instanceof Protocol.Events.UserConnected
+						(b) =>
+							b[1].getSignature() ===
+							Protocol.Events.UserConnected.getSignature()
 					) !== undefined
 				) {
 					throw new Error(
@@ -49,14 +58,19 @@ export class Response {
 				return self;
 			},
 			message(msg: Protocol.Events.Message): Response {
-				if (!(self._response instanceof Protocol.UserLogin.Accepted)) {
+				if (
+					self._response.getSignature() !==
+					Protocol.UserLogin.Accepted.getSignature()
+				) {
 					throw new Error(
 						`Message "Protocol.Events.Message" can be used only with "Protocol.UserLogin.Accepted"`
 					);
 				}
 				if (
 					self._broadcasts.find(
-						(b) => b[1] instanceof Protocol.Events.Message
+						(b) =>
+							b[1].getSignature() ===
+							Protocol.Events.Message.getSignature()
 					) !== undefined
 				) {
 					throw new Error(
@@ -70,14 +84,27 @@ export class Response {
 	}
 
 	public error(): Error | undefined {
-		if (this._response instanceof Protocol.UserLogin.Accepted) {
-			if (this._broadcasts.length !== 2) {
-				return new Error(
-					`For "Protocol.UserLogin.Accepted" should be defined next broadcasts:\n - Protocol.Events.UserConnected;\n - Protocol.Events.Message`
-				);
-			}
+		let error: Error | undefined;
+		if (
+			this._response.getSignature() ===
+			Protocol.Message.Accepted.getSignature()
+		) {
+			Response.REQUIRED_ACCEPTED.forEach((ref) => {
+				if (error !== undefined) {
+					return;
+				}
+				if (
+					this._broadcasts.find((msg) => {
+						return msg[1].getSignature() === ref.getSignature();
+					}) === undefined
+				) {
+					error = new Error(
+						`Broadcast ${ref.getSignature()} is required, but hasn't been found`
+					);
+				}
+			});
 		}
-		return undefined;
+		return error;
 	}
 
 	public pack(sequence: number, uuid: string): ArrayBufferLike {

@@ -18,6 +18,9 @@ export function broadcastAll(
 	producer: Producer,
 	broadcasts: Array<[string[], Protocol.Convertor<any>]>
 ): Promise<void> {
+	if (broadcasts.length === 0) {
+		return Promise.resolve();
+	}
 	return new Promise((resolve, reject) => {
 		let error: Error | undefined;
 		Promise.all(
