@@ -4,41 +4,41 @@
 // use super::protocol::store::Store;
 // use super::protocol::structs::Struct;
 // use super::protocol::types::PrimitiveTypes;
+mod render_event_emitter;
+mod render_event_impl;
+mod render_request_handler;
+mod render_request_response;
+
 use super::{
-    workflow::{
-        store::{
-            Store as WorkflowStore
-        },
-    },
-    Protocol,
-    ProtocolTypescriptRender,
+    helpers, workflow, workflow::store::Store as WorkflowStore, ImplementationRender, Protocol,
+    ProtocolRender, ProtocolTypescriptRender,
 };
-use super::{ ImplementationRender };
-use std::{
-    path::{
-        Path,
-    }
-};
+use std::path::Path;
 
-pub struct TypescriptRender {
-}
+pub struct TypescriptRender {}
 
-impl TypescriptRender {
-}
+impl TypescriptRender {}
 
 impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
     fn new() -> Self {
-        TypescriptRender {
-        }
+        TypescriptRender {}
     }
 
     fn render(
         &self,
-        _base: &Path,
-        _store: &WorkflowStore,
-        _protocol: &mut Protocol,
-        _protocol_render: ProtocolTypescriptRender,
+        base: &Path,
+        store: &WorkflowStore,
+        protocol: &mut Protocol,
+        protocol_render: ProtocolTypescriptRender,
     ) -> Result<String, String> {
+        for request in &store.requests {
+            (render_request_response::Render::new()).render(base, request)?;
+            (render_request_handler::Render::new()).render(base, request)?;
+        }
+        for event in &store.events {
+            (render_event_impl::Render::new()).render(base, event)?;
+            (render_event_emitter::Render::new()).render(base, event)?;
+        }
         Ok(String::new())
     }
 }

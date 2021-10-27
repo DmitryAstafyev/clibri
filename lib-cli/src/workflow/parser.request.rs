@@ -269,6 +269,20 @@ impl Request {
             Err(String::from("Action doesn't have defined error"))
         }
     }
+
+    pub fn get_path(&self) -> Result<String, String> {
+        if let Some(request) = self.request.as_ref() {
+            let mut parts: Vec<&str> = request.split('.').collect();
+            if parts.len() >= 1 {
+                parts = parts.drain(..1).collect();
+            }
+            Ok(parts.join("."))
+        } else {
+            Err(String::from(
+                "Reference to object/struct request isn't defined for action",
+            ))
+        }
+    }
 }
 
 impl EntityParser for Request {

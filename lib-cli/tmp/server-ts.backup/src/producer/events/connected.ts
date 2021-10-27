@@ -12,8 +12,7 @@ export function emit(
 	context: Context,
 	producer: Producer
 ): Promise<void> {
-	return Promise.resolve();
-	// return Promise.reject(
-	// 	new Error(`Handler for event "connected" isn't implemented`)
-	// );
+	return Promise.reject(
+		new Error(`Handler for event "connected" isn't implemented`)
+	);
 }

@@ -46,3 +46,6 @@ pub fn inject_tabs_except(num: usize, input: String, exceptions: Vec<usize>) -> 
 pub fn into_rust_path(input: &str) -> String {
     input.to_string().replace(".", "::")
 }
+pub fn into_ts_path(input: &str) -> String {
+    input.to_string().to_lowercase()
+}

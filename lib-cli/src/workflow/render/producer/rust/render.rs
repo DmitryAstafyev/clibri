@@ -44,8 +44,6 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_request_responses_mod::Render::new()).render(base, &store.requests)?;
         (render_request_handlers_mod::Render::new()).render(base, &store.requests)?;
         for event in &store.events {
-            // if !event.is_default() {
-            // }
             (render_event_impl::Render::new()).render(base, event)?;
             (render_event_emitter::Render::new()).render(base, event)?;
         }
