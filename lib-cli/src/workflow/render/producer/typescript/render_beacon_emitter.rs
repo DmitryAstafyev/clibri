@@ -46,10 +46,7 @@ impl Render {
         let dest: PathBuf = self.get_dest_file(base, beacon)?;
         let mut output = templates::MODULE.to_owned();
         output = output.replace("[[beacon]]", &beacon.reference);
-        output = output.replace(
-            "[[beacon_mod]]",
-            &format!("{}", beacon.reference.to_lowercase()),
-        );
+        output = output.replace("[[beacon_mod]]", &beacon.reference.to_lowercase());
         helpers::fs::write(dest, output, true)
     }
 

@@ -273,7 +273,7 @@ impl Request {
     pub fn get_path(&self) -> Result<String, String> {
         if let Some(request) = self.request.as_ref() {
             let mut parts: Vec<&str> = request.split('.').collect();
-            if parts.len() >= 1 {
+            if !parts.is_empty() {
                 parts = parts.drain(..1).collect();
             }
             Ok(parts.join("."))

@@ -164,7 +164,6 @@ impl Render {
     }
 
     fn get_required_broadcasts(&self, event: &Event) -> Result<String, String> {
-        let mut output = String::new();
         let mut broadcasts = String::new();
         for broadcast in event
             .broadcasts
@@ -173,12 +172,14 @@ impl Render {
         {
             broadcasts = format!("{}\nProtocol.{},", broadcasts, broadcast.reference);
         }
-        output = format!(
-            r#"static REQUIRED = [{}
+        Ok(tools::inject_tabs(
+            1,
+            format!(
+                r#"static REQUIRED = [{}
 ];"#,
-            tools::inject_tabs(1, broadcasts),
-        );
-        Ok(tools::inject_tabs(1, output))
+                tools::inject_tabs(1, broadcasts),
+            ),
+        ))
     }
 
     fn get_methods_declarations(&self, event: &Event) -> Result<String, String> {
@@ -212,12 +213,10 @@ impl Render {
             } else {
                 templates::HANDLER_DEFAULT_WITH_BROADCAST.to_owned()
             }
+        } else if event.broadcasts.is_empty() {
+            templates::HANDLER_WITHOUT_BROADCAST.to_owned()
         } else {
-            if event.broadcasts.is_empty() {
-                templates::HANDLER_WITHOUT_BROADCAST.to_owned()
-            } else {
-                templates::HANDLER_WITH_BROADCAST.to_owned()
-            }
+            templates::HANDLER_WITH_BROADCAST.to_owned()
         };
         output = output.replace("[[event]]", &event.get_reference()?);
         Ok(output)
