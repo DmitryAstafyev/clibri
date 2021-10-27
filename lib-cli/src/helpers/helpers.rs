@@ -12,3 +12,6 @@ pub mod fs;
 
 #[path = "./helper.hash.rs"]
 pub mod hash;
+
+#[path = "./helper.string.rs"]
+pub mod string;

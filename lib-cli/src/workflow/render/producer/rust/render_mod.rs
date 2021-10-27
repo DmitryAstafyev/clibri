@@ -952,10 +952,6 @@ impl Render {
             "[[indentification_self_response]]",
             &tools::into_rust_path(&store.get_config()?.self_key_response),
         );
-        output = output.replace(
-            "[[indentification_assigned_key]]",
-            &tools::into_rust_path(&store.get_config()?.get_assigned()?),
-        );
         output = output.replace("[[protocol_hash]]", &protocol.get_hash());
         output = output.replace("[[workflow_hash]]", &store.get_hash());
         helpers::fs::write(dest, output, true)

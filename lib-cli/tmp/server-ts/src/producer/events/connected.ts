@@ -13,6 +13,6 @@ export function emit(
 	producer: Producer
 ): Promise<void> {
 	return Promise.reject(
-		new Error(`Handler for event "disconnected" isn't implemented`)
+		new Error(`Handler for event "connected" isn't implemented`)
 	);
 }

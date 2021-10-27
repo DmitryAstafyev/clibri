@@ -12,11 +12,11 @@ export class Response {
     static REQUIRED_ACCEPT = [    
         Protocol.Events.Message,
     ];
-    private _response!: Protocol.Message.Accept| Protocol.Message.Deny | Protocol.Message.Err;
+    private _response!: Protocol.Message.Accepted| Protocol.Message.Denied | Protocol.Message.Err;
     private _broadcasts: Array<[string[], Protocol.Convertor<any>]> = [];
 
     constructor(
-        res: Protocol.Message.Accept| Protocol.Message.Deny | Protocol.Message.Err
+        res: Protocol.Message.Accepted| Protocol.Message.Denied | Protocol.Message.Err
     ) {
         this._response = res;
     }
@@ -29,10 +29,10 @@ export class Response {
             EventsMessage(msg: Protocol.Events.Message): Response {
                 if (
                     self._response.getSignature() !==
-                    Protocol.UserLogin.Accept.getSignature()
+                    Protocol.Message.Accepted.getSignature()
                 ) {
                     throw new Error(
-                        `Message "Protocol.Events.Message" can be used only with "Protocol.UserLogin.Accept"`
+                        `Message "Protocol.Events.Message" can be used only with "Protocol.Message.Accepted"`
                     );
                 }
                 if (
@@ -57,7 +57,7 @@ export class Response {
         if (
             error === undefined &&
             this._response.getSignature() ===
-            Protocol.Message.Accept.getSignature()
+            Protocol.Message.Accepted.getSignature()
         ) {
             Response.REQUIRED_ACCEPT.forEach((ref) => {
                 if (error !== undefined) {

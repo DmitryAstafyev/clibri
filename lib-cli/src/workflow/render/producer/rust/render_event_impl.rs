@@ -7,7 +7,7 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE_WITH_BROADCAST: &str = r#"use super::{identification, producer::Control, protocol, Context};
+    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
 use fiber::server;
 use uuid::Uuid;
 
@@ -20,18 +20,6 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     control: &Control<E, C>,
 ) -> Result<([[broadcast_refs]]), String> {
     panic!("Handler for protocol::[[event]] isn't implemented");
-}"#;
-    pub const MODULE_WITHOUT_BROADCAST: &str = r#"use super::{identification, producer::Control, protocol, Context};
-use fiber::server;
-
-#[allow(unused_variables)]
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    event: protocol::[[event]],
-    filter: &identification::Filter,
-    context: &mut Context,
-    control: &Control<E, C>,
-) -> Result<(), String> {
-    protocol::[[event]]
 }"#;
     pub const DEFAULT_MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
 use fiber::server;
@@ -68,42 +56,35 @@ impl Render {
             println!("[SKIP]: {}", dest.to_string_lossy());
             return Ok(());
         }
-        let output: String = if event.broadcasts.is_empty() {
-            let mut out = templates::MODULE_WITHOUT_BROADCAST.to_owned();
-            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
-            out
+        let mut output: String = if self.is_default(event)? {
+            templates::DEFAULT_MODULE.to_owned()
         } else {
-            let mut out = if self.is_default(event)? {
-                templates::DEFAULT_MODULE.to_owned()
-            } else {
-                templates::MODULE_WITH_BROADCAST.to_owned()
-            };
-            out = out.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
-            let mut types = String::new();
-            let mut refs = String::new();
-            for (pos, broadcast) in event.broadcasts.iter().enumerate() {
-                let type_name = self.get_broadcast_type_name(broadcast);
-                if broadcast.optional {
-                    types = format!(
-                        "{}type {} = Option<(Vec<Uuid>, protocol::{})>;\n",
-                        types,
-                        type_name,
-                        tools::into_rust_path(&broadcast.reference),
-                    );
-                } else {
-                    types = format!(
-                        "{}type {} = (Vec<Uuid>, protocol::{});\n",
-                        types,
-                        type_name,
-                        tools::into_rust_path(&broadcast.reference),
-                    );
-                }
-                refs = format!("{}{}{}", refs, if pos == 0 { "" } else { ", " }, type_name);
-            }
-            out = out.replace("[[broadcast_types]]", &types);
-            out = out.replace("[[broadcast_refs]]", &refs);
-            out
+            templates::MODULE.to_owned()
         };
+        output = output.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
+        let mut types = String::new();
+        let mut refs = String::new();
+        for (pos, broadcast) in event.broadcasts.iter().enumerate() {
+            let type_name = self.get_broadcast_type_name(broadcast);
+            if broadcast.optional {
+                types = format!(
+                    "{}type {} = Option<(Vec<Uuid>, protocol::{})>;\n",
+                    types,
+                    type_name,
+                    tools::into_rust_path(&broadcast.reference),
+                );
+            } else {
+                types = format!(
+                    "{}type {} = (Vec<Uuid>, protocol::{});\n",
+                    types,
+                    type_name,
+                    tools::into_rust_path(&broadcast.reference),
+                );
+            }
+            refs = format!("{}{}{}", refs, if pos == 0 { "" } else { ", " }, type_name);
+        }
+        output = output.replace("[[broadcast_types]]", &types);
+        output = output.replace("[[broadcast_refs]]", &refs);
         helpers::fs::write(dest, output, true)
     }
 

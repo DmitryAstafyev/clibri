@@ -13,11 +13,11 @@ export class Response {
         Protocol.Events.UserConnected,
         Protocol.Events.Message,
     ];
-    private _response!: Protocol.UserLogin.Accept| Protocol.UserLogin.Deny | Protocol.UserLogin.Err;
+    private _response!: Protocol.UserLogin.Accepted| Protocol.UserLogin.Denied | Protocol.UserLogin.Err;
     private _broadcasts: Array<[string[], Protocol.Convertor<any>]> = [];
 
     constructor(
-        res: Protocol.UserLogin.Accept| Protocol.UserLogin.Deny | Protocol.UserLogin.Err
+        res: Protocol.UserLogin.Accepted| Protocol.UserLogin.Denied | Protocol.UserLogin.Err
     ) {
         this._response = res;
     }
@@ -31,10 +31,10 @@ export class Response {
             EventsUserConnected(msg: Protocol.Events.UserConnected): Response {
                 if (
                     self._response.getSignature() !==
-                    Protocol.UserLogin.Accept.getSignature()
+                    Protocol.UserLogin.Accepted.getSignature()
                 ) {
                     throw new Error(
-                        `Message "Protocol.Events.UserConnected" can be used only with "Protocol.UserLogin.Accept"`
+                        `Message "Protocol.Events.UserConnected" can be used only with "Protocol.UserLogin.Accepted"`
                     );
                 }
                 if (
@@ -54,10 +54,10 @@ export class Response {
             EventsMessage(msg: Protocol.Events.Message): Response {
                 if (
                     self._response.getSignature() !==
-                    Protocol.UserLogin.Accept.getSignature()
+                    Protocol.UserLogin.Accepted.getSignature()
                 ) {
                     throw new Error(
-                        `Message "Protocol.Events.Message" can be used only with "Protocol.UserLogin.Accept"`
+                        `Message "Protocol.Events.Message" can be used only with "Protocol.UserLogin.Accepted"`
                     );
                 }
                 if (
@@ -82,7 +82,7 @@ export class Response {
         if (
             error === undefined &&
             this._response.getSignature() ===
-            Protocol.Message.Accept.getSignature()
+            Protocol.UserLogin.Accepted.getSignature()
         ) {
             Response.REQUIRED_ACCEPT.forEach((ref) => {
                 if (error !== undefined) {

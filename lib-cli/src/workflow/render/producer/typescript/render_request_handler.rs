@@ -72,10 +72,10 @@ export function handler(
     pub const BROADCAST_IMPL: &str = r#"[[name]](msg: Protocol.[[reference]]): Response {
     if (
         self._response.getSignature() !==
-        Protocol.UserLogin.[[conclusion]].getSignature()
+        Protocol.[[conclusion]].getSignature()
     ) {
         throw new Error(
-            `Message "Protocol.[[reference]]" can be used only with "Protocol.UserLogin.[[conclusion]]"`
+            `Message "Protocol.[[reference]]" can be used only with "Protocol.[[conclusion]]"`
         );
     }
     if (
@@ -95,7 +95,7 @@ export function handler(
     pub const BROADCAST_CHECK: &str = r#"if (
     error === undefined &&
     this._response.getSignature() ===
-    Protocol.Message.[[conclusion]].getSignature()
+    Protocol.[[conclusion]].getSignature()
 ) {
     Response.REQUIRED_[[requered_conclusion]].forEach((ref) => {
         if (error !== undefined) {
@@ -116,9 +116,9 @@ export function handler(
 import { response } from "../../responses/[[module]]";
 
 export class Response {
-    private _response!: Protocol.Messages.Response | Protocol.Messages.Err;
+    private _response!: [[expectetions]];
 
-    constructor(res: Protocol.Messages.Response | Protocol.Messages.Err) {
+    constructor(res: [[expectetions]]) {
         this._response = res;
     }
 
@@ -183,7 +183,16 @@ impl Render {
             );
             output
         } else {
-            templates::MODULE_NO_CONCLUSION.to_owned()
+            let mut output = templates::MODULE_NO_CONCLUSION.to_owned();
+            output = output.replace(
+                "[[expectetions]]",
+                &format!(
+                    "Protocol.{} | Protocol.{}",
+                    request.get_response()?,
+                    request.get_err()?
+                ),
+            );
+            output
         };
         output = output.replace("[[module]]", &tools::into_ts_path(&request_ref));
         output = output.replace("[[request]]", &request_ref);
@@ -216,17 +225,11 @@ impl Render {
     fn get_expectetions(&self, request: &Request) -> Result<String, String> {
         let mut output = String::new();
         for (pos, action) in request.actions.iter().enumerate() {
-            let path = request.get_path()?;
             output = format!(
-                "{}{}Protocol.{}{}",
+                "{}{}Protocol.{}",
                 output,
                 if pos == 0 { "" } else { "| " },
-                if path.is_empty() {
-                    path
-                } else {
-                    format!("{}.", path)
-                },
-                action.get_conclusion()?
+                action.get_response()?
             );
         }
         output = format!("{} | Protocol.{}", output, request.get_err()?);
@@ -255,7 +258,7 @@ impl Render {
                 let mut out = templates::BROADCAST_IMPL.to_owned();
                 out = out.replace("[[name]]", &broadcast.reference.replace(".", ""));
                 out = out.replace("[[reference]]", &broadcast.reference);
-                out = out.replace("[[conclusion]]", &action.get_conclusion()?);
+                out = out.replace("[[conclusion]]", &action.get_response()?);
                 output = format!("{}\n{}", output, out,);
             }
         }
@@ -271,7 +274,7 @@ impl Render {
                     "[[requered_conclusion]]",
                     &action.get_conclusion()?.to_uppercase(),
                 );
-                out = out.replace("[[conclusion]]", &action.get_conclusion()?);
+                out = out.replace("[[conclusion]]", &action.get_response()?);
                 output = format!("{}\n{}", output, out,);
             }
         }

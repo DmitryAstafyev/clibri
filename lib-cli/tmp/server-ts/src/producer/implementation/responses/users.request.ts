@@ -2,9 +2,9 @@ import { Producer, Identification, Filter, Context, Protocol } from "./index";
 import { response } from "../../responses/users.request";
 
 export class Response {
-    private _response!: Protocol.Messages.Response | Protocol.Messages.Err;
+    private _response!: Protocol.Users.Response | Protocol.Users.Err;
 
-    constructor(res: Protocol.Messages.Response | Protocol.Messages.Err) {
+    constructor(res: Protocol.Users.Response | Protocol.Users.Err) {
         this._response = res;
     }
 

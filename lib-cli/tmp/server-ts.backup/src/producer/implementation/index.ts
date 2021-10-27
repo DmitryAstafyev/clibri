@@ -268,16 +268,20 @@ export class Producer {
 			if (message === undefined) {
 				return;
 			}
-			if (
-				message.msg.Identification !== undefined &&
-				message.msg.Identification.SelfKey !== undefined
-			) {
+			let extracted = this._extract(
+				message.msg,
+				"Identification.SelfKey"
+			);
+			if (extracted.exist) {
 				this._logger.debug(
 					`consumer ${event.uuid} requested identification`
 				);
 				const assignedUuid = consumer
 					.getIdentification()
-					.key(message.msg.Identification.SelfKey, true);
+					.key(
+						extracted.body<Protocol.Identification.SelfKey>(),
+						true
+					);
 				this.send(
 					assignedUuid,
 					new Protocol.InternalServiceGroup.SelfKeyResponse({
@@ -290,16 +294,17 @@ export class Producer {
 				});
 				continue;
 			}
-			if (
-				message.msg.InternalServiceGroup !== undefined &&
-				message.msg.InternalServiceGroup.HashRequest !== undefined
-			) {
+			extracted = this._extract(
+				message.msg,
+				"InternalServiceGroup.HashRequest"
+			);
+			if (extracted.exist) {
 				this._logger.debug(
 					`consumer ${event.uuid} requested hash check`
 				);
-				const consumerHash =
-					message.msg.InternalServiceGroup.HashRequest;
 				let hashErr: ProducerError | undefined;
+				const consumerHash =
+					extracted.body<Protocol.InternalServiceGroup.HashRequest>();
 				if (consumerHash.protocol !== Producer.hash.PROTOCOL) {
 					hashErr = new ProducerError(
 						this._logger.warn(
@@ -438,145 +443,99 @@ export class Producer {
 				}
 				continue;
 			}
-			if (message.msg.UserLogin !== undefined) {
-				if (message.msg.UserLogin.Request === undefined) {
-					this._receivingErr(
-						new Error(
-							`Expecting UserLogin.Request from ${event.uuid}`
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				} else {
-					this._checkErrAndResponse(
-						Responses.userLoginRequestHandler(
-							message.msg.UserLogin.Request,
-							consumer.getIdentification(),
-							new Filter(this._consumers),
-							this._context,
-							this,
-							message.header.sequence
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				}
-			}
-			if (message.msg.Users !== undefined) {
-				if (message.msg.Users.Request === undefined) {
-					this._receivingErr(
-						new Error(`Expecting Users.Request from ${event.uuid}`),
-						event.uuid,
-						consumer
-					);
-					continue;
-				} else {
-					this._checkErrAndResponse(
-						Responses.usersRequestHandler(
-							message.msg.Users.Request,
-							consumer.getIdentification(),
-							new Filter(this._consumers),
-							this._context,
-							this,
-							message.header.sequence
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				}
-			}
-			if (message.msg.Message !== undefined) {
-				if (message.msg.Message.Request === undefined) {
-					this._receivingErr(
-						new Error(
-							`Expecting Message.Request from ${event.uuid}`
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				} else {
-					this._checkErrAndResponse(
-						Responses.messageRequestHandler(
-							message.msg.Message.Request,
-							consumer.getIdentification(),
-							new Filter(this._consumers),
-							this._context,
-							this,
-							message.header.sequence
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				}
-			}
-			if (message.msg.Messages !== undefined) {
-				if (message.msg.Messages.Request === undefined) {
-					this._receivingErr(
-						new Error(
-							`Expecting Messages.Request from ${event.uuid}`
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				} else {
-					this._checkErrAndResponse(
-						Responses.messagesRequestHandler(
-							message.msg.Messages.Request,
-							consumer.getIdentification(),
-							new Filter(this._consumers),
-							this._context,
-							this,
-							message.header.sequence
-						),
-						event.uuid,
-						consumer
-					);
-					continue;
-				}
-			}
-			if (message.msg.Beacons !== undefined) {
-				if (message.msg.Beacons.LikeUser !== undefined) {
-					this._checkErrAndResponse(
-						Beacons.beaconLikeUserHandler(
-							message.msg.Beacons.LikeUser,
-							consumer.getIdentification(),
-							new Filter(this._consumers),
-							this._context,
-							this,
-							message.header.sequence
-						),
-						event.uuid,
-						consumer
-					);
-				} else if (message.msg.Beacons.LikeMessage !== undefined) {
-					this._checkErrAndResponse(
-						Beacons.beaconLikeMessageHandler(
-							message.msg.Beacons.LikeMessage,
-							consumer.getIdentification(),
-							new Filter(this._consumers),
-							this._context,
-							this,
-							message.header.sequence
-						),
-						event.uuid,
-						consumer
-					);
-				} else {
-					this._receivingErr(
-						new Error(
-							`unknown beacons from ${event.uuid} has been received`
-						),
-						event.uuid,
-						consumer
-					);
-				}
+			extracted = this._extract(message.msg, "UserLogin.Request");
+			if (extracted.exist) {
+				this._checkErrAndResponse(
+					Responses.userLoginRequestHandler(
+						extracted.body<Protocol.UserLogin.Request>(),
+						consumer.getIdentification(),
+						new Filter(this._consumers),
+						this._context,
+						this,
+						message.header.sequence
+					),
+					event.uuid,
+					consumer
+				);
 				continue;
+			}
+			extracted = this._extract(message.msg, "Users.Request");
+			if (extracted.exist) {
+				this._checkErrAndResponse(
+					Responses.usersRequestHandler(
+						extracted.body<Protocol.Users.Request>(),
+						consumer.getIdentification(),
+						new Filter(this._consumers),
+						this._context,
+						this,
+						message.header.sequence
+					),
+					event.uuid,
+					consumer
+				);
+				continue;
+			}
+			extracted = this._extract(message.msg, "Message.Request");
+			if (extracted.exist) {
+				this._checkErrAndResponse(
+					Responses.messageRequestHandler(
+						extracted.body<Protocol.Message.Request>(),
+						consumer.getIdentification(),
+						new Filter(this._consumers),
+						this._context,
+						this,
+						message.header.sequence
+					),
+					event.uuid,
+					consumer
+				);
+				continue;
+			}
+			extracted = this._extract(message.msg, "Messages.Request");
+			if (extracted.exist) {
+				this._checkErrAndResponse(
+					Responses.messagesRequestHandler(
+						extracted.body<Protocol.Messages.Request>(),
+						consumer.getIdentification(),
+						new Filter(this._consumers),
+						this._context,
+						this,
+						message.header.sequence
+					),
+					event.uuid,
+					consumer
+				);
+				continue;
+			}
+			extracted = this._extract(message.msg, "Beacons.LikeUser");
+			if (extracted.exist) {
+				this._checkErrAndResponse(
+					Beacons.beaconLikeUserHandler(
+						extracted.body<Protocol.Beacons.LikeUser>(),
+						consumer.getIdentification(),
+						new Filter(this._consumers),
+						this._context,
+						this,
+						message.header.sequence
+					),
+					event.uuid,
+					consumer
+				);
+			}
+			extracted = this._extract(message.msg, "Beacons.LikeMessage");
+			if (extracted.exist) {
+				this._checkErrAndResponse(
+					Beacons.beaconLikeMessageHandler(
+						extracted.body<Protocol.Beacons.LikeMessage>(),
+						consumer.getIdentification(),
+						new Filter(this._consumers),
+						this._context,
+						this,
+						message.header.sequence
+					),
+					event.uuid,
+					consumer
+				);
 			}
 			this._receivingErr(
 				new Error(
@@ -584,6 +543,16 @@ export class Producer {
 				),
 				event.uuid,
 				consumer
+			);
+			this._logger.err(
+				`Unknown message header: ${JSON.stringify(message.header)}`
+			);
+			const msgStrBody = JSON.stringify(message.msg);
+			this._logger.verb(
+				`Unknown message body: ${msgStrBody.substr(
+					0,
+					msgStrBody.length > 500 ? 500 : msgStrBody.length
+				)}`
 			);
 			break;
 		} while (true);
@@ -661,5 +630,45 @@ export class Producer {
 		handler.catch((error: Error) => {
 			this._logger.err(error.message);
 		});
+	}
+
+	private _tryToGet(src: any, path: string): any {
+		if (typeof src !== "object" || src === undefined || src === null) {
+			return undefined;
+		}
+		let target: any = src;
+		path.split(".").forEach((part: string) => {
+			if (target === undefined) {
+				return;
+			}
+			target = (target as any)[part];
+			if (
+				typeof target !== "object" ||
+				target === undefined ||
+				target === null
+			) {
+				target = undefined;
+			}
+		});
+		return target;
+	}
+
+	private _extract(
+		src: any,
+		path: string
+	): {
+		exist: boolean;
+		body<T>(): T;
+	} {
+		const target = this._tryToGet(src, path);
+		return {
+			exist: target !== undefined,
+			body<T>(): T {
+				if (target === undefined) {
+					throw new Error(`Fail to extract message by path ${path}`);
+				}
+				return target as T;
+			},
+		};
 	}
 }

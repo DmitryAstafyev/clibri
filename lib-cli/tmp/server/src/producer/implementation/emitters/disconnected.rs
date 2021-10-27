@@ -1,4 +1,7 @@
-use super::{broadcast, events, identification, pack, producer::Control, Context, EmitterError};
+use super::{
+    broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
+    EmitterError,
+};
 use fiber::server;
 use uuid::Uuid;
 
@@ -16,12 +19,12 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     if let Some(mut broadcast_message) = broadcast_events_message.take() {
         broadcasting.push((
             broadcast_message.0,
-            pack(&0, &identification.uuid(), &mut broadcast_message.1)?,
+            unbound_pack(&0, &mut broadcast_message.1)?,
         ));
     }
     broadcasting.push((
         broadcast_events_userdisconnected.0,
-        pack(&0, &identification.uuid(), &mut broadcast_events_userdisconnected.1)?,
+        unbound_pack(&0, &mut broadcast_events_userdisconnected.1)?,
     ));
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;

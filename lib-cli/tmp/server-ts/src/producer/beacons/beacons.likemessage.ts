@@ -1,18 +1,19 @@
 import {
+	Context,
+	Producer,
 	Identification,
 	Filter,
-	Producer,
-	Context,
 	Protocol,
-} from "../implementation/events";
+} from "../implementation/beacons";
 
 export function emit(
+	beacon: Protocol.Beacons.LikeMessage,
 	consumer: Identification,
 	filter: Filter,
 	context: Context,
 	producer: Producer
 ): Promise<void> {
 	return Promise.reject(
-		new Error(`Handler for event "disconnected" isn't implemented`)
+		new Error(`Handler for Protocol.Beacons.LikeMessage isn't implemented.`)
 	);
 }
