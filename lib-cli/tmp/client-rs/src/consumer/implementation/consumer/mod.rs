@@ -7,11 +7,7 @@ use super::{broadcasts, events, protocol, Context};
 use api::{Api, Channel};
 use controller::Consumer;
 use error::ConsumerError;
-use fiber::{env, env::logs};
-use fiber_transport_client::{
-    client::{Client, ConnectReturn, ToSend},
-    events::{Event as ClientEvent, Message as ClientMessage},
-};
+use fiber::{client, env, env::logs};
 use log::{debug, error, trace, warn};
 use options::{Options, ReconnectionStrategy};
 use protocol::PackingStruct;
@@ -33,35 +29,35 @@ pub mod hash {
 }
 
 #[derive(Debug)]
-pub enum Auth {
-    SetUuid(Result<String, ConsumerError>),
+pub enum Auth<E: std::error::Error> {
+    SetUuid(Result<String, ConsumerError<E>>),
     GetUuid(oneshot::Sender<Option<Uuid>>),
 }
 
 #[derive(Debug)]
-pub enum MergedClientChannel {
-    Client(ClientEvent),
-    Auth(Auth),
+pub enum MergedClientChannel<E: std::error::Error> {
+    Client(client::Event<E>),
+    Auth(Auth<E>),
 }
 
-pub async fn connect(
-    mut client: Client,
+pub async fn connect<C, E, Ctrl>(
+    mut client: C,
     context: Context,
     options: Options,
-) -> Result<Consumer, ConsumerError> {
+) -> Result<Consumer<E>, ConsumerError<E>>
+where
+    C: 'static + client::Impl<E, Ctrl>,
+    E: 'static + std::error::Error + Sync + Send + Clone,
+    Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
+{
     env::logs::init();
     debug!(target: logs::targets::CONSUMER, "attempt to connect");
-    let (rx_client_event, rx_client_done): ConnectReturn = match client.connect().await {
-        Ok(res) => res,
-        Err(err) => {
-            eprintln!("fail to connect client: {:?}", err);
-            panic!("fail to connect client: {:?}", err);
-        }
-    };
+    let client_control = client.control();
+    let rx_client_events = client.observer().map_err(ConsumerError::Client)?;
     debug!(target: logs::targets::CONSUMER, "connected");
     let (tx_client_api, rx_client_api): (UnboundedSender<Channel>, UnboundedReceiver<Channel>) =
         unbounded_channel();
-    let (tx_auth, rx_auth): (Sender<Auth>, Receiver<Auth>) = channel(2);
+    let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(2);
     let api = Api::new(tx_client_api, tx_auth.clone());
     let consumer = Consumer::new(api.clone());
     let shutdown = api.get_shutdown_token();
@@ -69,11 +65,11 @@ pub async fn connect(
     spawn(async move {
         debug!(target: logs::targets::CONSUMER, "main thread is started");
         select! {
-            res = client_messages_task(rx_client_event, rx_auth, tx_auth, api.clone(), consumer_messages_task, context, options) => {
+            res = client_messages_task::<E>(rx_client_events, rx_auth, tx_auth, api.clone(), consumer_messages_task, context, options) => {
             },
-            res = client_api_task(client, api.clone(), rx_client_api) => {
+            res = client_api_task::<E, Ctrl>(client_control, api.clone(), rx_client_api) => {
             },
-            res = rx_client_done => {
+            res = client.connect() => {
             },
             _ = shutdown.cancelled() => {
             },
@@ -83,12 +79,19 @@ pub async fn connect(
     Ok(consumer)
 }
 
-async fn client_api_task(client: Client, api: Api, mut rx_client_api: UnboundedReceiver<Channel>) {
+async fn client_api_task<E, Ctrl>(
+    client: Ctrl,
+    api: Api<E>,
+    mut rx_client_api: UnboundedReceiver<Channel>,
+) where
+    E: 'static + std::error::Error + Sync + Send + Clone,
+    Ctrl: client::Control<E> + Send + Sync + Clone,
+{
     let mut pending: HashMap<u32, oneshot::Sender<protocol::AvailableMessages>> = HashMap::new();
     while let Some(command) = rx_client_api.recv().await {
         match command {
             Channel::Send(buffer) => {
-                if let Err(err) = client.send(ToSend::Binary(buffer)) {
+                if let Err(err) = client.send(client::Message::Binary(buffer)).await {
                     error!(
                         target: logs::targets::CONSUMER,
                         "fail to send data: {}", err
@@ -101,7 +104,7 @@ async fn client_api_task(client: Client, api: Api, mut rx_client_api: UnboundedR
                     // Error
                 }
                 pending.insert(sequence, tx_response);
-                if let Err(err) = client.send(ToSend::Binary(buffer)) {
+                if let Err(err) = client.send(client::Message::Binary(buffer)).await {
                     error!(
                         target: logs::targets::CONSUMER,
                         "fail to send data: {}", err
@@ -135,20 +138,26 @@ async fn client_api_task(client: Client, api: Api, mut rx_client_api: UnboundedR
     }
 }
 
-async fn emit_error(err: ConsumerError, context: &mut Context, consumer: &mut Consumer) {
+async fn emit_error<E>(err: ConsumerError<E>, context: &mut Context, consumer: &mut Consumer<E>)
+where
+    E: 'static + std::error::Error + Sync + Send + Clone,
+{
     warn!(target: logs::targets::CONSUMER, "{}", err);
-    events::event_error::handler(err, context, consumer).await;
+    events::event_error::handler::<E>(err, context, consumer).await;
 }
 
-async fn client_messages_task(
-    mut rx_client_event: UnboundedReceiver<fiber_transport_client::events::Event>,
-    mut rx_auth: Receiver<Auth>,
-    mut tx_auth: Sender<Auth>,
-    mut api: Api,
-    mut consumer: Consumer,
+async fn client_messages_task<E>(
+    mut rx_client_event: UnboundedReceiver<client::Event<E>>,
+    mut rx_auth: Receiver<Auth<E>>,
+    mut tx_auth: Sender<Auth<E>>,
+    mut api: Api<E>,
+    mut consumer: Consumer<E>,
     mut context: Context,
     options: Options,
-) -> Result<(), ConsumerError> {
+) -> Result<(), ConsumerError<E>>
+where
+    E: 'static + std::error::Error + Sync + Send + Clone,
+{
     trace!(
         target: logs::targets::CONSUMER,
         "client_messages_task: started"
@@ -171,8 +180,8 @@ async fn client_messages_task(
             MergedClientChannel::Client(msg) => {
                 trace!(target: logs::targets::CONSUMER, "client event: {:?}", msg);
                 match msg {
-                    ClientEvent::Message(msg) => match msg {
-                        ClientMessage::Binary(income) => {
+                    client::Event::Message(msg) => match msg {
+                        client::Message::Binary(income) => {
                             trace!(
                                 target: logs::targets::CONSUMER,
                                 "has been received {} bytes",
@@ -189,7 +198,7 @@ async fn client_messages_task(
                                                 }
                                             }
                                             Err(err) => {
-                                                emit_error(
+                                                emit_error::<E>(
                                                         ConsumerError::Pending(format!("Fail to handle broadcast Events::Connect; error: {}", err)),
                                                         &mut context,
                                                         &mut consumer
@@ -199,7 +208,7 @@ async fn client_messages_task(
                                         match msg.msg {
                                                 protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::Message(msg)) => {
                                                     if let Err(err) = broadcasts::events_message::handler(msg, &mut context, &mut consumer).await {
-                                                        emit_error(
+                                                        emit_error::<E>(
                                                             ConsumerError::Broadcast(format!("Fail to handle broadcast Events::Message; error: {}", err)),
                                                             &mut context,
                                                             &mut consumer
@@ -208,7 +217,7 @@ async fn client_messages_task(
                                                 },
                                                 protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserConnected(msg)) => {
                                                     if let Err(err) = broadcasts::events_connected::handler(msg, &mut context, &mut consumer).await {
-                                                        emit_error(
+                                                        emit_error::<E>(
                                                             ConsumerError::Broadcast(format!("Fail to handle broadcast Events::Connect; error: {}", err)),
                                                             &mut context,
                                                             &mut consumer
@@ -217,7 +226,7 @@ async fn client_messages_task(
                                                 },
                                                 protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserDisconnected(msg)) => {
                                                     if let Err(err) = broadcasts::events_disconnected::handler(msg, &mut context, &mut consumer).await {
-                                                        emit_error(
+                                                        emit_error::<E>(
                                                             ConsumerError::Broadcast(format!("Fail to handle broadcast Events::Disconnect; error: {}", err)),
                                                             &mut context,
                                                             &mut consumer
@@ -225,7 +234,7 @@ async fn client_messages_task(
                                                     }
                                                 },
                                                 _ => {
-                                                    emit_error(
+                                                    emit_error::<E>(
                                                         ConsumerError::UnknownMessage(format!("header: {:?}", msg.header)),
                                                         &mut context,
                                                         &mut consumer
@@ -235,7 +244,7 @@ async fn client_messages_task(
                                     }
                                 }
                                 Err(err) => {
-                                    emit_error(
+                                    emit_error::<E>(
                                         ConsumerError::BufferError(format!("{:?}", err)),
                                         &mut context,
                                         &mut consumer,
@@ -245,7 +254,7 @@ async fn client_messages_task(
                             }
                         }
                         smth => {
-                            emit_error(
+                            emit_error::<E>(
                                 ConsumerError::UnknownMessage(format!("{:?}", smth)),
                                 &mut context,
                                 &mut consumer,
@@ -253,7 +262,7 @@ async fn client_messages_task(
                             .await;
                         }
                     },
-                    ClientEvent::Connected(_) => {
+                    client::Event::Connected(_) => {
                         let api_auth = api.clone();
                         let options_auth = options.clone();
                         let tx_auth_response_auth = tx_auth.clone();
@@ -269,18 +278,14 @@ async fn client_messages_task(
                             }
                         });
                     }
-                    ClientEvent::Disconnected => {
+                    client::Event::Disconnected => {
                         uuid = None;
                         events::event_disconnected::handler(&mut context, &mut consumer).await;
                         // TODO: Emit disconnected. Stratagy: reconnect or wait. With event send maybe trigger to reconnect (based on stratagy)
                     }
-                    ClientEvent::Error(err) => {
-                        // emit_error(
-                        //     ConsumerError::ClientError(err.to_string()),
-                        //     &mut context,
-                        //     &mut consumer,
-                        // )
-                        // .await;
+                    client::Event::Error(err) => {
+                        emit_error::<E>(ConsumerError::Client(err), &mut context, &mut consumer)
+                            .await;
                     }
                 }
             }
@@ -292,7 +297,7 @@ async fn client_messages_task(
                         events::event_connected::handler(&mut context, &mut consumer).await;
                     }
                     Err(err) => {
-                        emit_error(err, &mut context, &mut consumer).await;
+                        emit_error::<E>(err, &mut context, &mut consumer).await;
                     }
                 },
                 Auth::GetUuid(tx_response) => {
@@ -310,7 +315,10 @@ async fn client_messages_task(
     Ok(())
 }
 
-async fn auth(api: Api, options: Options) -> Result<String, ConsumerError> {
+async fn auth<E>(api: Api<E>, options: Options) -> Result<String, ConsumerError<E>>
+where
+    E: 'static + std::error::Error + Sync + Send + Clone,
+{
     debug!(
         target: logs::targets::CONSUMER,
         "client is connected; sending self-key"

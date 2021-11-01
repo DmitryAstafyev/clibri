@@ -2,8 +2,8 @@ use super::{api::Api, error::ConsumerError, protocol, protocol::PackingStruct};
 use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone)]
-pub struct Consumer {
-    api: Api,
+pub struct Consumer<E: std::error::Error> {
+    api: Api<E>,
     sequence: u32,
     uuid: Option<String>,
     shutdown: CancellationToken,
@@ -31,8 +31,8 @@ pub enum RequestUserLoginResponse {
     Err(protocol::UserLogin::Err),
 }
 
-impl Consumer {
-    pub fn new(api: Api) -> Self {
+impl<E: std::error::Error> Consumer<E> {
+    pub fn new(api: Api<E>) -> Self {
         let shutdown = api.get_shutdown_token();
         Consumer {
             api,
@@ -45,7 +45,7 @@ impl Consumer {
     pub async fn beacon_like_user(
         &mut self,
         mut beacon: protocol::Beacons::LikeUser,
-    ) -> Result<(), ConsumerError> {
+    ) -> Result<(), ConsumerError<E>> {
         self.api
             .send(
                 &beacon
@@ -58,7 +58,7 @@ impl Consumer {
     pub async fn request_message(
         &mut self,
         mut request: protocol::Message::Request,
-    ) -> Result<RequestMessageResponse, ConsumerError> {
+    ) -> Result<RequestMessageResponse, ConsumerError<E>> {
         let message = self
             .api
             .request(
@@ -87,7 +87,7 @@ impl Consumer {
     pub async fn request_messages(
         &mut self,
         mut request: protocol::Messages::Request,
-    ) -> Result<RequestMessagesResponse, ConsumerError> {
+    ) -> Result<RequestMessagesResponse, ConsumerError<E>> {
         let message = self
             .api
             .request(
@@ -113,7 +113,7 @@ impl Consumer {
     pub async fn request_users(
         &mut self,
         mut request: protocol::Users::Request,
-    ) -> Result<RequestUsersResponse, ConsumerError> {
+    ) -> Result<RequestUsersResponse, ConsumerError<E>> {
         let message = self
             .api
             .request(
@@ -139,7 +139,7 @@ impl Consumer {
     pub async fn request_userlogin(
         &mut self,
         mut request: protocol::UserLogin::Request,
-    ) -> Result<RequestUserLoginResponse, ConsumerError> {
+    ) -> Result<RequestUserLoginResponse, ConsumerError<E>> {
         let message = self
             .api
             .request(

@@ -1,9 +1,14 @@
 use super::{
     errors::Error,
-    events::{Event, Message},
     options::{ConnectionType, Options},
 };
-use fiber::{env, env::logs};
+use async_trait::async_trait;
+use fiber::{
+    client,
+    client::{Control as ClientControl, Event, Impl, Message},
+    env,
+    env::logs,
+};
 use futures::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
@@ -18,7 +23,6 @@ use tokio::{
         mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
-    task,
 };
 use tokio_tungstenite::{
     connect_async, tungstenite::Message as WsMessage, MaybeTlsStream, WebSocketStream,
@@ -28,38 +32,62 @@ use uuid::Uuid;
 
 pub type Done = Result<(), Error>;
 pub type ConnectReturn = (
-    UnboundedReceiver<Event>,
+    UnboundedReceiver<Event<Error>>,
     oneshot::Receiver<Result<(), Error>>,
 );
-#[derive(Debug, Clone)]
-pub enum ToSend {
-    Binary(Vec<u8>),
-    Text(String),
-    Ping(Vec<u8>),
-    Pong(Vec<u8>),
-}
 
 #[derive(Debug, Clone)]
+pub struct Control {
+    shutdown: CancellationToken,
+    tx_sender: UnboundedSender<Message>,
+}
+
+impl Control {
+    pub fn get_shutdown_token(&self) -> CancellationToken {
+        self.shutdown.clone()
+    }
+}
+
+#[async_trait]
+impl client::Control<Error> for Control {
+    async fn shutdown(&self) -> Result<(), Error> {
+        self.shutdown.cancel();
+        Ok(())
+    }
+    async fn send(&self, msg: Message) -> Result<(), Error> {
+        self.tx_sender
+            .send(msg)
+            .map_err(|e| Error::Channel(e.to_string()))
+    }
+}
+#[derive(Debug)]
 pub struct Client {
     options: Options,
-    cancel: CancellationToken,
-    tx_sender: UnboundedSender<ToSend>,
     uuid: Uuid,
+    control: Control,
+    rx_sender: Option<UnboundedReceiver<Message>>,
+    rx_events: Option<UnboundedReceiver<Event<Error>>>,
+    tx_events: UnboundedSender<Event<Error>>,
 }
 
 impl Client {
-    pub fn new(options: Options, mut cancel: Option<CancellationToken>) -> Self {
-        let (tx_sender, _): (UnboundedSender<ToSend>, UnboundedReceiver<ToSend>) =
+    pub fn new(options: Options) -> Self {
+        let (tx_sender, rx_sender): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
             unbounded_channel();
+        let (tx_events, rx_events): (
+            UnboundedSender<Event<Error>>,
+            UnboundedReceiver<Event<Error>>,
+        ) = unbounded_channel();
         Self {
             options,
-            tx_sender,
-            cancel: if let Some(cancel) = cancel.take() {
-                cancel
-            } else {
-                CancellationToken::new()
-            },
+            tx_events,
+            rx_sender: Some(rx_sender),
+            rx_events: Some(rx_events),
             uuid: Uuid::new_v4(),
+            control: Control {
+                tx_sender,
+                shutdown: CancellationToken::new(),
+            },
         }
     }
 
@@ -67,24 +95,9 @@ impl Client {
         self.uuid
     }
 
-    pub fn send(&self, msg: ToSend) -> Result<(), Error> {
-        if let Err(err) = self.tx_sender.send(msg) {
-            Err(Error::Channel(format!(
-                "fail to send message; error: {:?}",
-                err
-            )))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub fn stop(&self) {
-        self.cancel.cancel();
-    }
-
     async fn direct_connection(
         addr: SocketAddr,
-        tx_events: UnboundedSender<Event>,
+        tx_events: UnboundedSender<Event<Error>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, Error> {
         let addr_str = format!("ws://{}:{}", addr.ip(), addr.port());
         match connect_async(&addr_str).await {
@@ -106,7 +119,7 @@ impl Client {
 
     async fn distributor_connection(
         addr: SocketAddr,
-        tx_events: UnboundedSender<Event>,
+        tx_events: UnboundedSender<Event<Error>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, Error> {
         let distributor_url = format!("http://{}:{}", addr.ip(), addr.port())
             .parse::<Uri>()
@@ -164,7 +177,7 @@ impl Client {
 
     async fn reader_task(
         mut reader: SplitStream<WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>>,
-        tx_events: UnboundedSender<Event>,
+        tx_events: UnboundedSender<Event<Error>>,
         cancel: CancellationToken,
     ) -> Result<(), Error> {
         debug!(target: logs::targets::CLIENT, "reader_task is started");
@@ -214,26 +227,26 @@ impl Client {
 
     async fn writer_task(
         mut writer: SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, WsMessage>,
-        mut rx_sender: UnboundedReceiver<ToSend>,
+        mut rx_sender: UnboundedReceiver<Message>,
         cancel: CancellationToken,
     ) -> Result<(), Error> {
         let result = select! {
             res = async {
                 while let Some(msg) = rx_sender.recv().await {
                     match msg {
-                        ToSend::Binary(buffer) => writer
+                        Message::Binary(buffer) => writer
                             .send(WsMessage::Binary(buffer))
                             .await
                             .map_err(|e| Error::Write(e.to_string()))?,
-                        ToSend::Text(txt) => writer
+                        Message::Text(txt) => writer
                             .send(WsMessage::Text(txt))
                             .await
                             .map_err(|e| Error::Write(e.to_string()))?,
-                        ToSend::Ping(buffer) => writer
+                        Message::Ping(buffer) => writer
                             .send(WsMessage::Ping(buffer))
                             .await
                             .map_err(|e| Error::Write(e.to_string()))?,
-                        ToSend::Pong(buffer) => writer
+                        Message::Pong(buffer) => writer
                             .send(WsMessage::Pong(buffer))
                             .await
                             .map_err(|e| Error::Write(e.to_string()))?,
@@ -251,51 +264,50 @@ impl Client {
         }
         result
     }
+}
 
-    pub async fn connect(&mut self) -> Result<ConnectReturn, Error> {
+#[async_trait]
+impl Impl<Error, Control> for Client {
+    async fn connect(&mut self) -> Result<(), Error> {
         env::logs::init();
-        let cancel = self.cancel.clone();
-        let (tx_events, rx_events): (UnboundedSender<Event>, UnboundedReceiver<Event>) =
-            unbounded_channel();
+        let cancel = self.control.get_shutdown_token();
         let socket = match self.options.connection {
             ConnectionType::Direct(addr) => {
-                Self::direct_connection(addr, tx_events.clone()).await?
+                Self::direct_connection(addr, self.tx_events.clone()).await?
             }
             ConnectionType::Distributor(addr) => {
-                Self::distributor_connection(addr, tx_events.clone()).await?
+                Self::distributor_connection(addr, self.tx_events.clone()).await?
             }
         };
-        let (tx_done, rx_done): (oneshot::Sender<Done>, oneshot::Receiver<Done>) =
-            oneshot::channel();
-        let (tx_sender, rx_sender): (UnboundedSender<ToSend>, UnboundedReceiver<ToSend>) =
-            unbounded_channel();
         let (writer, reader) = socket.split();
-        self.tx_sender = tx_sender;
-        task::spawn(async move {
-            let res = select! {
-                res = Self::reader_task(reader, tx_events.clone(), cancel.child_token()) => res,
-                res = Self::writer_task(writer, rx_sender, cancel) => res,
-            };
-            if let Err(err) = tx_events.send(Event::Disconnected) {
-                error!(
-                    target: logs::targets::CLIENT,
-                    "fail to send event Disconnected; error: {:?}", err
-                );
-            }
-            if let Err(err) = res {
-                if let Err(err) = tx_done.send(Err(err)) {
-                    error!(
-                        target: logs::targets::CLIENT,
-                        "fail to send done signal; error: {:?}", err
-                    );
-                }
-            } else if let Err(err) = tx_done.send(Ok(())) {
-                error!(
-                    target: logs::targets::CLIENT,
-                    "fail to send done signal; error: {:?}", err
-                );
-            }
-        });
-        Ok((rx_events, rx_done))
+        let rx_sender = if let Some(rx_sender) = self.rx_sender.take() {
+            rx_sender
+        } else {
+            return Err(Error::SenderAlreadyTaken);
+        };
+        let res = select! {
+            res = Self::reader_task(reader, self.tx_events.clone(), cancel.child_token()) => res,
+            res = Self::writer_task(writer, rx_sender, cancel) => res,
+        };
+        if let Err(err) = self.tx_events.send(Event::Disconnected) {
+            error!(
+                target: logs::targets::CLIENT,
+                "fail to send event Disconnected; error: {:?}", err
+            );
+        }
+        self.control.shutdown().await?;
+        res
+    }
+
+    fn observer(&mut self) -> Result<UnboundedReceiver<Event<Error>>, Error> {
+        if let Some(rx_events) = self.rx_events.take() {
+            Ok(rx_events)
+        } else {
+            Err(Error::ObserverAlreadyTaken)
+        }
+    }
+
+    fn control(&self) -> Control {
+        self.control.clone()
     }
 }

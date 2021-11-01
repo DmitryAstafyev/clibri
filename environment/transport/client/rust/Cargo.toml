@@ -17,3 +17,4 @@ log4rs = "1.0.0"
 tokio-util = "0.6.7"
 hyper = { version = "0.14.11", features = ["full"] }
 uuid = { version = "0.8.2", features = ["v4"] }
+async-trait = "0.1.51"

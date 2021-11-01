@@ -22,4 +22,8 @@ pub enum Error {
     Write(String),
     #[error("fail parse socket address: `{0}`")]
     SocketAddr(String),
+    #[error("events ovserver already taken")]
+    ObserverAlreadyTaken,
+    #[error("messages ovserver already taken")]
+    SenderAlreadyTaken,
 }

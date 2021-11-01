@@ -15,15 +15,15 @@ pub enum Channel {
 }
 
 #[derive(Debug, Clone)]
-pub struct Api {
+pub struct Api<E: std::error::Error> {
     tx_client_api: UnboundedSender<Channel>,
-    tx_auth: Sender<Auth>,
+    tx_auth: Sender<Auth<E>>,
     shutdown: CancellationToken,
     uuid: Option<Uuid>,
 }
 
-impl Api {
-    pub fn new(tx_client_api: UnboundedSender<Channel>, tx_auth: Sender<Auth>) -> Self {
+impl<E: std::error::Error> Api<E> {
+    pub fn new(tx_client_api: UnboundedSender<Channel>, tx_auth: Sender<Auth<E>>) -> Self {
         Api {
             tx_client_api,
             tx_auth,
@@ -32,7 +32,7 @@ impl Api {
         }
     }
 
-    pub async fn send(&self, buffer: &[u8]) -> Result<(), ConsumerError> {
+    pub async fn send(&self, buffer: &[u8]) -> Result<(), ConsumerError<E>> {
         Ok(self
             .tx_client_api
             .send(Channel::Send(buffer.to_vec()))
@@ -43,7 +43,7 @@ impl Api {
         &self,
         sequence: u32,
         buffer: &[u8],
-    ) -> Result<protocol::AvailableMessages, ConsumerError> {
+    ) -> Result<protocol::AvailableMessages, ConsumerError<E>> {
         let (tx_response, rx_response): (
             oneshot::Sender<protocol::AvailableMessages>,
             oneshot::Receiver<protocol::AvailableMessages>,
@@ -61,7 +61,7 @@ impl Api {
         &self,
         sequence: u32,
         msg: protocol::AvailableMessages,
-    ) -> Result<bool, ConsumerError> {
+    ) -> Result<bool, ConsumerError<E>> {
         let (tx_response, rx_response): (oneshot::Sender<bool>, oneshot::Receiver<bool>) =
             oneshot::channel();
         self.tx_client_api

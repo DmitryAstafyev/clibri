@@ -157,6 +157,7 @@ dependencies = [
 name = "fiber_transport_client"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "fiber",
  "futures",
  "hyper",

@@ -12,12 +12,9 @@ async fn main() -> Result<(), String> {
     let socket_addr = "127.0.0.1:8080"
         .parse::<SocketAddr>()
         .map_err(|e| e.to_string())?;
-    let mut client = Client::new(
-        ClientOptions {
-            connection: ConnectionType::Direct(socket_addr),
-        },
-        None,
-    );
+    let mut client = Client::new(ClientOptions {
+        connection: ConnectionType::Direct(socket_addr),
+    });
     let context = Context {};
     let consumer = connect(
         client,
@@ -33,17 +30,4 @@ async fn main() -> Result<(), String> {
     let shutdown = consumer.get_shutdown_token();
     shutdown.cancelled().await;
     Ok(())
-    // let socket_addr = "127.0.0.1:8080".parse::<SocketAddr>().unwrap();
-    // let server = Server::new(Options {
-    //     listener: Listener::Direct(socket_addr),
-    // });
-    // let context = producer::Context::new();
-    // let manage: Manage =
-    //     if let Ok(manage) = producer::run(server, producer::Options::new(), context).await {
-    //         manage
-    //     } else {
-    //         return;
-    //     };
-    // manage.get_shutdown_tracker().cancelled().await;
-    // println!("Chat is shutdown");
 }

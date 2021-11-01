@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ConsumerError {
+pub enum ConsumerError<E: std::error::Error> {
     #[error("fail to read income buffer: `{0}`")]
     BufferError(String),
     #[error("unknown message: `{0}`")]
@@ -26,4 +26,6 @@ pub enum ConsumerError {
     GettingResponse,
     #[error("fail to parse uuid")]
     Uuid,
+    #[error("client error: `{0}`")]
+    Client(E),
 }
