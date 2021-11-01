@@ -3,7 +3,7 @@ use super::{
     events::{Event, Message},
     options::{ConnectionType, Options},
 };
-use fiber::env::logs;
+use fiber::{env, env::logs};
 use futures::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
@@ -253,6 +253,7 @@ impl Client {
     }
 
     pub async fn connect(&mut self) -> Result<ConnectReturn, Error> {
+        env::logs::init();
         let cancel = self.cancel.clone();
         let (tx_events, rx_events): (UnboundedSender<Event>, UnboundedReceiver<Event>) =
             unbounded_channel();

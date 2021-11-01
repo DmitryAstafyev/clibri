@@ -17,7 +17,7 @@ pub enum Message {
     Pong(Vec<u8>),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     Connected(SocketAddr),
     Disconnected,

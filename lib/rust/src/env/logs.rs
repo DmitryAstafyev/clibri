@@ -9,6 +9,7 @@ pub mod targets {
     pub static SERVER: &str = "fiber::wsserver";
     pub static CLIENT: &str = "fiber::wsclient";
     pub static PRODUCER: &str = "fiber::producer";
+    pub static CONSUMER: &str = "fiber::consumer";
 }
 
 static INIT: Once = Once::new();
@@ -40,6 +41,14 @@ pub fn init() {
                         },
                     ))
                     .logger(Logger::builder().build(
+                        targets::CONSUMER,
+                        if let Some(level) = level.as_ref() {
+                            *level
+                        } else {
+                            LevelFilter::Trace
+                        },
+                    ))
+                    .logger(Logger::builder().build(
                         targets::CLIENT,
                         if let Some(level) = level.as_ref() {
                             *level
@@ -47,7 +56,11 @@ pub fn init() {
                             LevelFilter::Trace
                         },
                     ))
-                    .build(Root::builder().appender("stdout").build(vars::root_log_level())) {
+                    .build(
+                        Root::builder()
+                            .appender("stdout")
+                            .build(vars::root_log_level()),
+                    ) {
                     Ok(config) => {
                         if let Err(e) = log4rs::init_config(config) {
                             eprintln!("Fiber: fail to init log4rs. Error: {}", e);
@@ -66,9 +79,13 @@ pub fn init() {
                 .appender(Appender::builder().build("stdout", Box::new(stdout)))
                 .logger(Logger::builder().build(targets::SERVER, *level))
                 .logger(Logger::builder().build(targets::PRODUCER, *level))
+                .logger(Logger::builder().build(targets::CONSUMER, *level))
                 .logger(Logger::builder().build(targets::CLIENT, *level))
-                .build(Root::builder().appender("stdout").build(vars::root_log_level()))
-            {
+                .build(
+                    Root::builder()
+                        .appender("stdout")
+                        .build(vars::root_log_level()),
+                ) {
                 Ok(config) => {
                     if let Err(e) = log4rs::init_config(config) {
                         eprintln!("Fiber: fail to init log4rs. Error: {}", e);
