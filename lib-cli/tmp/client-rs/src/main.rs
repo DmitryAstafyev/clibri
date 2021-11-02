@@ -12,10 +12,10 @@ async fn main() -> Result<(), String> {
     let socket_addr = "127.0.0.1:8080"
         .parse::<SocketAddr>()
         .map_err(|e| e.to_string())?;
-    let mut client = Client::new(ClientOptions {
+    let client = Client::new(ClientOptions {
         connection: ConnectionType::Direct(socket_addr),
     });
-    let context = Context {};
+    let context = Context::new();
     let consumer = connect(
         client,
         context,

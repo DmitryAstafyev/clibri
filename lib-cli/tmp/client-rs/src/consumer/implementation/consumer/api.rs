@@ -11,7 +11,7 @@ pub enum Channel {
     Send(Vec<u8>),
     Request((u32, Vec<u8>, oneshot::Sender<protocol::AvailableMessages>)),
     AcceptIncome((u32, protocol::AvailableMessages, oneshot::Sender<bool>)),
-    Uuid(oneshot::Sender<Uuid>),
+    Uuid(oneshot::Sender<Option<Uuid>>),
 }
 
 #[derive(Debug, Clone)]
@@ -70,6 +70,28 @@ impl<E: std::error::Error> Api<E> {
         match rx_response.await {
             Ok(response) => Ok(response),
             Err(_) => Err(ConsumerError::GettingResponse),
+        }
+    }
+
+    pub async fn uuid(&self) -> Result<Option<Uuid>, ConsumerError<E>> {
+        let (tx_response, rx_response): (
+            oneshot::Sender<Option<Uuid>>,
+            oneshot::Receiver<Option<Uuid>>,
+        ) = oneshot::channel();
+        self.tx_client_api
+            .send(Channel::Uuid(tx_response))
+            .map_err(|_| ConsumerError::APIChannel(String::from("Fail to get uuid")))?;
+        match rx_response.await {
+            Ok(response) => Ok(response),
+            Err(_) => Err(ConsumerError::GettingResponse),
+        }
+    }
+
+    pub async fn uuid_as_string(&self) -> Result<Option<String>, ConsumerError<E>> {
+        if let Some(uuid) = self.uuid().await? {
+            Ok(Some(uuid.to_string()))
+        } else {
+            Ok(None)
         }
     }
 

@@ -5,7 +5,6 @@ use tokio_util::sync::CancellationToken;
 pub struct Consumer<E: std::error::Error> {
     api: Api<E>,
     sequence: u32,
-    uuid: Option<String>,
     shutdown: CancellationToken,
 }
 
@@ -37,7 +36,6 @@ impl<E: std::error::Error> Consumer<E> {
         Consumer {
             api,
             sequence: 10,
-            uuid: None,
             shutdown,
         }
     }
@@ -46,10 +44,12 @@ impl<E: std::error::Error> Consumer<E> {
         &mut self,
         mut beacon: protocol::Beacons::LikeUser,
     ) -> Result<(), ConsumerError<E>> {
+        let sequence = self.sequence();
+        let uuid = self.api.uuid_as_string().await?;
         self.api
             .send(
                 &beacon
-                    .pack(self.sequence, self.uuid.clone())
+                    .pack(sequence, uuid)
                     .map_err(ConsumerError::Protocol)?,
             )
             .await
@@ -59,12 +59,14 @@ impl<E: std::error::Error> Consumer<E> {
         &mut self,
         mut request: protocol::Message::Request,
     ) -> Result<RequestMessageResponse, ConsumerError<E>> {
+        let sequence = self.sequence();
+        let uuid = self.api.uuid_as_string().await?;
         let message = self
             .api
             .request(
-                self.sequence,
+                sequence,
                 &request
-                    .pack(self.sequence, self.uuid.clone())
+                    .pack(sequence, uuid)
                     .map_err(ConsumerError::Protocol)?,
             )
             .await?;
@@ -88,12 +90,14 @@ impl<E: std::error::Error> Consumer<E> {
         &mut self,
         mut request: protocol::Messages::Request,
     ) -> Result<RequestMessagesResponse, ConsumerError<E>> {
+        let sequence = self.sequence();
+        let uuid = self.api.uuid_as_string().await?;
         let message = self
             .api
             .request(
-                self.sequence,
+                sequence,
                 &request
-                    .pack(self.sequence, self.uuid.clone())
+                    .pack(sequence, uuid)
                     .map_err(ConsumerError::Protocol)?,
             )
             .await?;
@@ -114,12 +118,14 @@ impl<E: std::error::Error> Consumer<E> {
         &mut self,
         mut request: protocol::Users::Request,
     ) -> Result<RequestUsersResponse, ConsumerError<E>> {
+        let sequence = self.sequence();
+        let uuid = self.api.uuid_as_string().await?;
         let message = self
             .api
             .request(
-                self.sequence,
+                sequence,
                 &request
-                    .pack(self.sequence, self.uuid.clone())
+                    .pack(sequence, uuid)
                     .map_err(ConsumerError::Protocol)?,
             )
             .await?;
@@ -140,12 +146,16 @@ impl<E: std::error::Error> Consumer<E> {
         &mut self,
         mut request: protocol::UserLogin::Request,
     ) -> Result<RequestUserLoginResponse, ConsumerError<E>> {
+        let sequence = self.sequence();
+        println!("sequence: {:?}", sequence);
+        let uuid = self.api.uuid_as_string().await?;
+        println!("uuid: {:?}", uuid);
         let message = self
             .api
             .request(
-                self.sequence,
+                sequence,
                 &request
-                    .pack(self.sequence, self.uuid.clone())
+                    .pack(sequence, uuid)
                     .map_err(ConsumerError::Protocol)?,
             )
             .await?;
@@ -171,5 +181,13 @@ impl<E: std::error::Error> Consumer<E> {
 
     pub fn get_shutdown_token(&self) -> CancellationToken {
         self.shutdown.clone()
+    }
+
+    fn sequence(&mut self) -> u32 {
+        self.sequence += 1;
+        if self.sequence >= u32::MAX - 1 {
+            self.sequence = 10;
+        }
+        self.sequence
     }
 }

@@ -57,7 +57,7 @@ where
     debug!(target: logs::targets::CONSUMER, "connected");
     let (tx_client_api, rx_client_api): (UnboundedSender<Channel>, UnboundedReceiver<Channel>) =
         unbounded_channel();
-    let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(2);
+    let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(20);
     let api = Api::new(tx_client_api, tx_auth.clone());
     let consumer = Consumer::new(api.clone());
     let shutdown = api.get_shutdown_token();
@@ -65,9 +65,9 @@ where
     spawn(async move {
         debug!(target: logs::targets::CONSUMER, "main thread is started");
         select! {
-            res = client_messages_task::<E>(rx_client_events, rx_auth, tx_auth, api.clone(), consumer_messages_task, context, options) => {
+            res = client_messages_task::<E>(rx_client_events, rx_auth, tx_auth.clone(), api.clone(), consumer_messages_task, context, options) => {
             },
-            res = client_api_task::<E, Ctrl>(client_control, api.clone(), rx_client_api) => {
+            res = client_api_task::<E, Ctrl>(client_control, api.clone(), tx_auth, rx_client_api) => {
             },
             res = client.connect() => {
             },
@@ -82,6 +82,7 @@ where
 async fn client_api_task<E, Ctrl>(
     client: Ctrl,
     api: Api<E>,
+    tx_auth: Sender<Auth<E>>,
     mut rx_client_api: UnboundedReceiver<Channel>,
 ) where
     E: 'static + std::error::Error + Sync + Send + Clone,
@@ -102,6 +103,10 @@ async fn client_api_task<E, Ctrl>(
             Channel::Request((sequence, buffer, tx_response)) => {
                 if pending.contains_key(&sequence) {
                     // Error
+                    error!(
+                        target: logs::targets::CONSUMER,
+                        "sequence #{} already has pending sender behind", sequence
+                    );
                 }
                 pending.insert(sequence, tx_response);
                 if let Err(err) = client.send(client::Message::Binary(buffer)).await {
@@ -133,7 +138,18 @@ async fn client_api_task<E, Ctrl>(
                     api.shutdown();
                 }
             }
-            Channel::Uuid(tx_response) => {}
+            Channel::Uuid(tx_response) => {
+                println!(">>>>>>>>>>>>>>>>>>>>>>> 1");
+                if let Err(err) = tx_auth.send(Auth::GetUuid(tx_response)).await {
+                    error!(
+                        target: logs::targets::CONSUMER,
+                        "fail to send Channel::Uuid response: {:?}", err
+                    );
+                    api.shutdown();
+                } else {
+                    println!(">>>>>>>>>>>>>>>>>>>>>>> 1 OK");
+                }
+            }
         }
     }
 }
@@ -149,8 +165,8 @@ where
 async fn client_messages_task<E>(
     mut rx_client_event: UnboundedReceiver<client::Event<E>>,
     mut rx_auth: Receiver<Auth<E>>,
-    mut tx_auth: Sender<Auth<E>>,
-    mut api: Api<E>,
+    tx_auth: Sender<Auth<E>>,
+    api: Api<E>,
     mut consumer: Consumer<E>,
     mut context: Context,
     options: Options,
@@ -165,17 +181,10 @@ where
     let mut buffer = protocol::Buffer::new();
     let mut uuid: Option<Uuid> = None;
     while let Some(msg) = select! {
-        msg = rx_client_event.recv() => if let Some(msg) = msg {
-            Some(MergedClientChannel::Client(msg))
-        } else {
-            None
-        },
-        msg = rx_auth.recv() => if let Some(msg) = msg {
-            Some(MergedClientChannel::Auth(msg))
-        } else {
-            None
-        },
+        msg = rx_client_event.recv() => msg.map(MergedClientChannel::Client),
+        msg = rx_auth.recv() => msg.map(MergedClientChannel::Auth),
     } {
+        println!(">>>>>>>>>>>>>>>>>>>>> 2: {:?}", msg);
         match msg {
             MergedClientChannel::Client(msg) => {
                 trace!(target: logs::targets::CONSUMER, "client event: {:?}", msg);
@@ -294,7 +303,7 @@ where
                     Ok(assigned_uuid) => {
                         uuid =
                             Some(Uuid::from_str(&assigned_uuid).map_err(|_| ConsumerError::Uuid)?);
-                        events::event_connected::handler(&mut context, &mut consumer).await;
+                        events::event_connected::handler(&mut context, &mut consumer).await;/// THIS IS LOCK US
                     }
                     Err(err) => {
                         emit_error::<E>(err, &mut context, &mut consumer).await;
@@ -307,6 +316,7 @@ where
                 }
             },
         }
+        println!(">>>>>>>>>>>>>>>>>>>>> 2-BACK");
     }
     trace!(
         target: logs::targets::CONSUMER,

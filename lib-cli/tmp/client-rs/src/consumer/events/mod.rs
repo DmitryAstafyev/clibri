@@ -5,5 +5,5 @@ pub mod event_shutdown;
 
 use super::{
     context::Context,
-    implementation::{Consumer, ConsumerError},
+    implementation::{controller, protocol, Consumer, ConsumerError},
 };
