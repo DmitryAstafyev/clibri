@@ -1,8 +1,7 @@
-use super::implementation::protocol;
-use tokio::{
-    io,
-    io::{AsyncBufReadExt, BufReader},
-};
+use super::implementation::{controller, protocol, Consumer};
+use fiber_transport_client::errors::Error as ClientError;
+use thiserror::Error;
+use tokio::{select, task::spawn};
 use tokio_util::sync::CancellationToken;
 
 mod stdin {
@@ -38,8 +37,47 @@ impl Context {
             shutdown: CancellationToken::new(),
         }
     }
-    pub async fn listen(&self) {
-        while !self.shutdown.is_cancelled() {}
+    pub async fn listen(&self, username: String, mut consumer: Consumer<ClientError>) {
+        let shutdown = self.shutdown.clone();
+        spawn(async move {
+            if let Err(err) = select! {
+                res = async {
+                    loop {
+                        if let Some(input) = stdin::next_line(shutdown.child_token()).await? {
+                            match consumer
+                                .request_message(protocol::Message::Request {
+                                    user: username.clone(),
+                                    message: input.to_owned(),
+                                })
+                                .await
+                            {
+                                Ok(response) => match response {
+                                    controller::RequestMessageResponse::Accepted(_) => {
+                                        println!("{}: {}", username, input);
+                                    }
+                                    controller::RequestMessageResponse::Denied(_) => {
+                                        eprintln!("[ERROR]: message is rejected");
+                                    }
+                                    controller::RequestMessageResponse::Err(msg) => {
+                                        eprintln!("[ERROR]: message is rejected: {}", msg.error);
+                                    }
+                                },
+                                Err(err) => {
+                                    eprintln!("{}", err);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    Ok::<(), String>(())
+                } => res,
+                _ = shutdown.cancelled() => {
+                    Ok(())
+                },
+            } {
+                eprintln!("{}", err);
+            }
+        });
     }
 
     pub async fn get_username(&self) -> Result<String, String> {
@@ -48,5 +86,10 @@ impl Context {
         } else {
             Err(String::from("No input"))
         }
+    }
+
+    pub fn shutdown(&self) {
+        println!("chat is shutdown for you");
+        self.shutdown.cancel()
     }
 }

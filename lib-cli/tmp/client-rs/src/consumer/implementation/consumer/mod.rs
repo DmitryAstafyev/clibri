@@ -81,7 +81,6 @@ where
             res = client_api_task::<E, Ctrl>(client_control, api.clone(), tx_auth, rx_client_api) => {
             },
             res = consumer_emitter_task::<E>(rx_consumer_event, consumer_cl, context) => {
-
             },
             res = client.connect() => {
             },
@@ -105,22 +104,22 @@ where
         match msg {
             Emitter::Error(err) => {
                 warn!(target: logs::targets::CONSUMER, "{}", err);
-                events::event_error::handler::<E>(err, &mut context, &mut consumer).await;
+                events::event_error::handler::<E>(err, &mut context, consumer.clone()).await;
             }
             Emitter::Connected => {
-                events::event_connected::handler(&mut context, &mut consumer).await;
+                events::event_connected::handler(&mut context, consumer.clone()).await;
             }
             Emitter::Disconnected => {
-                events::event_disconnected::handler(&mut context, &mut consumer).await;
+                events::event_disconnected::handler(&mut context, consumer.clone()).await;
             }
             Emitter::EventsMessage(msg) => {
-                broadcasts::events_message::handler(msg, &mut context, &mut consumer).await;
+                broadcasts::events_message::handler(msg, &mut context, consumer.clone()).await;
             }
             Emitter::EventsUserConnected(msg) => {
-                broadcasts::events_connected::handler(msg, &mut context, &mut consumer).await;
+                broadcasts::events_connected::handler(msg, &mut context, consumer.clone()).await;
             }
             Emitter::EventsUserDisconnected(msg) => {
-                broadcasts::events_disconnected::handler(msg, &mut context, &mut consumer).await;
+                broadcasts::events_disconnected::handler(msg, &mut context, consumer.clone()).await;
             }
         };
     }
@@ -137,6 +136,7 @@ async fn client_api_task<E, Ctrl>(
     Ctrl: client::Control<E> + Send + Sync + Clone,
 {
     let mut pending: HashMap<u32, oneshot::Sender<protocol::AvailableMessages>> = HashMap::new();
+    let mut sequence: u32 = 10;
     while let Some(command) = rx_client_api.recv().await {
         match command {
             Channel::Send(buffer) => {
@@ -191,6 +191,19 @@ async fn client_api_task<E, Ctrl>(
                     error!(
                         target: logs::targets::CONSUMER,
                         "fail to send Channel::Uuid response: {:?}", err
+                    );
+                    api.shutdown();
+                }
+            }
+            Channel::Sequence(tx_response) => {
+                sequence += 1;
+                if sequence >= u32::MAX - 1 {
+                    sequence = 10;
+                }
+                if let Err(err) = tx_response.send(sequence) {
+                    error!(
+                        target: logs::targets::CONSUMER,
+                        "fail to send Channel::Sequence response: {:?}", err
                     );
                     api.shutdown();
                 }

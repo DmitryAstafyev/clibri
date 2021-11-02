@@ -12,6 +12,7 @@ pub enum Channel {
     Request((u32, Vec<u8>, oneshot::Sender<protocol::AvailableMessages>)),
     AcceptIncome((u32, protocol::AvailableMessages, oneshot::Sender<bool>)),
     Uuid(oneshot::Sender<Option<Uuid>>),
+    Sequence(oneshot::Sender<u32>),
 }
 
 #[derive(Debug, Clone)]
@@ -29,6 +30,18 @@ impl<E: std::error::Error> Api<E> {
             tx_auth,
             shutdown: CancellationToken::new(),
             uuid: None,
+        }
+    }
+
+    pub async fn sequence(&self) -> Result<u32, ConsumerError<E>> {
+        let (tx_response, rx_response): (oneshot::Sender<u32>, oneshot::Receiver<u32>) =
+            oneshot::channel();
+        self.tx_client_api
+            .send(Channel::Sequence(tx_response))
+            .map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+        match rx_response.await {
+            Ok(sequence) => Ok(sequence),
+            Err(_) => Err(ConsumerError::GettingResponse),
         }
     }
 

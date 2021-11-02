@@ -1,6 +1,9 @@
 use super::{controller, protocol, Consumer, Context};
 
-pub async fn handler<E: std::error::Error>(context: &mut Context, consumer: &mut Consumer<E>) {
+pub async fn handler<E: std::error::Error + Clone>(
+    context: &mut Context,
+    mut consumer: Consumer<E>,
+) {
     println!("Consumer is connected.");
     println!("Please type your login:");
     let username = match context.get_username().await {
@@ -16,10 +19,11 @@ pub async fn handler<E: std::error::Error>(context: &mut Context, consumer: &mut
         .await
     {
         Ok(response) => match response {
-            controller::RequestUserLoginResponse::Accepted(msg) => {
+            controller::RequestUserLoginResponse::Accepted(_) => {
                 println!("You are in!");
+                //context.listen(username, consumer);
             }
-            controller::RequestUserLoginResponse::Denied(msg) => {
+            controller::RequestUserLoginResponse::Denied(_) => {
                 println!("Access is denied!");
             }
             controller::RequestUserLoginResponse::Err(msg) => {
