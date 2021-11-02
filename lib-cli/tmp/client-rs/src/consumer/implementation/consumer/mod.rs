@@ -40,6 +40,15 @@ pub enum MergedClientChannel<E: std::error::Error> {
     Auth(Auth<E>),
 }
 
+pub enum Emitter<E: std::error::Error> {
+    Connected,
+    Disconnected,
+    Error(ConsumerError<E>),
+    EventsMessage(protocol::Events::Message),
+    EventsUserConnected(protocol::Events::UserConnected),
+    EventsUserDisconnected(protocol::Events::UserDisconnected),
+}
+
 pub async fn connect<C, E, Ctrl>(
     mut client: C,
     context: Context,
@@ -57,17 +66,22 @@ where
     debug!(target: logs::targets::CONSUMER, "connected");
     let (tx_client_api, rx_client_api): (UnboundedSender<Channel>, UnboundedReceiver<Channel>) =
         unbounded_channel();
-    let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(20);
+    let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(2);
+    let (tx_consumer_event, rx_consumer_event): (Sender<Emitter<E>>, Receiver<Emitter<E>>) =
+        channel(2);
     let api = Api::new(tx_client_api, tx_auth.clone());
     let consumer = Consumer::new(api.clone());
     let shutdown = api.get_shutdown_token();
-    let consumer_messages_task = consumer.clone();
+    let consumer_cl = consumer.clone();
     spawn(async move {
         debug!(target: logs::targets::CONSUMER, "main thread is started");
         select! {
-            res = client_messages_task::<E>(rx_client_events, rx_auth, tx_auth.clone(), api.clone(), consumer_messages_task, context, options) => {
+            res = client_messages_task::<E>(rx_client_events, tx_consumer_event, rx_auth, tx_auth.clone(), api.clone(), options) => {
             },
             res = client_api_task::<E, Ctrl>(client_control, api.clone(), tx_auth, rx_client_api) => {
+            },
+            res = consumer_emitter_task::<E>(rx_consumer_event, consumer_cl, context) => {
+
             },
             res = client.connect() => {
             },
@@ -77,6 +91,40 @@ where
         debug!(target: logs::targets::CONSUMER, "main thread is finished");
     });
     Ok(consumer)
+}
+
+async fn consumer_emitter_task<E>(
+    mut rx_consumer_event: Receiver<Emitter<E>>,
+    mut consumer: Consumer<E>,
+    mut context: Context,
+) -> Result<(), ConsumerError<E>>
+where
+    E: 'static + std::error::Error + Sync + Send + Clone,
+{
+    while let Some(msg) = rx_consumer_event.recv().await {
+        match msg {
+            Emitter::Error(err) => {
+                warn!(target: logs::targets::CONSUMER, "{}", err);
+                events::event_error::handler::<E>(err, &mut context, &mut consumer).await;
+            }
+            Emitter::Connected => {
+                events::event_connected::handler(&mut context, &mut consumer).await;
+            }
+            Emitter::Disconnected => {
+                events::event_disconnected::handler(&mut context, &mut consumer).await;
+            }
+            Emitter::EventsMessage(msg) => {
+                broadcasts::events_message::handler(msg, &mut context, &mut consumer).await;
+            }
+            Emitter::EventsUserConnected(msg) => {
+                broadcasts::events_connected::handler(msg, &mut context, &mut consumer).await;
+            }
+            Emitter::EventsUserDisconnected(msg) => {
+                broadcasts::events_disconnected::handler(msg, &mut context, &mut consumer).await;
+            }
+        };
+    }
+    Ok(())
 }
 
 async fn client_api_task<E, Ctrl>(
@@ -139,36 +187,37 @@ async fn client_api_task<E, Ctrl>(
                 }
             }
             Channel::Uuid(tx_response) => {
-                println!(">>>>>>>>>>>>>>>>>>>>>>> 1");
                 if let Err(err) = tx_auth.send(Auth::GetUuid(tx_response)).await {
                     error!(
                         target: logs::targets::CONSUMER,
                         "fail to send Channel::Uuid response: {:?}", err
                     );
                     api.shutdown();
-                } else {
-                    println!(">>>>>>>>>>>>>>>>>>>>>>> 1 OK");
                 }
             }
         }
     }
 }
 
-async fn emit_error<E>(err: ConsumerError<E>, context: &mut Context, consumer: &mut Consumer<E>)
+async fn emit_error<E>(err: ConsumerError<E>, tx_consumer_event: &Sender<Emitter<E>>)
 where
     E: 'static + std::error::Error + Sync + Send + Clone,
 {
     warn!(target: logs::targets::CONSUMER, "{}", err);
-    events::event_error::handler::<E>(err, context, consumer).await;
+    if let Err(err) = tx_consumer_event.send(Emitter::Error(err)).await {
+        error!(
+            target: logs::targets::CONSUMER,
+            "fail emit error because: {}", err
+        );
+    }
 }
 
 async fn client_messages_task<E>(
     mut rx_client_event: UnboundedReceiver<client::Event<E>>,
+    tx_consumer_event: Sender<Emitter<E>>,
     mut rx_auth: Receiver<Auth<E>>,
     tx_auth: Sender<Auth<E>>,
     api: Api<E>,
-    mut consumer: Consumer<E>,
-    mut context: Context,
     options: Options,
 ) -> Result<(), ConsumerError<E>>
 where
@@ -184,7 +233,6 @@ where
         msg = rx_client_event.recv() => msg.map(MergedClientChannel::Client),
         msg = rx_auth.recv() => msg.map(MergedClientChannel::Auth),
     } {
-        println!(">>>>>>>>>>>>>>>>>>>>> 2: {:?}", msg);
         match msg {
             MergedClientChannel::Client(msg) => {
                 trace!(target: logs::targets::CONSUMER, "client event: {:?}", msg);
@@ -209,44 +257,30 @@ where
                                             Err(err) => {
                                                 emit_error::<E>(
                                                         ConsumerError::Pending(format!("Fail to handle broadcast Events::Connect; error: {}", err)),
-                                                        &mut context,
-                                                        &mut consumer
+                                                        &tx_consumer_event
                                                     ).await;
                                             }
                                         };
                                         match msg.msg {
                                                 protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::Message(msg)) => {
-                                                    if let Err(err) = broadcasts::events_message::handler(msg, &mut context, &mut consumer).await {
-                                                        emit_error::<E>(
-                                                            ConsumerError::Broadcast(format!("Fail to handle broadcast Events::Message; error: {}", err)),
-                                                            &mut context,
-                                                            &mut consumer
-                                                        ).await;
+                                                    if let Err(err) = tx_consumer_event.send(Emitter::EventsMessage(msg)).await {
+                                                        return Err(ConsumerError::APIChannel(err.to_string()));
                                                     }
                                                 },
                                                 protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserConnected(msg)) => {
-                                                    if let Err(err) = broadcasts::events_connected::handler(msg, &mut context, &mut consumer).await {
-                                                        emit_error::<E>(
-                                                            ConsumerError::Broadcast(format!("Fail to handle broadcast Events::Connect; error: {}", err)),
-                                                            &mut context,
-                                                            &mut consumer
-                                                        ).await;
+                                                    if let Err(err) = tx_consumer_event.send(Emitter::EventsUserConnected(msg)).await {
+                                                        return Err(ConsumerError::APIChannel(err.to_string()));
                                                     }
                                                 },
                                                 protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserDisconnected(msg)) => {
-                                                    if let Err(err) = broadcasts::events_disconnected::handler(msg, &mut context, &mut consumer).await {
-                                                        emit_error::<E>(
-                                                            ConsumerError::Broadcast(format!("Fail to handle broadcast Events::Disconnect; error: {}", err)),
-                                                            &mut context,
-                                                            &mut consumer
-                                                        ).await;
+                                                    if let Err(err) = tx_consumer_event.send(Emitter::EventsUserDisconnected(msg)).await {
+                                                        return Err(ConsumerError::APIChannel(err.to_string()));
                                                     }
                                                 },
                                                 _ => {
                                                     emit_error::<E>(
                                                         ConsumerError::UnknownMessage(format!("header: {:?}", msg.header)),
-                                                        &mut context,
-                                                        &mut consumer
+                                                        &tx_consumer_event
                                                     ).await;
                                                 }
                                             }
@@ -255,8 +289,7 @@ where
                                 Err(err) => {
                                     emit_error::<E>(
                                         ConsumerError::BufferError(format!("{:?}", err)),
-                                        &mut context,
-                                        &mut consumer,
+                                        &tx_consumer_event,
                                     )
                                     .await;
                                 }
@@ -265,8 +298,7 @@ where
                         smth => {
                             emit_error::<E>(
                                 ConsumerError::UnknownMessage(format!("{:?}", smth)),
-                                &mut context,
-                                &mut consumer,
+                                &tx_consumer_event,
                             )
                             .await;
                         }
@@ -289,12 +321,16 @@ where
                     }
                     client::Event::Disconnected => {
                         uuid = None;
-                        events::event_disconnected::handler(&mut context, &mut consumer).await;
+                        if let Err(err) = tx_consumer_event.send(Emitter::Disconnected).await {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail emit disconnected because: {}", err
+                            );
+                        }
                         // TODO: Emit disconnected. Stratagy: reconnect or wait. With event send maybe trigger to reconnect (based on stratagy)
                     }
                     client::Event::Error(err) => {
-                        emit_error::<E>(ConsumerError::Client(err), &mut context, &mut consumer)
-                            .await;
+                        emit_error::<E>(ConsumerError::Client(err), &tx_consumer_event).await;
                     }
                 }
             }
@@ -303,10 +339,15 @@ where
                     Ok(assigned_uuid) => {
                         uuid =
                             Some(Uuid::from_str(&assigned_uuid).map_err(|_| ConsumerError::Uuid)?);
-                        events::event_connected::handler(&mut context, &mut consumer).await;/// THIS IS LOCK US
+                        if let Err(err) = tx_consumer_event.send(Emitter::Connected).await {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail emit connected because: {}", err
+                            );
+                        }
                     }
                     Err(err) => {
-                        emit_error::<E>(err, &mut context, &mut consumer).await;
+                        emit_error::<E>(err, &tx_consumer_event).await;
                     }
                 },
                 Auth::GetUuid(tx_response) => {
@@ -316,7 +357,6 @@ where
                 }
             },
         }
-        println!(">>>>>>>>>>>>>>>>>>>>> 2-BACK");
     }
     trace!(
         target: logs::targets::CONSUMER,
