@@ -29,18 +29,18 @@ pub mod hash {
 }
 
 #[derive(Debug)]
-pub enum Auth<E: std::error::Error> {
+pub enum Auth<E: client::Error> {
     SetUuid(Result<String, ConsumerError<E>>),
     GetUuid(oneshot::Sender<Option<Uuid>>),
 }
 
 #[derive(Debug)]
-pub enum MergedClientChannel<E: std::error::Error> {
+pub enum MergedClientChannel<E: client::Error> {
     Client(client::Event<E>),
     Auth(Auth<E>),
 }
 
-pub enum Emitter<E: std::error::Error> {
+pub enum Emitter<E: client::Error> {
     Connected,
     Disconnected,
     Error(ConsumerError<E>),
@@ -56,7 +56,7 @@ pub async fn connect<C, E, Ctrl>(
 ) -> Result<Consumer<E>, ConsumerError<E>>
 where
     C: 'static + client::Impl<E, Ctrl>,
-    E: 'static + std::error::Error + Sync + Send + Clone,
+    E: client::Error,
     Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
 {
     env::logs::init();
@@ -98,7 +98,7 @@ async fn consumer_emitter_task<E>(
     mut context: Context,
 ) -> Result<(), ConsumerError<E>>
 where
-    E: 'static + std::error::Error + Sync + Send + Clone,
+    E: client::Error,
 {
     while let Some(msg) = rx_consumer_event.recv().await {
         match msg {
@@ -132,7 +132,7 @@ async fn client_api_task<E, Ctrl>(
     tx_auth: Sender<Auth<E>>,
     mut rx_client_api: UnboundedReceiver<Channel>,
 ) where
-    E: 'static + std::error::Error + Sync + Send + Clone,
+    E: client::Error,
     Ctrl: client::Control<E> + Send + Sync + Clone,
 {
     let mut pending: HashMap<u32, oneshot::Sender<protocol::AvailableMessages>> = HashMap::new();
@@ -214,7 +214,7 @@ async fn client_api_task<E, Ctrl>(
 
 async fn emit_error<E>(err: ConsumerError<E>, tx_consumer_event: &Sender<Emitter<E>>)
 where
-    E: 'static + std::error::Error + Sync + Send + Clone,
+    E: client::Error,
 {
     warn!(target: logs::targets::CONSUMER, "{}", err);
     if let Err(err) = tx_consumer_event.send(Emitter::Error(err)).await {
@@ -234,7 +234,7 @@ async fn client_messages_task<E>(
     options: Options,
 ) -> Result<(), ConsumerError<E>>
 where
-    E: 'static + std::error::Error + Sync + Send + Clone,
+    E: client::Error,
 {
     trace!(
         target: logs::targets::CONSUMER,
@@ -380,7 +380,7 @@ where
 
 async fn auth<E>(api: Api<E>, options: Options) -> Result<String, ConsumerError<E>>
 where
-    E: 'static + std::error::Error + Sync + Send + Clone,
+    E: client::Error,
 {
     debug!(
         target: logs::targets::CONSUMER,

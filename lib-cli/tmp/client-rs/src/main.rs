@@ -1,6 +1,7 @@
 mod consumer;
-use consumer::{connect, protocol, Context, Options};
+use consumer::{connect, protocol, Consumer, Context, Options};
 use fiber_transport_client::{
+    client,
     client::Client,
     errors::Error,
     options::{ConnectionType, Options as ClientOptions},
@@ -16,7 +17,7 @@ async fn main() -> Result<(), String> {
         connection: ConnectionType::Direct(socket_addr),
     });
     let context = Context::new();
-    let consumer = connect(
+    let consumer = connect::<Client, Error, client::Control>(
         client,
         context,
         Options::defualt(protocol::Identification::SelfKey {

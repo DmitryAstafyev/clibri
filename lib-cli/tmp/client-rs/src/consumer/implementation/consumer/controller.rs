@@ -1,8 +1,9 @@
 use super::{api::Api, error::ConsumerError, protocol, protocol::PackingStruct};
+use fiber::client;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone)]
-pub struct Consumer<E: std::error::Error + Clone> {
+pub struct Consumer<E: client::Error> {
     api: Api<E>,
     shutdown: CancellationToken,
 }
@@ -29,7 +30,7 @@ pub enum RequestUserLoginResponse {
     Err(protocol::UserLogin::Err),
 }
 
-impl<E: std::error::Error + Clone> Consumer<E> {
+impl<E: client::Error> Consumer<E> {
     pub fn new(api: Api<E>) -> Self {
         let shutdown = api.get_shutdown_token();
         Consumer { api, shutdown }

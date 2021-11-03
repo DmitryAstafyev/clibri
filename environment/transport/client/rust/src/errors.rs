@@ -1,3 +1,4 @@
+use fiber::client;
 use thiserror::Error as ThisError;
 
 #[derive(ThisError, Debug, Clone)]
@@ -27,3 +28,5 @@ pub enum Error {
     #[error("messages ovserver already taken")]
     SenderAlreadyTaken,
 }
+
+impl client::Error for Error {}

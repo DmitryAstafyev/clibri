@@ -1,4 +1,5 @@
 use super::{error::ConsumerError, protocol, Auth};
+use fiber::client;
 use tokio::sync::{
     mpsc::{Sender, UnboundedSender},
     oneshot,
@@ -16,14 +17,14 @@ pub enum Channel {
 }
 
 #[derive(Debug, Clone)]
-pub struct Api<E: std::error::Error> {
+pub struct Api<E: client::Error> {
     tx_client_api: UnboundedSender<Channel>,
     tx_auth: Sender<Auth<E>>,
     shutdown: CancellationToken,
     uuid: Option<Uuid>,
 }
 
-impl<E: std::error::Error> Api<E> {
+impl<E: client::Error> Api<E> {
     pub fn new(tx_client_api: UnboundedSender<Channel>, tx_auth: Sender<Auth<E>>) -> Self {
         Api {
             tx_client_api,

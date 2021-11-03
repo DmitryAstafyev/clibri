@@ -2,6 +2,8 @@ use async_trait::async_trait;
 use std::net::SocketAddr;
 use tokio::sync::mpsc::UnboundedReceiver;
 
+pub trait Error: 'static + std::error::Error + Clone + Sync + Send {}
+
 #[derive(Clone, Debug)]
 pub enum Message {
     /// A text WebSocket message
@@ -19,7 +21,7 @@ pub enum Message {
 }
 
 #[derive(Clone, Debug)]
-pub enum Event<E: std::error::Error> {
+pub enum Event<E: Error> {
     Connected(SocketAddr),
     Disconnected,
     Error(E),
@@ -27,13 +29,13 @@ pub enum Event<E: std::error::Error> {
 }
 
 #[async_trait]
-pub trait Control<E: std::error::Error>: Send + Clone {
+pub trait Control<E: Error>: Send + Clone {
     async fn shutdown(&self) -> Result<(), E>;
     async fn send(&self, msg: Message) -> Result<(), E>;
 }
 
 #[async_trait]
-pub trait Impl<E: std::error::Error + Clone, C: Control<E> + Send + Clone>: Send {
+pub trait Impl<E: Error, C: Control<E> + Send + Clone>: Send {
     async fn connect(&mut self) -> Result<(), E>;
     fn observer(&mut self) -> Result<UnboundedReceiver<Event<E>>, E>;
     fn control(&self) -> C;

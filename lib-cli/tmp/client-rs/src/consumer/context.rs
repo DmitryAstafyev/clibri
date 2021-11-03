@@ -1,6 +1,6 @@
 use super::implementation::{controller, protocol, Consumer};
-use fiber_transport_client::errors::Error as ClientError;
-use thiserror::Error;
+use chrono::{DateTime, Local, TimeZone};
+use fiber::client;
 use tokio::{select, task::spawn};
 use tokio_util::sync::CancellationToken;
 
@@ -37,23 +37,24 @@ impl Context {
             shutdown: CancellationToken::new(),
         }
     }
-    pub async fn listen(&self, username: String, mut consumer: Consumer<ClientError>) {
+    pub async fn listen<E: client::Error>(&self, username: String, mut consumer: Consumer<E>) {
         let shutdown = self.shutdown.clone();
         spawn(async move {
             if let Err(err) = select! {
                 res = async {
                     loop {
                         if let Some(input) = stdin::next_line(shutdown.child_token()).await? {
+                            let msg = input.trim().to_owned();
                             match consumer
                                 .request_message(protocol::Message::Request {
                                     user: username.clone(),
-                                    message: input.to_owned(),
+                                    message: msg.clone(),
                                 })
                                 .await
                             {
                                 Ok(response) => match response {
                                     controller::RequestMessageResponse::Accepted(_) => {
-                                        println!("{}: {}", username, input);
+                                        println!("[{}] {}: {}", Local::now().format("%H:%M:%S"), username, msg);
                                     }
                                     controller::RequestMessageResponse::Denied(_) => {
                                         eprintln!("[ERROR]: message is rejected");
@@ -91,5 +92,10 @@ impl Context {
     pub fn shutdown(&self) {
         println!("chat is shutdown for you");
         self.shutdown.cancel()
+    }
+
+    pub fn get_localtime(&self, timestamp: u64) -> String {
+        let dt: DateTime<Local> = Local.timestamp(timestamp as i64, 0);
+        dt.format("%H:%M:%S").to_string()
     }
 }

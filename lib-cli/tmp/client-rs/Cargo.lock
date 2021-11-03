@@ -142,6 +142,7 @@ name = "fiber_client_rs"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "chrono",
  "fiber",
  "fiber_transport_client",
  "futures",
