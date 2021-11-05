@@ -21,6 +21,7 @@ use tokio::{
     },
     task::spawn,
 };
+use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 pub mod hash {
@@ -43,6 +44,7 @@ pub enum MergedClientChannel<E: client::Error> {
 pub enum Emitter<E: client::Error> {
     Connected,
     Disconnected,
+    Shutdown(Option<ConsumerError<E>>),
     Error(ConsumerError<E>),
     EventsMessage(protocol::Events::Message),
     EventsUserConnected(protocol::Events::UserConnected),
@@ -71,59 +73,131 @@ where
         channel(2);
     let api = Api::new(tx_client_api, tx_auth.clone());
     let consumer = Consumer::new(api.clone());
-    let shutdown = api.get_shutdown_token();
-    let consumer_cl = consumer.clone();
+    let shutdown_token = api.get_shutdown_token();
+    let emitter_task_canceler = CancellationToken::new();
+    let emitter_task_canceler_caller = emitter_task_canceler.clone();
+    let emitter_consumer = consumer.clone();
+    spawn(async move {
+        debug!(target: logs::targets::CONSUMER, "emitter thread is started");
+        consumer_emitter_task::<E>(
+            rx_consumer_event,
+            emitter_consumer,
+            context,
+            emitter_task_canceler,
+        )
+        .await;
+        debug!(
+            target: logs::targets::CONSUMER,
+            "emitter thread is finished"
+        );
+    });
     spawn(async move {
         debug!(target: logs::targets::CONSUMER, "main thread is started");
-        select! {
-            res = client_messages_task::<E>(rx_client_events, tx_consumer_event, rx_auth, tx_auth.clone(), api.clone(), options) => {
-            },
-            res = client_api_task::<E, Ctrl>(client_control, api.clone(), tx_auth, rx_client_api) => {
-            },
-            res = consumer_emitter_task::<E>(rx_consumer_event, consumer_cl, context) => {
-            },
+        let error: Option<ConsumerError<E>> = match select! {
+            res = client_messages_task::<E>(rx_client_events, tx_consumer_event.clone(), rx_auth, tx_auth.clone(), api.clone(), options) => res,
+            res = client_api_task::<E, Ctrl>(client_control.clone(), api.clone(), tx_auth, rx_client_api) => res,
             res = client.connect() => {
+                if let Err(err) = res {
+                    Err(ConsumerError::Client(err))
+                } else {
+                    Ok(())
+                }
             },
-            _ = shutdown.cancelled() => {
+            _ = shutdown_token.cancelled() => {
+                if let Err(err) = client_control.shutdown().await {
+                    error!(
+                        target: logs::targets::CONSUMER,
+                        "client is shutdown with error: {}", err
+                    );
+                }
+                Ok(())
             },
+        } {
+            Ok(_) => None,
+            Err(err) => Some(err),
         };
+        if let Err(err) = tx_consumer_event.send(Emitter::Shutdown(error)).await {
+            warn!(
+                target: logs::targets::CONSUMER,
+                "fail to trigger Emitter::Shutdown; error: {}", err
+            );
+        }
+        emitter_task_canceler_caller.cancel();
         debug!(target: logs::targets::CONSUMER, "main thread is finished");
     });
     Ok(consumer)
 }
 
+// async fn consumer_task<E>() {
+//     debug!(target: logs::targets::CONSUMER, "main thread is started");
+//     let error: Option<ConsumerError<E>> = match select! {
+//         res = client_messages_task::<E>(rx_client_events, tx_consumer_event.clone(), rx_auth, tx_auth.clone(), api.clone(), options) => res,
+//         res = client_api_task::<E, Ctrl>(client_control, api.clone(), tx_auth, rx_client_api) => res,
+//         res = client.connect() => {
+//             if let Err(err) = res {
+//                 Err(ConsumerError::Client(err))
+//             } else {
+//                 Ok(())
+//             }
+//         },
+//         _ = shutdown.cancelled() => {
+//             Ok(())
+//         },
+//     } {
+//         Ok(_) => None,
+//         Err(err) => Some(err),
+//     };
+//     if let Err(err) = tx_consumer_event.send(Emitter::Shutdown(error)).await {
+//         warn!(
+//             target: logs::targets::CONSUMER,
+//             "fail to trigger Emitter::Shutdown; error: {}", err
+//         );
+//     }
+//     emitter_task_canceler_caller.cancel();
+//     debug!(target: logs::targets::CONSUMER, "main thread is finished");
+// }
+
 async fn consumer_emitter_task<E>(
     mut rx_consumer_event: Receiver<Emitter<E>>,
-    mut consumer: Consumer<E>,
+    consumer: Consumer<E>,
     mut context: Context,
-) -> Result<(), ConsumerError<E>>
-where
+    cancel: CancellationToken,
+) where
     E: client::Error,
 {
-    while let Some(msg) = rx_consumer_event.recv().await {
-        match msg {
-            Emitter::Error(err) => {
-                warn!(target: logs::targets::CONSUMER, "{}", err);
-                events::event_error::handler::<E>(err, &mut context, consumer.clone()).await;
+    select! {
+        _ = async {
+            while let Some(msg) = rx_consumer_event.recv().await {
+                match msg {
+                    Emitter::Error(err) => {
+                        warn!(target: logs::targets::CONSUMER, "{}", err);
+                        events::event_error::handler::<E>(err, &mut context, consumer.clone()).await;
+                    }
+                    Emitter::Connected => {
+                        events::event_connected::handler(&mut context, consumer.clone()).await;
+                    }
+                    Emitter::Disconnected => {
+                        events::event_disconnected::handler(&mut context, consumer.clone()).await;
+                    }
+                    Emitter::Shutdown(err) => {
+                        events::event_shutdown::handler(err, &mut context, consumer.clone()).await;
+                    }
+                    Emitter::EventsMessage(msg) => {
+                        broadcasts::events_message::handler(msg, &mut context, consumer.clone()).await;
+                    }
+                    Emitter::EventsUserConnected(msg) => {
+                        broadcasts::events_connected::handler(msg, &mut context, consumer.clone()).await;
+                    }
+                    Emitter::EventsUserDisconnected(msg) => {
+                        broadcasts::events_disconnected::handler(msg, &mut context, consumer.clone()).await;
+                    }
+                };
             }
-            Emitter::Connected => {
-                events::event_connected::handler(&mut context, consumer.clone()).await;
-            }
-            Emitter::Disconnected => {
-                events::event_disconnected::handler(&mut context, consumer.clone()).await;
-            }
-            Emitter::EventsMessage(msg) => {
-                broadcasts::events_message::handler(msg, &mut context, consumer.clone()).await;
-            }
-            Emitter::EventsUserConnected(msg) => {
-                broadcasts::events_connected::handler(msg, &mut context, consumer.clone()).await;
-            }
-            Emitter::EventsUserDisconnected(msg) => {
-                broadcasts::events_disconnected::handler(msg, &mut context, consumer.clone()).await;
-            }
-        };
-    }
-    Ok(())
+        } => {},
+        _ = cancel.cancelled() => {
+
+        },
+    };
 }
 
 async fn client_api_task<E, Ctrl>(
@@ -131,7 +205,8 @@ async fn client_api_task<E, Ctrl>(
     api: Api<E>,
     tx_auth: Sender<Auth<E>>,
     mut rx_client_api: UnboundedReceiver<Channel>,
-) where
+) -> Result<(), ConsumerError<E>>
+where
     E: client::Error,
     Ctrl: client::Control<E> + Send + Sync + Clone,
 {
@@ -210,6 +285,7 @@ async fn client_api_task<E, Ctrl>(
             }
         }
     }
+    Ok(())
 }
 
 async fn emit_error<E>(err: ConsumerError<E>, tx_consumer_event: &Sender<Emitter<E>>)
