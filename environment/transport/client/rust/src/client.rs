@@ -264,6 +264,22 @@ impl Client {
         }
         result
     }
+
+    fn reinit(&mut self) {
+        let (tx_sender, rx_sender): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
+            unbounded_channel();
+        let (tx_events, rx_events): (
+            UnboundedSender<Event<Error>>,
+            UnboundedReceiver<Event<Error>>,
+        ) = unbounded_channel();
+        self.tx_events = tx_events;
+        self.rx_events = Some(rx_events);
+        self.rx_sender = Some(rx_sender);
+        self.control = Control {
+            tx_sender,
+            shutdown: CancellationToken::new(),
+        };
+    }
 }
 
 #[async_trait]
@@ -296,6 +312,7 @@ impl Impl<Error, Control> for Client {
             );
         }
         self.control.shutdown().await?;
+        self.reinit();
         res
     }
 

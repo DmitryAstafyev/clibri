@@ -62,21 +62,35 @@ where
     Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
 {
     env::logs::init();
-    debug!(target: logs::targets::CONSUMER, "attempt to connect");
+    let (consumer, done_token) = listen(client, context, options).await?;
+    Ok(consumer)
+}
+
+async fn listen<C, E, Ctrl>(
+    mut client: C,
+    context: Context,
+    options: Options,
+) -> Result<(Consumer<E>, CancellationToken), ConsumerError<E>>
+where
+    C: 'static + client::Impl<E, Ctrl>,
+    E: client::Error,
+    Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
+{
     let client_control = client.control();
     let rx_client_events = client.observer().map_err(ConsumerError::Client)?;
-    debug!(target: logs::targets::CONSUMER, "connected");
     let (tx_client_api, rx_client_api): (UnboundedSender<Channel>, UnboundedReceiver<Channel>) =
         unbounded_channel();
     let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(2);
     let (tx_consumer_event, rx_consumer_event): (Sender<Emitter<E>>, Receiver<Emitter<E>>) =
         channel(2);
+    let done_token = CancellationToken::new();
     let api = Api::new(tx_client_api, tx_auth.clone());
     let consumer = Consumer::new(api.clone());
     let shutdown_token = api.get_shutdown_token();
     let emitter_task_canceler = CancellationToken::new();
     let emitter_task_canceler_caller = emitter_task_canceler.clone();
     let emitter_consumer = consumer.clone();
+    let emitter_task_done = done_token.clone();
     spawn(async move {
         debug!(target: logs::targets::CONSUMER, "emitter thread is started");
         consumer_emitter_task::<E>(
@@ -90,6 +104,7 @@ where
             target: logs::targets::CONSUMER,
             "emitter thread is finished"
         );
+        emitter_task_done.cancel();
     });
     spawn(async move {
         debug!(target: logs::targets::CONSUMER, "main thread is started");
@@ -125,37 +140,8 @@ where
         emitter_task_canceler_caller.cancel();
         debug!(target: logs::targets::CONSUMER, "main thread is finished");
     });
-    Ok(consumer)
+    Ok((consumer, done_token))
 }
-
-// async fn consumer_task<E>() {
-//     debug!(target: logs::targets::CONSUMER, "main thread is started");
-//     let error: Option<ConsumerError<E>> = match select! {
-//         res = client_messages_task::<E>(rx_client_events, tx_consumer_event.clone(), rx_auth, tx_auth.clone(), api.clone(), options) => res,
-//         res = client_api_task::<E, Ctrl>(client_control, api.clone(), tx_auth, rx_client_api) => res,
-//         res = client.connect() => {
-//             if let Err(err) = res {
-//                 Err(ConsumerError::Client(err))
-//             } else {
-//                 Ok(())
-//             }
-//         },
-//         _ = shutdown.cancelled() => {
-//             Ok(())
-//         },
-//     } {
-//         Ok(_) => None,
-//         Err(err) => Some(err),
-//     };
-//     if let Err(err) = tx_consumer_event.send(Emitter::Shutdown(error)).await {
-//         warn!(
-//             target: logs::targets::CONSUMER,
-//             "fail to trigger Emitter::Shutdown; error: {}", err
-//         );
-//     }
-//     emitter_task_canceler_caller.cancel();
-//     debug!(target: logs::targets::CONSUMER, "main thread is finished");
-// }
 
 async fn consumer_emitter_task<E>(
     mut rx_consumer_event: Receiver<Emitter<E>>,
