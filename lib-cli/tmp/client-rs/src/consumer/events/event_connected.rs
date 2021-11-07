@@ -2,6 +2,7 @@ use super::{controller, protocol, Consumer, Context};
 use fiber::client;
 
 pub async fn handler<E: client::Error>(context: &mut Context, mut consumer: Consumer<E>) {
+    context.reinit();
     println!("Consumer is connected.");
     println!("Please type your login:");
     let username = match context.get_username().await {

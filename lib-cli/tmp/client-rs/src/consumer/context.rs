@@ -29,44 +29,52 @@ mod stdin {
 
 pub struct Context {
     shutdown: CancellationToken,
+    username: String,
 }
 
 impl Context {
     pub fn new() -> Self {
         Context {
             shutdown: CancellationToken::new(),
+            username: String::new(),
         }
+    }
+    pub fn reinit(&mut self) {
+        self.shutdown = CancellationToken::new();
     }
     pub async fn listen<E: client::Error>(&self, username: String, mut consumer: Consumer<E>) {
         let shutdown = self.shutdown.clone();
         spawn(async move {
+            println!("Start chat");
+            println!("{}[2J", 27 as char);
+            println!("Type your message and press ENTER to post");
             if let Err(err) = select! {
                 res = async {
-                    loop {
-                        if let Some(input) = stdin::next_line(shutdown.child_token()).await? {
-                            let msg = input.trim().to_owned();
-                            match consumer
-                                .request_message(protocol::Message::Request {
-                                    user: username.clone(),
-                                    message: msg.clone(),
-                                })
-                                .await
-                            {
-                                Ok(response) => match response {
-                                    controller::RequestMessageResponse::Accepted(_) => {
-                                        println!("[{}] {}: {}", Local::now().format("%H:%M:%S"), username, msg);
-                                    }
-                                    controller::RequestMessageResponse::Denied(_) => {
-                                        eprintln!("[ERROR]: message is rejected");
-                                    }
-                                    controller::RequestMessageResponse::Err(msg) => {
-                                        eprintln!("[ERROR]: message is rejected: {}", msg.error);
-                                    }
-                                },
-                                Err(err) => {
-                                    eprintln!("{}", err);
-                                    break;
+                    while let Some(input) = stdin::next_line(shutdown.child_token()).await? {
+                        let msg = input.trim().to_owned();
+                        println!("{}[2A", 27 as char);
+                        println!("{}[2K", 27 as char);
+                        match consumer
+                            .request_message(protocol::Message::Request {
+                                user: username.clone(),
+                                message: msg.clone(),
+                            })
+                            .await
+                        {
+                            Ok(response) => match response {
+                                controller::RequestMessageResponse::Accepted(_) => {
+                                    println!("[{}] {}: {}", Local::now().format("%H:%M:%S"), username, msg);
                                 }
+                                controller::RequestMessageResponse::Denied(_) => {
+                                    eprintln!("[ERROR]: message is rejected");
+                                }
+                                controller::RequestMessageResponse::Err(msg) => {
+                                    eprintln!("[ERROR]: message is rejected: {}", msg.error);
+                                }
+                            },
+                            Err(err) => {
+                                eprintln!("{}", err);
+                                break;
                             }
                         }
                     }
@@ -78,15 +86,19 @@ impl Context {
             } {
                 eprintln!("{}", err);
             }
+            println!("Stop chat");
         });
     }
 
-    pub async fn get_username(&self) -> Result<String, String> {
-        if let Some(input) = stdin::next_line(self.shutdown.child_token()).await? {
-            Ok(input.to_owned())
-        } else {
-            Err(String::from("No input"))
+    pub async fn get_username(&mut self) -> Result<String, String> {
+        if self.username.is_empty() {
+            if let Some(input) = stdin::next_line(self.shutdown.child_token()).await? {
+                self.username = input.to_owned();
+            } else {
+                return Err(String::from("No input"));
+            }
         }
+        Ok(self.username.clone())
     }
 
     pub fn shutdown(&self) {

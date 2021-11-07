@@ -143,9 +143,7 @@ impl<E: client::Error> Consumer<E> {
         mut request: protocol::UserLogin::Request,
     ) -> Result<RequestUserLoginResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
-        println!("sequence: {:?}", sequence);
         let uuid = self.api.uuid_as_string().await?;
-        println!("uuid: {:?}", uuid);
         let message = self
             .api
             .request(

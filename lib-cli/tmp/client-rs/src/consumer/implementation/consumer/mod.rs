@@ -215,11 +215,17 @@ where
                 res = client.connect() => {
                     if let Err(err) = res {
                         if let Err(err) = tx_consumer_event.send(Emitter::Error(ConsumerError::Client(err))).await {
-                            warn!(
+                            error!(
                                 target: logs::targets::CONSUMER,
                                 "fail to trigger Emitter::Error; error: {}", err
                             );
                         }
+                    }
+                    if let Err(err) = tx_consumer_event.send(Emitter::Disconnected).await {
+                        error!(
+                            target: logs::targets::CONSUMER,
+                            "fail emit disconnected because: {}", err
+                        );
                     }
                     Ok(Some(client))
                 },
@@ -545,7 +551,6 @@ where
                                         "fail emit disconnected because: {}", err
                                     );
                                 }
-                                // TODO: Emit disconnected. Stratagy: reconnect or wait. With event send maybe trigger to reconnect (based on stratagy)
                             }
                             client::Event::Error(err) => {
                                 emit_error::<E>(ConsumerError::Client(err), &tx_consumer_event).await;
