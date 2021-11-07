@@ -34,6 +34,5 @@ async fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?
         .get_shutdown_token();
     shutdown.cancelled().await;
-    println!(">>>>>>>>>>>>>>>>> EXIT");
     Ok(())
 }

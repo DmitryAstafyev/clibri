@@ -146,9 +146,8 @@ where
     let rx_client_events = client
         .observer()
         .map_err(|e| (shutdown_token.clone(), ConsumerError::Client(e)))?;
-    let emitter_task_canceler = CancellationToken::new();
-    let getter_task_canceler = emitter_task_canceler.clone();
-    let emitter_task_canceler_caller = emitter_task_canceler.clone();
+    let getter_task_canceler = CancellationToken::new();
+    let getter_task_canceler_caller = getter_task_canceler.clone();
     let getter_consumer = consumer.clone();
     let emitter_consumer = consumer.clone();
     debug!(target: logs::targets::CONSUMER, "listener task is started");
@@ -179,13 +178,8 @@ where
                 target: logs::targets::CONSUMER,
                 "emitter subtask is started"
             );
-            let context = consumer_emitter_task::<E>(
-                rx_consumer_event,
-                emitter_consumer,
-                context,
-                emitter_task_canceler,
-            )
-            .await;
+            let context =
+                consumer_emitter_task::<E>(rx_consumer_event, emitter_consumer, context).await;
             debug!(
                 target: logs::targets::CONSUMER,
                 "emitter subtask is finished"
@@ -250,7 +244,7 @@ where
                     "fail to trigger Emitter::Shutdown; error: {}", err
                 );
             }
-            emitter_task_canceler_caller.cancel();
+            getter_task_canceler_caller.cancel();
             debug!(
                 target: logs::targets::CONSUMER,
                 "listener subtask is finished"
@@ -275,7 +269,6 @@ async fn consumer_emitter_task<E>(
     mut rx_consumer_event: Receiver<Emitter<E>>,
     consumer: Consumer<E>,
     mut context: Context,
-    cancel: CancellationToken,
 ) -> Context
 where
     E: client::Error,
@@ -284,39 +277,32 @@ where
         target: logs::targets::CONSUMER,
         "consumer_emitter_task: started"
     );
-    select! {
-        _ = async {
-            while let Some(msg) = rx_consumer_event.recv().await {
-                match msg {
-                    Emitter::Error(err) => {
-                        warn!(target: logs::targets::CONSUMER, "{}", err);
-                        events::event_error::handler::<E>(err, &mut context, consumer.clone()).await;
-                    }
-                    Emitter::Connected => {
-                        events::event_connected::handler(&mut context, consumer.clone()).await;
-                    }
-                    Emitter::Disconnected => {
-                        events::event_disconnected::handler(&mut context, consumer.clone()).await;
-                    }
-                    Emitter::Shutdown(err) => {
-                        events::event_shutdown::handler(err, &mut context, consumer.clone()).await;
-                    }
-                    Emitter::EventsMessage(msg) => {
-                        broadcasts::events_message::handler(msg, &mut context, consumer.clone()).await;
-                    }
-                    Emitter::EventsUserConnected(msg) => {
-                        broadcasts::events_connected::handler(msg, &mut context, consumer.clone()).await;
-                    }
-                    Emitter::EventsUserDisconnected(msg) => {
-                        broadcasts::events_disconnected::handler(msg, &mut context, consumer.clone()).await;
-                    }
-                };
+    while let Some(msg) = rx_consumer_event.recv().await {
+        match msg {
+            Emitter::Error(err) => {
+                warn!(target: logs::targets::CONSUMER, "{}", err);
+                events::event_error::handler::<E>(err, &mut context, consumer.clone()).await;
             }
-        } => {},
-        _ = cancel.cancelled() => {
-
-        },
-    };
+            Emitter::Connected => {
+                events::event_connected::handler(&mut context, consumer.clone()).await;
+            }
+            Emitter::Disconnected => {
+                events::event_disconnected::handler(&mut context, consumer.clone()).await;
+            }
+            Emitter::Shutdown(err) => {
+                events::event_shutdown::handler(err, &mut context, consumer.clone()).await;
+            }
+            Emitter::EventsMessage(msg) => {
+                broadcasts::events_message::handler(msg, &mut context, consumer.clone()).await;
+            }
+            Emitter::EventsUserConnected(msg) => {
+                broadcasts::events_connected::handler(msg, &mut context, consumer.clone()).await;
+            }
+            Emitter::EventsUserDisconnected(msg) => {
+                broadcasts::events_disconnected::handler(msg, &mut context, consumer.clone()).await;
+            }
+        };
+    }
     trace!(
         target: logs::targets::CONSUMER,
         "consumer_emitter_task: finished"
