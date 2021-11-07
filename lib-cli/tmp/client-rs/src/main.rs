@@ -28,7 +28,12 @@ async fn main() -> Result<(), String> {
     )
     .await
     .map_err(|e| e.to_string())?;
-    let shutdown = consumer.get_shutdown_token();
+    let shutdown = consumer
+        .get()
+        .await
+        .map_err(|e| e.to_string())?
+        .get_shutdown_token();
     shutdown.cancelled().await;
+    println!(">>>>>>>>>>>>>>>>> EXIT");
     Ok(())
 }

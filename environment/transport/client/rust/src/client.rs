@@ -14,7 +14,7 @@ use futures::{
     SinkExt, StreamExt,
 };
 use hyper::{Client as HttpClient, StatusCode, Uri};
-use log::{debug, error};
+use log::{debug, error, warn};
 use std::net::SocketAddr;
 use tokio::{
     net::TcpStream,
@@ -279,6 +279,7 @@ impl Client {
             tx_sender,
             shutdown: CancellationToken::new(),
         };
+        debug!(target: logs::targets::CLIENT, "client has been reinited");
     }
 }
 
@@ -286,13 +287,31 @@ impl Client {
 impl Impl<Error, Control> for Client {
     async fn connect(&mut self) -> Result<(), Error> {
         env::logs::init();
+        debug!(target: logs::targets::CLIENT, "client is started");
         let cancel = self.control.get_shutdown_token();
         let socket = match self.options.connection {
             ConnectionType::Direct(addr) => {
-                Self::direct_connection(addr, self.tx_events.clone()).await?
+                Self::direct_connection(addr, self.tx_events.clone()).await
             }
             ConnectionType::Distributor(addr) => {
-                Self::distributor_connection(addr, self.tx_events.clone()).await?
+                Self::distributor_connection(addr, self.tx_events.clone()).await
+            }
+        };
+        let socket = match socket {
+            Ok(socket) => socket,
+            Err(err) => {
+                self.reinit();
+                warn!(
+                    target: logs::targets::CLIENT,
+                    "client is finished with error: {}", err
+                );
+                if let Err(err) = self.tx_events.send(Event::Error(err.clone())) {
+                    error!(
+                        target: logs::targets::CLIENT,
+                        "fail to send event Error; error: {:?}", err
+                    );
+                }
+                return Err(err);
             }
         };
         let (writer, reader) = socket.split();
@@ -313,6 +332,7 @@ impl Impl<Error, Control> for Client {
         }
         self.control.shutdown().await?;
         self.reinit();
+        debug!(target: logs::targets::CLIENT, "client is finished");
         res
     }
 

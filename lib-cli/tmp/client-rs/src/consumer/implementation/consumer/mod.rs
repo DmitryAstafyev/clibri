@@ -14,12 +14,13 @@ use protocol::PackingStruct;
 use std::collections::HashMap;
 use std::str::FromStr;
 use tokio::{
-    select,
+    join, select,
     sync::{
         mpsc::{channel, unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
     task::spawn,
+    time::{sleep, Duration},
 };
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
@@ -51,96 +52,217 @@ pub enum Emitter<E: client::Error> {
     EventsUserDisconnected(protocol::Events::UserDisconnected),
 }
 
+pub struct ConsumerGetter<E: client::Error> {
+    tx_consumer_getter: UnboundedSender<oneshot::Sender<Consumer<E>>>,
+}
+
+impl<E: client::Error> ConsumerGetter<E> {
+    pub async fn get(&self) -> Result<Consumer<E>, ConsumerError<E>> {
+        let (tx_response, rx_response): (
+            oneshot::Sender<Consumer<E>>,
+            oneshot::Receiver<Consumer<E>>,
+        ) = oneshot::channel();
+        self.tx_consumer_getter
+            .send(tx_response)
+            .map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+        rx_response
+            .await
+            .map_err(|e| ConsumerError::APIChannel(e.to_string()))
+    }
+}
+
 pub async fn connect<C, E, Ctrl>(
-    mut client: C,
+    client: C,
     context: Context,
     options: Options,
-) -> Result<Consumer<E>, ConsumerError<E>>
+) -> Result<ConsumerGetter<E>, ConsumerError<E>>
 where
     C: 'static + client::Impl<E, Ctrl>,
     E: client::Error,
     Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
 {
     env::logs::init();
-    let (consumer, done_token) = listen(client, context, options).await?;
-    Ok(consumer)
+    let (tx_consumer_getter, rx_consumer_getter): (
+        UnboundedSender<oneshot::Sender<Consumer<E>>>,
+        UnboundedReceiver<oneshot::Sender<Consumer<E>>>,
+    ) = unbounded_channel();
+    spawn(async move {
+        trace!(target: logs::targets::CONSUMER, "main thread: started");
+        let mut holder = Some((client, context, rx_consumer_getter));
+        while let Some((client, context, rx_consumer_getter)) = holder.take() {
+            holder = match listen(client, context, options.clone(), rx_consumer_getter).await {
+                Ok((client, context, rx_consumer_getter)) => {
+                    if let ReconnectionStrategy::Reconnect(timeout) = options.reconnection {
+                        debug!(
+                            target: logs::targets::CONSUMER,
+                            "reconnection in {} ms", timeout
+                        );
+                        sleep(Duration::from_millis(timeout)).await;
+                        Some((client, context, rx_consumer_getter))
+                    } else {
+                        debug!(target: logs::targets::CONSUMER, "reconnection is disabled");
+                        None
+                    }
+                }
+                Err((shutdown, err)) => {
+                    debug!(
+                        target: logs::targets::CONSUMER,
+                        "listener has been finished with error: {}", err
+                    );
+                    shutdown.cancel();
+                    None
+                }
+            };
+        }
+        trace!(target: logs::targets::CONSUMER, "main thread: finished");
+    });
+    Ok(ConsumerGetter { tx_consumer_getter })
 }
 
 async fn listen<C, E, Ctrl>(
     mut client: C,
     context: Context,
     options: Options,
-) -> Result<(Consumer<E>, CancellationToken), ConsumerError<E>>
+    mut rx_consumer_getter: UnboundedReceiver<oneshot::Sender<Consumer<E>>>,
+) -> Result<
+    (C, Context, UnboundedReceiver<oneshot::Sender<Consumer<E>>>),
+    (CancellationToken, ConsumerError<E>),
+>
 where
     C: 'static + client::Impl<E, Ctrl>,
     E: client::Error,
     Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
 {
-    let client_control = client.control();
-    let rx_client_events = client.observer().map_err(ConsumerError::Client)?;
     let (tx_client_api, rx_client_api): (UnboundedSender<Channel>, UnboundedReceiver<Channel>) =
         unbounded_channel();
     let (tx_auth, rx_auth): (Sender<Auth<E>>, Receiver<Auth<E>>) = channel(2);
     let (tx_consumer_event, rx_consumer_event): (Sender<Emitter<E>>, Receiver<Emitter<E>>) =
-        channel(2);
-    let done_token = CancellationToken::new();
+        channel(3);
     let api = Api::new(tx_client_api, tx_auth.clone());
     let consumer = Consumer::new(api.clone());
     let shutdown_token = api.get_shutdown_token();
+    let shutdown_token_out = api.get_shutdown_token();
+    let client_control = client.control();
+    let rx_client_events = client
+        .observer()
+        .map_err(|e| (shutdown_token.clone(), ConsumerError::Client(e)))?;
     let emitter_task_canceler = CancellationToken::new();
+    let getter_task_canceler = emitter_task_canceler.clone();
     let emitter_task_canceler_caller = emitter_task_canceler.clone();
+    let getter_consumer = consumer.clone();
     let emitter_consumer = consumer.clone();
-    let emitter_task_done = done_token.clone();
-    spawn(async move {
-        debug!(target: logs::targets::CONSUMER, "emitter thread is started");
-        consumer_emitter_task::<E>(
-            rx_consumer_event,
-            emitter_consumer,
-            context,
-            emitter_task_canceler,
-        )
-        .await;
-        debug!(
-            target: logs::targets::CONSUMER,
-            "emitter thread is finished"
-        );
-        emitter_task_done.cancel();
-    });
-    spawn(async move {
-        debug!(target: logs::targets::CONSUMER, "main thread is started");
-        let error: Option<ConsumerError<E>> = match select! {
-            res = client_messages_task::<E>(rx_client_events, tx_consumer_event.clone(), rx_auth, tx_auth.clone(), api.clone(), options) => res,
-            res = client_api_task::<E, Ctrl>(client_control.clone(), api.clone(), tx_auth, rx_client_api) => res,
-            res = client.connect() => {
-                if let Err(err) = res {
-                    Err(ConsumerError::Client(err))
-                } else {
-                    Ok(())
-                }
-            },
-            _ = shutdown_token.cancelled() => {
-                if let Err(err) = client_control.shutdown().await {
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "client is shutdown with error: {}", err
-                    );
-                }
-                Ok(())
-            },
-        } {
-            Ok(_) => None,
-            Err(err) => Some(err),
-        };
-        if let Err(err) = tx_consumer_event.send(Emitter::Shutdown(error)).await {
-            warn!(
+    debug!(target: logs::targets::CONSUMER, "listener task is started");
+    let (rx_consumer_getter, context, result) = join!(
+        async move {
+            debug!(target: logs::targets::CONSUMER, "getter subtask is started");
+            select! {
+                _ = async {
+                    while let Some(tx_response) = rx_consumer_getter.recv().await {
+                        if tx_response.send(getter_consumer.clone()).is_err() {
+                            warn!(
+                                target: logs::targets::CONSUMER,
+                                "fail to send consumer instance"
+                            );
+                        }
+                    }
+                } => {},
+                _ = getter_task_canceler.cancelled() => {}
+            };
+            debug!(
                 target: logs::targets::CONSUMER,
-                "fail to trigger Emitter::Shutdown; error: {}", err
+                "getter subtask is finished"
             );
+            rx_consumer_getter
+        },
+        async move {
+            debug!(
+                target: logs::targets::CONSUMER,
+                "emitter subtask is started"
+            );
+            let context = consumer_emitter_task::<E>(
+                rx_consumer_event,
+                emitter_consumer,
+                context,
+                emitter_task_canceler,
+            )
+            .await;
+            debug!(
+                target: logs::targets::CONSUMER,
+                "emitter subtask is finished"
+            );
+            context
+        },
+        async move {
+            debug!(
+                target: logs::targets::CONSUMER,
+                "listener subtask is started"
+            );
+            let result: Result<Option<C>, ConsumerError<E>> = select! {
+                res = client_messages_task::<E>(rx_client_events, tx_consumer_event.clone(), rx_auth, tx_auth.clone(), api.clone(), options) => {
+                    if let Err(err) = res {
+                        Err(err)
+                    } else {
+                        Ok(None)
+                    }
+                },
+                res = client_api_task::<E, Ctrl>(client_control.clone(), api.clone(), tx_auth, rx_client_api) => {
+                    if let Err(err) = res {
+                        Err(err)
+                    } else {
+                        Ok(None)
+                    }
+                },
+                res = client.connect() => {
+                    if let Err(err) = res {
+                        if let Err(err) = tx_consumer_event.send(Emitter::Error(ConsumerError::Client(err))).await {
+                            warn!(
+                                target: logs::targets::CONSUMER,
+                                "fail to trigger Emitter::Error; error: {}", err
+                            );
+                        }
+                    }
+                    Ok(Some(client))
+                },
+                _ = shutdown_token.cancelled() => {
+                    if let Err(err) = client_control.shutdown().await {
+                        error!(
+                            target: logs::targets::CONSUMER,
+                            "client is shutdown with error: {}", err
+                        );
+                    }
+                    Ok(None)
+                },
+            };
+            let error: Option<ConsumerError<E>> = if let Err(err) = result.as_ref() {
+                Some(err.clone())
+            } else {
+                None
+            };
+            if let Err(err) = tx_consumer_event.send(Emitter::Shutdown(error)).await {
+                warn!(
+                    target: logs::targets::CONSUMER,
+                    "fail to trigger Emitter::Shutdown; error: {}", err
+                );
+            }
+            emitter_task_canceler_caller.cancel();
+            debug!(
+                target: logs::targets::CONSUMER,
+                "listener subtask is finished"
+            );
+            result
         }
-        emitter_task_canceler_caller.cancel();
-        debug!(target: logs::targets::CONSUMER, "main thread is finished");
-    });
-    Ok((consumer, done_token))
+    );
+    debug!(target: logs::targets::CONSUMER, "listener task is finished");
+    match result {
+        Ok(client) => {
+            if let Some(client) = client {
+                Ok((client, context, rx_consumer_getter))
+            } else {
+                Err((shutdown_token_out, ConsumerError::NoClient))
+            }
+        }
+        Err(err) => Err((shutdown_token_out, err)),
+    }
 }
 
 async fn consumer_emitter_task<E>(
@@ -148,9 +270,14 @@ async fn consumer_emitter_task<E>(
     consumer: Consumer<E>,
     mut context: Context,
     cancel: CancellationToken,
-) where
+) -> Context
+where
     E: client::Error,
 {
+    trace!(
+        target: logs::targets::CONSUMER,
+        "consumer_emitter_task: started"
+    );
     select! {
         _ = async {
             while let Some(msg) = rx_consumer_event.recv().await {
@@ -184,6 +311,11 @@ async fn consumer_emitter_task<E>(
 
         },
     };
+    trace!(
+        target: logs::targets::CONSUMER,
+        "consumer_emitter_task: finished"
+    );
+    context
 }
 
 async fn client_api_task<E, Ctrl>(
@@ -196,81 +328,89 @@ where
     E: client::Error,
     Ctrl: client::Control<E> + Send + Sync + Clone,
 {
+    trace!(target: logs::targets::CONSUMER, "client_api_task: started");
     let mut pending: HashMap<u32, oneshot::Sender<protocol::AvailableMessages>> = HashMap::new();
     let mut sequence: u32 = 10;
-    while let Some(command) = rx_client_api.recv().await {
-        match command {
-            Channel::Send(buffer) => {
-                if let Err(err) = client.send(client::Message::Binary(buffer)).await {
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "fail to send data: {}", err
-                    );
-                    api.shutdown();
-                }
-            }
-            Channel::Request((sequence, buffer, tx_response)) => {
-                if pending.contains_key(&sequence) {
-                    // Error
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "sequence #{} already has pending sender behind", sequence
-                    );
-                }
-                pending.insert(sequence, tx_response);
-                if let Err(err) = client.send(client::Message::Binary(buffer)).await {
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "fail to send data: {}", err
-                    );
-                    api.shutdown();
-                }
-            }
-            Channel::AcceptIncome((sequence, msg, tx_response)) => {
-                let accepted = if let Some(response) = pending.remove(&sequence) {
-                    if let Err(err) = response.send(msg) {
-                        error!(
-                            target: logs::targets::CONSUMER,
-                            "fail to send pending response: {:?}", err
-                        );
-                        api.shutdown();
+    let shutdown = api.get_shutdown_token();
+    select! {
+        _ = async move {
+            while let Some(command) = rx_client_api.recv().await {
+                match command {
+                    Channel::Send(buffer) => {
+                        if let Err(err) = client.send(client::Message::Binary(buffer)).await {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail to send data: {}", err
+                            );
+                            api.shutdown();
+                        }
                     }
-                    true
-                } else {
-                    false
-                };
-                if let Err(err) = tx_response.send(accepted) {
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "fail to send Channel::AcceptIncome response: {:?}", err
-                    );
-                    api.shutdown();
+                    Channel::Request((sequence, buffer, tx_response)) => {
+                        if pending.contains_key(&sequence) {
+                            // Error
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "sequence #{} already has pending sender behind", sequence
+                            );
+                        }
+                        pending.insert(sequence, tx_response);
+                        if let Err(err) = client.send(client::Message::Binary(buffer)).await {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail to send data: {}", err
+                            );
+                            api.shutdown();
+                        }
+                    }
+                    Channel::AcceptIncome((sequence, msg, tx_response)) => {
+                        let accepted = if let Some(response) = pending.remove(&sequence) {
+                            if let Err(err) = response.send(msg) {
+                                error!(
+                                    target: logs::targets::CONSUMER,
+                                    "fail to send pending response: {:?}", err
+                                );
+                                api.shutdown();
+                            }
+                            true
+                        } else {
+                            false
+                        };
+                        if let Err(err) = tx_response.send(accepted) {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail to send Channel::AcceptIncome response: {:?}", err
+                            );
+                            api.shutdown();
+                        }
+                    }
+                    Channel::Uuid(tx_response) => {
+                        if let Err(err) = tx_auth.send(Auth::GetUuid(tx_response)).await {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail to send Channel::Uuid response: {:?}", err
+                            );
+                            api.shutdown();
+                        }
+                    }
+                    Channel::Sequence(tx_response) => {
+                        sequence += 1;
+                        if sequence >= u32::MAX - 1 {
+                            sequence = 10;
+                        }
+                        if let Err(err) = tx_response.send(sequence) {
+                            error!(
+                                target: logs::targets::CONSUMER,
+                                "fail to send Channel::Sequence response: {:?}", err
+                            );
+                            api.shutdown();
+                        }
+                    }
                 }
             }
-            Channel::Uuid(tx_response) => {
-                if let Err(err) = tx_auth.send(Auth::GetUuid(tx_response)).await {
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "fail to send Channel::Uuid response: {:?}", err
-                    );
-                    api.shutdown();
-                }
-            }
-            Channel::Sequence(tx_response) => {
-                sequence += 1;
-                if sequence >= u32::MAX - 1 {
-                    sequence = 10;
-                }
-                if let Err(err) = tx_response.send(sequence) {
-                    error!(
-                        target: logs::targets::CONSUMER,
-                        "fail to send Channel::Sequence response: {:?}", err
-                    );
-                    api.shutdown();
-                }
-            }
-        }
-    }
+        } => {},
+        _ = shutdown.cancelled() => {},
+    };
+    trace!(target: logs::targets::CONSUMER, "client_api_task: finished");
     Ok(())
 }
 
@@ -304,140 +444,147 @@ where
     );
     let mut buffer = protocol::Buffer::new();
     let mut uuid: Option<Uuid> = None;
-    while let Some(msg) = select! {
-        msg = rx_client_event.recv() => msg.map(MergedClientChannel::Client),
-        msg = rx_auth.recv() => msg.map(MergedClientChannel::Auth),
-    } {
-        match msg {
-            MergedClientChannel::Client(msg) => {
-                trace!(target: logs::targets::CONSUMER, "client event: {:?}", msg);
+    let shutdown = api.get_shutdown_token();
+    let result = select! {
+        res = async move {
+            while let Some(msg) = select! {
+                msg = rx_client_event.recv() => msg.map(MergedClientChannel::Client),
+                msg = rx_auth.recv() => msg.map(MergedClientChannel::Auth),
+            } {
                 match msg {
-                    client::Event::Message(msg) => match msg {
-                        client::Message::Binary(income) => {
-                            trace!(
-                                target: logs::targets::CONSUMER,
-                                "has been received {} bytes",
-                                income.len()
-                            );
-                            match buffer.chunk(&income, None) {
-                                Ok(()) => {
-                                    while let Some(msg) = buffer.next() {
-                                        match api.accept(msg.header.sequence, msg.msg.clone()).await
-                                        {
-                                            Ok(accepted) => {
-                                                if accepted {
-                                                    continue;
-                                                }
-                                            }
-                                            Err(err) => {
-                                                emit_error::<E>(
-                                                        ConsumerError::Pending(format!("Fail to handle broadcast Events::Connect; error: {}", err)),
-                                                        &tx_consumer_event
-                                                    ).await;
-                                            }
-                                        };
-                                        match msg.msg {
-                                                protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::Message(msg)) => {
-                                                    if let Err(err) = tx_consumer_event.send(Emitter::EventsMessage(msg)).await {
-                                                        return Err(ConsumerError::APIChannel(err.to_string()));
+                    MergedClientChannel::Client(msg) => {
+                        trace!(target: logs::targets::CONSUMER, "client event: {:?}", msg);
+                        match msg {
+                            client::Event::Message(msg) => match msg {
+                                client::Message::Binary(income) => {
+                                    trace!(
+                                        target: logs::targets::CONSUMER,
+                                        "has been received {} bytes",
+                                        income.len()
+                                    );
+                                    match buffer.chunk(&income, None) {
+                                        Ok(()) => {
+                                            while let Some(msg) = buffer.next() {
+                                                match api.accept(msg.header.sequence, msg.msg.clone()).await
+                                                {
+                                                    Ok(accepted) => {
+                                                        if accepted {
+                                                            continue;
+                                                        }
                                                     }
-                                                },
-                                                protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserConnected(msg)) => {
-                                                    if let Err(err) = tx_consumer_event.send(Emitter::EventsUserConnected(msg)).await {
-                                                        return Err(ConsumerError::APIChannel(err.to_string()));
+                                                    Err(err) => {
+                                                        emit_error::<E>(
+                                                                ConsumerError::Pending(format!("Fail to handle broadcast Events::Connect; error: {}", err)),
+                                                                &tx_consumer_event
+                                                            ).await;
                                                     }
-                                                },
-                                                protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserDisconnected(msg)) => {
-                                                    if let Err(err) = tx_consumer_event.send(Emitter::EventsUserDisconnected(msg)).await {
-                                                        return Err(ConsumerError::APIChannel(err.to_string()));
+                                                };
+                                                match msg.msg {
+                                                        protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::Message(msg)) => {
+                                                            if let Err(err) = tx_consumer_event.send(Emitter::EventsMessage(msg)).await {
+                                                                return Err(ConsumerError::APIChannel(err.to_string()));
+                                                            }
+                                                        },
+                                                        protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserConnected(msg)) => {
+                                                            if let Err(err) = tx_consumer_event.send(Emitter::EventsUserConnected(msg)).await {
+                                                                return Err(ConsumerError::APIChannel(err.to_string()));
+                                                            }
+                                                        },
+                                                        protocol::AvailableMessages::Events(protocol::Events::AvailableMessages::UserDisconnected(msg)) => {
+                                                            if let Err(err) = tx_consumer_event.send(Emitter::EventsUserDisconnected(msg)).await {
+                                                                return Err(ConsumerError::APIChannel(err.to_string()));
+                                                            }
+                                                        },
+                                                        _ => {
+                                                            emit_error::<E>(
+                                                                ConsumerError::UnknownMessage(format!("header: {:?}", msg.header)),
+                                                                &tx_consumer_event
+                                                            ).await;
+                                                        }
                                                     }
-                                                },
-                                                _ => {
-                                                    emit_error::<E>(
-                                                        ConsumerError::UnknownMessage(format!("header: {:?}", msg.header)),
-                                                        &tx_consumer_event
-                                                    ).await;
-                                                }
                                             }
+                                        }
+                                        Err(err) => {
+                                            emit_error::<E>(
+                                                ConsumerError::BufferError(format!("{:?}", err)),
+                                                &tx_consumer_event,
+                                            )
+                                            .await;
+                                        }
                                     }
                                 }
-                                Err(err) => {
+                                smth => {
                                     emit_error::<E>(
-                                        ConsumerError::BufferError(format!("{:?}", err)),
+                                        ConsumerError::UnknownMessage(format!("{:?}", smth)),
                                         &tx_consumer_event,
                                     )
                                     .await;
                                 }
+                            },
+                            client::Event::Connected(_) => {
+                                let api_auth = api.clone();
+                                let options_auth = options.clone();
+                                let tx_auth_response_auth = tx_auth.clone();
+                                spawn(async move {
+                                    if let Err(err) = tx_auth_response_auth
+                                        .send(Auth::SetUuid(auth(api_auth, options_auth).await))
+                                        .await
+                                    {
+                                        error!(
+                                            target: logs::targets::CONSUMER,
+                                            "fail to send response for consumer auth: {}", err
+                                        );
+                                    }
+                                });
+                            }
+                            client::Event::Disconnected => {
+                                uuid = None;
+                                if let Err(err) = tx_consumer_event.send(Emitter::Disconnected).await {
+                                    error!(
+                                        target: logs::targets::CONSUMER,
+                                        "fail emit disconnected because: {}", err
+                                    );
+                                }
+                                // TODO: Emit disconnected. Stratagy: reconnect or wait. With event send maybe trigger to reconnect (based on stratagy)
+                            }
+                            client::Event::Error(err) => {
+                                emit_error::<E>(ConsumerError::Client(err), &tx_consumer_event).await;
                             }
                         }
-                        smth => {
-                            emit_error::<E>(
-                                ConsumerError::UnknownMessage(format!("{:?}", smth)),
-                                &tx_consumer_event,
-                            )
-                            .await;
+                    }
+                    MergedClientChannel::Auth(msg) => match msg {
+                        Auth::SetUuid(result) => match result {
+                            Ok(assigned_uuid) => {
+                                uuid =
+                                    Some(Uuid::from_str(&assigned_uuid).map_err(|_| ConsumerError::Uuid)?);
+                                if let Err(err) = tx_consumer_event.send(Emitter::Connected).await {
+                                    error!(
+                                        target: logs::targets::CONSUMER,
+                                        "fail emit connected because: {}", err
+                                    );
+                                }
+                            }
+                            Err(err) => {
+                                emit_error::<E>(err, &tx_consumer_event).await;
+                            }
+                        },
+                        Auth::GetUuid(tx_response) => {
+                            tx_response.send(uuid).map_err(|_| {
+                                ConsumerError::APIChannel(String::from("Fail to response on uuid request"))
+                            })?;
                         }
                     },
-                    client::Event::Connected(_) => {
-                        let api_auth = api.clone();
-                        let options_auth = options.clone();
-                        let tx_auth_response_auth = tx_auth.clone();
-                        spawn(async move {
-                            if let Err(err) = tx_auth_response_auth
-                                .send(Auth::SetUuid(auth(api_auth, options_auth).await))
-                                .await
-                            {
-                                error!(
-                                    target: logs::targets::CONSUMER,
-                                    "fail to send response for consumer auth: {}", err
-                                );
-                            }
-                        });
-                    }
-                    client::Event::Disconnected => {
-                        uuid = None;
-                        if let Err(err) = tx_consumer_event.send(Emitter::Disconnected).await {
-                            error!(
-                                target: logs::targets::CONSUMER,
-                                "fail emit disconnected because: {}", err
-                            );
-                        }
-                        // TODO: Emit disconnected. Stratagy: reconnect or wait. With event send maybe trigger to reconnect (based on stratagy)
-                    }
-                    client::Event::Error(err) => {
-                        emit_error::<E>(ConsumerError::Client(err), &tx_consumer_event).await;
-                    }
                 }
             }
-            MergedClientChannel::Auth(msg) => match msg {
-                Auth::SetUuid(result) => match result {
-                    Ok(assigned_uuid) => {
-                        uuid =
-                            Some(Uuid::from_str(&assigned_uuid).map_err(|_| ConsumerError::Uuid)?);
-                        if let Err(err) = tx_consumer_event.send(Emitter::Connected).await {
-                            error!(
-                                target: logs::targets::CONSUMER,
-                                "fail emit connected because: {}", err
-                            );
-                        }
-                    }
-                    Err(err) => {
-                        emit_error::<E>(err, &tx_consumer_event).await;
-                    }
-                },
-                Auth::GetUuid(tx_response) => {
-                    tx_response.send(uuid).map_err(|_| {
-                        ConsumerError::APIChannel(String::from("Fail to response on uuid request"))
-                    })?;
-                }
-            },
-        }
-    }
+            Ok(())
+        } => res,
+        _ = shutdown.cancelled() => { Ok(()) }
+    };
     trace!(
         target: logs::targets::CONSUMER,
         "client_messages_task: finished"
     );
-    Ok(())
+    result
 }
 
 async fn auth<E>(api: Api<E>, options: Options) -> Result<String, ConsumerError<E>>

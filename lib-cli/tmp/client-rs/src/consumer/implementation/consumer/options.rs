@@ -15,6 +15,6 @@ impl Options {
 }
 #[derive(Debug, Clone)]
 pub enum ReconnectionStrategy {
-    Reconnect(u16),
+    Reconnect(u64),
     DoNotReconnect,
 }

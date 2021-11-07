@@ -1,7 +1,8 @@
+use fiber::client;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum ConsumerError<E: std::error::Error> {
+#[derive(Error, Debug, Clone)]
+pub enum ConsumerError<E: client::Error> {
     #[error("fail to read income buffer: `{0}`")]
     BufferError(String),
     #[error("unknown message: `{0}`")]
@@ -28,4 +29,6 @@ pub enum ConsumerError<E: std::error::Error> {
     Uuid,
     #[error("client error: `{0}`")]
     Client(E),
+    #[error("No client available")]
+    NoClient,
 }
