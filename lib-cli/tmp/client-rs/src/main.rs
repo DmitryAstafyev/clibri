@@ -1,5 +1,5 @@
 mod consumer;
-use consumer::{connect, protocol, Consumer, Context, Options};
+use consumer::{connect, protocol, Consumer, Context, Options, ReconnectionStrategy};
 use fiber_transport_client::{
     client,
     client::Client,
@@ -17,17 +17,15 @@ async fn main() -> Result<(), String> {
         connection: ConnectionType::Direct(socket_addr),
     });
     let context = Context::new();
-    let consumer = connect::<Client, Error, client::Control>(
-        client,
-        context,
-        Options::defualt(protocol::Identification::SelfKey {
-            uuid: None,
-            id: Some(64),
-            location: Some(String::from("London")),
-        }),
-    )
-    .await
-    .map_err(|e| e.to_string())?;
+    let mut options = Options::defualt(protocol::Identification::SelfKey {
+        uuid: None,
+        id: Some(64),
+        location: Some(String::from("London")),
+    });
+    // options.reconnection = ReconnectionStrategy::DoNotReconnect;
+    let consumer = connect::<Client, Error, client::Control>(client, context, options)
+        .await
+        .map_err(|e| e.to_string())?;
     let shutdown = consumer
         .get()
         .await

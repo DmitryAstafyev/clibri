@@ -56,6 +56,11 @@ pub struct ConsumerGetter<E: client::Error> {
     tx_consumer_getter: UnboundedSender<oneshot::Sender<Consumer<E>>>,
 }
 
+pub type ConsumerGetterChannel<E> = (
+    UnboundedSender<oneshot::Sender<Consumer<E>>>,
+    UnboundedReceiver<oneshot::Sender<Consumer<E>>>,
+);
+
 impl<E: client::Error> ConsumerGetter<E> {
     pub async fn get(&self) -> Result<Consumer<E>, ConsumerError<E>> {
         let (tx_response, rx_response): (
@@ -82,23 +87,26 @@ where
     Ctrl: 'static + client::Control<E> + Send + Sync + Clone,
 {
     env::logs::init();
-    let (tx_consumer_getter, rx_consumer_getter): (
-        UnboundedSender<oneshot::Sender<Consumer<E>>>,
-        UnboundedReceiver<oneshot::Sender<Consumer<E>>>,
-    ) = unbounded_channel();
+    let (tx_consumer_getter, rx_consumer_getter): ConsumerGetterChannel<E> = unbounded_channel();
     spawn(async move {
         trace!(target: logs::targets::CONSUMER, "main thread: started");
         let mut holder = Some((client, context, rx_consumer_getter));
         while let Some((client, context, rx_consumer_getter)) = holder.take() {
             holder = match listen(client, context, options.clone(), rx_consumer_getter).await {
-                Ok((client, context, rx_consumer_getter, shutdown)) => {
+                Ok((client, mut context, rx_consumer_getter, shutdown)) => {
                     if let ReconnectionStrategy::Reconnect(timeout) = options.reconnection {
                         debug!(
                             target: logs::targets::CONSUMER,
                             "reconnection in {} ms", timeout
                         );
-                        sleep(Duration::from_millis(timeout)).await;
-                        Some((client, context, rx_consumer_getter))
+                        if events::event_reconnect::handler(timeout, &mut context).await {
+                            sleep(Duration::from_millis(timeout)).await;
+                            Some((client, context, rx_consumer_getter))
+                        } else {
+                            debug!(target: logs::targets::CONSUMER, "refuse to reconnect");
+                            shutdown.cancel();
+                            None
+                        }
                     } else {
                         debug!(target: logs::targets::CONSUMER, "reconnection is disabled");
                         shutdown.cancel();

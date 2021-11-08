@@ -54,6 +54,11 @@ impl Context {
                         let msg = input.trim().to_owned();
                         println!("{}[2A", 27 as char);
                         println!("{}[2K", 27 as char);
+                        if msg == "$exit" {
+                            consumer.shutdown();
+                            shutdown.cancel();
+                            break;
+                        }
                         match consumer
                             .request_message(protocol::Message::Request {
                                 user: username.clone(),
