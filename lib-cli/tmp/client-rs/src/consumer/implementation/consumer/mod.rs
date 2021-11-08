@@ -91,7 +91,7 @@ where
         let mut holder = Some((client, context, rx_consumer_getter));
         while let Some((client, context, rx_consumer_getter)) = holder.take() {
             holder = match listen(client, context, options.clone(), rx_consumer_getter).await {
-                Ok((client, context, rx_consumer_getter)) => {
+                Ok((client, context, rx_consumer_getter, shutdown)) => {
                     if let ReconnectionStrategy::Reconnect(timeout) = options.reconnection {
                         debug!(
                             target: logs::targets::CONSUMER,
@@ -101,6 +101,7 @@ where
                         Some((client, context, rx_consumer_getter))
                     } else {
                         debug!(target: logs::targets::CONSUMER, "reconnection is disabled");
+                        shutdown.cancel();
                         None
                     }
                 }
@@ -125,7 +126,12 @@ async fn listen<C, E, Ctrl>(
     options: Options,
     mut rx_consumer_getter: UnboundedReceiver<oneshot::Sender<Consumer<E>>>,
 ) -> Result<
-    (C, Context, UnboundedReceiver<oneshot::Sender<Consumer<E>>>),
+    (
+        C,
+        Context,
+        UnboundedReceiver<oneshot::Sender<Consumer<E>>>,
+        CancellationToken,
+    ),
     (CancellationToken, ConsumerError<E>),
 >
 where
@@ -256,7 +262,7 @@ where
     match result {
         Ok(client) => {
             if let Some(client) = client {
-                Ok((client, context, rx_consumer_getter))
+                Ok((client, context, rx_consumer_getter, shutdown_token_out))
             } else {
                 Err((shutdown_token_out, ConsumerError::NoClient))
             }
