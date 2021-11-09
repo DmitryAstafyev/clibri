@@ -6,5 +6,5 @@ pub async fn handler<E: client::Error>(
     context: &mut Context,
     consumer: Consumer<E>,
 ) {
-    println!("{} isn't implemented yet");
+    println!("Events::UserConnected isn't implemented yet");
 }

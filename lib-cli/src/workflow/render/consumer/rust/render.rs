@@ -10,9 +10,15 @@ pub mod render_static;
 #[path = "./render_controller.rs"]
 pub mod render_controller;
 
+#[path = "./render_consumer.rs"]
+pub mod render_consumer;
+
+#[path = "./render_protocol.rs"]
+pub mod render_protocol;
+
 use super::{
     helpers, workflow, workflow::beacon::Broadcast, workflow::store::Store as WorkflowStore,
-    ImplementationRender, Protocol, ProtocolRustRender,
+    ImplementationRender, Protocol, ProtocolRender, ProtocolRustRender,
 };
 use std::path::Path;
 
@@ -63,11 +69,14 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         protocol: &mut Protocol,
         protocol_render: ProtocolRustRender,
     ) -> Result<String, String> {
-        for broadcast in &self.get_all_broadcasts(store) {
+        let broadcasts = self.get_all_broadcasts(store);
+        for broadcast in &broadcasts {
             (render_broadcast::Render::new()).render(base, &broadcast)?;
         }
-        (render_broadcast_mod::Render::new()).render(base, self.get_all_broadcasts(store))?;
+        (render_broadcast_mod::Render::new()).render(base, &broadcasts)?;
         (render_controller::Render::new()).render(base, store)?;
+        (render_consumer::Render::new()).render(base, store, protocol, &broadcasts)?;
+        (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
         (render_static::Render::new()).render(base)?;
 
         Ok(String::new())

@@ -212,7 +212,7 @@ pub enum {} {{
         ))
     }
 
-    fn get_request_enum_reference(request: String) -> Result<String, String> {
+    pub fn get_request_enum_reference(request: String) -> Result<String, String> {
         let mut output: String = String::new();
         let parts: Vec<String> = request
             .split('.')
