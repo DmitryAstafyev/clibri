@@ -1,23 +1,54 @@
-use super::{
-    workflow::{
-        store::{
-            Store as WorkflowStore
-        },
-    },
-    Protocol,
-    ProtocolRustRender,
-};
-use super::{ ImplementationRender };
-use std::{
-    path::{
-        Path,
-    }
-};
+#[path = "./render_broadcast.rs"]
+pub mod render_broadcast;
 
-pub struct RustRender {
-}
+#[path = "./render_broadcast_mod.rs"]
+pub mod render_broadcast_mod;
+
+#[path = "./render_static.rs"]
+pub mod render_static;
+
+#[path = "./render_controller.rs"]
+pub mod render_controller;
+
+use super::{
+    helpers, workflow, workflow::beacon::Broadcast, workflow::store::Store as WorkflowStore,
+    ImplementationRender, Protocol, ProtocolRustRender,
+};
+use std::path::Path;
+
+pub struct RustRender {}
 
 impl RustRender {
+    fn get_all_broadcasts(&self, store: &WorkflowStore) -> Vec<Broadcast> {
+        let mut broadcasts: Vec<Broadcast> = vec![];
+        for request in &store.requests {
+            for action in &request.actions {
+                for broadcast in &action.broadcast {
+                    if broadcasts
+                        .iter()
+                        .any(|i| i.reference == broadcast.reference)
+                    {
+                        continue;
+                    } else {
+                        broadcasts.push(broadcast.clone());
+                    }
+                }
+            }
+        }
+        for event in &store.events {
+            for broadcast in &event.broadcasts {
+                if broadcasts
+                    .iter()
+                    .any(|i| i.reference == broadcast.reference)
+                {
+                    continue;
+                } else {
+                    broadcasts.push(broadcast.clone());
+                }
+            }
+        }
+        broadcasts
+    }
 }
 
 impl ImplementationRender<ProtocolRustRender> for RustRender {
@@ -27,11 +58,18 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
 
     fn render(
         &self,
-        _base: &Path,
-        _store: &WorkflowStore,
-        _protocol: &mut Protocol,
-        _protocol_render: ProtocolRustRender,
+        base: &Path,
+        store: &WorkflowStore,
+        protocol: &mut Protocol,
+        protocol_render: ProtocolRustRender,
     ) -> Result<String, String> {
+        for broadcast in &self.get_all_broadcasts(store) {
+            (render_broadcast::Render::new()).render(base, &broadcast)?;
+        }
+        (render_broadcast_mod::Render::new()).render(base, self.get_all_broadcasts(store))?;
+        (render_controller::Render::new()).render(base, store)?;
+        (render_static::Render::new()).render(base)?;
+
         Ok(String::new())
     }
 }
