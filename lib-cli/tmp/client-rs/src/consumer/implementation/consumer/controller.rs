@@ -30,9 +30,9 @@ impl<E: client::Error> Consumer<E> {
         let shutdown = api.get_shutdown_token();
         Consumer { api, shutdown }
     }    
-    pub async fn beacon_like_user(
+    pub async fn beacons_likeuser(
         &mut self,
-        mut beacon: protocol::Beacons.LikeUser,
+        mut beacon: protocol::Beacons::LikeUser,
     ) -> Result<(), ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
@@ -44,9 +44,9 @@ impl<E: client::Error> Consumer<E> {
             )
             .await
     }
-    pub async fn beacon_like_user(
+    pub async fn beacons_likemessage(
         &mut self,
-        mut beacon: protocol::Beacons.LikeMessage,
+        mut beacon: protocol::Beacons::LikeMessage,
     ) -> Result<(), ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;

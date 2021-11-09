@@ -22,6 +22,10 @@ mod paths {
         pub const options: &str = "options.rs";
         pub const dest: &str = "implementation/consumer";
     }
+    pub mod implementation {
+        pub const module: &str = "mod.rs";
+        pub const dest: &str = "implementation";
+    }
     pub mod module {
         pub const module: &str = "mod.rs";
         pub const dest: &str = "";
@@ -88,6 +92,15 @@ impl Render {
         helpers::fs::write(
             self.get_dest_file(base, paths::consumer::dest, paths::consumer::options)?,
             include_str!("./static/implementation/consumer/options.rs").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(
+                base,
+                paths::implementation::dest,
+                paths::implementation::module,
+            )?,
+            include_str!("./static/implementation/mod.rs").to_owned(),
             true,
         )?;
         helpers::fs::write(

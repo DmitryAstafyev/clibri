@@ -31,7 +31,7 @@ impl<E: client::Error> Consumer<E> {
         self.shutdown.clone()
     }
 }"#;
-    pub const BEACON: &str = r#"pub async fn beacon_like_user(
+    pub const BEACON: &str = r#"pub async fn [[name]](
     &mut self,
     mut beacon: protocol::[[request]],
 ) -> Result<(), ConsumerError<E>> {
@@ -137,7 +137,12 @@ pub enum {} {{
             output = format!(
                 "{}\n{}",
                 output,
-                templates::BEACON.replace("[[request]]", &beacon.reference)
+                templates::BEACON
+                    .replace("[[request]]", &beacon.reference.replace(".", "::"))
+                    .replace(
+                        "[[name]]",
+                        &beacon.reference.replace(".", "_").to_lowercase()
+                    )
             );
         }
         Ok(tools::inject_tabs(1, output))
@@ -213,7 +218,6 @@ pub enum {} {{
     }
 
     pub fn get_request_enum_reference(request: String) -> Result<String, String> {
-        let mut output: String = String::new();
         let parts: Vec<String> = request
             .split('.')
             .collect::<Vec<&str>>()

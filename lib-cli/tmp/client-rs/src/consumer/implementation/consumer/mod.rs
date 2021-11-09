@@ -99,7 +99,7 @@ where
                             target: logs::targets::CONSUMER,
                             "reconnection in {} ms", timeout
                         );
-                        if events::event_reconnect::handler(timeout, &mut context).await {
+                        if events::reconnect::handler(timeout, &mut context).await {
                             sleep(Duration::from_millis(timeout)).await;
                             Some((client, context, rx_consumer_getter))
                         } else {
@@ -295,16 +295,16 @@ where
         match msg {
             Emitter::Error(err) => {
                 warn!(target: logs::targets::CONSUMER, "{}", err);
-                events::event_error::handler::<E>(err, &mut context, consumer.clone()).await;
+                events::error::handler::<E>(err, &mut context, consumer.clone()).await;
             }
             Emitter::Connected => {
-                events::event_connected::handler(&mut context, consumer.clone()).await;
+                events::connected::handler(&mut context, consumer.clone()).await;
             }
             Emitter::Disconnected => {
-                events::event_disconnected::handler(&mut context, consumer.clone()).await;
+                events::disconnected::handler(&mut context, consumer.clone()).await;
             }
             Emitter::Shutdown(err) => {
-                events::event_shutdown::handler(err, &mut context, consumer.clone()).await;
+                events::shutdown::handler(err, &mut context, consumer.clone()).await;
             }            
             Emitter::EventsUserConnected(msg) => {
                 broadcasts::events_userconnected::handler(msg, &mut context, consumer.clone()).await;
