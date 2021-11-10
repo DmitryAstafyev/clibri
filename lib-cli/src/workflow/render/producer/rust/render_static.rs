@@ -128,14 +128,27 @@ impl Render {
             include_str!("./static/mod.rs").to_owned(),
             true,
         )?;
-        let context_dest =
-            self.get_dest_file(base, paths::context::dest, paths::context::module)?;
-        if !context_dest.exists() {
-            helpers::fs::write(
-                self.get_dest_file(base, paths::context::dest, paths::context::module)?,
-                include_str!("./static/context.rs").to_owned(),
-                true,
-            )?;
+        self.create_if(
+            base,
+            paths::context::dest,
+            paths::context::module,
+            include_str!("./static/context.rs").to_owned(),
+        )?;
+        Ok(())
+    }
+
+    fn create_if(
+        &self,
+        base: &Path,
+        path: &str,
+        file_name: &str,
+        content: String,
+    ) -> Result<(), String> {
+        let dest = self.get_dest_file(base, path, file_name)?;
+        if !dest.exists() {
+            helpers::fs::write(self.get_dest_file(base, path, file_name)?, content, true)?;
+        } else {
+            println!("[SKIP]: {}", dest.to_string_lossy());
         }
         Ok(())
     }

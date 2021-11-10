@@ -6,5 +6,5 @@ pub async fn handler<E: client::Error>(
     context: &mut Context,
     consumer: Consumer<E>,
 ) {
-    println!("Events::UserDisconnected isn't implemented yet");
+    println!("{} is disconnected", event.username);
 }

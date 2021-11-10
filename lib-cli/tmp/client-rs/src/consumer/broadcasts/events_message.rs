@@ -6,5 +6,10 @@ pub async fn handler<E: client::Error>(
     context: &mut Context,
     consumer: Consumer<E>,
 ) {
-    println!("Events::Message isn't implemented yet");
+    println!(
+        "[{}] {}: {}",
+        context.get_localtime(event.timestamp),
+        event.user,
+        event.message.trim()
+    );
 }

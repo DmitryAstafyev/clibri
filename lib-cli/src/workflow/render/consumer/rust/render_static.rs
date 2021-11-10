@@ -1,4 +1,4 @@
-use super::{helpers, workflow::event::Event};
+use super::helpers;
 use std::include_str;
 use std::{
     fs,
@@ -49,34 +49,39 @@ impl Render {
     }
 
     pub fn render(&self, base: &Path) -> Result<(), String> {
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
+        self.create_if(
+            base,
+            paths::events::dest,
+            paths::events::connected,
             include_str!("./static/events/connected.rs").to_owned(),
-            true,
         )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
+        self.create_if(
+            base,
+            paths::events::dest,
+            paths::events::disconnected,
             include_str!("./static/events/disconnected.rs").to_owned(),
-            true,
         )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::error)?,
+        self.create_if(
+            base,
+            paths::events::dest,
+            paths::events::error,
             include_str!("./static/events/error.rs").to_owned(),
-            true,
+        )?;
+        self.create_if(
+            base,
+            paths::events::dest,
+            paths::events::reconnect,
+            include_str!("./static/events/reconnect.rs").to_owned(),
+        )?;
+        self.create_if(
+            base,
+            paths::events::dest,
+            paths::events::shutdown,
+            include_str!("./static/events/shutdown.rs").to_owned(),
         )?;
         helpers::fs::write(
             self.get_dest_file(base, paths::events::dest, paths::events::module)?,
             include_str!("./static/events/mod.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::reconnect)?,
-            include_str!("./static/events/reconnect.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
-            include_str!("./static/events/shutdown.rs").to_owned(),
             true,
         )?;
         helpers::fs::write(
@@ -108,14 +113,27 @@ impl Render {
             include_str!("./static/mod.rs").to_owned(),
             true,
         )?;
-        let context_dest =
-            self.get_dest_file(base, paths::context::dest, paths::context::module)?;
-        if !context_dest.exists() {
-            helpers::fs::write(
-                self.get_dest_file(base, paths::context::dest, paths::context::module)?,
-                include_str!("./static/context.rs").to_owned(),
-                true,
-            )?;
+        self.create_if(
+            base,
+            paths::context::dest,
+            paths::context::module,
+            include_str!("./static/context.rs").to_owned(),
+        )?;
+        Ok(())
+    }
+
+    fn create_if(
+        &self,
+        base: &Path,
+        path: &str,
+        file_name: &str,
+        content: String,
+    ) -> Result<(), String> {
+        let dest = self.get_dest_file(base, path, file_name)?;
+        if !dest.exists() {
+            helpers::fs::write(self.get_dest_file(base, path, file_name)?, content, true)?;
+        } else {
+            println!("[SKIP]: {}", dest.to_string_lossy());
         }
         Ok(())
     }
