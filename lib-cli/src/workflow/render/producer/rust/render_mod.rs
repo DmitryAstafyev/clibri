@@ -1094,7 +1094,7 @@ impl Render {
                     &event.get_reference()?.to_lowercase().replace(".", "_"),
                 );
                 event_output =
-                    event_output.replace("[[name]]", &event.get_reference()?.replace(".", "::"));
+                    event_output.replace("[[name]]", &event.get_reference()?.replace(".", ""));
                 event_output =
                     event_output.replace("[[ref]]", &event.get_reference()?.replace(".", "::"));
                 output = format!("{}{}", output, event_output);
