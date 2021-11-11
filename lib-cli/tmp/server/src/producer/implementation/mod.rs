@@ -90,7 +90,7 @@ pub mod producer {
             event: protocol::ServerEvents::UserKickOff,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::ServerEvents::UserKickOff(event))
+                .send(UnboundedEventsList::ServerEventsUserKickOff(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn serverevents_useralert(
@@ -98,7 +98,7 @@ pub mod producer {
             event: protocol::ServerEvents::UserAlert,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::ServerEvents::UserAlert(event))
+                .send(UnboundedEventsList::ServerEventsUserAlert(event))
                 .map_err(|e| e.to_string())
         }
     }
