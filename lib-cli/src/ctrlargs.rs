@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use std::env;
 use std::path::{Path, PathBuf};
 
-#[path = "./arguments/ctrl.args.option.embedded.rs"]
+#[path = "./arguments/args_option_embedded.rs"]
 pub mod arg_option_embedded;
-#[path = "./arguments/ctrl.args.option.files.rs"]
+#[path = "./arguments/args_option_files.rs"]
 pub mod arg_option_files;
-#[path = "./arguments/ctrl.args.option.help.rs"]
+#[path = "./arguments/args_option_help.rs"]
 pub mod arg_option_help;
-#[path = "./arguments/ctrl.args.option.overwrite.rs"]
+#[path = "./arguments/args_option_overwrite.rs"]
 pub mod arg_option_overwrite;
 #[path = "./protocol/parser.rs"]
 pub mod protocol;

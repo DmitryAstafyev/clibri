@@ -111,6 +111,6 @@ impl Render {
                 ));
             }
         }
-        Ok(dest.join(event.as_filename()?))
+        Ok(dest.join(event.get_reference()?.to_lowercase().replace(".", "_")))
     }
 }

@@ -1,9 +1,7 @@
-#[path = "./render.beacon.rs"]
 pub mod render_beacon;
-#[path = "./render.event.rs"]
 pub mod render_event;
-#[path = "./render.request.rs"]
 pub mod render_request;
+
 use super::{
     helpers, helpers::render as tools, workflow, workflow::store::Store as WorkflowStore, Protocol,
 };

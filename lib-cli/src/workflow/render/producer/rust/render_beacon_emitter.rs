@@ -48,8 +48,11 @@ impl Render {
     pub fn render(&self, base: &Path, beacon: &Broadcast) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base, beacon)?;
         let mut output = templates::MODULE.to_owned();
-        output = output.replace("[[beacon]]", &beacon.as_struct_path());
-        output = output.replace("[[beacon_mod]]", &beacon.as_mod_name());
+        output = output.replace("[[beacon]]", &beacon.reference.replace(".", "::"));
+        output = output.replace(
+            "[[beacon_mod]]",
+            &beacon.reference.to_lowercase().replace(".", "_"),
+        );
         helpers::fs::write(dest, output, true)
     }
 
@@ -64,6 +67,6 @@ impl Render {
                 ));
             }
         }
-        Ok(dest.join(beacon.as_filename()))
+        Ok(dest.join(beacon.reference.to_lowercase().replace(".", "_")))
     }
 }

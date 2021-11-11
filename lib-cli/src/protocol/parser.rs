@@ -1,3 +1,11 @@
+pub mod entities;
+pub mod enums;
+pub mod fields;
+pub mod groups;
+pub mod store;
+pub mod structs;
+pub mod types;
+
 use super::{helpers, stop};
 use entities::Entities;
 use enums::Enum;
@@ -9,27 +17,6 @@ use std::path::PathBuf;
 use store::Store;
 use structs::Struct;
 use types::PrimitiveTypes;
-
-#[path = "./parser.types.rs"]
-pub mod types;
-
-#[path = "./parser.entities.rs"]
-pub mod entities;
-
-#[path = "./parser.field.rs"]
-pub mod fields;
-
-#[path = "./parser.enum.rs"]
-pub mod enums;
-
-#[path = "./parser.struct.rs"]
-pub mod structs;
-
-#[path = "./parser.group.rs"]
-pub mod groups;
-
-#[path = "./parser.store.rs"]
-pub mod store;
 
 #[derive(Debug, Clone)]
 enum ENext {

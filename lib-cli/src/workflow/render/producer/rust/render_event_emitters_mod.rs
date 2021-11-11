@@ -70,7 +70,11 @@ impl Render {
         let mut mods = String::new();
         for event in events.iter() {
             if !event.is_default() {
-                mods = format!("{}pub mod {};\n", mods, event.as_mod_name()?);
+                mods = format!(
+                    "{}pub mod {};\n",
+                    mods,
+                    event.get_reference()?.to_lowercase().replace(".", "_")
+                );
             }
         }
         let output = templates::MODULE.to_owned().replace("[[mods]]", &mods);

@@ -56,6 +56,6 @@ impl Render {
                 ));
             }
         }
-        Ok(dest.join(beacon.as_filename()))
+        Ok(dest.join(beacon.reference.to_lowercase().replace(".", "_")))
     }
 }

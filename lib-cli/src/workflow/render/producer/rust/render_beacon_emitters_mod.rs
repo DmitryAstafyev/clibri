@@ -46,7 +46,11 @@ impl Render {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut mods = String::new();
         for beacon in beacons.iter() {
-            mods = format!("{}pub mod {};\n", mods, beacon.as_mod_name());
+            mods = format!(
+                "{}pub mod {};\n",
+                mods,
+                beacon.reference.to_lowercase().replace(".", "_")
+            );
         }
         let output = templates::MODULE.to_owned().replace("[[mods]]", &mods);
         helpers::fs::write(dest, output, true)

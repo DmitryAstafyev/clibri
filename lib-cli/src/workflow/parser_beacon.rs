@@ -37,22 +37,6 @@ impl Broadcast {
     pub fn validate(&self, protocol: &Protocol) -> bool {
         protocol.find_by_str_path(0, &self.reference).is_some()
     }
-
-    pub fn as_filename(&self) -> String {
-        format!("{}.rs", self.reference.to_lowercase().replace(".", "_"))
-    }
-
-    pub fn as_struct_path(&self) -> String {
-        self.reference.replace(".", "::")
-    }
-
-    pub fn as_mod_name(&self) -> String {
-        self.reference.to_lowercase().replace(".", "_")
-    }
-
-    pub fn as_struct_name(&self) -> String {
-        self.reference.replace(".", "")
-    }
 }
 
 #[derive(Debug, Clone)]

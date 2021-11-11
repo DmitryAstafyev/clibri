@@ -118,10 +118,16 @@ impl Render {
             templates::MODULE_WITH_BROADCAST.to_owned()
         };
         output = output.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
-        output = output.replace("[[event_mod]]", &event.as_mod_name()?);
+        output = output.replace(
+            "[[event_mod]]",
+            &event.get_reference()?.to_lowercase().replace(".", "_"),
+        );
         if !event.broadcasts.is_empty() {
             output = output.replace("[[event]]", &tools::into_rust_path(&event.get_reference()?));
-            output = output.replace("[[event_mod]]", &event.as_mod_name()?);
+            output = output.replace(
+                "[[event_mod]]",
+                &event.get_reference()?.to_lowercase().replace(".", "_"),
+            );
             let mut processing = String::new();
             let mut vars = String::new();
             for (pos, broadcast) in event.broadcasts.iter().enumerate() {
@@ -189,6 +195,6 @@ impl Render {
                 ));
             }
         }
-        Ok(dest.join(event.as_filename()?))
+        Ok(dest.join(event.get_reference()?.to_lowercase().replace(".", "_")))
     }
 }

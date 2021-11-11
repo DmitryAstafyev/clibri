@@ -1,24 +1,13 @@
-use super::{
-    helpers::{
-        render as tools,
-    },
-    workflow::{
-        request::{
-            Request
-        }
-    }
-};
+use super::{helpers::render as tools, workflow::request::Request};
 
 mod templates {
-    pub const MODULE: &str = 
-r#"group [[name]]
+    pub const MODULE: &str = r#"group [[name]]
     Consumer -> Producer: [[request]]
     Producer -->x Consumer: <font color=red>[[error]][[conclusions]]
 end"#;
 }
 
-pub struct RenderRequest {
-}
+pub struct RenderRequest {}
 
 impl Default for RenderRequest {
     fn default() -> Self {
@@ -27,20 +16,19 @@ impl Default for RenderRequest {
 }
 
 impl RenderRequest {
-    
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn render(
-        &self,
-        request: &Request
-    ) -> Result<String, String> {
+    pub fn render(&self, request: &Request) -> Result<String, String> {
         let mut output: String = templates::MODULE.to_owned();
-        output = output.replace("[[name]]", &request.as_struct_name()?);
+        output = output.replace("[[name]]", &request.get_request()?.replace(".", ""));
         output = output.replace("[[request]]", &request.get_request()?);
         output = output.replace("[[error]]", &request.get_err()?);
-        output = output.replace("[[conclusions]]", &tools::inject_tabs(1, self.get_conclusions(request)?));
+        output = output.replace(
+            "[[conclusions]]",
+            &tools::inject_tabs(1, self.get_conclusions(request)?),
+        );
         Ok(output)
     }
 
@@ -60,14 +48,15 @@ impl RenderRequest {
                 };
                 let mut broadcasts: String = String::new();
                 for broadcast in &action.broadcast {
-                    broadcasts = format!("{}\nProducer {} Consumers: {}",
+                    broadcasts = format!(
+                        "{}\nProducer {} Consumers: {}",
                         broadcasts,
                         if broadcast.optional { "-->" } else { "->" },
                         broadcast.reference,
                     );
                 }
                 output = format!(
-r#"{}
+                    r#"{}
 == {} ==
     Producer -> Consumer: {}{}"#,
                     output,
@@ -81,6 +70,4 @@ r#"{}
         }
         Ok(output)
     }
-
 }
-

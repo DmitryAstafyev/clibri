@@ -1,16 +1,16 @@
-#[path = "./parser.config.rs"]
+#[path = "./parser_config.rs"]
 pub mod config;
 
-#[path = "./parser.request.rs"]
+#[path = "./parser_request.rs"]
 pub mod request;
 
-#[path = "./parser.event.rs"]
+#[path = "./parser_event.rs"]
 pub mod event;
 
-#[path = "./parser.beacon.rs"]
+#[path = "./parser_beacon.rs"]
 pub mod beacon;
 
-#[path = "./parser.store.rs"]
+#[path = "./parser_store.rs"]
 pub mod store;
 
 use super::{

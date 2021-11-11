@@ -30,7 +30,11 @@ pub mod shutdown;
         );
         for event in events.iter() {
             if !event.is_default() {
-                output = format!("{}pub mod {};\n", output, event.as_mod_name()?);
+                output = format!(
+                    "{}pub mod {};\n",
+                    output,
+                    event.get_reference()?.to_lowercase().replace(".", "_")
+                );
             }
         }
         helpers::fs::write(dest, output, true)

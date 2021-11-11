@@ -207,49 +207,6 @@ impl Request {
         }
     }
 
-    pub fn as_filename(&self) -> Result<String, String> {
-        if let Some(request) = self.request.as_ref() {
-            Ok(format!(
-                "{}.rs",
-                String::from(request).to_lowercase().replace(".", "_")
-            ))
-        } else {
-            Err(String::from(
-                "Reference to object/struct request isn't defined for action",
-            ))
-        }
-    }
-
-    pub fn as_struct_path(&self) -> Result<String, String> {
-        if let Some(request) = self.request.as_ref() {
-            Ok(String::from(request).replace(".", "::"))
-        } else {
-            Err(String::from(
-                "Reference to object/struct request isn't defined for action",
-            ))
-        }
-    }
-
-    pub fn as_struct_name(&self) -> Result<String, String> {
-        if let Some(request) = self.request.as_ref() {
-            Ok(String::from(request).replace(".", ""))
-        } else {
-            Err(String::from(
-                "Reference to object/struct request isn't defined for action",
-            ))
-        }
-    }
-
-    pub fn as_mod_name(&self) -> Result<String, String> {
-        if let Some(request) = self.request.as_ref() {
-            Ok(String::from(request).to_lowercase().replace(".", "_"))
-        } else {
-            Err(String::from(
-                "Reference to object/struct request isn't defined for action",
-            ))
-        }
-    }
-
     pub fn get_response(&self) -> Result<String, String> {
         if self.actions.is_empty() {
             Err(String::from(

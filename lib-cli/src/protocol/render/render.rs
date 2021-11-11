@@ -1,15 +1,9 @@
-use super::*;
-use super::protocol::store::Store;
-use std::{
-    path::{
-        Path,
-    }
-};
-#[path = "./render.rust.rs"]
 pub mod rust;
-
-#[path = "./render.typescript.rs"]
 pub mod typescript;
+
+use super::protocol::store::Store;
+use super::*;
+use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Target {
@@ -18,8 +12,6 @@ pub enum Target {
 }
 
 pub trait Render {
-
     fn new(embedded: bool, signature: u16) -> Self;
     fn render(&self, store: &mut Store, dest: &Path) -> Result<(), String>;
-
 }

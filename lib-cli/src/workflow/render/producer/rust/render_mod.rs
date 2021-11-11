@@ -1031,7 +1031,7 @@ impl Render {
                 format!("{}beacon{}", chain, ")".repeat(parts.len()))
             };
             beacon_output = beacon_output.replace("[[ref]]", &enum_ref);
-            beacon_output = beacon_output.replace("[[struct]]", &beacon.as_struct_name());
+            beacon_output = beacon_output.replace("[[struct]]", &beacon.reference.replace(".", ""));
             beacon_output = beacon_output.replace(
                 "[[module]]",
                 &beacon.reference.to_lowercase().replace(".", "_"),
@@ -1049,8 +1049,12 @@ impl Render {
         for (pos, event) in store.events.iter().enumerate() {
             if !event.is_default() {
                 let mut event_output: String = String::from(templates::EVENT);
-                event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
-                event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
+                event_output = event_output.replace(
+                    "[[module]]",
+                    &event.get_reference()?.to_lowercase().replace(".", "_"),
+                );
+                event_output =
+                    event_output.replace("[[name]]", &event.get_reference()?.replace(".", ""));
                 output = format!("{}{}", output, event_output);
                 if pos < store.events.len() - 1 {
                     output = format!("{}\n", output);
@@ -1067,8 +1071,8 @@ impl Render {
                 output = format!(
                     "{}{}(protocol::{}),{}",
                     output,
-                    event.as_struct_name()?,
-                    event.as_struct_path()?,
+                    event.get_reference()?.replace(".", ""),
+                    event.get_reference()?.replace(".", "::"),
                     if pos < store.events.len() - 1 {
                         "\n"
                     } else {
@@ -1085,9 +1089,14 @@ impl Render {
         for (pos, event) in store.events.iter().enumerate() {
             if !event.is_default() {
                 let mut event_output: String = String::from(templates::EVENT_CALLER);
-                event_output = event_output.replace("[[module]]", &event.as_mod_name()?);
-                event_output = event_output.replace("[[name]]", &event.as_struct_name()?);
-                event_output = event_output.replace("[[ref]]", &event.as_struct_path()?);
+                event_output = event_output.replace(
+                    "[[module]]",
+                    &event.get_reference()?.to_lowercase().replace(".", "_"),
+                );
+                event_output =
+                    event_output.replace("[[name]]", &event.get_reference()?.replace(".", "::"));
+                event_output =
+                    event_output.replace("[[ref]]", &event.get_reference()?.replace(".", "::"));
                 output = format!("{}{}", output, event_output);
                 if pos < store.events.len() - 1 {
                     output = format!("{}\n", output);

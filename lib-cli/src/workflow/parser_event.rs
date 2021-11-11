@@ -92,49 +92,6 @@ impl Event {
         }
     }
 
-    pub fn as_filename(&self) -> Result<String, String> {
-        if let Some(reference) = self.reference.as_ref() {
-            Ok(format!(
-                "{}.rs",
-                String::from(reference).to_lowercase().replace(".", "_")
-            ))
-        } else {
-            Err(String::from(
-                "Reference to object/struct of event isn't defined for action",
-            ))
-        }
-    }
-
-    pub fn as_struct_path(&self) -> Result<String, String> {
-        if let Some(reference) = self.reference.as_ref() {
-            Ok(String::from(reference).replace(".", "::"))
-        } else {
-            Err(String::from(
-                "Reference to object/struct of event isn't defined for action",
-            ))
-        }
-    }
-
-    pub fn as_mod_name(&self) -> Result<String, String> {
-        if let Some(reference) = self.reference.as_ref() {
-            Ok(String::from(reference).to_lowercase().replace(".", "_"))
-        } else {
-            Err(String::from(
-                "Reference to object/struct of event isn't defined for action",
-            ))
-        }
-    }
-
-    pub fn as_struct_name(&self) -> Result<String, String> {
-        if let Some(reference) = self.reference.as_ref() {
-            Ok(String::from(reference).replace(".", ""))
-        } else {
-            Err(String::from(
-                "Reference to object/struct event isn't defined for action",
-            ))
-        }
-    }
-
     pub fn is_default(&self) -> bool {
         match self.get_reference() {
             Ok(reference) => {

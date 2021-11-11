@@ -1,20 +1,9 @@
-#[path = "./render.request.rs"]
-pub mod render_request;
-
-#[path = "./render.consumer.rs"]
-pub mod render_consumer;
-
-#[path = "./render.interfaces.request.rs"]
-pub mod render_interfaces_request;
-
-#[path = "./render.options.rs"]
-pub mod render_options;
-
-#[path = "./render.protocol.rs"]
-pub mod render_protocol;
-
-#[path = "./render.beacon.rs"]
 pub mod render_beacon;
+pub mod render_consumer;
+pub mod render_interfaces_request;
+pub mod render_options;
+pub mod render_protocol;
+pub mod render_request;
 
 use super::{
     helpers, workflow, workflow::store::Store as WorkflowStore, ImplementationRender, Protocol,
