@@ -682,7 +682,7 @@ impl Render {
         base: &Path,
         store: &WorkflowStore,
         protocol: &Protocol,
-        broadcasts: &Vec<Broadcast>,
+        broadcasts: &[Broadcast],
     ) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = templates::MODULE.to_owned();
@@ -703,7 +703,7 @@ impl Render {
         helpers::fs::write(dest, output, true)
     }
 
-    fn get_broadcast_emitters(&self, broadcasts: &Vec<Broadcast>) -> Result<String, String> {
+    fn get_broadcast_emitters(&self, broadcasts: &[Broadcast]) -> Result<String, String> {
         let mut output: String = String::new();
         for broadcast in broadcasts {
             output = format!(
@@ -716,7 +716,7 @@ impl Render {
         Ok(tools::inject_tabs(1, output))
     }
 
-    fn get_broadcast_callers(&self, broadcasts: &Vec<Broadcast>) -> Result<String, String> {
+    fn get_broadcast_callers(&self, broadcasts: &[Broadcast]) -> Result<String, String> {
         let mut output: String = String::new();
         for broadcast in broadcasts {
             output = format!(
@@ -732,7 +732,7 @@ impl Render {
         Ok(tools::inject_tabs(3, output))
     }
 
-    fn get_broadcast_handlers(&self, broadcasts: &Vec<Broadcast>) -> Result<String, String> {
+    fn get_broadcast_handlers(&self, broadcasts: &[Broadcast]) -> Result<String, String> {
         let mut output: String = String::new();
         for broadcast in broadcasts {
             output = format!(

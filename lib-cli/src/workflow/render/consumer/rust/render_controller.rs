@@ -93,7 +93,7 @@ impl Render {
         helpers::fs::write(dest, output, true)
     }
 
-    fn get_request_enums(&self, requests: &Vec<Request>) -> Result<String, String> {
+    fn get_request_enums(&self, requests: &[Request]) -> Result<String, String> {
         let mut output: String = String::new();
         for request in requests.iter() {
             let mut out: String = String::new();
@@ -131,7 +131,7 @@ pub enum {} {{
         Ok(output)
     }
 
-    fn get_beacons(&self, beacons: &Vec<Broadcast>) -> Result<String, String> {
+    fn get_beacons(&self, beacons: &[Broadcast]) -> Result<String, String> {
         let mut output: String = String::new();
         for beacon in beacons {
             output = format!(
@@ -148,7 +148,7 @@ pub enum {} {{
         Ok(tools::inject_tabs(1, output))
     }
 
-    fn get_requests(&self, requests: &Vec<Request>) -> Result<String, String> {
+    fn get_requests(&self, requests: &[Request]) -> Result<String, String> {
         let mut output: String = String::new();
         for request in requests {
             let mut out = String::from(templates::REQUEST);

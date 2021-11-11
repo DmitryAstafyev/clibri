@@ -33,7 +33,7 @@ use uuid::Uuid;
 
 pub mod hash {
     pub const PROTOCOL: &str = "F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE";
-    pub const WORKFLOW: &str = "497F08C6B69D62FB7B05CB1FC27CD9BF5D516578D9D845C3C5D1FDD0A5097672";
+    pub const WORKFLOW: &str = "19C9064E89D04F2ECE3CA473265296B295FEC7C62F7548D8C51A1A1E631149C6";
 }
 
 #[derive(Error, Debug)]
@@ -90,7 +90,7 @@ pub mod producer {
             event: protocol::ServerEvents::UserKickOff,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::ServerEventsUserKickOff(event))
+                .send(UnboundedEventsList::ServerEvents::UserKickOff(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn serverevents_useralert(
@@ -98,7 +98,7 @@ pub mod producer {
             event: protocol::ServerEvents::UserAlert,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::ServerEventsUserAlert(event))
+                .send(UnboundedEventsList::ServerEvents::UserAlert(event))
                 .map_err(|e| e.to_string())
         }
     }

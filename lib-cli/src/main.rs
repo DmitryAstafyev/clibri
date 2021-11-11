@@ -1,9 +1,4 @@
-// TODO:
-// - for protocol we need checksums to highlight situation when code was
-// generic from different protocols
-#[path = "./ctrlargs.rs"]
 pub mod ctrlargs;
-#[path = "./helpers/helpers.rs"]
 pub mod helpers;
 #[path = "./protocol/parser.rs"]
 pub mod protocol;

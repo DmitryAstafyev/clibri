@@ -22,7 +22,7 @@ impl Render {
         Self {}
     }
 
-    pub fn render(&self, base: &Path, broadcasts: &Vec<Broadcast>) -> Result<(), String> {
+    pub fn render(&self, base: &Path, broadcasts: &[Broadcast]) -> Result<(), String> {
         let dest: PathBuf = self.get_dest_file(base)?;
         let mut output: String = templates::MODULE.to_owned();
         let mut mods: String = String::new();
