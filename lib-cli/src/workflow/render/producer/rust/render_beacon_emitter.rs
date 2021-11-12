@@ -67,6 +67,9 @@ impl Render {
                 ));
             }
         }
-        Ok(dest.join(beacon.reference.to_lowercase().replace(".", "_")))
+        Ok(dest.join(format!(
+            "{}.rs",
+            beacon.reference.to_lowercase().replace(".", "_")
+        )))
     }
 }

@@ -195,6 +195,9 @@ impl Render {
                 ));
             }
         }
-        Ok(dest.join(event.get_reference()?.to_lowercase().replace(".", "_")))
+        Ok(dest.join(format!(
+            "{}.rs",
+            event.get_reference()?.to_lowercase().replace(".", "_")
+        )))
     }
 }
