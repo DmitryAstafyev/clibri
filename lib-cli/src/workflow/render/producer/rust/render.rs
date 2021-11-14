@@ -2,6 +2,7 @@ pub mod render_beacon_emitter;
 pub mod render_beacon_emitters_mod;
 pub mod render_beacon_impl;
 pub mod render_beacon_impl_mod;
+pub mod render_cargo;
 pub mod render_event_emitter;
 pub mod render_event_emitters_mod;
 pub mod render_event_impl;
