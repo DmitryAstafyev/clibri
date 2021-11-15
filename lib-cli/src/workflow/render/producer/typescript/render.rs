@@ -6,6 +6,7 @@ mod render_event_emitters_mod;
 mod render_event_impl;
 mod render_identification;
 mod render_mod;
+mod render_package;
 mod render_protocol;
 mod render_request_handler;
 mod render_request_handlers_mod;
@@ -53,6 +54,7 @@ impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
         (render_identification::Render::new()).render(base, store, &protocol)?;
         (render_static::Render::new()).render(base, &store.events)?;
         (render_mod::Render::new()).render(base, store, &protocol)?;
+        (render_package::Render::new()).render(base)?;
         Ok(String::new())
     }
 }

@@ -1,18 +1,10 @@
 {
-  "name": "fiber-producer",
-  "version": "0.0.1",
-  "description": "Producer implementation for Fiber's Protocol",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "tsc -p ./tsconfig.json & ./node_modules/.bin/webpack",
-    "build-ts": "tsc -p ./tsconfig.json",
-    "build:watch": "tsc -p ./tsconfig.json -w",
-    "test": "./node_modules/.bin/jasmine-ts",
-    "tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
-  },
   "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
-  "license": "MIT",
+  "dependencies": {
+    "fiber": "file:../../../lib/typescript",
+    "fiber-websocket-server": "file:../../../environment/transport/server/typescript"
+  },
+  "description": "Producer implementation for Fiber's Protocol",
   "devDependencies": {
     "source-map-loader": "^3.0.0",
     "ts-loader": "^9.2.6",
@@ -22,12 +14,20 @@
     "webpack": "^5.59.1",
     "webpack-cli": "^4.5.0"
   },
-  "dependencies": {
-    "fiber": "file:../../../lib/typescript",
-    "fiber-websocket-server": "file:../../../environment/transport/server/typescript"
-  },
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "name": "fiber-producer",
   "repository": {
     "type": "git",
     "url": ""
-  }
+  },
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json & ./node_modules/.bin/webpack",
+    "build-ts": "tsc -p ./tsconfig.json",
+    "build:watch": "tsc -p ./tsconfig.json -w",
+    "test": "./node_modules/.bin/jasmine-ts",
+    "tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
+  },
+  "types": "./dist/index.d.ts",
+  "version": "0.0.1"
 }

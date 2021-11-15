@@ -2,9 +2,9 @@ pub mod render_beacon;
 pub mod render_consumer;
 pub mod render_interfaces_request;
 pub mod render_options;
+pub mod render_package;
 pub mod render_protocol;
 pub mod render_request;
-
 use super::{
     helpers, workflow, workflow::store::Store as WorkflowStore, ImplementationRender, Protocol,
     ProtocolRender, ProtocolTypescriptRender,
@@ -37,6 +37,7 @@ impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
         (render_interfaces_request::Render::new()).render(base)?;
         (render_options::Render::new()).render(base)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
+        (render_package::Render::new()).render(base)?;
         Ok(String::new())
     }
 }
