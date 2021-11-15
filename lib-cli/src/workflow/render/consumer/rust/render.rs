@@ -1,20 +1,10 @@
-#[path = "./render_broadcast.rs"]
 pub mod render_broadcast;
-
-#[path = "./render_broadcast_mod.rs"]
 pub mod render_broadcast_mod;
-
-#[path = "./render_static.rs"]
-pub mod render_static;
-
-#[path = "./render_controller.rs"]
-pub mod render_controller;
-
-#[path = "./render_consumer.rs"]
+pub mod render_cargo;
 pub mod render_consumer;
-
-#[path = "./render_protocol.rs"]
+pub mod render_controller;
 pub mod render_protocol;
+pub mod render_static;
 
 use super::{
     helpers, workflow, workflow::beacon::Broadcast, workflow::store::Store as WorkflowStore,
@@ -78,7 +68,7 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_consumer::Render::new()).render(base, store, protocol, &broadcasts)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
         (render_static::Render::new()).render(base)?;
-
+        (render_cargo::Render::new()).render(base)?;
         Ok(String::new())
     }
 }

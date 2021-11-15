@@ -60,6 +60,7 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
         (render_identification::Render::new()).render(base, store, &protocol)?;
         (render_mod::Render::new()).render(base, store, &protocol)?;
+        (render_cargo::Render::new()).render(base)?;
         Ok(String::new())
     }
 }
