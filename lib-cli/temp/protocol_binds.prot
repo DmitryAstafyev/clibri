@@ -1,7 +1,0 @@
-struct VersionRequest {
-
-} -> struct VersionResponse {
-    str version;
-    str info;
-}
-relation VersionRequest -> VersionResponse
