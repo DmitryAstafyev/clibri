@@ -1,5 +1,5 @@
 {
-  "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
+  "author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
   "dependencies": {
     "fiber": "file:../../../lib/typescript",
     "fiber-websocket": "file:../../../environment/transport/client/typescript"
@@ -12,7 +12,7 @@
     "webpack": "^5.27.2",
     "webpack-cli": "^4.5.0"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "main": "./dist/index.js",
   "name": "fiber-consumer",
   "repository": {

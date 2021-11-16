@@ -10,8 +10,8 @@
     "test": "./node_modules/.bin/jasmine-ts",
     "tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
   },
-  "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
-  "license": "MIT",
+  "author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "^16.0.0",
     "@types/ws": "^7.4.5",

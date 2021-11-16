@@ -9,8 +9,8 @@
     "build:watch": "tsc -p ./tsconfig.json -w",
     "tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
   },
-  "author": "Dmitry Astafyev (d.astafyev@outlook.com)",
-  "license": "MIT",
+  "author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "^14.0.26",
     "tslint": "^6.0.0",
