@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'fiber-cli'",
+            "name": "Debug executable 'fiber'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=fiber-cli",
-                    "--package=fiber-cli"
+                    "--bin=fiber",
+                    "--package=fiber"
                 ],
                 "filter": {
-                    "name": "fiber-cli",
+                    "name": "fiber",
                     "kind": "bin"
                 }
             },
@@ -33,16 +33,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'fiber-cli'",
+            "name": "Debug unit tests in executable 'fiber'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=fiber-cli",
-                    "--package=fiber-cli"
+                    "--bin=fiber",
+                    "--package=fiber"
                 ],
                 "filter": {
-                    "name": "fiber-cli",
+                    "name": "fiber",
                     "kind": "bin"
                 }
             },

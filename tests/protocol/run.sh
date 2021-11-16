@@ -1,9 +1,9 @@
-cd ../../lib-cli
+cd ../../cli
 cargo build --release
 cd ../tests/protocol
 
 
-if ! ../../lib-cli/target/release/fiber-cli --src ./prot/protocol.prot -rs ./rust/src/protocol.rs -ts ./typescript/src/protocol.ts -o --em; then
+if ! ../../cli/target/release/fiber --src ./prot/protocol.prot -rs ./rust/src/protocol.rs -ts ./typescript/src/protocol.ts -o --em; then
     exit 1
 fi
 

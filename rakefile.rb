@@ -1,7 +1,7 @@
 require 'fileutils'
 
 module PATHS
-  self::CLI = "./lib-cli"
+  self::CLI = "./cli"
   self::LIB = "./lib"
   self::PROTOCOL_TEST = "./tests/protocol"
   self::EXAMPLES = "./examples"
@@ -77,7 +77,7 @@ namespace :test do
   namespace :protocol do 
     desc 'Generate Test Protocols'
     task :generate do
-      sh "#{PATHS::CLI}/target/release/fiber-cli --src #{PATHS::PROTOCOL_TEST}/prot/protocol.prot -rs #{PATHS::PROTOCOL_TEST}/rust/src/protocol.rs -ts #{PATHS::PROTOCOL_TEST}/typescript/src/protocol.ts -o --em"
+      sh "#{PATHS::CLI}/target/release/fiber --src #{PATHS::PROTOCOL_TEST}/prot/protocol.prot -rs #{PATHS::PROTOCOL_TEST}/rust/src/protocol.rs -ts #{PATHS::PROTOCOL_TEST}/typescript/src/protocol.ts -o --em"
     end
   
     desc 'Build Protocol Test Executors'
@@ -135,7 +135,7 @@ namespace :test do
     desc 'Producer - rust / Consumer - rust'
     task :rs_rs do
       Dir.chdir("#{PATHS::EXAMPLES}") do
-        sh '../lib-cli/target/release/fiber-cli -s ./prot/protocol.prot -wf ./prot/protocol-rs-rs.workflow -cd ./consumer/rust/src/consumer/ -pd ./producer/rust/src/producer/'
+        sh '../cli/target/release/fiber -s ./prot/protocol.prot -wf ./prot/protocol-rs-rs.workflow -cd ./consumer/rust/src/consumer/ -pd ./producer/rust/src/producer/'
       end
       Dir.chdir("#{PATHS::EXAMPLES}/producer/rust") do
         sh 'cargo build --release'
@@ -148,7 +148,7 @@ namespace :test do
     desc 'Producer - typescript / Consumer - typescript'
     task :ts_ts do
       Dir.chdir("#{PATHS::EXAMPLES}") do
-        sh '../lib-cli/target/release/fiber-cli -s ./prot/protocol.prot -wf ./prot/protocol-ts-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/typescript/src/producer/'
+        sh '../cli/target/release/fiber -s ./prot/protocol.prot -wf ./prot/protocol-ts-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/typescript/src/producer/'
       end
       Dir.chdir("#{PATHS::EXAMPLES}/producer/typescript") do
         sh 'npm install'
@@ -163,7 +163,7 @@ namespace :test do
     desc 'Producer - rust / Consumer - typescript'
     task :rs_ts do
       Dir.chdir("#{PATHS::EXAMPLES}") do
-        sh '../lib-cli/target/release/fiber-cli -s ./prot/protocol.prot -wf ./prot/protocol-rs-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/rust/src/producer/'
+        sh '../cli/target/release/fiber -s ./prot/protocol.prot -wf ./prot/protocol-rs-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/rust/src/producer/'
       end
       Dir.chdir("#{PATHS::EXAMPLES}/producer/rust") do
         sh 'cargo build --release'
