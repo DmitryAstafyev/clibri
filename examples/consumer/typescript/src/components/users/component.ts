@@ -5,7 +5,7 @@ import {
 	UsersRequest,
 	BeaconsLikeUser,
 } from "../../consumer/index";
-import { Subscription } from "fiber";
+import { Subscription } from "clibri";
 import { StatComponent } from "../stat/component";
 
 interface IUser {

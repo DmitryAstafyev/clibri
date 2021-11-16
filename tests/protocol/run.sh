@@ -3,7 +3,7 @@ cargo build --release
 cd ../tests/protocol
 
 
-if ! ../../cli/target/release/fiber --src ./prot/protocol.prot -rs ./rust/src/protocol.rs -ts ./typescript/src/protocol.ts -o --em; then
+if ! ../../cli/target/release/clibri --src ./prot/protocol.prot -rs ./rust/src/protocol.rs -ts ./typescript/src/protocol.ts -o --em; then
     exit 1
 fi
 
@@ -30,7 +30,7 @@ fi
 cd ..
 
 cd ./rust
-if ! ./target/release/fiber_protocol_rust_test write; then
+if ! ./target/release/clibri_protocol_rust_test write; then
     exit 1
 fi
 cd ..
@@ -43,7 +43,7 @@ fi
 cd ..
 
 cd ./rust
-if ! ./target/release/fiber_protocol_rust_test read; then
+if ! ./target/release/clibri_protocol_rust_test read; then
     exit 1
 fi
 cd ..

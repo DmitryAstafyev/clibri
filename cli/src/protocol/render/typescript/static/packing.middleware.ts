@@ -24,7 +24,7 @@ export function getPackingMiddleware(): PackingMiddleware | undefined {
 }
 
 export abstract class PackingMiddleware {
-	static GUID: string = "___FiberPackingMiddleware___";
+	static GUID: string = "___clibriPackingMiddleware___";
 
 	constructor() {
 		const space = globals();

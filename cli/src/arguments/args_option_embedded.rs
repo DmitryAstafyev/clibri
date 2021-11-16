@@ -44,7 +44,7 @@ impl CtrlArg for ArgsOptionEmbedded {
     fn get_help(&self) -> String {
         format!("{}{}",
             helpers::output::keys(&format!("{} ({}, {})", keys::EMBEDDED, keys::EM, keys::E)),
-            helpers::output::desk("if key exist, some addition code will be included. It will make possible to use protocol independently on fiber. Default: true"),
+            helpers::output::desk("if key exist, some addition code will be included. It will make possible to use protocol independently on clibri. Default: true"),
         )
     }
 

@@ -9,7 +9,7 @@ use std::{
 
 mod templates {
     pub const MODULE: &str = r#"use super::{api::Api, error::ConsumerError, protocol, protocol::PackingStruct};
-use fiber::client;
+use clibri::client;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Debug, Clone)]

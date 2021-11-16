@@ -7,7 +7,7 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE: &str = r#"import { ProducerIdentificationStrategy, Logger } from "fiber";
+    pub const MODULE: &str = r#"import { ProducerIdentificationStrategy, Logger } from "clibri";
 import * as Protocol from "../protocol";
 
 export class Identification {

@@ -24,7 +24,7 @@ import {
     Logger,
     ConsumerErrorHandelingStrategy,
     ProducerIdentificationStrategy,
-} from "fiber";
+} from "clibri";
 
 export class Producer {
     static hash: {

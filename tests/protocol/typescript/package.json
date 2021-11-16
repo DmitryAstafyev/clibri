@@ -1,24 +1,24 @@
 {
-  "name": "fiber-protocol-ts-test",
-  "version": "0.0.1",
-  "description": "Typescript implementation for Fiber's Protocol",
-  "main": "./dist/index.js",
-  "types": "./dist/src/index.d.ts",
-  "scripts": {
-    "build": "tsc -p ./tsconfig.json",
-    "build:watch": "tsc -p ./tsconfig.json -w",
-    "tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
-  },
-  "author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "@types/node": "^14.0.26",
-    "tslint": "^6.0.0",
-    "typescript": "^3.5.3"
-  },
-  "dependencies": {},
-  "repository": {
-    "type": "git",
-    "url": ""
-  }
+	"name": "clibri-protocol-ts-test",
+	"version": "0.0.1",
+	"description": "Typescript implementation for clibri's Protocol",
+	"main": "./dist/index.js",
+	"types": "./dist/src/index.d.ts",
+	"scripts": {
+		"build": "tsc -p ./tsconfig.json",
+		"build:watch": "tsc -p ./tsconfig.json -w",
+		"tslint": "./node_modules/.bin/tslint -c tslint.json './src/**/*{.ts,.tsx}'"
+	},
+	"author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
+	"license": "Apache-2.0",
+	"devDependencies": {
+		"@types/node": "^14.0.26",
+		"tslint": "^6.0.0",
+		"typescript": "^3.5.3"
+	},
+	"dependencies": {},
+	"repository": {
+		"type": "git",
+		"url": ""
+	}
 }

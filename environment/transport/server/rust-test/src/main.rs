@@ -6,7 +6,7 @@ pub mod test_2;
 pub mod test_3;
 pub mod test_4;
 
-use fiber::env::logs;
+use clibri::env::logs;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {

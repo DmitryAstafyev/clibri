@@ -9,7 +9,7 @@ use std::{
 mod templates {
     pub const MODULE_WITH_CONCLUSION: &str = r#"
 use super::{identification, producer::Control, protocol, Context};
-use fiber::server;
+use clibri::server;
 use uuid::Uuid;
 
 [[broadcast_types]]
@@ -29,7 +29,7 @@ pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone
 "#;
     pub const MODULE_NO_CONCLUSION: &str = r#"
 use super::{identification, producer::Control, protocol, Context};
-use fiber::server;
+use clibri::server;
 
 #[allow(unused_variables)]
 pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(

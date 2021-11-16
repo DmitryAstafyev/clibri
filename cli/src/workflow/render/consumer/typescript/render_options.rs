@@ -3,7 +3,7 @@ use super::helpers;
 use std::path::{Path, PathBuf};
 
 mod templates {
-    pub const MODULE: &str = r#"import { Logger, DefaultLogger } from 'fiber';
+    pub const MODULE: &str = r#"import { Logger, DefaultLogger } from 'clibri';
 
 export interface IOptions {
     logger?: Logger;

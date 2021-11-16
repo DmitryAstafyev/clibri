@@ -94,7 +94,7 @@ namespace :test do
   namespace :protocol do 
     desc 'Generate Test Protocols'
     task :generate do
-      sh "#{PATHS::CLI}/target/release/fiber --src #{PATHS::PROTOCOL_TEST}/prot/protocol.prot -rs #{PATHS::PROTOCOL_TEST}/rust/src/protocol.rs -ts #{PATHS::PROTOCOL_TEST}/typescript/src/protocol.ts -o --em"
+      sh "#{PATHS::CLI}/target/release/clibri --src #{PATHS::PROTOCOL_TEST}/prot/protocol.prot -rs #{PATHS::PROTOCOL_TEST}/rust/src/protocol.rs -ts #{PATHS::PROTOCOL_TEST}/typescript/src/protocol.ts -o --em"
     end
   
     desc 'Build Protocol Test Executors'
@@ -120,7 +120,7 @@ namespace :test do
       end
       Dir.chdir("#{PATHS::PROTOCOL_TEST}/rust") do
         begin
-          sh './target/release/fiber_protocol_rust_test write'
+          sh './target/release/clibri_protocol_rust_test write'
         rescue StandardError => e
           errors << e
         end
@@ -134,7 +134,7 @@ namespace :test do
       end
       Dir.chdir("#{PATHS::PROTOCOL_TEST}/rust") do
         begin
-          sh './target/release/fiber_protocol_rust_test read'
+          sh './target/release/clibri_protocol_rust_test read'
         rescue StandardError => e
           errors << e
         end
@@ -152,7 +152,7 @@ namespace :test do
     desc 'Producer - rust / Consumer - rust'
     task :rs_rs do
       Dir.chdir("#{PATHS::EXAMPLES}") do
-        sh '../cli/target/release/fiber -s ./prot/protocol.prot -wf ./prot/protocol-rs-rs.workflow -cd ./consumer/rust/src/consumer/ -pd ./producer/rust/src/producer/'
+        sh '../cli/target/release/clibri -s ./prot/protocol.prot -wf ./prot/protocol-rs-rs.workflow -cd ./consumer/rust/src/consumer/ -pd ./producer/rust/src/producer/'
       end
       Dir.chdir("#{PATHS::EXAMPLES}/producer/rust") do
         sh 'cargo build --release'
@@ -165,7 +165,7 @@ namespace :test do
     desc 'Producer - typescript / Consumer - typescript'
     task :ts_ts do
       Dir.chdir("#{PATHS::EXAMPLES}") do
-        sh '../cli/target/release/fiber -s ./prot/protocol.prot -wf ./prot/protocol-ts-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/typescript/src/producer/'
+        sh '../cli/target/release/clibri -s ./prot/protocol.prot -wf ./prot/protocol-ts-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/typescript/src/producer/'
       end
       Dir.chdir("#{PATHS::EXAMPLES}/producer/typescript") do
         sh 'npm install'
@@ -180,7 +180,7 @@ namespace :test do
     desc 'Producer - rust / Consumer - typescript'
     task :rs_ts do
       Dir.chdir("#{PATHS::EXAMPLES}") do
-        sh '../cli/target/release/fiber -s ./prot/protocol.prot -wf ./prot/protocol-rs-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/rust/src/producer/'
+        sh '../cli/target/release/clibri -s ./prot/protocol.prot -wf ./prot/protocol-rs-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/rust/src/producer/'
       end
       Dir.chdir("#{PATHS::EXAMPLES}/producer/rust") do
         sh 'cargo build --release'

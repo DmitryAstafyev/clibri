@@ -1,4 +1,4 @@
-import { Options, Logger } from "fiber";
+import { Options, Logger } from "clibri";
 import { Identification } from "./identification";
 import * as Protocol from "../protocol";
 

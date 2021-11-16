@@ -1,4 +1,4 @@
-use fiber::client;
+use clibri::client;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone)]

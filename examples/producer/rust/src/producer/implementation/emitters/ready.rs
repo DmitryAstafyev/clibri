@@ -1,5 +1,5 @@
 use super::{events, producer::Control, Context, EmitterError};
-use fiber::server;
+use clibri::server;
 
 pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     context: &mut Context,

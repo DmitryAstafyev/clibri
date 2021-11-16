@@ -1,5 +1,5 @@
 [package]
-name = "fiber_protocol_rust_test"
+name = "clibri_protocol_rust_test"
 version = "0.1.0"
 authors = ["dmitry.astafyev <dmitry.astafyev@esrlabs.com>"]
 edition = "2018"

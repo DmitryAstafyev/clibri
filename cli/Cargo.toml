@@ -1,15 +1,15 @@
 [package]
 authors = ["dmitry.astafyev <dmitry.astafyev@esrlabs.com>"]
 edition = "2018"
-name = "fiber"
+name = "clibri"
 version = "0.1.0"
-description = "Fiber generator CLI"
-repository = "https://github.com/DmitryAstafyev/fiber"
+description = "clibri generator CLI"
+repository = "https://github.com/DmitryAstafyev/clibri"
 license = "Apache-2.0"
 license-file = "LICENSE"
-homepage = "https://github.com/DmitryAstafyev/fiber"
+homepage = "https://github.com/DmitryAstafyev/clibri"
 readme = "README.md"
-keywords = ["websocket", "fiber", "protocol"]
+keywords = ["websocket", "clibri", "protocol"]
 categories = ["network-programming"]
 
 [dependencies]

@@ -1,6 +1,6 @@
 mod consumer;
 use consumer::{connect, protocol, Consumer, Context, Options, ReconnectionStrategy};
-use fiber_transport_client::{
+use clibri_transport_client::{
     client,
     client::Client,
     errors::Error,

@@ -17,7 +17,7 @@ use super::{broadcasts, events, protocol, Context};
 use api::{Api, Channel};
 use controller::Consumer;
 use error::ConsumerError;
-use fiber::{client, env, env::logs};
+use clibri::{client, env, env::logs};
 use log::{debug, error, trace, warn};
 use options::{Options, ReconnectionStrategy};
 use protocol::PackingStruct;

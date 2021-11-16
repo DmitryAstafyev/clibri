@@ -2,7 +2,7 @@ use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
     EmitterError,
 };
-use fiber::server;
+use clibri::server;
 use uuid::Uuid;
 
 pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(

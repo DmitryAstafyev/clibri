@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 mod templates {
     pub const MODULE: &str = r#"// tslint:disable: max-classes-per-file
 
-import { Client, Logger, Subscription, Subject, guid, globals } from 'fiber';
+import { Client, Logger, Subscription, Subject, guid, globals } from 'clibri';
 import { IOptions, Options } from './options';
 
 import * as Protocol from './protocol/protocol';

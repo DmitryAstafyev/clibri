@@ -1,4 +1,4 @@
-import { IServerError } from "fiber";
+import { IServerError } from "clibri";
 import {
 	Identification,
 	Filter,

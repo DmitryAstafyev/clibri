@@ -5,10 +5,10 @@ regex = '1'
 thiserror = '1.0.26'
 tokio-util = '0.6.7'
 
-[dependencies.fiber]
+[dependencies.clibri]
 path = '../../../lib/rust'
 
-[dependencies.fiber_transport_server]
+[dependencies.clibri_transport_server]
 path = '../../../environment/transport/server/rust'
 
 [dependencies.futures]
@@ -25,5 +25,5 @@ version = '0.8.1'
 [package]
 authors = ['DmitryAstafyev <D.Astafyev@outlook.com>']
 edition = '2018'
-name = 'fiber_producer_rs'
+name = 'clibri_producer_rs'
 version = '0.1.0'

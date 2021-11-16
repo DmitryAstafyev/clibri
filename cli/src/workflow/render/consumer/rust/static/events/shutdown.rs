@@ -1,5 +1,5 @@
 use super::{Consumer, ConsumerError, Context};
-use fiber::client;
+use clibri::client;
 
 pub async fn handler<E: client::Error>(
     error: Option<ConsumerError<E>>,

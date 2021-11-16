@@ -22,7 +22,7 @@ pub mod responses;
 use super::context;
 use consumer::{identification, Consumer};
 use context::Context;
-use fiber::{env::logs, server};
+use clibri::{env::logs, server};
 use log::{debug, error, trace, warn};
 use protocol::PackingStruct;
 use std::collections::HashMap;

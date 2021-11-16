@@ -6,7 +6,7 @@ use std::{
 
 mod templates {
     pub const MODULE: &str = r#"use super::{protocol, Consumer, Context};
-use fiber::client;
+use clibri::client;
 
 pub async fn handler<E: client::Error>(
     event: protocol::[[request]],

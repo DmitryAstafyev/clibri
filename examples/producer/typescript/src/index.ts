@@ -1,5 +1,5 @@
-import { Server } from "fiber-websocket-server";
-import { Logger, ELogLevel } from "fiber";
+import { Server } from "clibri-websocket-server";
+import { Logger, ELogLevel } from "clibri";
 import { Producer, Context } from "./producer";
 
 Logger.setGlobalLevel(ELogLevel.verb);

@@ -1,53 +1,49 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug executable 'fiber'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=fiber",
-                    "--package=fiber"
-                ],
-                "filter": {
-                    "name": "fiber",
-                    "kind": "bin"
-                }
-            },
-            "args": [
-                "-s",
-                "/storage/projects/private/fiber/environment/protocol/prot/protocol.prot",
-                "-rs",
-                "/storage/projects/private/fiber/environment/protocol/prot/protocol.rs",
-                "-o",
-                "-wf",
-                "/storage/projects/private/fiber/environment/protocol/prot/protocol.workflow"
-            ],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'fiber'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=fiber",
-                    "--package=fiber"
-                ],
-                "filter": {
-                    "name": "fiber",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        }
-    ]
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug executable 'clibri'",
+			"cargo": {
+				"args": ["build", "--bin=clibri", "--package=clibri"],
+				"filter": {
+					"name": "clibri",
+					"kind": "bin"
+				}
+			},
+			"args": [
+				"-s",
+				"/storage/projects/private/clibri/environment/protocol/prot/protocol.prot",
+				"-rs",
+				"/storage/projects/private/clibri/environment/protocol/prot/protocol.rs",
+				"-o",
+				"-wf",
+				"/storage/projects/private/clibri/environment/protocol/prot/protocol.workflow"
+			],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in executable 'clibri'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--bin=clibri",
+					"--package=clibri"
+				],
+				"filter": {
+					"name": "clibri",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		}
+	]
 }

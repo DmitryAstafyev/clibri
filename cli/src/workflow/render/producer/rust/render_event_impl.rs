@@ -8,7 +8,7 @@ use std::{
 
 mod templates {
     pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
-use fiber::server;
+use clibri::server;
 use uuid::Uuid;
 
 [[broadcast_types]]
@@ -22,7 +22,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     panic!("Handler for protocol::[[event]] isn't implemented");
 }"#;
     pub const DEFAULT_MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
-use fiber::server;
+use clibri::server;
 use uuid::Uuid;
 
 [[broadcast_types]]

@@ -1,6 +1,6 @@
 use super::implementation::{controller, protocol, Consumer};
 use chrono::{DateTime, Local, TimeZone};
-use fiber::client;
+use clibri::client;
 use tokio::{select, task::spawn};
 use tokio_util::sync::CancellationToken;
 

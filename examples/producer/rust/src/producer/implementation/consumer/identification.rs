@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use super::{producer, protocol, Consumer};
-use fiber::env::logs;
+use clibri::env::logs;
 use log::warn;
 use std::collections::HashMap;
 use uuid::Uuid;

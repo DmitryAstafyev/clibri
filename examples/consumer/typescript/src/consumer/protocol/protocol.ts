@@ -1,4 +1,3 @@
-
 // tslint:disable: max-classes-per-file
 // tslint:disable: class-name
 // tslint:disable: no-namespace
@@ -7,89 +6,83 @@
 // tslint:disable: variable-name
 
 const Tools: {
-    append: typeof append;
+	append: typeof append;
 } = {
-    append: append,
+	append: append,
 };
 export function append(parts: ArrayBufferLike[]): ArrayBufferLike {
-    if (parts.length === 0) {
-        return (new Uint8Array()).buffer;
-    }
-    const tmp = new Uint8Array(parts.map(arr => arr.byteLength).reduce((acc, cur) => acc + cur));
-    let cursor = 0;
-    parts.forEach((arr) => {
-        tmp.set( new Uint8Array(arr), cursor);
-        cursor += arr.byteLength;
-    });
-    return tmp.buffer;
+	if (parts.length === 0) {
+		return new Uint8Array().buffer;
+	}
+	const tmp = new Uint8Array(
+		parts.map((arr) => arr.byteLength).reduce((acc, cur) => acc + cur)
+	);
+	let cursor = 0;
+	parts.forEach((arr) => {
+		tmp.set(new Uint8Array(arr), cursor);
+		cursor += arr.byteLength;
+	});
+	return tmp.buffer;
 }
 
 export const CBits = 8;
 
 export enum ESize {
-    u8 = 'u8',
-    u16 = 'u16',
-    u32 = 'u32',
-    u64 = 'u64',
+	u8 = "u8",
+	u16 = "u16",
+	u32 = "u32",
+	u64 = "u64",
 }
 
 export abstract class Primitive<T> {
+	private _value: T;
 
-    private _value: T;
+	constructor(value: T) {
+		this._value = value;
+	}
 
-    constructor(value: T) {
-        this._value = value;
-    }
+	public set(value: T) {
+		this._value = value;
+	}
 
-    public set(value: T) {
-        this._value = value;
-    }
+	public get(): T {
+		return this._value;
+	}
 
-    public get(): T {
-        return this._value;
-    }
+	public getSignature(): string {
+		return "";
+	}
 
-    public getSignature(): string {
-        return '';
-    }
+	public static encode(value: any): ArrayBufferLike | Error {
+		return new Uint8Array();
+	}
 
-    public static encode(value: any): ArrayBufferLike | Error {
-        return new Uint8Array();
-    }
+	public static decode(bytes: ArrayBufferLike): any | Error {
+		return;
+	}
 
-    public static decode(bytes: ArrayBufferLike): any | Error {
-        return;
-    }
+	abstract encode(): ArrayBufferLike | Error;
 
-    abstract encode(): ArrayBufferLike | Error;
-
-    abstract decode(bytes: ArrayBufferLike): T | Error;
-
+	abstract decode(bytes: ArrayBufferLike): T | Error;
 }
 
 export interface IPrimitive<T> {
-
-    getSignature(): string;
-    get(): T;
-    encode(value: any): ArrayBufferLike | Error;
-    decode(bytes: ArrayBufferLike): any | Error;
-
+	getSignature(): string;
+	get(): T;
+	encode(value: any): ArrayBufferLike | Error;
+	decode(bytes: ArrayBufferLike): any | Error;
 }
 
 export interface ISigned<T> {
-
-    getSignature(): string;
-    get(): T;
-    encode(): ArrayBufferLike | Error;
-    decode(bytes: ArrayBufferLike): T | Error;
-
+	getSignature(): string;
+	get(): T;
+	encode(): ArrayBufferLike | Error;
+	decode(bytes: ArrayBufferLike): T | Error;
 }
 
 export interface ISignedDecode<T> {
-
-    getSignature(): string;
-    decode(bytes: ArrayBufferLike): T | Error;
-
+	getSignature(): string;
+	decode(bytes: ArrayBufferLike): T | Error;
 }
 
 export class u8 extends Primitive<number> {
@@ -869,45 +862,43 @@ export class bool extends Primitive<boolean> {
 }
 
 export class StrUTF8 extends Primitive<string> {
+	public static getSignature(): string {
+		return "strUtf8";
+	}
 
-    public static getSignature(): string {
-        return 'strUtf8';
-    }
+	public static encode(value: string): ArrayBufferLike | Error {
+		const encoder = new TextEncoder();
+		return encoder.encode(value);
+	}
 
-    public static encode(value: string): ArrayBufferLike | Error {
-        const encoder = new TextEncoder();
-        return encoder.encode(value);
-    }
+	public static decode(bytes: ArrayBufferLike): string | Error {
+		const decoder = new TextDecoder();
+		return decoder.decode(bytes);
+	}
 
-    public static decode(bytes: ArrayBufferLike): string | Error {
-        const decoder = new TextDecoder();
-        return decoder.decode(bytes);
-    }
+	public static validate(value: any): Error | undefined {
+		if (typeof value !== "string") {
+			return new Error(`Invalid type of variable`);
+		}
+		return undefined;
+	}
 
-    public static validate(value: any): Error | undefined {
-        if (typeof value !== 'string') {
-            return new Error(`Invalid type of variable`);
-        }
-        return undefined;
-    }
+	public getSignature(): string {
+		return StrUTF8.getSignature();
+	}
 
-    public getSignature(): string {
-        return StrUTF8.getSignature();
-    }
+	public encode(): ArrayBufferLike | Error {
+		return StrUTF8.encode(this.get());
+	}
 
-    public encode(): ArrayBufferLike | Error {
-        return StrUTF8.encode(this.get());
-    }
-
-    public decode(bytes: ArrayBufferLike): string | Error {
-        const value = StrUTF8.decode(bytes);
-        if (value instanceof Error) {
-            return value;
-        }
-        this.set(value);
-        return value;
-    }
-
+	public decode(bytes: ArrayBufferLike): string | Error {
+		const value = StrUTF8.decode(bytes);
+		if (value instanceof Error) {
+			return value;
+		}
+		this.set(value);
+		return value;
+	}
 }
 
 export class ArrayU8 extends Primitive<number[]> {
@@ -2200,62 +2191,116 @@ export function validate(obj: any, scheme: IPropScheme[]): Error | undefined {
 	return errors.length > 0 ? new Error(errors.join("\n")) : undefined;
 }
 
-type u8Alias = u8; const u8Alias = u8;
-type u16Alias = u16; const u16Alias = u16;
-type u32Alias = u32; const u32Alias = u32;
-type u64Alias = u64; const u64Alias = u64;
-type i8Alias = i8; const i8Alias = i8;
-type i16Alias = i16; const i16Alias = i16;
-type i32Alias = i32; const i32Alias = i32;
-type i64Alias = i64; const i64Alias = i64;
-type f32Alias = f32; const f32Alias = f32;
-type f64Alias = f64; const f64Alias = f64;
-type boolAlias = bool; const boolAlias = bool;
-type StrUTF8Alias = StrUTF8; const StrUTF8Alias = StrUTF8;
-type ArrayU8Alias = ArrayU8; const ArrayU8Alias = ArrayU8;
-type ArrayU16Alias = ArrayU16; const ArrayU16Alias = ArrayU16;
-type ArrayU32Alias = ArrayU32; const ArrayU32Alias = ArrayU32;
-type ArrayU64Alias = ArrayU64; const ArrayU64Alias = ArrayU64;
-type ArrayI8Alias = ArrayI8; const ArrayI8Alias = ArrayI8;
-type ArrayI16Alias = ArrayI16; const ArrayI16Alias = ArrayI16;
-type ArrayI32Alias = ArrayI32; const ArrayI32Alias = ArrayI32;
-type ArrayI64Alias = ArrayI64; const ArrayI64Alias = ArrayI64;
-type ArrayF32Alias = ArrayF32; const ArrayF32Alias = ArrayF32;
-type ArrayF64Alias = ArrayF64; const ArrayF64Alias = ArrayF64;
-type ArrayBoolAlias = ArrayBool; const ArrayBoolAlias = ArrayBool;
-type ArrayStrUTF8Alias = ArrayStrUTF8; const ArrayStrUTF8Alias = ArrayStrUTF8;
-type OptionAlias = Option<any>; const OptionAlias = Option;
-type EnumAlias = Enum<any>; const EnumAlias = Enum;
-type PrimitiveAlias = Primitive<any>; const PrimitiveAlias = Primitive;
+type u8Alias = u8;
+const u8Alias = u8;
+type u16Alias = u16;
+const u16Alias = u16;
+type u32Alias = u32;
+const u32Alias = u32;
+type u64Alias = u64;
+const u64Alias = u64;
+type i8Alias = i8;
+const i8Alias = i8;
+type i16Alias = i16;
+const i16Alias = i16;
+type i32Alias = i32;
+const i32Alias = i32;
+type i64Alias = i64;
+const i64Alias = i64;
+type f32Alias = f32;
+const f32Alias = f32;
+type f64Alias = f64;
+const f64Alias = f64;
+type boolAlias = bool;
+const boolAlias = bool;
+type StrUTF8Alias = StrUTF8;
+const StrUTF8Alias = StrUTF8;
+type ArrayU8Alias = ArrayU8;
+const ArrayU8Alias = ArrayU8;
+type ArrayU16Alias = ArrayU16;
+const ArrayU16Alias = ArrayU16;
+type ArrayU32Alias = ArrayU32;
+const ArrayU32Alias = ArrayU32;
+type ArrayU64Alias = ArrayU64;
+const ArrayU64Alias = ArrayU64;
+type ArrayI8Alias = ArrayI8;
+const ArrayI8Alias = ArrayI8;
+type ArrayI16Alias = ArrayI16;
+const ArrayI16Alias = ArrayI16;
+type ArrayI32Alias = ArrayI32;
+const ArrayI32Alias = ArrayI32;
+type ArrayI64Alias = ArrayI64;
+const ArrayI64Alias = ArrayI64;
+type ArrayF32Alias = ArrayF32;
+const ArrayF32Alias = ArrayF32;
+type ArrayF64Alias = ArrayF64;
+const ArrayF64Alias = ArrayF64;
+type ArrayBoolAlias = ArrayBool;
+const ArrayBoolAlias = ArrayBool;
+type ArrayStrUTF8Alias = ArrayStrUTF8;
+const ArrayStrUTF8Alias = ArrayStrUTF8;
+type OptionAlias = Option<any>;
+const OptionAlias = Option;
+type EnumAlias = Enum<any>;
+const EnumAlias = Enum;
+type PrimitiveAlias = Primitive<any>;
+const PrimitiveAlias = Primitive;
 
 export namespace Primitives {
-    export const u8 = u8Alias; export type u8 = u8Alias;
-    export const u16 = u16Alias; export type u16 = u16Alias;
-    export const u32 = u32Alias; export type u32 = u32Alias;
-    export const u64 = u64Alias; export type u64 = u64Alias;
-    export const i8 = i8Alias; export type i8 = i8Alias;
-    export const i16 = i16Alias; export type i16 = i16Alias;
-    export const i32 = i32Alias; export type i32 = i32Alias;
-    export const i64 = i64Alias; export type i64 = i64Alias;
-    export const f32 = f32Alias; export type f32 = f32Alias;
-    export const f64 = f64Alias; export type f64 = f64Alias;
-    export const bool = boolAlias; export type bool = boolAlias;
-    export const StrUTF8 = StrUTF8Alias; export type StrUTF8 = StrUTF8Alias;
-    export const ArrayU8 = ArrayU8Alias; export type ArrayU8 = ArrayU8Alias;
-    export const ArrayU16 = ArrayU16Alias; export type ArrayU16 = ArrayU16Alias;
-    export const ArrayU32 = ArrayU32Alias; export type ArrayU32 = ArrayU32Alias;
-    export const ArrayU64 = ArrayU64Alias; export type ArrayU64 = ArrayU64Alias;
-    export const ArrayI8 = ArrayI8Alias; export type ArrayI8 = ArrayI8Alias;
-    export const ArrayI16 = ArrayI16Alias; export type ArrayI16 = ArrayI16Alias;
-    export const ArrayI32 = ArrayI32Alias; export type ArrayI32 = ArrayI32Alias;
-    export const ArrayI64 = ArrayI64Alias; export type ArrayI64 = ArrayI64Alias;
-    export const ArrayF32 = ArrayF32Alias; export type ArrayF32 = ArrayF32Alias;
-    export const ArrayF64 = ArrayF64Alias; export type ArrayF64 = ArrayF64Alias;
-    export const ArrayBool = ArrayBoolAlias; export type ArrayBool = ArrayBoolAlias;
-    export const ArrayStrUTF8 = ArrayStrUTF8Alias; export type ArrayStrUTF8 = ArrayStrUTF8Alias;
-    export const Option = OptionAlias; export type Option = OptionAlias;
-    export const Enum = EnumAlias; export type Enum = EnumAlias;
-    export const Primitive = PrimitiveAlias; export type Primitive = PrimitiveAlias;
+	export const u8 = u8Alias;
+	export type u8 = u8Alias;
+	export const u16 = u16Alias;
+	export type u16 = u16Alias;
+	export const u32 = u32Alias;
+	export type u32 = u32Alias;
+	export const u64 = u64Alias;
+	export type u64 = u64Alias;
+	export const i8 = i8Alias;
+	export type i8 = i8Alias;
+	export const i16 = i16Alias;
+	export type i16 = i16Alias;
+	export const i32 = i32Alias;
+	export type i32 = i32Alias;
+	export const i64 = i64Alias;
+	export type i64 = i64Alias;
+	export const f32 = f32Alias;
+	export type f32 = f32Alias;
+	export const f64 = f64Alias;
+	export type f64 = f64Alias;
+	export const bool = boolAlias;
+	export type bool = boolAlias;
+	export const StrUTF8 = StrUTF8Alias;
+	export type StrUTF8 = StrUTF8Alias;
+	export const ArrayU8 = ArrayU8Alias;
+	export type ArrayU8 = ArrayU8Alias;
+	export const ArrayU16 = ArrayU16Alias;
+	export type ArrayU16 = ArrayU16Alias;
+	export const ArrayU32 = ArrayU32Alias;
+	export type ArrayU32 = ArrayU32Alias;
+	export const ArrayU64 = ArrayU64Alias;
+	export type ArrayU64 = ArrayU64Alias;
+	export const ArrayI8 = ArrayI8Alias;
+	export type ArrayI8 = ArrayI8Alias;
+	export const ArrayI16 = ArrayI16Alias;
+	export type ArrayI16 = ArrayI16Alias;
+	export const ArrayI32 = ArrayI32Alias;
+	export type ArrayI32 = ArrayI32Alias;
+	export const ArrayI64 = ArrayI64Alias;
+	export type ArrayI64 = ArrayI64Alias;
+	export const ArrayF32 = ArrayF32Alias;
+	export type ArrayF32 = ArrayF32Alias;
+	export const ArrayF64 = ArrayF64Alias;
+	export type ArrayF64 = ArrayF64Alias;
+	export const ArrayBool = ArrayBoolAlias;
+	export type ArrayBool = ArrayBoolAlias;
+	export const ArrayStrUTF8 = ArrayStrUTF8Alias;
+	export type ArrayStrUTF8 = ArrayStrUTF8Alias;
+	export const Option = OptionAlias;
+	export type Option = OptionAlias;
+	export const Enum = EnumAlias;
+	export type Enum = EnumAlias;
+	export const Primitive = PrimitiveAlias;
+	export type Primitive = PrimitiveAlias;
 }
 
 interface INext {
@@ -2444,7 +2489,7 @@ export function getPackingMiddleware(): PackingMiddleware | undefined {
 }
 
 export abstract class PackingMiddleware {
-	static GUID: string = "___FiberPackingMiddleware___";
+	static GUID: string = "___clibriPackingMiddleware___";
 
 	constructor() {
 		const space = globals();
@@ -2478,7 +2523,6 @@ export abstract class PackingMiddleware {
 		return buffer;
 	}
 }
-
 
 export interface IAvailableMessage<T> {
 	header: {
@@ -2867,3833 +2911,6102 @@ export namespace Protocol {
 	export const validate = validateAlias;
 }
 
-
 export interface IAvailableMessages {
-    UserRole?: IUserRole,
-    Identification?: Identification.IAvailableMessages,
-    Events?: Events.IAvailableMessages,
-    Beacons?: Beacons.IAvailableMessages,
-    ServerEvents?: ServerEvents.IAvailableMessages,
-    Message?: Message.IAvailableMessages,
-    Messages?: Messages.IAvailableMessages,
-    UserLogin?: UserLogin.IAvailableMessages,
-    UserInfo?: UserInfo.IAvailableMessages,
-    Users?: Users.IAvailableMessages,
-    InternalServiceGroup?: InternalServiceGroup.IAvailableMessages,
+	UserRole?: IUserRole;
+	Identification?: Identification.IAvailableMessages;
+	Events?: Events.IAvailableMessages;
+	Beacons?: Beacons.IAvailableMessages;
+	ServerEvents?: ServerEvents.IAvailableMessages;
+	Message?: Message.IAvailableMessages;
+	Messages?: Messages.IAvailableMessages;
+	UserLogin?: UserLogin.IAvailableMessages;
+	UserInfo?: UserInfo.IAvailableMessages;
+	Users?: Users.IAvailableMessages;
+	InternalServiceGroup?: InternalServiceGroup.IAvailableMessages;
 }
 export interface IUserRole {
-    Admin?: string;
-    User?: string;
-    Manager?: string;
+	Admin?: string;
+	User?: string;
+	Manager?: string;
 }
 
 export class UserRole extends Protocol.Primitives.Enum<IUserRole> {
-    public static from(obj: any): IUserRole | Error {
-        const inst = new UserRole();
-        let err: Error | undefined;
-        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-            err = inst.decode(obj);
-        } else {
-            err = inst.set(obj);
-        }
-        return err instanceof Error ? err : inst.get();
-    }
-    public static getId(): number { return 11; }
-    public from(obj: any): IUserRole | Error {
-        return UserRole.from(obj);
-    }
-    public signature(): number { return 0; }
-    public getId(): number { return 11; }
-    public getAllowed(): string[] {
-        return [
-            Protocol.Primitives.StrUTF8.getSignature(),
-            Protocol.Primitives.StrUTF8.getSignature(),
-            Protocol.Primitives.StrUTF8.getSignature(),
-        ];
-    }
-    public getOptionValue(id: number): ISigned<any> {
-        switch (id) {
-            case 0: return new Protocol.Primitives.StrUTF8('');
-            case 1: return new Protocol.Primitives.StrUTF8('');
-            case 2: return new Protocol.Primitives.StrUTF8('');
-            default: throw new Error(`No option with id=${id}`);
-        }
-    }
-    public get(): IUserRole {
-        const target: IUserRole = {};
-        switch (this.getValueIndex()) {
-            case 0: target.Admin = this.getValue<string>(); break;
-            case 1: target.User = this.getValue<string>(); break;
-            case 2: target.Manager = this.getValue<string>(); break;
-        }
-        return target;
-    }
-    public set(src: IUserRole): Error | undefined{
-        if (Object.keys(src).length > 1) {
-            return new Error(`Option cannot have more then 1 value.`);
-        }
-        if (src.Admin !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(0, new Protocol.Primitives.StrUTF8(src.Admin)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.User !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(1, new Protocol.Primitives.StrUTF8(src.User)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-        if (src.Manager !== undefined) {
-            const err: Error | undefined = this.setValue(new Protocol.Primitives.Option<string>(2, new Protocol.Primitives.StrUTF8(src.Manager)));
-            if (err instanceof Error) {
-                return err;
-            }
-        }
-    }
+	public static from(obj: any): IUserRole | Error {
+		const inst = new UserRole();
+		let err: Error | undefined;
+		if (
+			obj instanceof Buffer ||
+			obj instanceof ArrayBuffer ||
+			obj instanceof Uint8Array
+		) {
+			err = inst.decode(obj);
+		} else {
+			err = inst.set(obj);
+		}
+		return err instanceof Error ? err : inst.get();
+	}
+	public static getId(): number {
+		return 11;
+	}
+	public from(obj: any): IUserRole | Error {
+		return UserRole.from(obj);
+	}
+	public signature(): number {
+		return 0;
+	}
+	public getId(): number {
+		return 11;
+	}
+	public getAllowed(): string[] {
+		return [
+			Protocol.Primitives.StrUTF8.getSignature(),
+			Protocol.Primitives.StrUTF8.getSignature(),
+			Protocol.Primitives.StrUTF8.getSignature(),
+		];
+	}
+	public getOptionValue(id: number): ISigned<any> {
+		switch (id) {
+			case 0:
+				return new Protocol.Primitives.StrUTF8("");
+			case 1:
+				return new Protocol.Primitives.StrUTF8("");
+			case 2:
+				return new Protocol.Primitives.StrUTF8("");
+			default:
+				throw new Error(`No option with id=${id}`);
+		}
+	}
+	public get(): IUserRole {
+		const target: IUserRole = {};
+		switch (this.getValueIndex()) {
+			case 0:
+				target.Admin = this.getValue<string>();
+				break;
+			case 1:
+				target.User = this.getValue<string>();
+				break;
+			case 2:
+				target.Manager = this.getValue<string>();
+				break;
+		}
+		return target;
+	}
+	public set(src: IUserRole): Error | undefined {
+		if (Object.keys(src).length > 1) {
+			return new Error(`Option cannot have more then 1 value.`);
+		}
+		if (src.Admin !== undefined) {
+			const err: Error | undefined = this.setValue(
+				new Protocol.Primitives.Option<string>(
+					0,
+					new Protocol.Primitives.StrUTF8(src.Admin)
+				)
+			);
+			if (err instanceof Error) {
+				return err;
+			}
+		}
+		if (src.User !== undefined) {
+			const err: Error | undefined = this.setValue(
+				new Protocol.Primitives.Option<string>(
+					1,
+					new Protocol.Primitives.StrUTF8(src.User)
+				)
+			);
+			if (err instanceof Error) {
+				return err;
+			}
+		}
+		if (src.Manager !== undefined) {
+			const err: Error | undefined = this.setValue(
+				new Protocol.Primitives.Option<string>(
+					2,
+					new Protocol.Primitives.StrUTF8(src.Manager)
+				)
+			);
+			if (err instanceof Error) {
+				return err;
+			}
+		}
+	}
 }
 
 export namespace Identification {
-    export interface IAvailableMessages {
-        SelfKey?: SelfKey,
-        SelfKeyResponse?: SelfKeyResponse,
-        AssignedKey?: AssignedKey,
-    }
+	export interface IAvailableMessages {
+		SelfKey?: SelfKey;
+		SelfKeyResponse?: SelfKeyResponse;
+		AssignedKey?: AssignedKey;
+	}
 
-    export interface ISelfKey {
-        uuid: string | undefined;
-        id: bigint | undefined;
-        location: string | undefined;
-    }
-    export class SelfKey extends Protocol.Convertor<SelfKey> implements ISelfKey, ISigned<SelfKey> {
+	export interface ISelfKey {
+		uuid: string | undefined;
+		id: bigint | undefined;
+		location: string | undefined;
+	}
+	export class SelfKey
+		extends Protocol.Convertor<SelfKey>
+		implements ISelfKey, ISigned<SelfKey>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+			{ prop: "id", types: Protocol.Primitives.u64, optional: true },
+			{
+				prop: "location",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: true, },
-            { prop: 'id', types: Protocol.Primitives.u64, optional: true, },
-            { prop: 'location', types: Protocol.Primitives.StrUTF8, optional: true, },
-        ];
+		public static defaults(): SelfKey {
+			return new Identification.SelfKey({
+				uuid: undefined,
+				id: undefined,
+				location: undefined,
+			});
+		}
 
-        public static defaults(): SelfKey {
-            return new Identification.SelfKey({
-                uuid: undefined,
-                id: undefined,
-                location: undefined,
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<SelfKey>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof SelfKey)) {
+									throw new Error(
+										`Expecting instance of SelfKey on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof SelfKey
+							? undefined
+							: new Error(`Expecting instance of SelfKey`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<SelfKey>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof SelfKey)) {
-                                throw new Error(`Expecting instance of SelfKey on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof SelfKey ? undefined : new Error(`Expecting instance of SelfKey`);
-                }};
-            }
-        }
+		public static from(obj: any): SelfKey | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = SelfKey.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					SelfKey.scheme
+				);
+				return error instanceof Error
+					? error
+					: new SelfKey({
+							uuid: obj.uuid,
+							id: obj.id,
+							location: obj.location,
+					  });
+			}
+		}
 
-        public static from(obj: any): SelfKey | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = SelfKey.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, SelfKey.scheme);
-                return error instanceof Error ? error : new SelfKey({
-                    uuid: obj.uuid,
-                    id: obj.id,
-                    location: obj.location,
-                });
-            }
-        }
+		public uuid!: string | undefined;
+		public id!: bigint | undefined;
+		public location!: string | undefined;
+		public static getSignature(): string {
+			return "SelfKey";
+		}
+		public static getId(): number {
+			return 2;
+		}
 
-        public uuid!: string | undefined;
-        public id!: bigint | undefined;
-        public location!: string | undefined;
-        public static getSignature(): string { return 'SelfKey'; }
-        public static getId(): number { return 2; }
+		constructor(params: ISelfKey) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: ISelfKey)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "SelfKey";
+		}
 
-        public signature(): number { return 0; }
+		public get(): SelfKey {
+			return this;
+		}
 
-        public getSignature(): string { return 'SelfKey'; }
+		public getId(): number {
+			return 2;
+		}
 
-        public get(): SelfKey { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.uuid === undefined
+						? this.getBuffer(
+								3,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								3,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.uuid
+						  ),
+				() =>
+					this.id === undefined
+						? this.getBuffer(
+								4,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBuffer(
+								4,
+								Protocol.ESize.u8,
+								Protocol.Primitives.u64.getSize(),
+								Protocol.Primitives.u64.encode(this.id)
+						  ),
+				() =>
+					this.location === undefined
+						? this.getBuffer(
+								5,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								5,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.location
+						  ),
+			]);
+		}
 
-        public getId(): number { return 2; }
+		public decode(buffer: ArrayBufferLike): Error | SelfKey {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuidBuf: ArrayBufferLike | undefined = storage.get(3);
+			if (uuidBuf === undefined) {
+				return new Error(`Fail to get property uuid (id=3)`);
+			}
+			if (uuidBuf.byteLength === 0) {
+				this.uuid = undefined;
+			} else {
+				const uuid: string | Error = this.getValue<string>(
+					storage,
+					3,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (uuid instanceof Error) {
+					return uuid;
+				} else {
+					this.uuid = uuid;
+				}
+			}
+			const idBuf: ArrayBufferLike | undefined = storage.get(4);
+			if (idBuf === undefined) {
+				return new Error(`Fail to get property id (id=4)`);
+			}
+			if (idBuf.byteLength === 0) {
+				this.id = undefined;
+			} else {
+				const id: bigint | Error = this.getValue<bigint>(
+					storage,
+					4,
+					Protocol.Primitives.u64.decode
+				);
+				if (id instanceof Error) {
+					return id;
+				} else {
+					this.id = id;
+				}
+			}
+			const locationBuf: ArrayBufferLike | undefined = storage.get(5);
+			if (locationBuf === undefined) {
+				return new Error(`Fail to get property location (id=5)`);
+			}
+			if (locationBuf.byteLength === 0) {
+				this.location = undefined;
+			} else {
+				const location: string | Error = this.getValue<string>(
+					storage,
+					5,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (location instanceof Error) {
+					return location;
+				} else {
+					this.location = location;
+				}
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.uuid === undefined ? this.getBuffer(3, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(3, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-                () => this.id === undefined ? this.getBuffer(4, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(4, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.id)),
-                () => this.location === undefined ? this.getBuffer(5, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(5, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.location),
-            ]);
-        }
+		public defaults(): SelfKey {
+			return SelfKey.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | SelfKey {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuidBuf: ArrayBufferLike | undefined = storage.get(3);
-            if (uuidBuf === undefined) {
-                return new Error(`Fail to get property uuid (id=3)`);
-            }
-            if (uuidBuf.byteLength === 0) {
-                this.uuid = undefined;
-            } else {
-                const uuid: string | Error = this.getValue<string>(storage, 3, Protocol.Primitives.StrUTF8.decode);
-                if (uuid instanceof Error) {
-                    return uuid;
-                } else {
-                    this.uuid = uuid;
-                }
-            }
-            const idBuf: ArrayBufferLike | undefined = storage.get(4);
-            if (idBuf === undefined) {
-                return new Error(`Fail to get property id (id=4)`);
-            }
-            if (idBuf.byteLength === 0) {
-                this.id = undefined;
-            } else {
-                const id: bigint | Error = this.getValue<bigint>(storage, 4, Protocol.Primitives.u64.decode);
-                if (id instanceof Error) {
-                    return id;
-                } else {
-                    this.id = id;
-                }
-            }
-            const locationBuf: ArrayBufferLike | undefined = storage.get(5);
-            if (locationBuf === undefined) {
-                return new Error(`Fail to get property location (id=5)`);
-            }
-            if (locationBuf.byteLength === 0) {
-                this.location = undefined;
-            } else {
-                const location: string | Error = this.getValue<string>(storage, 5, Protocol.Primitives.StrUTF8.decode);
-                if (location instanceof Error) {
-                    return location;
-                } else {
-                    this.location = location;
-                }
-            }
-            return this;
-        }
+	export interface ISelfKeyResponse {
+		uuid: string;
+	}
+	export class SelfKeyResponse
+		extends Protocol.Convertor<SelfKeyResponse>
+		implements ISelfKeyResponse, ISigned<SelfKeyResponse>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): SelfKey {
-            return SelfKey.defaults();
-        }
-    }
+		public static defaults(): SelfKeyResponse {
+			return new Identification.SelfKeyResponse({
+				uuid: "",
+			});
+		}
 
-    export interface ISelfKeyResponse {
-        uuid: string;
-    }
-    export class SelfKeyResponse extends Protocol.Convertor<SelfKeyResponse> implements ISelfKeyResponse, ISigned<SelfKeyResponse> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(
+								`Expecting Array<SelfKeyResponse>`
+							);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof SelfKeyResponse)) {
+									throw new Error(
+										`Expecting instance of SelfKeyResponse on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof SelfKeyResponse
+							? undefined
+							: new Error(
+									`Expecting instance of SelfKeyResponse`
+							  );
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): SelfKeyResponse | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = SelfKeyResponse.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					SelfKeyResponse.scheme
+				);
+				return error instanceof Error
+					? error
+					: new SelfKeyResponse({
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static defaults(): SelfKeyResponse {
-            return new Identification.SelfKeyResponse({
-                uuid: '',
-            });
-        }
+		public uuid!: string;
+		public static getSignature(): string {
+			return "SelfKeyResponse";
+		}
+		public static getId(): number {
+			return 6;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<SelfKeyResponse>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof SelfKeyResponse)) {
-                                throw new Error(`Expecting instance of SelfKeyResponse on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof SelfKeyResponse ? undefined : new Error(`Expecting instance of SelfKeyResponse`);
-                }};
-            }
-        }
+		constructor(params: ISelfKeyResponse) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): SelfKeyResponse | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = SelfKeyResponse.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, SelfKeyResponse.scheme);
-                return error instanceof Error ? error : new SelfKeyResponse({
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public uuid!: string;
-        public static getSignature(): string { return 'SelfKeyResponse'; }
-        public static getId(): number { return 6; }
+		public getSignature(): string {
+			return "SelfKeyResponse";
+		}
 
+		public get(): SelfKeyResponse {
+			return this;
+		}
 
-        constructor(params: ISelfKeyResponse)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 6;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						7,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'SelfKeyResponse'; }
+		public decode(buffer: ArrayBufferLike): Error | SelfKeyResponse {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				7,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public get(): SelfKeyResponse { return this; }
+		public defaults(): SelfKeyResponse {
+			return SelfKeyResponse.defaults();
+		}
+	}
 
-        public getId(): number { return 6; }
+	export interface IAssignedKey {
+		uuid: string | undefined;
+		auth: boolean | undefined;
+	}
+	export class AssignedKey
+		extends Protocol.Convertor<AssignedKey>
+		implements IAssignedKey, ISigned<AssignedKey>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+			{ prop: "auth", types: Protocol.Primitives.bool, optional: true },
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(7, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public static defaults(): AssignedKey {
+			return new Identification.AssignedKey({
+				uuid: undefined,
+				auth: undefined,
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | SelfKeyResponse {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 7, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<AssignedKey>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof AssignedKey)) {
+									throw new Error(
+										`Expecting instance of AssignedKey on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof AssignedKey
+							? undefined
+							: new Error(`Expecting instance of AssignedKey`);
+					},
+				};
+			}
+		}
 
-        public defaults(): SelfKeyResponse {
-            return SelfKeyResponse.defaults();
-        }
-    }
+		public static from(obj: any): AssignedKey | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = AssignedKey.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					AssignedKey.scheme
+				);
+				return error instanceof Error
+					? error
+					: new AssignedKey({
+							uuid: obj.uuid,
+							auth: obj.auth,
+					  });
+			}
+		}
 
-    export interface IAssignedKey {
-        uuid: string | undefined;
-        auth: boolean | undefined;
-    }
-    export class AssignedKey extends Protocol.Convertor<AssignedKey> implements IAssignedKey, ISigned<AssignedKey> {
+		public uuid!: string | undefined;
+		public auth!: boolean | undefined;
+		public static getSignature(): string {
+			return "AssignedKey";
+		}
+		public static getId(): number {
+			return 8;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: true, },
-            { prop: 'auth', types: Protocol.Primitives.bool, optional: true, },
-        ];
+		constructor(params: IAssignedKey) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): AssignedKey {
-            return new Identification.AssignedKey({
-                uuid: undefined,
-                auth: undefined,
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<AssignedKey>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof AssignedKey)) {
-                                throw new Error(`Expecting instance of AssignedKey on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof AssignedKey ? undefined : new Error(`Expecting instance of AssignedKey`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "AssignedKey";
+		}
 
-        public static from(obj: any): AssignedKey | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = AssignedKey.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, AssignedKey.scheme);
-                return error instanceof Error ? error : new AssignedKey({
-                    uuid: obj.uuid,
-                    auth: obj.auth,
-                });
-            }
-        }
+		public get(): AssignedKey {
+			return this;
+		}
 
-        public uuid!: string | undefined;
-        public auth!: boolean | undefined;
-        public static getSignature(): string { return 'AssignedKey'; }
-        public static getId(): number { return 8; }
+		public getId(): number {
+			return 8;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.uuid === undefined
+						? this.getBuffer(
+								9,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								9,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.uuid
+						  ),
+				() =>
+					this.auth === undefined
+						? this.getBuffer(
+								10,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBuffer(
+								10,
+								Protocol.ESize.u8,
+								Protocol.Primitives.bool.getSize(),
+								Protocol.Primitives.bool.encode(this.auth)
+						  ),
+			]);
+		}
 
-        constructor(params: IAssignedKey)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | AssignedKey {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuidBuf: ArrayBufferLike | undefined = storage.get(9);
+			if (uuidBuf === undefined) {
+				return new Error(`Fail to get property uuid (id=9)`);
+			}
+			if (uuidBuf.byteLength === 0) {
+				this.uuid = undefined;
+			} else {
+				const uuid: string | Error = this.getValue<string>(
+					storage,
+					9,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (uuid instanceof Error) {
+					return uuid;
+				} else {
+					this.uuid = uuid;
+				}
+			}
+			const authBuf: ArrayBufferLike | undefined = storage.get(10);
+			if (authBuf === undefined) {
+				return new Error(`Fail to get property auth (id=10)`);
+			}
+			if (authBuf.byteLength === 0) {
+				this.auth = undefined;
+			} else {
+				const auth: boolean | Error = this.getValue<boolean>(
+					storage,
+					10,
+					Protocol.Primitives.bool.decode
+				);
+				if (auth instanceof Error) {
+					return auth;
+				} else {
+					this.auth = auth;
+				}
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'AssignedKey'; }
-
-        public get(): AssignedKey { return this; }
-
-        public getId(): number { return 8; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.uuid === undefined ? this.getBuffer(9, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(9, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-                () => this.auth === undefined ? this.getBuffer(10, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBuffer(10, Protocol.ESize.u8, Protocol.Primitives.bool.getSize(), Protocol.Primitives.bool.encode(this.auth)),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | AssignedKey {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuidBuf: ArrayBufferLike | undefined = storage.get(9);
-            if (uuidBuf === undefined) {
-                return new Error(`Fail to get property uuid (id=9)`);
-            }
-            if (uuidBuf.byteLength === 0) {
-                this.uuid = undefined;
-            } else {
-                const uuid: string | Error = this.getValue<string>(storage, 9, Protocol.Primitives.StrUTF8.decode);
-                if (uuid instanceof Error) {
-                    return uuid;
-                } else {
-                    this.uuid = uuid;
-                }
-            }
-            const authBuf: ArrayBufferLike | undefined = storage.get(10);
-            if (authBuf === undefined) {
-                return new Error(`Fail to get property auth (id=10)`);
-            }
-            if (authBuf.byteLength === 0) {
-                this.auth = undefined;
-            } else {
-                const auth: boolean | Error = this.getValue<boolean>(storage, 10, Protocol.Primitives.bool.decode);
-                if (auth instanceof Error) {
-                    return auth;
-                } else {
-                    this.auth = auth;
-                }
-            }
-            return this;
-        }
-
-        public defaults(): AssignedKey {
-            return AssignedKey.defaults();
-        }
-    }
-
+		public defaults(): AssignedKey {
+			return AssignedKey.defaults();
+		}
+	}
 }
 
 export namespace Events {
-    export interface IAvailableMessages {
-        UserConnected?: UserConnected,
-        UserDisconnected?: UserDisconnected,
-        Message?: Message,
-    }
+	export interface IAvailableMessages {
+		UserConnected?: UserConnected;
+		UserDisconnected?: UserDisconnected;
+		Message?: Message;
+	}
 
-    export interface IUserConnected {
-        username: string;
-        uuid: string;
-    }
-    export class UserConnected extends Protocol.Convertor<UserConnected> implements IUserConnected, ISigned<UserConnected> {
+	export interface IUserConnected {
+		username: string;
+		uuid: string;
+	}
+	export class UserConnected
+		extends Protocol.Convertor<UserConnected>
+		implements IUserConnected, ISigned<UserConnected>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "username",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'username', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): UserConnected {
+			return new Events.UserConnected({
+				username: "",
+				uuid: "",
+			});
+		}
 
-        public static defaults(): UserConnected {
-            return new Events.UserConnected({
-                username: '',
-                uuid: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<UserConnected>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof UserConnected)) {
+									throw new Error(
+										`Expecting instance of UserConnected on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof UserConnected
+							? undefined
+							: new Error(`Expecting instance of UserConnected`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<UserConnected>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof UserConnected)) {
-                                throw new Error(`Expecting instance of UserConnected on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof UserConnected ? undefined : new Error(`Expecting instance of UserConnected`);
-                }};
-            }
-        }
+		public static from(obj: any): UserConnected | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = UserConnected.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					UserConnected.scheme
+				);
+				return error instanceof Error
+					? error
+					: new UserConnected({
+							username: obj.username,
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static from(obj: any): UserConnected | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = UserConnected.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, UserConnected.scheme);
-                return error instanceof Error ? error : new UserConnected({
-                    username: obj.username,
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public username!: string;
+		public uuid!: string;
+		public static getSignature(): string {
+			return "UserConnected";
+		}
+		public static getId(): number {
+			return 13;
+		}
 
-        public username!: string;
-        public uuid!: string;
-        public static getSignature(): string { return 'UserConnected'; }
-        public static getId(): number { return 13; }
+		constructor(params: IUserConnected) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IUserConnected)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "UserConnected";
+		}
 
-        public signature(): number { return 0; }
+		public get(): UserConnected {
+			return this;
+		}
 
-        public getSignature(): string { return 'UserConnected'; }
+		public getId(): number {
+			return 13;
+		}
 
-        public get(): UserConnected { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						14,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.username
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						15,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getId(): number { return 13; }
+		public decode(buffer: ArrayBufferLike): Error | UserConnected {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const username: string | Error = this.getValue<string>(
+				storage,
+				14,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (username instanceof Error) {
+				return username;
+			} else {
+				this.username = username;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				15,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(14, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.username),
-                () => this.getBufferFromBuf<string>(15, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public defaults(): UserConnected {
+			return UserConnected.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | UserConnected {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const username: string | Error = this.getValue<string>(storage, 14, Protocol.Primitives.StrUTF8.decode);
-            if (username instanceof Error) {
-                return username;
-            } else {
-                this.username = username;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 15, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+	export interface IUserDisconnected {
+		username: string;
+		uuid: string;
+	}
+	export class UserDisconnected
+		extends Protocol.Convertor<UserDisconnected>
+		implements IUserDisconnected, ISigned<UserDisconnected>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "username",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): UserConnected {
-            return UserConnected.defaults();
-        }
-    }
+		public static defaults(): UserDisconnected {
+			return new Events.UserDisconnected({
+				username: "",
+				uuid: "",
+			});
+		}
 
-    export interface IUserDisconnected {
-        username: string;
-        uuid: string;
-    }
-    export class UserDisconnected extends Protocol.Convertor<UserDisconnected> implements IUserDisconnected, ISigned<UserDisconnected> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(
+								`Expecting Array<UserDisconnected>`
+							);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof UserDisconnected)) {
+									throw new Error(
+										`Expecting instance of UserDisconnected on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof UserDisconnected
+							? undefined
+							: new Error(
+									`Expecting instance of UserDisconnected`
+							  );
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'username', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): UserDisconnected | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = UserDisconnected.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					UserDisconnected.scheme
+				);
+				return error instanceof Error
+					? error
+					: new UserDisconnected({
+							username: obj.username,
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static defaults(): UserDisconnected {
-            return new Events.UserDisconnected({
-                username: '',
-                uuid: '',
-            });
-        }
+		public username!: string;
+		public uuid!: string;
+		public static getSignature(): string {
+			return "UserDisconnected";
+		}
+		public static getId(): number {
+			return 16;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<UserDisconnected>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof UserDisconnected)) {
-                                throw new Error(`Expecting instance of UserDisconnected on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof UserDisconnected ? undefined : new Error(`Expecting instance of UserDisconnected`);
-                }};
-            }
-        }
+		constructor(params: IUserDisconnected) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): UserDisconnected | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = UserDisconnected.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, UserDisconnected.scheme);
-                return error instanceof Error ? error : new UserDisconnected({
-                    username: obj.username,
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public username!: string;
-        public uuid!: string;
-        public static getSignature(): string { return 'UserDisconnected'; }
-        public static getId(): number { return 16; }
+		public getSignature(): string {
+			return "UserDisconnected";
+		}
 
+		public get(): UserDisconnected {
+			return this;
+		}
 
-        constructor(params: IUserDisconnected)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 16;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						17,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.username
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						18,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'UserDisconnected'; }
+		public decode(buffer: ArrayBufferLike): Error | UserDisconnected {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const username: string | Error = this.getValue<string>(
+				storage,
+				17,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (username instanceof Error) {
+				return username;
+			} else {
+				this.username = username;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				18,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public get(): UserDisconnected { return this; }
+		public defaults(): UserDisconnected {
+			return UserDisconnected.defaults();
+		}
+	}
 
-        public getId(): number { return 16; }
+	export interface IMessage {
+		timestamp: bigint;
+		user: string;
+		message: string;
+		uuid: string;
+	}
+	export class Message
+		extends Protocol.Convertor<Message>
+		implements IMessage, ISigned<Message>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "timestamp",
+				types: Protocol.Primitives.u64,
+				optional: false,
+			},
+			{
+				prop: "user",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "message",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(17, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.username),
-                () => this.getBufferFromBuf<string>(18, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public static defaults(): Message {
+			return new Events.Message({
+				timestamp: BigInt(0),
+				user: "",
+				message: "",
+				uuid: "",
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | UserDisconnected {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const username: string | Error = this.getValue<string>(storage, 17, Protocol.Primitives.StrUTF8.decode);
-            if (username instanceof Error) {
-                return username;
-            } else {
-                this.username = username;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 18, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Message>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Message)) {
+									throw new Error(
+										`Expecting instance of Message on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Message
+							? undefined
+							: new Error(`Expecting instance of Message`);
+					},
+				};
+			}
+		}
 
-        public defaults(): UserDisconnected {
-            return UserDisconnected.defaults();
-        }
-    }
+		public static from(obj: any): Message | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Message.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Message.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Message({
+							timestamp: obj.timestamp,
+							user: obj.user,
+							message: obj.message,
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-    export interface IMessage {
-        timestamp: bigint;
-        user: string;
-        message: string;
-        uuid: string;
-    }
-    export class Message extends Protocol.Convertor<Message> implements IMessage, ISigned<Message> {
+		public timestamp!: bigint;
+		public user!: string;
+		public message!: string;
+		public uuid!: string;
+		public static getSignature(): string {
+			return "Message";
+		}
+		public static getId(): number {
+			return 19;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'timestamp', types: Protocol.Primitives.u64, optional: false, },
-            { prop: 'user', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'message', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		constructor(params: IMessage) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): Message {
-            return new Events.Message({
-                timestamp: BigInt(0),
-                user: '',
-                message: '',
-                uuid: '',
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Message>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Message)) {
-                                throw new Error(`Expecting instance of Message on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Message ? undefined : new Error(`Expecting instance of Message`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "Message";
+		}
 
-        public static from(obj: any): Message | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Message.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Message.scheme);
-                return error instanceof Error ? error : new Message({
-                    timestamp: obj.timestamp,
-                    user: obj.user,
-                    message: obj.message,
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public get(): Message {
+			return this;
+		}
 
-        public timestamp!: bigint;
-        public user!: string;
-        public message!: string;
-        public uuid!: string;
-        public static getSignature(): string { return 'Message'; }
-        public static getId(): number { return 19; }
+		public getId(): number {
+			return 19;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBuffer(
+						20,
+						Protocol.ESize.u8,
+						Protocol.Primitives.u64.getSize(),
+						Protocol.Primitives.u64.encode(this.timestamp)
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						21,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.user
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						22,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.message
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						23,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        constructor(params: IMessage)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | Message {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const timestamp: bigint | Error = this.getValue<bigint>(
+				storage,
+				20,
+				Protocol.Primitives.u64.decode
+			);
+			if (timestamp instanceof Error) {
+				return timestamp;
+			} else {
+				this.timestamp = timestamp;
+			}
+			const user: string | Error = this.getValue<string>(
+				storage,
+				21,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (user instanceof Error) {
+				return user;
+			} else {
+				this.user = user;
+			}
+			const message: string | Error = this.getValue<string>(
+				storage,
+				22,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (message instanceof Error) {
+				return message;
+			} else {
+				this.message = message;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				23,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'Message'; }
-
-        public get(): Message { return this; }
-
-        public getId(): number { return 19; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBuffer(20, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.timestamp)),
-                () => this.getBufferFromBuf<string>(21, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
-                () => this.getBufferFromBuf<string>(22, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
-                () => this.getBufferFromBuf<string>(23, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | Message {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const timestamp: bigint | Error = this.getValue<bigint>(storage, 20, Protocol.Primitives.u64.decode);
-            if (timestamp instanceof Error) {
-                return timestamp;
-            } else {
-                this.timestamp = timestamp;
-            }
-            const user: string | Error = this.getValue<string>(storage, 21, Protocol.Primitives.StrUTF8.decode);
-            if (user instanceof Error) {
-                return user;
-            } else {
-                this.user = user;
-            }
-            const message: string | Error = this.getValue<string>(storage, 22, Protocol.Primitives.StrUTF8.decode);
-            if (message instanceof Error) {
-                return message;
-            } else {
-                this.message = message;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 23, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
-
-        public defaults(): Message {
-            return Message.defaults();
-        }
-    }
-
+		public defaults(): Message {
+			return Message.defaults();
+		}
+	}
 }
 
 export namespace Beacons {
-    export interface IAvailableMessages {
-        LikeUser?: LikeUser,
-        LikeMessage?: LikeMessage,
-    }
+	export interface IAvailableMessages {
+		LikeUser?: LikeUser;
+		LikeMessage?: LikeMessage;
+	}
 
-    export interface ILikeUser {
-        uuid: string;
-    }
-    export class LikeUser extends Protocol.Convertor<LikeUser> implements ILikeUser, ISigned<LikeUser> {
+	export interface ILikeUser {
+		uuid: string;
+	}
+	export class LikeUser
+		extends Protocol.Convertor<LikeUser>
+		implements ILikeUser, ISigned<LikeUser>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): LikeUser {
+			return new Beacons.LikeUser({
+				uuid: "",
+			});
+		}
 
-        public static defaults(): LikeUser {
-            return new Beacons.LikeUser({
-                uuid: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<LikeUser>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof LikeUser)) {
+									throw new Error(
+										`Expecting instance of LikeUser on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof LikeUser
+							? undefined
+							: new Error(`Expecting instance of LikeUser`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<LikeUser>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof LikeUser)) {
-                                throw new Error(`Expecting instance of LikeUser on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof LikeUser ? undefined : new Error(`Expecting instance of LikeUser`);
-                }};
-            }
-        }
+		public static from(obj: any): LikeUser | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = LikeUser.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					LikeUser.scheme
+				);
+				return error instanceof Error
+					? error
+					: new LikeUser({
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static from(obj: any): LikeUser | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = LikeUser.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, LikeUser.scheme);
-                return error instanceof Error ? error : new LikeUser({
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public uuid!: string;
+		public static getSignature(): string {
+			return "LikeUser";
+		}
+		public static getId(): number {
+			return 25;
+		}
 
-        public uuid!: string;
-        public static getSignature(): string { return 'LikeUser'; }
-        public static getId(): number { return 25; }
+		constructor(params: ILikeUser) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: ILikeUser)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "LikeUser";
+		}
 
-        public signature(): number { return 0; }
+		public get(): LikeUser {
+			return this;
+		}
 
-        public getSignature(): string { return 'LikeUser'; }
+		public getId(): number {
+			return 25;
+		}
 
-        public get(): LikeUser { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						26,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getId(): number { return 25; }
+		public decode(buffer: ArrayBufferLike): Error | LikeUser {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				26,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(26, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public defaults(): LikeUser {
+			return LikeUser.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | LikeUser {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 26, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+	export interface ILikeMessage {
+		uuid: string;
+	}
+	export class LikeMessage
+		extends Protocol.Convertor<LikeMessage>
+		implements ILikeMessage, ISigned<LikeMessage>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): LikeUser {
-            return LikeUser.defaults();
-        }
-    }
+		public static defaults(): LikeMessage {
+			return new Beacons.LikeMessage({
+				uuid: "",
+			});
+		}
 
-    export interface ILikeMessage {
-        uuid: string;
-    }
-    export class LikeMessage extends Protocol.Convertor<LikeMessage> implements ILikeMessage, ISigned<LikeMessage> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<LikeMessage>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof LikeMessage)) {
+									throw new Error(
+										`Expecting instance of LikeMessage on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof LikeMessage
+							? undefined
+							: new Error(`Expecting instance of LikeMessage`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): LikeMessage | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = LikeMessage.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					LikeMessage.scheme
+				);
+				return error instanceof Error
+					? error
+					: new LikeMessage({
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static defaults(): LikeMessage {
-            return new Beacons.LikeMessage({
-                uuid: '',
-            });
-        }
+		public uuid!: string;
+		public static getSignature(): string {
+			return "LikeMessage";
+		}
+		public static getId(): number {
+			return 27;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<LikeMessage>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof LikeMessage)) {
-                                throw new Error(`Expecting instance of LikeMessage on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof LikeMessage ? undefined : new Error(`Expecting instance of LikeMessage`);
-                }};
-            }
-        }
+		constructor(params: ILikeMessage) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): LikeMessage | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = LikeMessage.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, LikeMessage.scheme);
-                return error instanceof Error ? error : new LikeMessage({
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public uuid!: string;
-        public static getSignature(): string { return 'LikeMessage'; }
-        public static getId(): number { return 27; }
+		public getSignature(): string {
+			return "LikeMessage";
+		}
 
+		public get(): LikeMessage {
+			return this;
+		}
 
-        constructor(params: ILikeMessage)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 27;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						28,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'LikeMessage'; }
+		public decode(buffer: ArrayBufferLike): Error | LikeMessage {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				28,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public get(): LikeMessage { return this; }
-
-        public getId(): number { return 27; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(28, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | LikeMessage {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 28, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
-
-        public defaults(): LikeMessage {
-            return LikeMessage.defaults();
-        }
-    }
-
+		public defaults(): LikeMessage {
+			return LikeMessage.defaults();
+		}
+	}
 }
 
 export namespace ServerEvents {
-    export interface IAvailableMessages {
-        UserKickOff?: UserKickOff,
-        UserAlert?: UserAlert,
-    }
+	export interface IAvailableMessages {
+		UserKickOff?: UserKickOff;
+		UserAlert?: UserAlert;
+	}
 
-    export interface IUserKickOff {
-        reason: string | undefined;
-        uuid: string;
-    }
-    export class UserKickOff extends Protocol.Convertor<UserKickOff> implements IUserKickOff, ISigned<UserKickOff> {
+	export interface IUserKickOff {
+		reason: string | undefined;
+		uuid: string;
+	}
+	export class UserKickOff
+		extends Protocol.Convertor<UserKickOff>
+		implements IUserKickOff, ISigned<UserKickOff>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "reason",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'reason', types: Protocol.Primitives.StrUTF8, optional: true, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): UserKickOff {
+			return new ServerEvents.UserKickOff({
+				reason: undefined,
+				uuid: "",
+			});
+		}
 
-        public static defaults(): UserKickOff {
-            return new ServerEvents.UserKickOff({
-                reason: undefined,
-                uuid: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<UserKickOff>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof UserKickOff)) {
+									throw new Error(
+										`Expecting instance of UserKickOff on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof UserKickOff
+							? undefined
+							: new Error(`Expecting instance of UserKickOff`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<UserKickOff>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof UserKickOff)) {
-                                throw new Error(`Expecting instance of UserKickOff on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof UserKickOff ? undefined : new Error(`Expecting instance of UserKickOff`);
-                }};
-            }
-        }
+		public static from(obj: any): UserKickOff | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = UserKickOff.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					UserKickOff.scheme
+				);
+				return error instanceof Error
+					? error
+					: new UserKickOff({
+							reason: obj.reason,
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static from(obj: any): UserKickOff | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = UserKickOff.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, UserKickOff.scheme);
-                return error instanceof Error ? error : new UserKickOff({
-                    reason: obj.reason,
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public reason!: string | undefined;
+		public uuid!: string;
+		public static getSignature(): string {
+			return "UserKickOff";
+		}
+		public static getId(): number {
+			return 30;
+		}
 
-        public reason!: string | undefined;
-        public uuid!: string;
-        public static getSignature(): string { return 'UserKickOff'; }
-        public static getId(): number { return 30; }
+		constructor(params: IUserKickOff) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IUserKickOff)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "UserKickOff";
+		}
 
-        public signature(): number { return 0; }
+		public get(): UserKickOff {
+			return this;
+		}
 
-        public getSignature(): string { return 'UserKickOff'; }
+		public getId(): number {
+			return 30;
+		}
 
-        public get(): UserKickOff { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.reason === undefined
+						? this.getBuffer(
+								31,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								31,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.reason
+						  ),
+				() =>
+					this.getBufferFromBuf<string>(
+						32,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getId(): number { return 30; }
+		public decode(buffer: ArrayBufferLike): Error | UserKickOff {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const reasonBuf: ArrayBufferLike | undefined = storage.get(31);
+			if (reasonBuf === undefined) {
+				return new Error(`Fail to get property reason (id=31)`);
+			}
+			if (reasonBuf.byteLength === 0) {
+				this.reason = undefined;
+			} else {
+				const reason: string | Error = this.getValue<string>(
+					storage,
+					31,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (reason instanceof Error) {
+					return reason;
+				} else {
+					this.reason = reason;
+				}
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				32,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.reason === undefined ? this.getBuffer(31, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(31, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
-                () => this.getBufferFromBuf<string>(32, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public defaults(): UserKickOff {
+			return UserKickOff.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | UserKickOff {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const reasonBuf: ArrayBufferLike | undefined = storage.get(31);
-            if (reasonBuf === undefined) {
-                return new Error(`Fail to get property reason (id=31)`);
-            }
-            if (reasonBuf.byteLength === 0) {
-                this.reason = undefined;
-            } else {
-                const reason: string | Error = this.getValue<string>(storage, 31, Protocol.Primitives.StrUTF8.decode);
-                if (reason instanceof Error) {
-                    return reason;
-                } else {
-                    this.reason = reason;
-                }
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 32, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+	export interface IUserAlert {
+		reason: string | undefined;
+		uuid: string;
+	}
+	export class UserAlert
+		extends Protocol.Convertor<UserAlert>
+		implements IUserAlert, ISigned<UserAlert>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "reason",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): UserKickOff {
-            return UserKickOff.defaults();
-        }
-    }
+		public static defaults(): UserAlert {
+			return new ServerEvents.UserAlert({
+				reason: undefined,
+				uuid: "",
+			});
+		}
 
-    export interface IUserAlert {
-        reason: string | undefined;
-        uuid: string;
-    }
-    export class UserAlert extends Protocol.Convertor<UserAlert> implements IUserAlert, ISigned<UserAlert> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<UserAlert>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof UserAlert)) {
+									throw new Error(
+										`Expecting instance of UserAlert on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof UserAlert
+							? undefined
+							: new Error(`Expecting instance of UserAlert`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'reason', types: Protocol.Primitives.StrUTF8, optional: true, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): UserAlert | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = UserAlert.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					UserAlert.scheme
+				);
+				return error instanceof Error
+					? error
+					: new UserAlert({
+							reason: obj.reason,
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static defaults(): UserAlert {
-            return new ServerEvents.UserAlert({
-                reason: undefined,
-                uuid: '',
-            });
-        }
+		public reason!: string | undefined;
+		public uuid!: string;
+		public static getSignature(): string {
+			return "UserAlert";
+		}
+		public static getId(): number {
+			return 33;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<UserAlert>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof UserAlert)) {
-                                throw new Error(`Expecting instance of UserAlert on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof UserAlert ? undefined : new Error(`Expecting instance of UserAlert`);
-                }};
-            }
-        }
+		constructor(params: IUserAlert) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): UserAlert | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = UserAlert.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, UserAlert.scheme);
-                return error instanceof Error ? error : new UserAlert({
-                    reason: obj.reason,
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public reason!: string | undefined;
-        public uuid!: string;
-        public static getSignature(): string { return 'UserAlert'; }
-        public static getId(): number { return 33; }
+		public getSignature(): string {
+			return "UserAlert";
+		}
 
+		public get(): UserAlert {
+			return this;
+		}
 
-        constructor(params: IUserAlert)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 33;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.reason === undefined
+						? this.getBuffer(
+								34,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								34,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.reason
+						  ),
+				() =>
+					this.getBufferFromBuf<string>(
+						35,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'UserAlert'; }
+		public decode(buffer: ArrayBufferLike): Error | UserAlert {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const reasonBuf: ArrayBufferLike | undefined = storage.get(34);
+			if (reasonBuf === undefined) {
+				return new Error(`Fail to get property reason (id=34)`);
+			}
+			if (reasonBuf.byteLength === 0) {
+				this.reason = undefined;
+			} else {
+				const reason: string | Error = this.getValue<string>(
+					storage,
+					34,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (reason instanceof Error) {
+					return reason;
+				} else {
+					this.reason = reason;
+				}
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				35,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public get(): UserAlert { return this; }
-
-        public getId(): number { return 33; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.reason === undefined ? this.getBuffer(34, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(34, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
-                () => this.getBufferFromBuf<string>(35, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | UserAlert {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const reasonBuf: ArrayBufferLike | undefined = storage.get(34);
-            if (reasonBuf === undefined) {
-                return new Error(`Fail to get property reason (id=34)`);
-            }
-            if (reasonBuf.byteLength === 0) {
-                this.reason = undefined;
-            } else {
-                const reason: string | Error = this.getValue<string>(storage, 34, Protocol.Primitives.StrUTF8.decode);
-                if (reason instanceof Error) {
-                    return reason;
-                } else {
-                    this.reason = reason;
-                }
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 35, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
-
-        public defaults(): UserAlert {
-            return UserAlert.defaults();
-        }
-    }
-
+		public defaults(): UserAlert {
+			return UserAlert.defaults();
+		}
+	}
 }
 
 export namespace Message {
-    export interface IAvailableMessages {
-        Request?: Request,
-        Accepted?: Accepted,
-        Denied?: Denied,
-        Err?: Err,
-    }
+	export interface IAvailableMessages {
+		Request?: Request;
+		Accepted?: Accepted;
+		Denied?: Denied;
+		Err?: Err;
+	}
 
-    export interface IRequest {
-        user: string;
-        message: string;
-    }
-    export class Request extends Protocol.Convertor<Request> implements IRequest, ISigned<Request> {
+	export interface IRequest {
+		user: string;
+		message: string;
+	}
+	export class Request
+		extends Protocol.Convertor<Request>
+		implements IRequest, ISigned<Request>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "user",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "message",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'user', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'message', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): Request {
+			return new Message.Request({
+				user: "",
+				message: "",
+			});
+		}
 
-        public static defaults(): Request {
-            return new Message.Request({
-                user: '',
-                message: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Request>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Request)) {
+									throw new Error(
+										`Expecting instance of Request on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Request
+							? undefined
+							: new Error(`Expecting instance of Request`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Request>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Request)) {
-                                throw new Error(`Expecting instance of Request on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Request ? undefined : new Error(`Expecting instance of Request`);
-                }};
-            }
-        }
+		public static from(obj: any): Request | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Request.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Request.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Request({
+							user: obj.user,
+							message: obj.message,
+					  });
+			}
+		}
 
-        public static from(obj: any): Request | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Request.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Request.scheme);
-                return error instanceof Error ? error : new Request({
-                    user: obj.user,
-                    message: obj.message,
-                });
-            }
-        }
+		public user!: string;
+		public message!: string;
+		public static getSignature(): string {
+			return "Request";
+		}
+		public static getId(): number {
+			return 37;
+		}
 
-        public user!: string;
-        public message!: string;
-        public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 37; }
+		constructor(params: IRequest) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IRequest)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "Request";
+		}
 
-        public signature(): number { return 0; }
+		public get(): Request {
+			return this;
+		}
 
-        public getSignature(): string { return 'Request'; }
+		public getId(): number {
+			return 37;
+		}
 
-        public get(): Request { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						38,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.user
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						39,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.message
+					),
+			]);
+		}
 
-        public getId(): number { return 37; }
+		public decode(buffer: ArrayBufferLike): Error | Request {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const user: string | Error = this.getValue<string>(
+				storage,
+				38,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (user instanceof Error) {
+				return user;
+			} else {
+				this.user = user;
+			}
+			const message: string | Error = this.getValue<string>(
+				storage,
+				39,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (message instanceof Error) {
+				return message;
+			} else {
+				this.message = message;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(38, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
-                () => this.getBufferFromBuf<string>(39, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
-            ]);
-        }
+		public defaults(): Request {
+			return Request.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | Request {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const user: string | Error = this.getValue<string>(storage, 38, Protocol.Primitives.StrUTF8.decode);
-            if (user instanceof Error) {
-                return user;
-            } else {
-                this.user = user;
-            }
-            const message: string | Error = this.getValue<string>(storage, 39, Protocol.Primitives.StrUTF8.decode);
-            if (message instanceof Error) {
-                return message;
-            } else {
-                this.message = message;
-            }
-            return this;
-        }
+	export interface IAccepted {
+		uuid: string;
+	}
+	export class Accepted
+		extends Protocol.Convertor<Accepted>
+		implements IAccepted, ISigned<Accepted>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): Request {
-            return Request.defaults();
-        }
-    }
+		public static defaults(): Accepted {
+			return new Message.Accepted({
+				uuid: "",
+			});
+		}
 
-    export interface IAccepted {
-        uuid: string;
-    }
-    export class Accepted extends Protocol.Convertor<Accepted> implements IAccepted, ISigned<Accepted> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Accepted>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Accepted)) {
+									throw new Error(
+										`Expecting instance of Accepted on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Accepted
+							? undefined
+							: new Error(`Expecting instance of Accepted`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): Accepted | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Accepted.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Accepted.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Accepted({
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static defaults(): Accepted {
-            return new Message.Accepted({
-                uuid: '',
-            });
-        }
+		public uuid!: string;
+		public static getSignature(): string {
+			return "Accepted";
+		}
+		public static getId(): number {
+			return 40;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Accepted>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Accepted)) {
-                                throw new Error(`Expecting instance of Accepted on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Accepted ? undefined : new Error(`Expecting instance of Accepted`);
-                }};
-            }
-        }
+		constructor(params: IAccepted) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): Accepted | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Accepted.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Accepted.scheme);
-                return error instanceof Error ? error : new Accepted({
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public uuid!: string;
-        public static getSignature(): string { return 'Accepted'; }
-        public static getId(): number { return 40; }
+		public getSignature(): string {
+			return "Accepted";
+		}
 
+		public get(): Accepted {
+			return this;
+		}
 
-        constructor(params: IAccepted)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 40;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						41,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'Accepted'; }
+		public decode(buffer: ArrayBufferLike): Error | Accepted {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				41,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public get(): Accepted { return this; }
+		public defaults(): Accepted {
+			return Accepted.defaults();
+		}
+	}
 
-        public getId(): number { return 40; }
+	export interface IDenied {
+		reason: string;
+	}
+	export class Denied
+		extends Protocol.Convertor<Denied>
+		implements IDenied, ISigned<Denied>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "reason",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(41, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public static defaults(): Denied {
+			return new Message.Denied({
+				reason: "",
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Accepted {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 41, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Denied>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Denied)) {
+									throw new Error(
+										`Expecting instance of Denied on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Denied
+							? undefined
+							: new Error(`Expecting instance of Denied`);
+					},
+				};
+			}
+		}
 
-        public defaults(): Accepted {
-            return Accepted.defaults();
-        }
-    }
+		public static from(obj: any): Denied | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Denied.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Denied.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Denied({
+							reason: obj.reason,
+					  });
+			}
+		}
 
-    export interface IDenied {
-        reason: string;
-    }
-    export class Denied extends Protocol.Convertor<Denied> implements IDenied, ISigned<Denied> {
+		public reason!: string;
+		public static getSignature(): string {
+			return "Denied";
+		}
+		public static getId(): number {
+			return 42;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'reason', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		constructor(params: IDenied) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): Denied {
-            return new Message.Denied({
-                reason: '',
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Denied>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Denied)) {
-                                throw new Error(`Expecting instance of Denied on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Denied ? undefined : new Error(`Expecting instance of Denied`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "Denied";
+		}
 
-        public static from(obj: any): Denied | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Denied.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Denied.scheme);
-                return error instanceof Error ? error : new Denied({
-                    reason: obj.reason,
-                });
-            }
-        }
+		public get(): Denied {
+			return this;
+		}
 
-        public reason!: string;
-        public static getSignature(): string { return 'Denied'; }
-        public static getId(): number { return 42; }
+		public getId(): number {
+			return 42;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						43,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.reason
+					),
+			]);
+		}
 
-        constructor(params: IDenied)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | Denied {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const reason: string | Error = this.getValue<string>(
+				storage,
+				43,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (reason instanceof Error) {
+				return reason;
+			} else {
+				this.reason = reason;
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
+		public defaults(): Denied {
+			return Denied.defaults();
+		}
+	}
 
-        public getSignature(): string { return 'Denied'; }
+	export interface IErr {
+		error: string;
+	}
+	export class Err
+		extends Protocol.Convertor<Err>
+		implements IErr, ISigned<Err>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public get(): Denied { return this; }
+		public static defaults(): Err {
+			return new Message.Err({
+				error: "",
+			});
+		}
 
-        public getId(): number { return 42; }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Err>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Err)) {
+									throw new Error(
+										`Expecting instance of Err on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Err
+							? undefined
+							: new Error(`Expecting instance of Err`);
+					},
+				};
+			}
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(43, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
-            ]);
-        }
+		public static from(obj: any): Err | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Err.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Err.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Err({
+							error: obj.error,
+					  });
+			}
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Denied {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const reason: string | Error = this.getValue<string>(storage, 43, Protocol.Primitives.StrUTF8.decode);
-            if (reason instanceof Error) {
-                return reason;
-            } else {
-                this.reason = reason;
-            }
-            return this;
-        }
+		public error!: string;
+		public static getSignature(): string {
+			return "Err";
+		}
+		public static getId(): number {
+			return 44;
+		}
 
-        public defaults(): Denied {
-            return Denied.defaults();
-        }
-    }
+		constructor(params: IErr) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-    export interface IErr {
-        error: string;
-    }
-    export class Err extends Protocol.Convertor<Err> implements IErr, ISigned<Err> {
+		public signature(): number {
+			return 0;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public getSignature(): string {
+			return "Err";
+		}
 
-        public static defaults(): Err {
-            return new Message.Err({
-                error: '',
-            });
-        }
+		public get(): Err {
+			return this;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Err>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Err)) {
-                                throw new Error(`Expecting instance of Err on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
-                }};
-            }
-        }
+		public getId(): number {
+			return 44;
+		}
 
-        public static from(obj: any): Err | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Err.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
-                return error instanceof Error ? error : new Err({
-                    error: obj.error,
-                });
-            }
-        }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						45,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.error
+					),
+			]);
+		}
 
-        public error!: string;
-        public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 44; }
+		public decode(buffer: ArrayBufferLike): Error | Err {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const error: string | Error = this.getValue<string>(
+				storage,
+				45,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (error instanceof Error) {
+				return error;
+			} else {
+				this.error = error;
+			}
+			return this;
+		}
 
-
-        constructor(params: IErr)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
-
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'Err'; }
-
-        public get(): Err { return this; }
-
-        public getId(): number { return 44; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(45, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | Err {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const error: string | Error = this.getValue<string>(storage, 45, Protocol.Primitives.StrUTF8.decode);
-            if (error instanceof Error) {
-                return error;
-            } else {
-                this.error = error;
-            }
-            return this;
-        }
-
-        public defaults(): Err {
-            return Err.defaults();
-        }
-    }
-
+		public defaults(): Err {
+			return Err.defaults();
+		}
+	}
 }
 
 export namespace Messages {
-    export interface IAvailableMessages {
-        Message?: Message,
-        Request?: Request,
-        Response?: Response,
-        Err?: Err,
-    }
+	export interface IAvailableMessages {
+		Message?: Message;
+		Request?: Request;
+		Response?: Response;
+		Err?: Err;
+	}
 
-    export interface IMessage {
-        timestamp: bigint;
-        user: string;
-        uuid: string;
-        message: string;
-    }
-    export class Message extends Protocol.Convertor<Message> implements IMessage, ISigned<Message> {
+	export interface IMessage {
+		timestamp: bigint;
+		user: string;
+		uuid: string;
+		message: string;
+	}
+	export class Message
+		extends Protocol.Convertor<Message>
+		implements IMessage, ISigned<Message>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "timestamp",
+				types: Protocol.Primitives.u64,
+				optional: false,
+			},
+			{
+				prop: "user",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "message",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'timestamp', types: Protocol.Primitives.u64, optional: false, },
-            { prop: 'user', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'message', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): Message {
+			return new Messages.Message({
+				timestamp: BigInt(0),
+				user: "",
+				uuid: "",
+				message: "",
+			});
+		}
 
-        public static defaults(): Message {
-            return new Messages.Message({
-                timestamp: BigInt(0),
-                user: '',
-                uuid: '',
-                message: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Message>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Message)) {
+									throw new Error(
+										`Expecting instance of Message on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Message
+							? undefined
+							: new Error(`Expecting instance of Message`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Message>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Message)) {
-                                throw new Error(`Expecting instance of Message on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Message ? undefined : new Error(`Expecting instance of Message`);
-                }};
-            }
-        }
+		public static from(obj: any): Message | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Message.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Message.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Message({
+							timestamp: obj.timestamp,
+							user: obj.user,
+							uuid: obj.uuid,
+							message: obj.message,
+					  });
+			}
+		}
 
-        public static from(obj: any): Message | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Message.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Message.scheme);
-                return error instanceof Error ? error : new Message({
-                    timestamp: obj.timestamp,
-                    user: obj.user,
-                    uuid: obj.uuid,
-                    message: obj.message,
-                });
-            }
-        }
+		public timestamp!: bigint;
+		public user!: string;
+		public uuid!: string;
+		public message!: string;
+		public static getSignature(): string {
+			return "Message";
+		}
+		public static getId(): number {
+			return 47;
+		}
 
-        public timestamp!: bigint;
-        public user!: string;
-        public uuid!: string;
-        public message!: string;
-        public static getSignature(): string { return 'Message'; }
-        public static getId(): number { return 47; }
+		constructor(params: IMessage) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IMessage)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "Message";
+		}
 
-        public signature(): number { return 0; }
+		public get(): Message {
+			return this;
+		}
 
-        public getSignature(): string { return 'Message'; }
+		public getId(): number {
+			return 47;
+		}
 
-        public get(): Message { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBuffer(
+						48,
+						Protocol.ESize.u8,
+						Protocol.Primitives.u64.getSize(),
+						Protocol.Primitives.u64.encode(this.timestamp)
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						49,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.user
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						50,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						51,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.message
+					),
+			]);
+		}
 
-        public getId(): number { return 47; }
+		public decode(buffer: ArrayBufferLike): Error | Message {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const timestamp: bigint | Error = this.getValue<bigint>(
+				storage,
+				48,
+				Protocol.Primitives.u64.decode
+			);
+			if (timestamp instanceof Error) {
+				return timestamp;
+			} else {
+				this.timestamp = timestamp;
+			}
+			const user: string | Error = this.getValue<string>(
+				storage,
+				49,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (user instanceof Error) {
+				return user;
+			} else {
+				this.user = user;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				50,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			const message: string | Error = this.getValue<string>(
+				storage,
+				51,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (message instanceof Error) {
+				return message;
+			} else {
+				this.message = message;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBuffer(48, Protocol.ESize.u8, Protocol.Primitives.u64.getSize(), Protocol.Primitives.u64.encode(this.timestamp)),
-                () => this.getBufferFromBuf<string>(49, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.user),
-                () => this.getBufferFromBuf<string>(50, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-                () => this.getBufferFromBuf<string>(51, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.message),
-            ]);
-        }
+		public defaults(): Message {
+			return Message.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | Message {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const timestamp: bigint | Error = this.getValue<bigint>(storage, 48, Protocol.Primitives.u64.decode);
-            if (timestamp instanceof Error) {
-                return timestamp;
-            } else {
-                this.timestamp = timestamp;
-            }
-            const user: string | Error = this.getValue<string>(storage, 49, Protocol.Primitives.StrUTF8.decode);
-            if (user instanceof Error) {
-                return user;
-            } else {
-                this.user = user;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 50, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            const message: string | Error = this.getValue<string>(storage, 51, Protocol.Primitives.StrUTF8.decode);
-            if (message instanceof Error) {
-                return message;
-            } else {
-                this.message = message;
-            }
-            return this;
-        }
+	export interface IRequest {}
+	export class Request
+		extends Protocol.Convertor<Request>
+		implements IRequest, ISigned<Request>
+	{
+		public static scheme: Protocol.IPropScheme[] = [];
 
-        public defaults(): Message {
-            return Message.defaults();
-        }
-    }
+		public static defaults(): Request {
+			return new Messages.Request({});
+		}
 
-    export interface IRequest {
-    }
-    export class Request extends Protocol.Convertor<Request> implements IRequest, ISigned<Request> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Request>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Request)) {
+									throw new Error(
+										`Expecting instance of Request on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Request
+							? undefined
+							: new Error(`Expecting instance of Request`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-        ];
+		public static from(obj: any): Request | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Request.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Request.scheme
+				);
+				return error instanceof Error ? error : new Request({});
+			}
+		}
 
-        public static defaults(): Request {
-            return new Messages.Request({
-            });
-        }
+		public static getSignature(): string {
+			return "Request";
+		}
+		public static getId(): number {
+			return 52;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Request>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Request)) {
-                                throw new Error(`Expecting instance of Request on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Request ? undefined : new Error(`Expecting instance of Request`);
-                }};
-            }
-        }
+		constructor(params: IRequest) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): Request | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Request.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Request.scheme);
-                return error instanceof Error ? error : new Request({
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 52; }
+		public getSignature(): string {
+			return "Request";
+		}
 
+		public get(): Request {
+			return this;
+		}
 
-        constructor(params: IRequest)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 52;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([]);
+		}
 
-        public getSignature(): string { return 'Request'; }
+		public decode(buffer: ArrayBufferLike): Error | Request {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			return this;
+		}
 
-        public get(): Request { return this; }
+		public defaults(): Request {
+			return Request.defaults();
+		}
+	}
 
-        public getId(): number { return 52; }
+	export interface IResponse {
+		messages: Array<Messages.Message>;
+	}
+	export class Response
+		extends Protocol.Convertor<Response>
+		implements IResponse, ISigned<Response>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "messages",
+				types: Messages.Message.getValidator(true),
+				optional: false,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-            ]);
-        }
+		public static defaults(): Response {
+			return new Messages.Response({
+				messages: [],
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Request {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Response>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Response)) {
+									throw new Error(
+										`Expecting instance of Response on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Response
+							? undefined
+							: new Error(`Expecting instance of Response`);
+					},
+				};
+			}
+		}
 
-        public defaults(): Request {
-            return Request.defaults();
-        }
-    }
+		public static from(obj: any): Response | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Response.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Response.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Response({
+							messages: obj.messages,
+					  });
+			}
+		}
 
-    export interface IResponse {
-        messages: Array<Messages.Message>;
-    }
-    export class Response extends Protocol.Convertor<Response> implements IResponse, ISigned<Response> {
+		public messages!: Array<Messages.Message>;
+		public static getSignature(): string {
+			return "Response";
+		}
+		public static getId(): number {
+			return 53;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'messages', types: Messages.Message.getValidator(true), optional: false },
-        ];
+		constructor(params: IResponse) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): Response {
-            return new Messages.Response({
-                messages: [],
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Response>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Response)) {
-                                throw new Error(`Expecting instance of Response on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Response ? undefined : new Error(`Expecting instance of Response`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "Response";
+		}
 
-        public static from(obj: any): Response | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Response.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Response.scheme);
-                return error instanceof Error ? error : new Response({
-                    messages: obj.messages,
-                });
-            }
-        }
+		public get(): Response {
+			return this;
+		}
 
-        public messages!: Array<Messages.Message>;
-        public static getSignature(): string { return 'Response'; }
-        public static getId(): number { return 53; }
+		public getId(): number {
+			return 53;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() => {
+					const self: Message = Message.defaults();
+					return this.getBufferFromBuf<Message[]>(
+						54,
+						Protocol.ESize.u64,
+						self.encodeSelfArray.bind(self),
+						this.messages
+					);
+				},
+			]);
+		}
 
-        constructor(params: IResponse)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | Response {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const arrmessagesInst: Messages.Message =
+				Messages.Message.defaults();
+			const arrmessages: Array<any> | Error = this.getValue<Message[]>(
+				storage,
+				54,
+				arrmessagesInst.decodeSelfArray.bind(arrmessagesInst)
+			);
+			if (arrmessages instanceof Error) {
+				return arrmessages;
+			} else {
+				this.messages = arrmessages as Messages.Message[];
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
+		public defaults(): Response {
+			return Response.defaults();
+		}
+	}
 
-        public getSignature(): string { return 'Response'; }
+	export interface IErr {
+		error: string;
+	}
+	export class Err
+		extends Protocol.Convertor<Err>
+		implements IErr, ISigned<Err>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public get(): Response { return this; }
+		public static defaults(): Err {
+			return new Messages.Err({
+				error: "",
+			});
+		}
 
-        public getId(): number { return 53; }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Err>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Err)) {
+									throw new Error(
+										`Expecting instance of Err on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Err
+							? undefined
+							: new Error(`Expecting instance of Err`);
+					},
+				};
+			}
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => { const self: Message = Message.defaults(); return this.getBufferFromBuf<Message[]>(54, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.messages); },
-            ]);
-        }
+		public static from(obj: any): Err | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Err.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Err.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Err({
+							error: obj.error,
+					  });
+			}
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Response {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const arrmessagesInst: Messages.Message = Messages.Message.defaults();
-            const arrmessages: Array<any> | Error = this.getValue<Message[]>(storage, 54, arrmessagesInst.decodeSelfArray.bind(arrmessagesInst));
-            if (arrmessages instanceof Error) {
-                return arrmessages;
-            } else {
-                this.messages = arrmessages as Messages.Message[];
-            }
-            return this;
-        }
+		public error!: string;
+		public static getSignature(): string {
+			return "Err";
+		}
+		public static getId(): number {
+			return 55;
+		}
 
-        public defaults(): Response {
-            return Response.defaults();
-        }
-    }
+		constructor(params: IErr) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-    export interface IErr {
-        error: string;
-    }
-    export class Err extends Protocol.Convertor<Err> implements IErr, ISigned<Err> {
+		public signature(): number {
+			return 0;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public getSignature(): string {
+			return "Err";
+		}
 
-        public static defaults(): Err {
-            return new Messages.Err({
-                error: '',
-            });
-        }
+		public get(): Err {
+			return this;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Err>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Err)) {
-                                throw new Error(`Expecting instance of Err on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
-                }};
-            }
-        }
+		public getId(): number {
+			return 55;
+		}
 
-        public static from(obj: any): Err | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Err.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
-                return error instanceof Error ? error : new Err({
-                    error: obj.error,
-                });
-            }
-        }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						56,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.error
+					),
+			]);
+		}
 
-        public error!: string;
-        public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 55; }
+		public decode(buffer: ArrayBufferLike): Error | Err {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const error: string | Error = this.getValue<string>(
+				storage,
+				56,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (error instanceof Error) {
+				return error;
+			} else {
+				this.error = error;
+			}
+			return this;
+		}
 
-
-        constructor(params: IErr)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
-
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'Err'; }
-
-        public get(): Err { return this; }
-
-        public getId(): number { return 55; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(56, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | Err {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const error: string | Error = this.getValue<string>(storage, 56, Protocol.Primitives.StrUTF8.decode);
-            if (error instanceof Error) {
-                return error;
-            } else {
-                this.error = error;
-            }
-            return this;
-        }
-
-        public defaults(): Err {
-            return Err.defaults();
-        }
-    }
-
+		public defaults(): Err {
+			return Err.defaults();
+		}
+	}
 }
 
 export namespace UserLogin {
-    export interface IAvailableMessages {
-        Request?: Request,
-        Accepted?: Accepted,
-        Denied?: Denied,
-        Err?: Err,
-    }
+	export interface IAvailableMessages {
+		Request?: Request;
+		Accepted?: Accepted;
+		Denied?: Denied;
+		Err?: Err;
+	}
 
-    export interface IRequest {
-        username: string;
-    }
-    export class Request extends Protocol.Convertor<Request> implements IRequest, ISigned<Request> {
+	export interface IRequest {
+		username: string;
+	}
+	export class Request
+		extends Protocol.Convertor<Request>
+		implements IRequest, ISigned<Request>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "username",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'username', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): Request {
+			return new UserLogin.Request({
+				username: "",
+			});
+		}
 
-        public static defaults(): Request {
-            return new UserLogin.Request({
-                username: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Request>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Request)) {
+									throw new Error(
+										`Expecting instance of Request on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Request
+							? undefined
+							: new Error(`Expecting instance of Request`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Request>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Request)) {
-                                throw new Error(`Expecting instance of Request on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Request ? undefined : new Error(`Expecting instance of Request`);
-                }};
-            }
-        }
+		public static from(obj: any): Request | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Request.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Request.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Request({
+							username: obj.username,
+					  });
+			}
+		}
 
-        public static from(obj: any): Request | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Request.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Request.scheme);
-                return error instanceof Error ? error : new Request({
-                    username: obj.username,
-                });
-            }
-        }
+		public username!: string;
+		public static getSignature(): string {
+			return "Request";
+		}
+		public static getId(): number {
+			return 58;
+		}
 
-        public username!: string;
-        public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 58; }
+		constructor(params: IRequest) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IRequest)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "Request";
+		}
 
-        public signature(): number { return 0; }
+		public get(): Request {
+			return this;
+		}
 
-        public getSignature(): string { return 'Request'; }
+		public getId(): number {
+			return 58;
+		}
 
-        public get(): Request { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						59,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.username
+					),
+			]);
+		}
 
-        public getId(): number { return 58; }
+		public decode(buffer: ArrayBufferLike): Error | Request {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const username: string | Error = this.getValue<string>(
+				storage,
+				59,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (username instanceof Error) {
+				return username;
+			} else {
+				this.username = username;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(59, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.username),
-            ]);
-        }
+		public defaults(): Request {
+			return Request.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | Request {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const username: string | Error = this.getValue<string>(storage, 59, Protocol.Primitives.StrUTF8.decode);
-            if (username instanceof Error) {
-                return username;
-            } else {
-                this.username = username;
-            }
-            return this;
-        }
+	export interface IAccepted {
+		uuid: string;
+	}
+	export class Accepted
+		extends Protocol.Convertor<Accepted>
+		implements IAccepted, ISigned<Accepted>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): Request {
-            return Request.defaults();
-        }
-    }
+		public static defaults(): Accepted {
+			return new UserLogin.Accepted({
+				uuid: "",
+			});
+		}
 
-    export interface IAccepted {
-        uuid: string;
-    }
-    export class Accepted extends Protocol.Convertor<Accepted> implements IAccepted, ISigned<Accepted> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Accepted>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Accepted)) {
+									throw new Error(
+										`Expecting instance of Accepted on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Accepted
+							? undefined
+							: new Error(`Expecting instance of Accepted`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): Accepted | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Accepted.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Accepted.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Accepted({
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static defaults(): Accepted {
-            return new UserLogin.Accepted({
-                uuid: '',
-            });
-        }
+		public uuid!: string;
+		public static getSignature(): string {
+			return "Accepted";
+		}
+		public static getId(): number {
+			return 60;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Accepted>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Accepted)) {
-                                throw new Error(`Expecting instance of Accepted on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Accepted ? undefined : new Error(`Expecting instance of Accepted`);
-                }};
-            }
-        }
+		constructor(params: IAccepted) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): Accepted | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Accepted.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Accepted.scheme);
-                return error instanceof Error ? error : new Accepted({
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public uuid!: string;
-        public static getSignature(): string { return 'Accepted'; }
-        public static getId(): number { return 60; }
+		public getSignature(): string {
+			return "Accepted";
+		}
 
+		public get(): Accepted {
+			return this;
+		}
 
-        constructor(params: IAccepted)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 60;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						61,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'Accepted'; }
+		public decode(buffer: ArrayBufferLike): Error | Accepted {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				61,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public get(): Accepted { return this; }
+		public defaults(): Accepted {
+			return Accepted.defaults();
+		}
+	}
 
-        public getId(): number { return 60; }
+	export interface IDenied {
+		reason: string;
+	}
+	export class Denied
+		extends Protocol.Convertor<Denied>
+		implements IDenied, ISigned<Denied>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "reason",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(61, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public static defaults(): Denied {
+			return new UserLogin.Denied({
+				reason: "",
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Accepted {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 61, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Denied>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Denied)) {
+									throw new Error(
+										`Expecting instance of Denied on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Denied
+							? undefined
+							: new Error(`Expecting instance of Denied`);
+					},
+				};
+			}
+		}
 
-        public defaults(): Accepted {
-            return Accepted.defaults();
-        }
-    }
+		public static from(obj: any): Denied | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Denied.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Denied.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Denied({
+							reason: obj.reason,
+					  });
+			}
+		}
 
-    export interface IDenied {
-        reason: string;
-    }
-    export class Denied extends Protocol.Convertor<Denied> implements IDenied, ISigned<Denied> {
+		public reason!: string;
+		public static getSignature(): string {
+			return "Denied";
+		}
+		public static getId(): number {
+			return 62;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'reason', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		constructor(params: IDenied) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): Denied {
-            return new UserLogin.Denied({
-                reason: '',
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Denied>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Denied)) {
-                                throw new Error(`Expecting instance of Denied on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Denied ? undefined : new Error(`Expecting instance of Denied`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "Denied";
+		}
 
-        public static from(obj: any): Denied | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Denied.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Denied.scheme);
-                return error instanceof Error ? error : new Denied({
-                    reason: obj.reason,
-                });
-            }
-        }
+		public get(): Denied {
+			return this;
+		}
 
-        public reason!: string;
-        public static getSignature(): string { return 'Denied'; }
-        public static getId(): number { return 62; }
+		public getId(): number {
+			return 62;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						63,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.reason
+					),
+			]);
+		}
 
-        constructor(params: IDenied)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | Denied {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const reason: string | Error = this.getValue<string>(
+				storage,
+				63,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (reason instanceof Error) {
+				return reason;
+			} else {
+				this.reason = reason;
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
+		public defaults(): Denied {
+			return Denied.defaults();
+		}
+	}
 
-        public getSignature(): string { return 'Denied'; }
+	export interface IErr {
+		error: string;
+	}
+	export class Err
+		extends Protocol.Convertor<Err>
+		implements IErr, ISigned<Err>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public get(): Denied { return this; }
+		public static defaults(): Err {
+			return new UserLogin.Err({
+				error: "",
+			});
+		}
 
-        public getId(): number { return 62; }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Err>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Err)) {
+									throw new Error(
+										`Expecting instance of Err on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Err
+							? undefined
+							: new Error(`Expecting instance of Err`);
+					},
+				};
+			}
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(63, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
-            ]);
-        }
+		public static from(obj: any): Err | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Err.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Err.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Err({
+							error: obj.error,
+					  });
+			}
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Denied {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const reason: string | Error = this.getValue<string>(storage, 63, Protocol.Primitives.StrUTF8.decode);
-            if (reason instanceof Error) {
-                return reason;
-            } else {
-                this.reason = reason;
-            }
-            return this;
-        }
+		public error!: string;
+		public static getSignature(): string {
+			return "Err";
+		}
+		public static getId(): number {
+			return 64;
+		}
 
-        public defaults(): Denied {
-            return Denied.defaults();
-        }
-    }
+		constructor(params: IErr) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-    export interface IErr {
-        error: string;
-    }
-    export class Err extends Protocol.Convertor<Err> implements IErr, ISigned<Err> {
+		public signature(): number {
+			return 0;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public getSignature(): string {
+			return "Err";
+		}
 
-        public static defaults(): Err {
-            return new UserLogin.Err({
-                error: '',
-            });
-        }
+		public get(): Err {
+			return this;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Err>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Err)) {
-                                throw new Error(`Expecting instance of Err on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
-                }};
-            }
-        }
+		public getId(): number {
+			return 64;
+		}
 
-        public static from(obj: any): Err | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Err.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
-                return error instanceof Error ? error : new Err({
-                    error: obj.error,
-                });
-            }
-        }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						65,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.error
+					),
+			]);
+		}
 
-        public error!: string;
-        public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 64; }
+		public decode(buffer: ArrayBufferLike): Error | Err {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const error: string | Error = this.getValue<string>(
+				storage,
+				65,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (error instanceof Error) {
+				return error;
+			} else {
+				this.error = error;
+			}
+			return this;
+		}
 
-
-        constructor(params: IErr)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
-
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'Err'; }
-
-        public get(): Err { return this; }
-
-        public getId(): number { return 64; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(65, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | Err {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const error: string | Error = this.getValue<string>(storage, 65, Protocol.Primitives.StrUTF8.decode);
-            if (error instanceof Error) {
-                return error;
-            } else {
-                this.error = error;
-            }
-            return this;
-        }
-
-        public defaults(): Err {
-            return Err.defaults();
-        }
-    }
-
+		public defaults(): Err {
+			return Err.defaults();
+		}
+	}
 }
 
 export namespace UserInfo {
-    export interface IAvailableMessages {
-        Request?: Request,
-        Accepted?: Accepted,
-        Denied?: Denied,
-        Err?: Err,
-    }
+	export interface IAvailableMessages {
+		Request?: Request;
+		Accepted?: Accepted;
+		Denied?: Denied;
+		Err?: Err;
+	}
 
-    export interface IRequest {
-    }
-    export class Request extends Protocol.Convertor<Request> implements IRequest, ISigned<Request> {
+	export interface IRequest {}
+	export class Request
+		extends Protocol.Convertor<Request>
+		implements IRequest, ISigned<Request>
+	{
+		public static scheme: Protocol.IPropScheme[] = [];
 
-        public static scheme: Protocol.IPropScheme[] = [
-        ];
+		public static defaults(): Request {
+			return new UserInfo.Request({});
+		}
 
-        public static defaults(): Request {
-            return new UserInfo.Request({
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Request>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Request)) {
+									throw new Error(
+										`Expecting instance of Request on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Request
+							? undefined
+							: new Error(`Expecting instance of Request`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Request>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Request)) {
-                                throw new Error(`Expecting instance of Request on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Request ? undefined : new Error(`Expecting instance of Request`);
-                }};
-            }
-        }
+		public static from(obj: any): Request | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Request.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Request.scheme
+				);
+				return error instanceof Error ? error : new Request({});
+			}
+		}
 
-        public static from(obj: any): Request | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Request.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Request.scheme);
-                return error instanceof Error ? error : new Request({
-                });
-            }
-        }
+		public static getSignature(): string {
+			return "Request";
+		}
+		public static getId(): number {
+			return 67;
+		}
 
-        public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 67; }
+		constructor(params: IRequest) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IRequest)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "Request";
+		}
 
-        public signature(): number { return 0; }
+		public get(): Request {
+			return this;
+		}
 
-        public getSignature(): string { return 'Request'; }
+		public getId(): number {
+			return 67;
+		}
 
-        public get(): Request { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([]);
+		}
 
-        public getId(): number { return 67; }
+		public decode(buffer: ArrayBufferLike): Error | Request {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-            ]);
-        }
+		public defaults(): Request {
+			return Request.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | Request {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            return this;
-        }
+	export interface IAccepted {
+		browser: string;
+	}
+	export class Accepted
+		extends Protocol.Convertor<Accepted>
+		implements IAccepted, ISigned<Accepted>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "browser",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): Request {
-            return Request.defaults();
-        }
-    }
+		public static defaults(): Accepted {
+			return new UserInfo.Accepted({
+				browser: "",
+			});
+		}
 
-    export interface IAccepted {
-        browser: string;
-    }
-    export class Accepted extends Protocol.Convertor<Accepted> implements IAccepted, ISigned<Accepted> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Accepted>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Accepted)) {
+									throw new Error(
+										`Expecting instance of Accepted on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Accepted
+							? undefined
+							: new Error(`Expecting instance of Accepted`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'browser', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): Accepted | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Accepted.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Accepted.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Accepted({
+							browser: obj.browser,
+					  });
+			}
+		}
 
-        public static defaults(): Accepted {
-            return new UserInfo.Accepted({
-                browser: '',
-            });
-        }
+		public browser!: string;
+		public static getSignature(): string {
+			return "Accepted";
+		}
+		public static getId(): number {
+			return 68;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Accepted>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Accepted)) {
-                                throw new Error(`Expecting instance of Accepted on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Accepted ? undefined : new Error(`Expecting instance of Accepted`);
-                }};
-            }
-        }
+		constructor(params: IAccepted) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): Accepted | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Accepted.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Accepted.scheme);
-                return error instanceof Error ? error : new Accepted({
-                    browser: obj.browser,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public browser!: string;
-        public static getSignature(): string { return 'Accepted'; }
-        public static getId(): number { return 68; }
+		public getSignature(): string {
+			return "Accepted";
+		}
 
+		public get(): Accepted {
+			return this;
+		}
 
-        constructor(params: IAccepted)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 68;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						69,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.browser
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'Accepted'; }
+		public decode(buffer: ArrayBufferLike): Error | Accepted {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const browser: string | Error = this.getValue<string>(
+				storage,
+				69,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (browser instanceof Error) {
+				return browser;
+			} else {
+				this.browser = browser;
+			}
+			return this;
+		}
 
-        public get(): Accepted { return this; }
+		public defaults(): Accepted {
+			return Accepted.defaults();
+		}
+	}
 
-        public getId(): number { return 68; }
+	export interface IDenied {
+		reason: string;
+	}
+	export class Denied
+		extends Protocol.Convertor<Denied>
+		implements IDenied, ISigned<Denied>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "reason",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(69, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.browser),
-            ]);
-        }
+		public static defaults(): Denied {
+			return new UserInfo.Denied({
+				reason: "",
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Accepted {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const browser: string | Error = this.getValue<string>(storage, 69, Protocol.Primitives.StrUTF8.decode);
-            if (browser instanceof Error) {
-                return browser;
-            } else {
-                this.browser = browser;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Denied>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Denied)) {
+									throw new Error(
+										`Expecting instance of Denied on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Denied
+							? undefined
+							: new Error(`Expecting instance of Denied`);
+					},
+				};
+			}
+		}
 
-        public defaults(): Accepted {
-            return Accepted.defaults();
-        }
-    }
+		public static from(obj: any): Denied | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Denied.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Denied.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Denied({
+							reason: obj.reason,
+					  });
+			}
+		}
 
-    export interface IDenied {
-        reason: string;
-    }
-    export class Denied extends Protocol.Convertor<Denied> implements IDenied, ISigned<Denied> {
+		public reason!: string;
+		public static getSignature(): string {
+			return "Denied";
+		}
+		public static getId(): number {
+			return 70;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'reason', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		constructor(params: IDenied) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): Denied {
-            return new UserInfo.Denied({
-                reason: '',
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Denied>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Denied)) {
-                                throw new Error(`Expecting instance of Denied on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Denied ? undefined : new Error(`Expecting instance of Denied`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "Denied";
+		}
 
-        public static from(obj: any): Denied | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Denied.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Denied.scheme);
-                return error instanceof Error ? error : new Denied({
-                    reason: obj.reason,
-                });
-            }
-        }
+		public get(): Denied {
+			return this;
+		}
 
-        public reason!: string;
-        public static getSignature(): string { return 'Denied'; }
-        public static getId(): number { return 70; }
+		public getId(): number {
+			return 70;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						71,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.reason
+					),
+			]);
+		}
 
-        constructor(params: IDenied)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | Denied {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const reason: string | Error = this.getValue<string>(
+				storage,
+				71,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (reason instanceof Error) {
+				return reason;
+			} else {
+				this.reason = reason;
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
+		public defaults(): Denied {
+			return Denied.defaults();
+		}
+	}
 
-        public getSignature(): string { return 'Denied'; }
+	export interface IErr {
+		error: string;
+	}
+	export class Err
+		extends Protocol.Convertor<Err>
+		implements IErr, ISigned<Err>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public get(): Denied { return this; }
+		public static defaults(): Err {
+			return new UserInfo.Err({
+				error: "",
+			});
+		}
 
-        public getId(): number { return 70; }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Err>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Err)) {
+									throw new Error(
+										`Expecting instance of Err on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Err
+							? undefined
+							: new Error(`Expecting instance of Err`);
+					},
+				};
+			}
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(71, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.reason),
-            ]);
-        }
+		public static from(obj: any): Err | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Err.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Err.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Err({
+							error: obj.error,
+					  });
+			}
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Denied {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const reason: string | Error = this.getValue<string>(storage, 71, Protocol.Primitives.StrUTF8.decode);
-            if (reason instanceof Error) {
-                return reason;
-            } else {
-                this.reason = reason;
-            }
-            return this;
-        }
+		public error!: string;
+		public static getSignature(): string {
+			return "Err";
+		}
+		public static getId(): number {
+			return 72;
+		}
 
-        public defaults(): Denied {
-            return Denied.defaults();
-        }
-    }
+		constructor(params: IErr) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-    export interface IErr {
-        error: string;
-    }
-    export class Err extends Protocol.Convertor<Err> implements IErr, ISigned<Err> {
+		public signature(): number {
+			return 0;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public getSignature(): string {
+			return "Err";
+		}
 
-        public static defaults(): Err {
-            return new UserInfo.Err({
-                error: '',
-            });
-        }
+		public get(): Err {
+			return this;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Err>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Err)) {
-                                throw new Error(`Expecting instance of Err on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
-                }};
-            }
-        }
+		public getId(): number {
+			return 72;
+		}
 
-        public static from(obj: any): Err | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Err.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
-                return error instanceof Error ? error : new Err({
-                    error: obj.error,
-                });
-            }
-        }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						73,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.error
+					),
+			]);
+		}
 
-        public error!: string;
-        public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 72; }
+		public decode(buffer: ArrayBufferLike): Error | Err {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const error: string | Error = this.getValue<string>(
+				storage,
+				73,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (error instanceof Error) {
+				return error;
+			} else {
+				this.error = error;
+			}
+			return this;
+		}
 
-
-        constructor(params: IErr)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
-
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'Err'; }
-
-        public get(): Err { return this; }
-
-        public getId(): number { return 72; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(73, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | Err {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const error: string | Error = this.getValue<string>(storage, 73, Protocol.Primitives.StrUTF8.decode);
-            if (error instanceof Error) {
-                return error;
-            } else {
-                this.error = error;
-            }
-            return this;
-        }
-
-        public defaults(): Err {
-            return Err.defaults();
-        }
-    }
-
+		public defaults(): Err {
+			return Err.defaults();
+		}
+	}
 }
 
 export namespace Users {
-    export interface IAvailableMessages {
-        User?: User,
-        Request?: Request,
-        Response?: Response,
-        Err?: Err,
-    }
+	export interface IAvailableMessages {
+		User?: User;
+		Request?: Request;
+		Response?: Response;
+		Err?: Err;
+	}
 
-    export interface IUser {
-        name: string;
-        uuid: string;
-    }
-    export class User extends Protocol.Convertor<User> implements IUser, ISigned<User> {
+	export interface IUser {
+		name: string;
+		uuid: string;
+	}
+	export class User
+		extends Protocol.Convertor<User>
+		implements IUser, ISigned<User>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "name",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'name', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): User {
+			return new Users.User({
+				name: "",
+				uuid: "",
+			});
+		}
 
-        public static defaults(): User {
-            return new Users.User({
-                name: '',
-                uuid: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<User>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof User)) {
+									throw new Error(
+										`Expecting instance of User on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof User
+							? undefined
+							: new Error(`Expecting instance of User`);
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<User>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof User)) {
-                                throw new Error(`Expecting instance of User on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof User ? undefined : new Error(`Expecting instance of User`);
-                }};
-            }
-        }
+		public static from(obj: any): User | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = User.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					User.scheme
+				);
+				return error instanceof Error
+					? error
+					: new User({
+							name: obj.name,
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static from(obj: any): User | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = User.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, User.scheme);
-                return error instanceof Error ? error : new User({
-                    name: obj.name,
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public name!: string;
+		public uuid!: string;
+		public static getSignature(): string {
+			return "User";
+		}
+		public static getId(): number {
+			return 75;
+		}
 
-        public name!: string;
-        public uuid!: string;
-        public static getSignature(): string { return 'User'; }
-        public static getId(): number { return 75; }
+		constructor(params: IUser) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: IUser)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "User";
+		}
 
-        public signature(): number { return 0; }
+		public get(): User {
+			return this;
+		}
 
-        public getSignature(): string { return 'User'; }
+		public getId(): number {
+			return 75;
+		}
 
-        public get(): User { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						76,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.name
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						77,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getId(): number { return 75; }
+		public decode(buffer: ArrayBufferLike): Error | User {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const name: string | Error = this.getValue<string>(
+				storage,
+				76,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (name instanceof Error) {
+				return name;
+			} else {
+				this.name = name;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				77,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(76, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.name),
-                () => this.getBufferFromBuf<string>(77, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public defaults(): User {
+			return User.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | User {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const name: string | Error = this.getValue<string>(storage, 76, Protocol.Primitives.StrUTF8.decode);
-            if (name instanceof Error) {
-                return name;
-            } else {
-                this.name = name;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 77, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+	export interface IRequest {}
+	export class Request
+		extends Protocol.Convertor<Request>
+		implements IRequest, ISigned<Request>
+	{
+		public static scheme: Protocol.IPropScheme[] = [];
 
-        public defaults(): User {
-            return User.defaults();
-        }
-    }
+		public static defaults(): Request {
+			return new Users.Request({});
+		}
 
-    export interface IRequest {
-    }
-    export class Request extends Protocol.Convertor<Request> implements IRequest, ISigned<Request> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Request>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Request)) {
+									throw new Error(
+										`Expecting instance of Request on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Request
+							? undefined
+							: new Error(`Expecting instance of Request`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-        ];
+		public static from(obj: any): Request | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Request.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Request.scheme
+				);
+				return error instanceof Error ? error : new Request({});
+			}
+		}
 
-        public static defaults(): Request {
-            return new Users.Request({
-            });
-        }
+		public static getSignature(): string {
+			return "Request";
+		}
+		public static getId(): number {
+			return 78;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Request>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Request)) {
-                                throw new Error(`Expecting instance of Request on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Request ? undefined : new Error(`Expecting instance of Request`);
-                }};
-            }
-        }
+		constructor(params: IRequest) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): Request | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Request.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Request.scheme);
-                return error instanceof Error ? error : new Request({
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getSignature(): string { return 'Request'; }
-        public static getId(): number { return 78; }
+		public getSignature(): string {
+			return "Request";
+		}
 
+		public get(): Request {
+			return this;
+		}
 
-        constructor(params: IRequest)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 78;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([]);
+		}
 
-        public getSignature(): string { return 'Request'; }
+		public decode(buffer: ArrayBufferLike): Error | Request {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			return this;
+		}
 
-        public get(): Request { return this; }
+		public defaults(): Request {
+			return Request.defaults();
+		}
+	}
 
-        public getId(): number { return 78; }
+	export interface IResponse {
+		users: Array<Users.User>;
+	}
+	export class Response
+		extends Protocol.Convertor<Response>
+		implements IResponse, ISigned<Response>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "users",
+				types: Users.User.getValidator(true),
+				optional: false,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-            ]);
-        }
+		public static defaults(): Response {
+			return new Users.Response({
+				users: [],
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Request {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Response>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Response)) {
+									throw new Error(
+										`Expecting instance of Response on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Response
+							? undefined
+							: new Error(`Expecting instance of Response`);
+					},
+				};
+			}
+		}
 
-        public defaults(): Request {
-            return Request.defaults();
-        }
-    }
+		public static from(obj: any): Response | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Response.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Response.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Response({
+							users: obj.users,
+					  });
+			}
+		}
 
-    export interface IResponse {
-        users: Array<Users.User>;
-    }
-    export class Response extends Protocol.Convertor<Response> implements IResponse, ISigned<Response> {
+		public users!: Array<Users.User>;
+		public static getSignature(): string {
+			return "Response";
+		}
+		public static getId(): number {
+			return 79;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'users', types: Users.User.getValidator(true), optional: false },
-        ];
+		constructor(params: IResponse) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): Response {
-            return new Users.Response({
-                users: [],
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Response>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Response)) {
-                                throw new Error(`Expecting instance of Response on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Response ? undefined : new Error(`Expecting instance of Response`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "Response";
+		}
 
-        public static from(obj: any): Response | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Response.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Response.scheme);
-                return error instanceof Error ? error : new Response({
-                    users: obj.users,
-                });
-            }
-        }
+		public get(): Response {
+			return this;
+		}
 
-        public users!: Array<Users.User>;
-        public static getSignature(): string { return 'Response'; }
-        public static getId(): number { return 79; }
+		public getId(): number {
+			return 79;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() => {
+					const self: User = User.defaults();
+					return this.getBufferFromBuf<User[]>(
+						80,
+						Protocol.ESize.u64,
+						self.encodeSelfArray.bind(self),
+						this.users
+					);
+				},
+			]);
+		}
 
-        constructor(params: IResponse)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | Response {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const arrusersInst: Users.User = Users.User.defaults();
+			const arrusers: Array<any> | Error = this.getValue<User[]>(
+				storage,
+				80,
+				arrusersInst.decodeSelfArray.bind(arrusersInst)
+			);
+			if (arrusers instanceof Error) {
+				return arrusers;
+			} else {
+				this.users = arrusers as Users.User[];
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
+		public defaults(): Response {
+			return Response.defaults();
+		}
+	}
 
-        public getSignature(): string { return 'Response'; }
+	export interface IErr {
+		error: string;
+	}
+	export class Err
+		extends Protocol.Convertor<Err>
+		implements IErr, ISigned<Err>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public get(): Response { return this; }
+		public static defaults(): Err {
+			return new Users.Err({
+				error: "",
+			});
+		}
 
-        public getId(): number { return 79; }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<Err>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof Err)) {
+									throw new Error(
+										`Expecting instance of Err on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof Err
+							? undefined
+							: new Error(`Expecting instance of Err`);
+					},
+				};
+			}
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => { const self: User = User.defaults(); return this.getBufferFromBuf<User[]>(80, Protocol.ESize.u64, self.encodeSelfArray.bind(self), this.users); },
-            ]);
-        }
+		public static from(obj: any): Err | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = Err.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					Err.scheme
+				);
+				return error instanceof Error
+					? error
+					: new Err({
+							error: obj.error,
+					  });
+			}
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | Response {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const arrusersInst: Users.User = Users.User.defaults();
-            const arrusers: Array<any> | Error = this.getValue<User[]>(storage, 80, arrusersInst.decodeSelfArray.bind(arrusersInst));
-            if (arrusers instanceof Error) {
-                return arrusers;
-            } else {
-                this.users = arrusers as Users.User[];
-            }
-            return this;
-        }
+		public error!: string;
+		public static getSignature(): string {
+			return "Err";
+		}
+		public static getId(): number {
+			return 81;
+		}
 
-        public defaults(): Response {
-            return Response.defaults();
-        }
-    }
+		constructor(params: IErr) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-    export interface IErr {
-        error: string;
-    }
-    export class Err extends Protocol.Convertor<Err> implements IErr, ISigned<Err> {
+		public signature(): number {
+			return 0;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public getSignature(): string {
+			return "Err";
+		}
 
-        public static defaults(): Err {
-            return new Users.Err({
-                error: '',
-            });
-        }
+		public get(): Err {
+			return this;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<Err>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof Err)) {
-                                throw new Error(`Expecting instance of Err on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof Err ? undefined : new Error(`Expecting instance of Err`);
-                }};
-            }
-        }
+		public getId(): number {
+			return 81;
+		}
 
-        public static from(obj: any): Err | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = Err.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, Err.scheme);
-                return error instanceof Error ? error : new Err({
-                    error: obj.error,
-                });
-            }
-        }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						82,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.error
+					),
+			]);
+		}
 
-        public error!: string;
-        public static getSignature(): string { return 'Err'; }
-        public static getId(): number { return 81; }
+		public decode(buffer: ArrayBufferLike): Error | Err {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const error: string | Error = this.getValue<string>(
+				storage,
+				82,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (error instanceof Error) {
+				return error;
+			} else {
+				this.error = error;
+			}
+			return this;
+		}
 
-
-        constructor(params: IErr)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
-
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'Err'; }
-
-        public get(): Err { return this; }
-
-        public getId(): number { return 81; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(82, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | Err {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const error: string | Error = this.getValue<string>(storage, 82, Protocol.Primitives.StrUTF8.decode);
-            if (error instanceof Error) {
-                return error;
-            } else {
-                this.error = error;
-            }
-            return this;
-        }
-
-        public defaults(): Err {
-            return Err.defaults();
-        }
-    }
-
+		public defaults(): Err {
+			return Err.defaults();
+		}
+	}
 }
 
 export namespace InternalServiceGroup {
-    export interface IAvailableMessages {
-        SelfKeyResponse?: SelfKeyResponse,
-        HashRequest?: HashRequest,
-        HashResponse?: HashResponse,
-        BeaconConfirmation?: BeaconConfirmation,
-    }
+	export interface IAvailableMessages {
+		SelfKeyResponse?: SelfKeyResponse;
+		HashRequest?: HashRequest;
+		HashResponse?: HashResponse;
+		BeaconConfirmation?: BeaconConfirmation;
+	}
 
-    export interface ISelfKeyResponse {
-        uuid: string;
-    }
-    export class SelfKeyResponse extends Protocol.Convertor<SelfKeyResponse> implements ISelfKeyResponse, ISigned<SelfKeyResponse> {
+	export interface ISelfKeyResponse {
+		uuid: string;
+	}
+	export class SelfKeyResponse
+		extends Protocol.Convertor<SelfKeyResponse>
+		implements ISelfKeyResponse, ISigned<SelfKeyResponse>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "uuid",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static defaults(): SelfKeyResponse {
+			return new InternalServiceGroup.SelfKeyResponse({
+				uuid: "",
+			});
+		}
 
-        public static defaults(): SelfKeyResponse {
-            return new InternalServiceGroup.SelfKeyResponse({
-                uuid: '',
-            });
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(
+								`Expecting Array<SelfKeyResponse>`
+							);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof SelfKeyResponse)) {
+									throw new Error(
+										`Expecting instance of SelfKeyResponse on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof SelfKeyResponse
+							? undefined
+							: new Error(
+									`Expecting instance of SelfKeyResponse`
+							  );
+					},
+				};
+			}
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<SelfKeyResponse>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof SelfKeyResponse)) {
-                                throw new Error(`Expecting instance of SelfKeyResponse on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof SelfKeyResponse ? undefined : new Error(`Expecting instance of SelfKeyResponse`);
-                }};
-            }
-        }
+		public static from(obj: any): SelfKeyResponse | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = SelfKeyResponse.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					SelfKeyResponse.scheme
+				);
+				return error instanceof Error
+					? error
+					: new SelfKeyResponse({
+							uuid: obj.uuid,
+					  });
+			}
+		}
 
-        public static from(obj: any): SelfKeyResponse | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = SelfKeyResponse.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, SelfKeyResponse.scheme);
-                return error instanceof Error ? error : new SelfKeyResponse({
-                    uuid: obj.uuid,
-                });
-            }
-        }
+		public uuid!: string;
+		public static getSignature(): string {
+			return "SelfKeyResponse";
+		}
+		public static getId(): number {
+			return 84;
+		}
 
-        public uuid!: string;
-        public static getSignature(): string { return 'SelfKeyResponse'; }
-        public static getId(): number { return 84; }
+		constructor(params: ISelfKeyResponse) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
+		public signature(): number {
+			return 0;
+		}
 
-        constructor(params: ISelfKeyResponse)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getSignature(): string {
+			return "SelfKeyResponse";
+		}
 
-        public signature(): number { return 0; }
+		public get(): SelfKeyResponse {
+			return this;
+		}
 
-        public getSignature(): string { return 'SelfKeyResponse'; }
+		public getId(): number {
+			return 84;
+		}
 
-        public get(): SelfKeyResponse { return this; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						85,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.uuid
+					),
+			]);
+		}
 
-        public getId(): number { return 84; }
+		public decode(buffer: ArrayBufferLike): Error | SelfKeyResponse {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const uuid: string | Error = this.getValue<string>(
+				storage,
+				85,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (uuid instanceof Error) {
+				return uuid;
+			} else {
+				this.uuid = uuid;
+			}
+			return this;
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(85, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
-            ]);
-        }
+		public defaults(): SelfKeyResponse {
+			return SelfKeyResponse.defaults();
+		}
+	}
 
-        public decode(buffer: ArrayBufferLike): Error | SelfKeyResponse {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const uuid: string | Error = this.getValue<string>(storage, 85, Protocol.Primitives.StrUTF8.decode);
-            if (uuid instanceof Error) {
-                return uuid;
-            } else {
-                this.uuid = uuid;
-            }
-            return this;
-        }
+	export interface IHashRequest {
+		protocol: string;
+		workflow: string;
+	}
+	export class HashRequest
+		extends Protocol.Convertor<HashRequest>
+		implements IHashRequest, ISigned<HashRequest>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "protocol",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+			{
+				prop: "workflow",
+				types: Protocol.Primitives.StrUTF8,
+				optional: false,
+			},
+		];
 
-        public defaults(): SelfKeyResponse {
-            return SelfKeyResponse.defaults();
-        }
-    }
+		public static defaults(): HashRequest {
+			return new InternalServiceGroup.HashRequest({
+				protocol: "",
+				workflow: "",
+			});
+		}
 
-    export interface IHashRequest {
-        protocol: string;
-        workflow: string;
-    }
-    export class HashRequest extends Protocol.Convertor<HashRequest> implements IHashRequest, ISigned<HashRequest> {
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<HashRequest>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof HashRequest)) {
+									throw new Error(
+										`Expecting instance of HashRequest on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof HashRequest
+							? undefined
+							: new Error(`Expecting instance of HashRequest`);
+					},
+				};
+			}
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'protocol', types: Protocol.Primitives.StrUTF8, optional: false, },
-            { prop: 'workflow', types: Protocol.Primitives.StrUTF8, optional: false, },
-        ];
+		public static from(obj: any): HashRequest | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = HashRequest.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					HashRequest.scheme
+				);
+				return error instanceof Error
+					? error
+					: new HashRequest({
+							protocol: obj.protocol,
+							workflow: obj.workflow,
+					  });
+			}
+		}
 
-        public static defaults(): HashRequest {
-            return new InternalServiceGroup.HashRequest({
-                protocol: '',
-                workflow: '',
-            });
-        }
+		public protocol!: string;
+		public workflow!: string;
+		public static getSignature(): string {
+			return "HashRequest";
+		}
+		public static getId(): number {
+			return 86;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<HashRequest>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof HashRequest)) {
-                                throw new Error(`Expecting instance of HashRequest on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof HashRequest ? undefined : new Error(`Expecting instance of HashRequest`);
-                }};
-            }
-        }
+		constructor(params: IHashRequest) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static from(obj: any): HashRequest | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = HashRequest.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, HashRequest.scheme);
-                return error instanceof Error ? error : new HashRequest({
-                    protocol: obj.protocol,
-                    workflow: obj.workflow,
-                });
-            }
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public protocol!: string;
-        public workflow!: string;
-        public static getSignature(): string { return 'HashRequest'; }
-        public static getId(): number { return 86; }
+		public getSignature(): string {
+			return "HashRequest";
+		}
 
+		public get(): HashRequest {
+			return this;
+		}
 
-        constructor(params: IHashRequest)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public getId(): number {
+			return 86;
+		}
 
-        public signature(): number { return 0; }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.getBufferFromBuf<string>(
+						87,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.protocol
+					),
+				() =>
+					this.getBufferFromBuf<string>(
+						88,
+						Protocol.ESize.u64,
+						Protocol.Primitives.StrUTF8.encode,
+						this.workflow
+					),
+			]);
+		}
 
-        public getSignature(): string { return 'HashRequest'; }
+		public decode(buffer: ArrayBufferLike): Error | HashRequest {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const protocol: string | Error = this.getValue<string>(
+				storage,
+				87,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (protocol instanceof Error) {
+				return protocol;
+			} else {
+				this.protocol = protocol;
+			}
+			const workflow: string | Error = this.getValue<string>(
+				storage,
+				88,
+				Protocol.Primitives.StrUTF8.decode
+			);
+			if (workflow instanceof Error) {
+				return workflow;
+			} else {
+				this.workflow = workflow;
+			}
+			return this;
+		}
 
-        public get(): HashRequest { return this; }
+		public defaults(): HashRequest {
+			return HashRequest.defaults();
+		}
+	}
 
-        public getId(): number { return 86; }
+	export interface IHashResponse {
+		error: string | undefined;
+	}
+	export class HashResponse
+		extends Protocol.Convertor<HashResponse>
+		implements IHashResponse, ISigned<HashResponse>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+		];
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.getBufferFromBuf<string>(87, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.protocol),
-                () => this.getBufferFromBuf<string>(88, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.workflow),
-            ]);
-        }
+		public static defaults(): HashResponse {
+			return new InternalServiceGroup.HashResponse({
+				error: undefined,
+			});
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | HashRequest {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const protocol: string | Error = this.getValue<string>(storage, 87, Protocol.Primitives.StrUTF8.decode);
-            if (protocol instanceof Error) {
-                return protocol;
-            } else {
-                this.protocol = protocol;
-            }
-            const workflow: string | Error = this.getValue<string>(storage, 88, Protocol.Primitives.StrUTF8.decode);
-            if (workflow instanceof Error) {
-                return workflow;
-            } else {
-                this.workflow = workflow;
-            }
-            return this;
-        }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(`Expecting Array<HashResponse>`);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof HashResponse)) {
+									throw new Error(
+										`Expecting instance of HashResponse on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof HashResponse
+							? undefined
+							: new Error(`Expecting instance of HashResponse`);
+					},
+				};
+			}
+		}
 
-        public defaults(): HashRequest {
-            return HashRequest.defaults();
-        }
-    }
+		public static from(obj: any): HashResponse | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = HashResponse.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					HashResponse.scheme
+				);
+				return error instanceof Error
+					? error
+					: new HashResponse({
+							error: obj.error,
+					  });
+			}
+		}
 
-    export interface IHashResponse {
-        error: string | undefined;
-    }
-    export class HashResponse extends Protocol.Convertor<HashResponse> implements IHashResponse, ISigned<HashResponse> {
+		public error!: string | undefined;
+		public static getSignature(): string {
+			return "HashResponse";
+		}
+		public static getId(): number {
+			return 89;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: true, },
-        ];
+		constructor(params: IHashResponse) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-        public static defaults(): HashResponse {
-            return new InternalServiceGroup.HashResponse({
-                error: undefined,
-            });
-        }
+		public signature(): number {
+			return 0;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<HashResponse>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof HashResponse)) {
-                                throw new Error(`Expecting instance of HashResponse on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof HashResponse ? undefined : new Error(`Expecting instance of HashResponse`);
-                }};
-            }
-        }
+		public getSignature(): string {
+			return "HashResponse";
+		}
 
-        public static from(obj: any): HashResponse | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = HashResponse.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, HashResponse.scheme);
-                return error instanceof Error ? error : new HashResponse({
-                    error: obj.error,
-                });
-            }
-        }
+		public get(): HashResponse {
+			return this;
+		}
 
-        public error!: string | undefined;
-        public static getSignature(): string { return 'HashResponse'; }
-        public static getId(): number { return 89; }
+		public getId(): number {
+			return 89;
+		}
 
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.error === undefined
+						? this.getBuffer(
+								90,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								90,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.error
+						  ),
+			]);
+		}
 
-        constructor(params: IHashResponse)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
+		public decode(buffer: ArrayBufferLike): Error | HashResponse {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const errorBuf: ArrayBufferLike | undefined = storage.get(90);
+			if (errorBuf === undefined) {
+				return new Error(`Fail to get property error (id=90)`);
+			}
+			if (errorBuf.byteLength === 0) {
+				this.error = undefined;
+			} else {
+				const error: string | Error = this.getValue<string>(
+					storage,
+					90,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (error instanceof Error) {
+					return error;
+				} else {
+					this.error = error;
+				}
+			}
+			return this;
+		}
 
-        public signature(): number { return 0; }
+		public defaults(): HashResponse {
+			return HashResponse.defaults();
+		}
+	}
 
-        public getSignature(): string { return 'HashResponse'; }
+	export interface IBeaconConfirmation {
+		error: string | undefined;
+	}
+	export class BeaconConfirmation
+		extends Protocol.Convertor<BeaconConfirmation>
+		implements IBeaconConfirmation, ISigned<BeaconConfirmation>
+	{
+		public static scheme: Protocol.IPropScheme[] = [
+			{
+				prop: "error",
+				types: Protocol.Primitives.StrUTF8,
+				optional: true,
+			},
+		];
 
-        public get(): HashResponse { return this; }
+		public static defaults(): BeaconConfirmation {
+			return new InternalServiceGroup.BeaconConfirmation({
+				error: undefined,
+			});
+		}
 
-        public getId(): number { return 89; }
+		public static getValidator(array: boolean): {
+			validate(value: any): Error | undefined;
+		} {
+			if (array) {
+				return {
+					validate(obj: any): Error | undefined {
+						if (!(obj instanceof Array)) {
+							return new Error(
+								`Expecting Array<BeaconConfirmation>`
+							);
+						}
+						try {
+							obj.forEach((o, index: number) => {
+								if (!(o instanceof BeaconConfirmation)) {
+									throw new Error(
+										`Expecting instance of BeaconConfirmation on index #${index}`
+									);
+								}
+							});
+						} catch (err) {
+							return err instanceof Error
+								? err
+								: new Error(`Unknown error: ${err}`);
+						}
+					},
+				};
+			} else {
+				return {
+					validate(obj: any): Error | undefined {
+						return obj instanceof BeaconConfirmation
+							? undefined
+							: new Error(
+									`Expecting instance of BeaconConfirmation`
+							  );
+					},
+				};
+			}
+		}
 
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.error === undefined ? this.getBuffer(90, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(90, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
+		public static from(obj: any): BeaconConfirmation | Error {
+			if (
+				obj instanceof Buffer ||
+				obj instanceof ArrayBuffer ||
+				obj instanceof Uint8Array
+			) {
+				const inst = BeaconConfirmation.defaults();
+				const err = inst.decode(obj);
+				return err instanceof Error ? err : inst;
+			} else {
+				const error: Error | undefined = Protocol.validate(
+					obj,
+					BeaconConfirmation.scheme
+				);
+				return error instanceof Error
+					? error
+					: new BeaconConfirmation({
+							error: obj.error,
+					  });
+			}
+		}
 
-        public decode(buffer: ArrayBufferLike): Error | HashResponse {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const errorBuf: ArrayBufferLike | undefined = storage.get(90);
-            if (errorBuf === undefined) {
-                return new Error(`Fail to get property error (id=90)`);
-            }
-            if (errorBuf.byteLength === 0) {
-                this.error = undefined;
-            } else {
-                const error: string | Error = this.getValue<string>(storage, 90, Protocol.Primitives.StrUTF8.decode);
-                if (error instanceof Error) {
-                    return error;
-                } else {
-                    this.error = error;
-                }
-            }
-            return this;
-        }
+		public error!: string | undefined;
+		public static getSignature(): string {
+			return "BeaconConfirmation";
+		}
+		public static getId(): number {
+			return 91;
+		}
 
-        public defaults(): HashResponse {
-            return HashResponse.defaults();
-        }
-    }
+		constructor(params: IBeaconConfirmation) {
+			super();
+			Object.keys(params).forEach((key: string) => {
+				(this as any)[key] = (params as any)[key];
+			});
+		}
 
-    export interface IBeaconConfirmation {
-        error: string | undefined;
-    }
-    export class BeaconConfirmation extends Protocol.Convertor<BeaconConfirmation> implements IBeaconConfirmation, ISigned<BeaconConfirmation> {
+		public signature(): number {
+			return 0;
+		}
 
-        public static scheme: Protocol.IPropScheme[] = [
-            { prop: 'error', types: Protocol.Primitives.StrUTF8, optional: true, },
-        ];
+		public getSignature(): string {
+			return "BeaconConfirmation";
+		}
 
-        public static defaults(): BeaconConfirmation {
-            return new InternalServiceGroup.BeaconConfirmation({
-                error: undefined,
-            });
-        }
+		public get(): BeaconConfirmation {
+			return this;
+		}
 
-        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
-            if (array) {
-                return { validate(obj: any): Error | undefined {
-                    if (!(obj instanceof Array)) {
-                        return new Error(`Expecting Array<BeaconConfirmation>`);
-                    }
-                    try {
-                        obj.forEach((o, index: number) => {
-                            if (!(o instanceof BeaconConfirmation)) {
-                                throw new Error(`Expecting instance of BeaconConfirmation on index #${index}`);
-                            }
-                        });
-                    } catch (err) {
-                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
-                    }
-                }};
-            } else {
-                return { validate(obj: any): Error | undefined {
-                    return obj instanceof BeaconConfirmation ? undefined : new Error(`Expecting instance of BeaconConfirmation`);
-                }};
-            }
-        }
+		public getId(): number {
+			return 91;
+		}
 
-        public static from(obj: any): BeaconConfirmation | Error {
-            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
-                const inst = BeaconConfirmation.defaults();
-                const err = inst.decode(obj);
-                return err instanceof Error ? err : inst;
-            } else {
-                const error: Error | undefined = Protocol.validate(obj, BeaconConfirmation.scheme);
-                return error instanceof Error ? error : new BeaconConfirmation({
-                    error: obj.error,
-                });
-            }
-        }
+		public encode(): ArrayBufferLike {
+			return this.collect([
+				() =>
+					this.error === undefined
+						? this.getBuffer(
+								92,
+								Protocol.ESize.u8,
+								0,
+								new Uint8Array()
+						  )
+						: this.getBufferFromBuf<string>(
+								92,
+								Protocol.ESize.u64,
+								Protocol.Primitives.StrUTF8.encode,
+								this.error
+						  ),
+			]);
+		}
 
-        public error!: string | undefined;
-        public static getSignature(): string { return 'BeaconConfirmation'; }
-        public static getId(): number { return 91; }
+		public decode(buffer: ArrayBufferLike): Error | BeaconConfirmation {
+			const storage = this.getStorage(buffer);
+			if (storage instanceof Error) {
+				return storage;
+			}
+			const errorBuf: ArrayBufferLike | undefined = storage.get(92);
+			if (errorBuf === undefined) {
+				return new Error(`Fail to get property error (id=92)`);
+			}
+			if (errorBuf.byteLength === 0) {
+				this.error = undefined;
+			} else {
+				const error: string | Error = this.getValue<string>(
+					storage,
+					92,
+					Protocol.Primitives.StrUTF8.decode
+				);
+				if (error instanceof Error) {
+					return error;
+				} else {
+					this.error = error;
+				}
+			}
+			return this;
+		}
 
-
-        constructor(params: IBeaconConfirmation)  {
-            super();
-            Object.keys(params).forEach((key: string) => {
-                (this as any)[key] = (params as any)[key];
-            });
-        }
-
-        public signature(): number { return 0; }
-
-        public getSignature(): string { return 'BeaconConfirmation'; }
-
-        public get(): BeaconConfirmation { return this; }
-
-        public getId(): number { return 91; }
-
-        public encode(): ArrayBufferLike {
-            return this.collect([
-                () => this.error === undefined ? this.getBuffer(92, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(92, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
-            ]);
-        }
-
-        public decode(buffer: ArrayBufferLike): Error | BeaconConfirmation {
-            const storage = this.getStorage(buffer);
-            if (storage instanceof Error) {
-                return storage;
-            }
-            const errorBuf: ArrayBufferLike | undefined = storage.get(92);
-            if (errorBuf === undefined) {
-                return new Error(`Fail to get property error (id=92)`);
-            }
-            if (errorBuf.byteLength === 0) {
-                this.error = undefined;
-            } else {
-                const error: string | Error = this.getValue<string>(storage, 92, Protocol.Primitives.StrUTF8.decode);
-                if (error instanceof Error) {
-                    return error;
-                } else {
-                    this.error = error;
-                }
-            }
-            return this;
-        }
-
-        public defaults(): BeaconConfirmation {
-            return BeaconConfirmation.defaults();
-        }
-    }
-
+		public defaults(): BeaconConfirmation {
+			return BeaconConfirmation.defaults();
+		}
+	}
 }
 
-export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvailableMessages>> {
-    public signature(): number { return 0; }
-    public getMessage(header: MessageHeader, buffer: Buffer | ArrayBuffer | ArrayBufferLike): IAvailableMessage<IAvailableMessages> | Error {
-        let instance: any;
-        let enum_instance: any = {};
-        let err: Error | undefined;
-        switch (header.id) {
-            case 11:
-                instance = new UserRole();
-                err = instance.decode(buffer);
-                if (err instanceof Error) { return err; }
-                enum_instance = instance.get();
-                instance = enum_instance;
-                return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserRole: instance }, getRef: () => instance };
-            case 2:
-                instance = Identification.SelfKey.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Identification: { SelfKey: instance } }, getRef: () => instance };
-            case 6:
-                instance = Identification.SelfKeyResponse.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Identification: { SelfKeyResponse: instance } }, getRef: () => instance };
-            case 8:
-                instance = Identification.AssignedKey.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Identification: { AssignedKey: instance } }, getRef: () => instance };
-            case 13:
-                instance = Events.UserConnected.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Events: { UserConnected: instance } }, getRef: () => instance };
-            case 16:
-                instance = Events.UserDisconnected.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Events: { UserDisconnected: instance } }, getRef: () => instance };
-            case 19:
-                instance = Events.Message.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Events: { Message: instance } }, getRef: () => instance };
-            case 25:
-                instance = Beacons.LikeUser.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Beacons: { LikeUser: instance } }, getRef: () => instance };
-            case 27:
-                instance = Beacons.LikeMessage.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Beacons: { LikeMessage: instance } }, getRef: () => instance };
-            case 30:
-                instance = ServerEvents.UserKickOff.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { ServerEvents: { UserKickOff: instance } }, getRef: () => instance };
-            case 33:
-                instance = ServerEvents.UserAlert.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { ServerEvents: { UserAlert: instance } }, getRef: () => instance };
-            case 37:
-                instance = Message.Request.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Request: instance } }, getRef: () => instance };
-            case 40:
-                instance = Message.Accepted.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Accepted: instance } }, getRef: () => instance };
-            case 42:
-                instance = Message.Denied.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Denied: instance } }, getRef: () => instance };
-            case 44:
-                instance = Message.Err.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Message: { Err: instance } }, getRef: () => instance };
-            case 47:
-                instance = Messages.Message.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Message: instance } }, getRef: () => instance };
-            case 52:
-                instance = Messages.Request.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Request: instance } }, getRef: () => instance };
-            case 53:
-                instance = Messages.Response.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Response: instance } }, getRef: () => instance };
-            case 55:
-                instance = Messages.Err.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Messages: { Err: instance } }, getRef: () => instance };
-            case 58:
-                instance = UserLogin.Request.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Request: instance } }, getRef: () => instance };
-            case 60:
-                instance = UserLogin.Accepted.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Accepted: instance } }, getRef: () => instance };
-            case 62:
-                instance = UserLogin.Denied.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Denied: instance } }, getRef: () => instance };
-            case 64:
-                instance = UserLogin.Err.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserLogin: { Err: instance } }, getRef: () => instance };
-            case 67:
-                instance = UserInfo.Request.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Request: instance } }, getRef: () => instance };
-            case 68:
-                instance = UserInfo.Accepted.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Accepted: instance } }, getRef: () => instance };
-            case 70:
-                instance = UserInfo.Denied.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Denied: instance } }, getRef: () => instance };
-            case 72:
-                instance = UserInfo.Err.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { UserInfo: { Err: instance } }, getRef: () => instance };
-            case 75:
-                instance = Users.User.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { User: instance } }, getRef: () => instance };
-            case 78:
-                instance = Users.Request.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { Request: instance } }, getRef: () => instance };
-            case 79:
-                instance = Users.Response.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { Response: instance } }, getRef: () => instance };
-            case 81:
-                instance = Users.Err.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Users: { Err: instance } }, getRef: () => instance };
-            case 84:
-                instance = InternalServiceGroup.SelfKeyResponse.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { SelfKeyResponse: instance } }, getRef: () => instance };
-            case 86:
-                instance = InternalServiceGroup.HashRequest.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { HashRequest: instance } }, getRef: () => instance };
-            case 89:
-                instance = InternalServiceGroup.HashResponse.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { HashResponse: instance } }, getRef: () => instance };
-            case 91:
-                instance = InternalServiceGroup.BeaconConfirmation.defaults();
-                err = instance.decode(buffer);
-                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { BeaconConfirmation: instance } }, getRef: () => instance };
-            default: throw new Error(`Unknown message id=${header.id}`);
-        }
-    }
+export class BufferReaderMessages extends BufferReader<
+	IAvailableMessage<IAvailableMessages>
+> {
+	public signature(): number {
+		return 0;
+	}
+	public getMessage(
+		header: MessageHeader,
+		buffer: Buffer | ArrayBuffer | ArrayBufferLike
+	): IAvailableMessage<IAvailableMessages> | Error {
+		let instance: any;
+		let enum_instance: any = {};
+		let err: Error | undefined;
+		switch (header.id) {
+			case 11:
+				instance = new UserRole();
+				err = instance.decode(buffer);
+				if (err instanceof Error) {
+					return err;
+				}
+				enum_instance = instance.get();
+				instance = enum_instance;
+				return {
+					header: {
+						id: header.id,
+						sequence: header.sequence,
+						timestamp: header.ts,
+					},
+					msg: { UserRole: instance },
+					getRef: () => instance,
+				};
+			case 2:
+				instance = Identification.SelfKey.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Identification: { SelfKey: instance } },
+							getRef: () => instance,
+					  };
+			case 6:
+				instance = Identification.SelfKeyResponse.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: {
+								Identification: { SelfKeyResponse: instance },
+							},
+							getRef: () => instance,
+					  };
+			case 8:
+				instance = Identification.AssignedKey.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Identification: { AssignedKey: instance } },
+							getRef: () => instance,
+					  };
+			case 13:
+				instance = Events.UserConnected.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Events: { UserConnected: instance } },
+							getRef: () => instance,
+					  };
+			case 16:
+				instance = Events.UserDisconnected.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Events: { UserDisconnected: instance } },
+							getRef: () => instance,
+					  };
+			case 19:
+				instance = Events.Message.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Events: { Message: instance } },
+							getRef: () => instance,
+					  };
+			case 25:
+				instance = Beacons.LikeUser.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Beacons: { LikeUser: instance } },
+							getRef: () => instance,
+					  };
+			case 27:
+				instance = Beacons.LikeMessage.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Beacons: { LikeMessage: instance } },
+							getRef: () => instance,
+					  };
+			case 30:
+				instance = ServerEvents.UserKickOff.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { ServerEvents: { UserKickOff: instance } },
+							getRef: () => instance,
+					  };
+			case 33:
+				instance = ServerEvents.UserAlert.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { ServerEvents: { UserAlert: instance } },
+							getRef: () => instance,
+					  };
+			case 37:
+				instance = Message.Request.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Message: { Request: instance } },
+							getRef: () => instance,
+					  };
+			case 40:
+				instance = Message.Accepted.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Message: { Accepted: instance } },
+							getRef: () => instance,
+					  };
+			case 42:
+				instance = Message.Denied.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Message: { Denied: instance } },
+							getRef: () => instance,
+					  };
+			case 44:
+				instance = Message.Err.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Message: { Err: instance } },
+							getRef: () => instance,
+					  };
+			case 47:
+				instance = Messages.Message.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Messages: { Message: instance } },
+							getRef: () => instance,
+					  };
+			case 52:
+				instance = Messages.Request.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Messages: { Request: instance } },
+							getRef: () => instance,
+					  };
+			case 53:
+				instance = Messages.Response.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Messages: { Response: instance } },
+							getRef: () => instance,
+					  };
+			case 55:
+				instance = Messages.Err.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Messages: { Err: instance } },
+							getRef: () => instance,
+					  };
+			case 58:
+				instance = UserLogin.Request.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserLogin: { Request: instance } },
+							getRef: () => instance,
+					  };
+			case 60:
+				instance = UserLogin.Accepted.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserLogin: { Accepted: instance } },
+							getRef: () => instance,
+					  };
+			case 62:
+				instance = UserLogin.Denied.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserLogin: { Denied: instance } },
+							getRef: () => instance,
+					  };
+			case 64:
+				instance = UserLogin.Err.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserLogin: { Err: instance } },
+							getRef: () => instance,
+					  };
+			case 67:
+				instance = UserInfo.Request.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserInfo: { Request: instance } },
+							getRef: () => instance,
+					  };
+			case 68:
+				instance = UserInfo.Accepted.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserInfo: { Accepted: instance } },
+							getRef: () => instance,
+					  };
+			case 70:
+				instance = UserInfo.Denied.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserInfo: { Denied: instance } },
+							getRef: () => instance,
+					  };
+			case 72:
+				instance = UserInfo.Err.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { UserInfo: { Err: instance } },
+							getRef: () => instance,
+					  };
+			case 75:
+				instance = Users.User.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Users: { User: instance } },
+							getRef: () => instance,
+					  };
+			case 78:
+				instance = Users.Request.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Users: { Request: instance } },
+							getRef: () => instance,
+					  };
+			case 79:
+				instance = Users.Response.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Users: { Response: instance } },
+							getRef: () => instance,
+					  };
+			case 81:
+				instance = Users.Err.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: { Users: { Err: instance } },
+							getRef: () => instance,
+					  };
+			case 84:
+				instance = InternalServiceGroup.SelfKeyResponse.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: {
+								InternalServiceGroup: {
+									SelfKeyResponse: instance,
+								},
+							},
+							getRef: () => instance,
+					  };
+			case 86:
+				instance = InternalServiceGroup.HashRequest.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: {
+								InternalServiceGroup: { HashRequest: instance },
+							},
+							getRef: () => instance,
+					  };
+			case 89:
+				instance = InternalServiceGroup.HashResponse.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: {
+								InternalServiceGroup: {
+									HashResponse: instance,
+								},
+							},
+							getRef: () => instance,
+					  };
+			case 91:
+				instance = InternalServiceGroup.BeaconConfirmation.defaults();
+				err = instance.decode(buffer);
+				return err instanceof Error
+					? err
+					: {
+							header: {
+								id: header.id,
+								sequence: header.sequence,
+								timestamp: header.ts,
+							},
+							msg: {
+								InternalServiceGroup: {
+									BeaconConfirmation: instance,
+								},
+							},
+							getRef: () => instance,
+					  };
+			default:
+				throw new Error(`Unknown message id=${header.id}`);
+		}
+	}
 }
 
-export function hash(): string { return `F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE`; }
+export function hash(): string {
+	return `F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE`;
+}

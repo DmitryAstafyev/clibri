@@ -147,7 +147,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
-name = "fiber"
+name = "clibri"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -159,10 +159,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiber_transport_client"
+name = "clibri_transport_client"
 version = "0.1.0"
 dependencies = [
- "fiber",
+ "clibri",
  "futures",
  "hyper",
  "log",
@@ -175,12 +175,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiber_transport_server"
+name = "clibri_transport_server"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
- "fiber",
+ "clibri",
  "futures",
  "hyper",
  "log",
@@ -880,9 +880,9 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "console",
- "fiber",
- "fiber_transport_client",
- "fiber_transport_server",
+ "clibri",
+ "clibri_transport_client",
+ "clibri_transport_server",
  "futures",
  "indicatif",
  "log",

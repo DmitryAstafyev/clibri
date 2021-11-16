@@ -1,4 +1,4 @@
-import { IServerError } from "fiber";
+import { IServerError } from "clibri";
 import { Producer, Identification, Filter, Context } from "./index";
 import { emit } from "../../events/error";
 

@@ -1,5 +1,5 @@
 use super::{error::ConsumerError, protocol, Auth};
-use fiber::client;
+use clibri::client;
 use tokio::sync::{
     mpsc::{Sender, UnboundedSender},
     oneshot,

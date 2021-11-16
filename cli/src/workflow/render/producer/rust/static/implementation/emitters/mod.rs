@@ -4,7 +4,7 @@ pub mod error;
 pub mod user_kickoff;
 
 use super::*;
-use fiber::server;
+use clibri::server;
 use protocol::PackingStruct;
 use thiserror::Error;
 use uuid::Uuid;
