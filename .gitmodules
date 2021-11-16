@@ -16,6 +16,3 @@
 [submodule "lib/typescript"]
 	path = lib/typescript
 	url = git@github.com:DmitryAstafyev/fiber.lib.ts.git
-[submodule "lib-cli"]
-	path = lib-cli
-	url = git@github.com:DmitryAstafyev/fiber.cli.git

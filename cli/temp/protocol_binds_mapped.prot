@@ -1,0 +1,68 @@
+# Example of identification object
+@Identification{
+    consumer {
+        str uuid;
+        u64 id;
+        str location;
+    }
+    producer {
+        str uuid;
+        bool auth;
+    }
+}
+
+
+# For each conclution should be own response
+# For any request should be always defined error response
+
+DIS: logic - send all broadcast messages with some conclusion has week point. What if 
+     user wants to send some message in very specific case? For example it's about
+     user login and logined writer and only writers should get message. Also message should
+     be sent only if logined user writer. Maybe Option?
+
+UserLogin.Request(UserLogin.Error) {
+    Accept > UserLogin.Accept: Events.UserConnected
+                             : Events.Message
+    Deny > UserLogin.Deny
+}
+
+KickOff {
+    reason: str
+} > Events::Message
+  > Events::UserConnected
+
+
+
+UserSignInRequest:UserSignInError
+   : (Accept > UserSignInAccepted) > accept;
+                                   > broadcast: UserSignInBroadcast;
+   : (Deny > UserSignInDenied)     > deny;
+
+UserSignInRequest : UserSignInError
+   : (Accept > UserSignInAccepted)  > UserSignInBroadcast;
+                                    > NewMessageBroadcast;
+                                    > AdminLogined?;
+   : (Deny > UserSignInDenied);
+
+UserSignInRequest : UserSignInError
+   : (Accept > UserSignInAccepted)  > UserSignInBroadcast;
+                                    > NewMessageBroadcast;
+   : (Deny > UserSignInDenied);
+
+Same example but using groups
+UserSignIn {
+    Request[Error]
+        : (Accept -> Accepted) > accept;
+                               > broadcast: UserSignInBroadcast;
+        : (Deny -> Denied)     > deny;
+}
+
+
+# Broadcast version
+
+@broadcasts {
+    struct UserDisconnected {
+        str login;
+        u64 timestamp;
+    }
+}

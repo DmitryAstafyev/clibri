@@ -1,0 +1,77 @@
+struct StructName {
+    u8 age;
+    str name;
+    UserType userType;
+}
+StructName {
+    age = 23;
+    name = "Hello, World";
+    userType = UserType("Admin");
+}
+enum EnumWithSctructs {
+    OptionA a;
+    OptionB b;
+}
+enum SyntaxSugarEnum {
+    VariantA;
+    VariantB;
+    VariantC;
+}
+enum UserType {
+    str Admin;
+    str Manager;
+    str User;
+}
+struct User {
+    str username;
+    str email?;
+    UserType userType;
+}
+struct Login {
+    User[] users;
+}
+group GroupA {
+    struct UserA {
+        str[] username;
+        str email?;
+        UserType type;
+    }
+    struct LoginA {
+        User[] users;
+    }
+    enum UserTypeTest {
+        u8 pointA;
+        u8 pointB;
+        u8 pointC;
+    }
+}
+group GroupB {
+    struct UserA {
+        str[] username;
+        str email?;
+        UserType type;
+    }
+    struct LoginA {
+        User[] users;
+    }
+    enum UserTypeTest {
+        u8 pointA;
+        u8 pointB;
+        u8 pointC;
+    }
+    group GroupC {
+        struct UserA {
+            str[] username;
+            str email?;
+            UserType type;
+        }
+        struct LoginA {
+            User[] users;
+        }
+        enum UserTypeTest {
+            u8 pointA;
+            u8 pointB;
+            u8 pointC;
+        }
+    }
+}
