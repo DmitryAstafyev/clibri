@@ -19,20 +19,37 @@ end
 
 namespace :lib do
 
-  desc 'Build Rust Lib'
-  task :rs do
-    Dir.chdir("#{PATHS::LIB}/rust") do
-      sh 'cargo build --release'
+  namespace :build do
+    desc 'Build Rust Lib'
+    task :rs do
+      Dir.chdir("#{PATHS::LIB}/rust") do
+        sh 'cargo build --release'
+      end
     end
-  end
-  desc 'Build Typescript Lib'
-  task :ts do
-    Dir.chdir("#{PATHS::LIB}/typescript") do
-      sh 'npm install'
-      sh 'npm run build'
+    desc 'Build Typescript Lib'
+    task :ts do
+      Dir.chdir("#{PATHS::LIB}/typescript") do
+        sh 'npm install'
+        sh 'npm run build'
+      end
     end
+    task :all => ['rs', 'ts']
   end
-  task :build => ['rs', 'ts']
+  namespace :publish do
+    desc 'Build Rust Lib'
+    task :rs do
+      Dir.chdir("#{PATHS::LIB}/rust") do
+        ## not implemented yet
+      end
+    end
+    desc 'Build Typescript Lib'
+    task :ts do
+      Dir.chdir("#{PATHS::LIB}/typescript") do
+        sh 'npm publish'
+      end
+    end
+    task :all => ['lib:build:all', 'rs', 'ts']
+  end
 
 end
 
