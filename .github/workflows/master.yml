@@ -77,8 +77,10 @@ jobs:
               uses: hecrj/setup-rust-action@v1
               with:
                   rust-version: ${{ matrix.rust }}
-            - name: build release
+            - name: CLI build
               run: rake cli:build --trace
+            - name: CLI pack
+              run: rake release --trace
             - run: ls
             - name: Release
               uses: meatlink/action-gh-release@fix-econnreset
