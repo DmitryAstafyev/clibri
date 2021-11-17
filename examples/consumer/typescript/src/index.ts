@@ -1,6 +1,6 @@
 import { Client, Subject, IClientSubjects } from "clibri";
 import { Consumer, Protocol, UserLoginRequest } from "./consumer/index";
-import { Connection } from "clibri-websocket";
+import { Connection } from "clibri-websocket-client";
 import { SpinnerComponent } from "./components/spinner/component";
 import { LoginComponent } from "./components/login/component";
 import { UsersComponent } from "./components/users/component";

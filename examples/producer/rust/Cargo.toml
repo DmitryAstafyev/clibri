@@ -6,10 +6,10 @@ thiserror = '1.0.26'
 tokio-util = '0.6.7'
 
 [dependencies.clibri]
-path = '../../../lib/rust'
+version = '0.1.0'
 
 [dependencies.clibri_transport_server]
-path = '../../../environment/transport/server/rust'
+version = '0.1.0'
 
 [dependencies.futures]
 version = '0.3.14'

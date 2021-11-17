@@ -1,8 +1,8 @@
 {
 	"author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
 	"dependencies": {
-		"clibri": "file:../../../lib/typescript",
-		"clibri-websocket-server": "file:../../../environment/transport/server/typescript"
+		"clibri": "0.1.2",
+		"clibri-websocket-server": "0.1.2"
 	},
 	"description": "Producer implementation for clibri's Protocol",
 	"devDependencies": {
