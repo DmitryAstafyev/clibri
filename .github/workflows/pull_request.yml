@@ -20,6 +20,8 @@ jobs:
               run: gem install dotenv
             - name: install octokit
               run: gem install octokit
+            - name: install toml
+              run: gem install toml
             - name: install node
               uses: actions/setup-node@master
               with:
