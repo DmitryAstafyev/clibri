@@ -10,8 +10,10 @@ jobs:
                 rust: [stable]
                 node: [16.13.0]
         steps:
-            - name: Checkout
+            - name: Checkout repository and submodules
               uses: actions/checkout@v2
+              with:
+                  submodules: recursive
             - name: install ruby
               uses: actions/setup-ruby@v1
               with:
