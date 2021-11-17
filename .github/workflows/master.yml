@@ -13,7 +13,7 @@ jobs:
         strategy:
             matrix:
                 rust: [stable]
-                node: [stable]
+                node: [16.13.0]
         steps:
             - name: Checkout
               uses: actions/checkout@v2
@@ -49,7 +49,7 @@ jobs:
             matrix:
                 os: [ubuntu-18.04, windows-2016, macOS-latest]
                 rust: [stable]
-                node: [stable]
+                node: [16.13.0]
         steps:
             - name: Checkout
               uses: actions/checkout@v2
