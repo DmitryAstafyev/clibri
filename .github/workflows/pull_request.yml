@@ -1,0 +1,40 @@
+name: Checks
+
+on: [pull_request]
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                rust: [stable]
+                node: [stable]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: install ruby
+              uses: actions/setup-ruby@v1
+              with:
+                  ruby-version: "2.x"
+            - name: install dotenv
+              run: gem install dotenv
+            - name: install octokit
+              run: gem install octokit
+            - name: install node
+              uses: actions/setup-node@master
+              with:
+                  node-version: ${{ matrix.node }}
+            - name: install rust
+              uses: hecrj/setup-rust-action@v1
+              with:
+                  rust-version: ${{ matrix.rust }}
+            - name: Build lib
+              run: rake lib:build:all --trace
+            - name: Build transport
+              run: rake transport:build --trace
+            - name: Build CLI
+              run: rake cli:build --trace
+            - name: Protocol test
+              run: rake test:protocol:all --trace
+            - name: Generate and build example
+              run: rake test:examples:create --trace

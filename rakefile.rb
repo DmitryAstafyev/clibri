@@ -1,4 +1,6 @@
 require 'fileutils'
+require './rakefile.module.builder'
+require './rakefile.module.env'
 
 module PATHS
   self::CLI = "./cli"
@@ -34,21 +36,6 @@ namespace :lib do
       end
     end
     task :all => ['rs', 'ts']
-  end
-  namespace :publish do
-    desc 'Build Rust Lib'
-    task :rs do
-      Dir.chdir("#{PATHS::LIB}/rust") do
-        ## not implemented yet
-      end
-    end
-    desc 'Build Typescript Lib'
-    task :ts do
-      Dir.chdir("#{PATHS::LIB}/typescript") do
-        sh 'npm publish'
-      end
-    end
-    task :all => ['lib:build:all', 'rs', 'ts']
   end
 
 end
@@ -144,7 +131,7 @@ namespace :test do
     end
   
     desc 'Test'
-    task :test => ['generate', 'build', 'execute']
+    task :all => ['cli:build', 'generate', 'build', 'execute']
   
   end
 
@@ -236,4 +223,10 @@ namespace :clean do
   end
   task :all => ['lib', 'cli', 'examples', 'transport', 'protocol_test']
 
+end
+
+desc 'Release CLI'
+task :release do
+  @builder = Builder.new
+  @builder.build
 end

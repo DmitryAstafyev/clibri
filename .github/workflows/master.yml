@@ -1,0 +1,85 @@
+name: BuildAndRelease
+
+on:
+    push:
+        branches:
+            - master
+        tags:
+            - "*"
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                rust: [stable]
+                node: [stable]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: install ruby
+              uses: actions/setup-ruby@v1
+              with:
+                  ruby-version: "2.x"
+            - name: install dotenv
+              run: gem install dotenv
+            - name: install octokit
+              run: gem install octokit
+            - name: install node
+              uses: actions/setup-node@master
+              with:
+                  node-version: ${{ matrix.node }}
+            - name: install rust
+              uses: hecrj/setup-rust-action@v1
+              with:
+                  rust-version: ${{ matrix.rust }}
+            - name: Build lib
+              run: rake lib:build:all --trace
+            - name: Build transport
+              run: rake transport:build --trace
+            - name: Build CLI
+              run: rake cli:build --trace
+            - name: Protocol test
+              run: rake test:protocol:all --trace
+            - name: Generate and build example
+              run: rake test:examples:create --trace
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-18.04, windows-2016, macOS-latest]
+                rust: [stable]
+                node: [stable]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            - name: install ruby
+              uses: actions/setup-ruby@v1
+              with:
+                  ruby-version: "2.x"
+            - name: install dotenv
+              run: gem install dotenv
+            - name: install octokit
+              run: gem install octokit
+            - name: install toml
+              run: gem install toml
+            - name: install node
+              uses: actions/setup-node@master
+              with:
+                  node-version: ${{ matrix.node }}
+            - name: install rust
+              uses: hecrj/setup-rust-action@v1
+              with:
+                  rust-version: ${{ matrix.rust }}
+            - name: build release
+              run: rake cli:build --trace
+            - run: ls
+            - name: Release
+              uses: meatlink/action-gh-release@fix-econnreset
+              if: startsWith(github.ref, 'refs/tags/')
+              with:
+                  files: |
+                      *.tgz
+                  draft: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

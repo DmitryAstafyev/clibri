@@ -1,13 +1,11 @@
 [dependencies]
 bytes = '1.1.0'
 chrono = '0.4.19'
+clibri = '0.1.0'
 log = '0.4.14'
 regex = '1'
 thiserror = '1.0.26'
 tokio-util = '0.6.7'
-
-[dependencies.clibri]
-version = '0.1.0'
 
 [dependencies.clibri_transport_client]
 version = '0.1.0'
