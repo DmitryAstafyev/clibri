@@ -195,6 +195,7 @@ pub mod producer {
         server_control: C,
         shutdown: CancellationToken,
         phantom: PhantomData<E>,
+        pub events: UnboundedEvents,
     }
 
     impl<E, C> Control<E, C>
@@ -437,7 +438,7 @@ pub mod producer {
         };
         for (message, header) in messages.iter() {
             match message {
-                [[indentification_self_enum_ref]] => {
+                [[indentification_self_enum_ref]] if !client.is_hash_accepted() => {
                     trace!(
                         target: logs::targets::PRODUCER,
                         "consumer {} requested identification",
@@ -814,7 +815,7 @@ pub mod producer {
         let manage = Manage {
             tx_manage_channel,
             shutdown_tracker_token: shutdown_tracker_token.clone(),
-            events: unbounded_events,
+            events: unbounded_events.clone(),
         };
         task::spawn(async move {
             let shutdown = CancellationToken::new();
@@ -822,6 +823,7 @@ pub mod producer {
                 server_control: server.control(),
                 shutdown,
                 phantom: PhantomData,
+                events: unbounded_events,
             };
             let (main_task_res, manage_task_res) = join!(
                 main_task(
@@ -969,10 +971,7 @@ impl Render {
                 .map(|v| String::from(*v))
                 .collect();
             let enum_ref: String = if parts.len() == 1 {
-                format!(
-                    "protocol::AvailableMessages::{}(protocol::{}(request))",
-                    parts[0], parts[0]
-                )
+                format!("protocol::AvailableMessages::{}(request)", parts[0])
             } else {
                 //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
                 //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(request))
@@ -1012,10 +1011,7 @@ impl Render {
                 .map(|v| String::from(*v))
                 .collect();
             let enum_ref: String = if parts.len() == 1 {
-                format!(
-                    "protocol::AvailableMessages::{}(protocol::{}(beacon))",
-                    parts[0], parts[0]
-                )
+                format!("protocol::AvailableMessages::{}(beacon)", parts[0])
             } else {
                 //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
                 //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(request))
@@ -1117,8 +1113,8 @@ impl Render {
             .collect();
         if parts.len() == 1 {
             Ok(format!(
-                "protocol::AvailableMessages::{}(protocol::{}(request))",
-                parts[0], parts[0]
+                "protocol::AvailableMessages::{}(request)",
+                parts[0]
             ))
         } else {
             let mut chain: String = String::from("");

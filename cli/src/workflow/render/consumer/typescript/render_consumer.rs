@@ -76,7 +76,7 @@ export class Consumer {
     private readonly _logger: Logger;
     private readonly _options: Options;
     private _uuid: string | undefined;
-    private _key: Protocol.Identification.ISelfKey;
+    private _key: Protocol.[[self_key_interface]];
     private _sequence: number = 1;
 
     public readonly connected: Subject<void> = new Subject(`connected`);
@@ -110,7 +110,7 @@ export class Consumer {
         }
     }
 
-    constructor(client: Client, key: Protocol.Identification.ISelfKey, options?: IOptions) {
+    constructor(client: Client, key: Protocol.[[self_key_interface]], options?: IOptions) {
         this._client = client;
         this._key = key;
         this._options = new Options(`Consumer ${Consumer.GUID}`, options);
@@ -159,9 +159,9 @@ export class Consumer {
         });
     }
 
-    public assign(key: Protocol.Identification.ISelfKey): Promise<string> {
+    public assign(key: Protocol.[[self_key_interface]]): Promise<string> {
         return new Promise((resolve, reject) => {
-            const request: Protocol.Identification.SelfKey = new Protocol.Identification.SelfKey(key);
+            const request: Protocol.[[self_key]] = new Protocol.[[self_key]](key);
             const sequence: number = this.getSequence();
             this.request(request.pack(sequence), sequence).then((response: Protocol.IAvailableMessages) => {
                 if (response.InternalServiceGroup === undefined) {
@@ -286,6 +286,11 @@ impl Render {
         let dest: PathBuf = self.get_dest_file(base);
         let mut output: String = templates::MODULE.to_owned();
         let broadcasts: Vec<Broadcast> = self.get_all_broadcasts(store);
+        output = output.replace("[[self_key]]", &store.get_config()?.get_self()?);
+        output = output.replace(
+            "[[self_key_interface]]",
+            &self.get_self_key_interface(store.get_config()?.get_self()?),
+        );
         output = output.replace(
             "[[broadcasts_declarations]]",
             &tools::inject_tabs(2, self.get_broadcasts_declarations(&broadcasts)),
@@ -309,6 +314,19 @@ impl Render {
         output = output.replace("[[protocol_hash]]", &protocol.get_hash());
         output = output.replace("[[workflow_hash]]", &store.get_hash());
         helpers::fs::write(dest, output, true)
+    }
+
+    fn get_self_key_interface(&self, self_key_ref: String) -> String {
+        let mut parts: Vec<String> = self_key_ref
+            .split('.')
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|v| String::from(*v))
+            .collect();
+        let last_pos = parts.len() - 1;
+        let last = format!("I{}", parts[last_pos]);
+        parts[last_pos] = last;
+        parts.join(".")
     }
 
     fn get_all_broadcasts(&self, store: &WorkflowStore) -> Vec<Broadcast> {
@@ -409,8 +427,9 @@ impl Render {
         let mut output: String = String::new();
         for beacon in beacons {
             output = format!(
-                "{}\nexport {{ {} }} from './beacons/{}';",
+                "{}\nexport {{ {} as Beacon{} }} from './beacons/{}';",
                 output,
+                beacon.reference.replace(".", ""),
                 beacon.reference.replace(".", ""),
                 beacon.reference.to_lowercase(),
             );

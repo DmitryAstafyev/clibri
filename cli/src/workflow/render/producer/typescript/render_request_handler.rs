@@ -15,8 +15,7 @@ mod templates {
 } from "./index";
 import { response } from "../../responses/[[module]]";
 
-export class Response {
-[[required_broadcasts]]
+export class Response {[[required_broadcasts]]
     private _response!: [[expectetions]];
     private _broadcasts: Array<[string[], Protocol.Convertor<any>]> = [];
 
@@ -212,8 +211,10 @@ impl Render {
                     broadcasts = format!("{}\nProtocol.{},", broadcasts, broadcast.reference);
                 }
                 output = format!(
-                    r#"static REQUIRED_{} = [{}
+                    r#"{}{}static REQUIRED_{} = [{}
 ];"#,
+                    output,
+                    "\n",
                     action.get_conclusion()?.to_uppercase(),
                     tools::inject_tabs(1, broadcasts),
                 );
@@ -228,7 +229,7 @@ impl Render {
             output = format!(
                 "{}{}Protocol.{}",
                 output,
-                if pos == 0 { "" } else { "| " },
+                if pos == 0 { "" } else { " | " },
                 action.get_response()?
             );
         }

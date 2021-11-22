@@ -272,13 +272,31 @@ impl Render {
         );
         if request.actions.len() > 1 {
             for action in &request.actions {
+                let reference: String = action.get_response()?;
+                let parts: Vec<&str> = reference.split('.').collect();
+                let mut check_group: String = String::from("if (message !== undefined");
+                let mut extend_group = false;
+                let mut group: String = String::from("message");
+                for (pos, part) in parts.iter().enumerate() {
+                    if pos < parts.len() - 1 {
+                        group = format!("{}.{}", group, part);
+                        check_group = format!("{} && {} !== undefined", check_group, group);
+                        extend_group = true;
+                    }
+                }
+                check_group = if extend_group {
+                    format!("{} && {}.[[response]] !== undefined)", check_group, group)
+                } else {
+                    String::from("if ([[group]].[[response]] !== undefined)")
+                };
                 output = format!(
                     "{}{}",
                     output,
-                    r#"else if ([[group]].[[response]] !== undefined) {
+                    r#"else [[check_group]] {
     this._handlers.[[handler]] !== undefined && this._handlers.[[handler]]([[group]].[[response]]);
     return resolve([[group]].[[response]]);
 } "#
+                    .replace("[[check_group]]", &check_group)
                     .replace("[[group]]", &group)
                     .replace("[[response]]", &action.get_last_response_entity()?)
                     .replace("[[handler]]", &action.get_conclusion()?.to_lowercase())
@@ -295,16 +313,34 @@ impl Render {
                 .replace("[[response]]", &request.get_response()?)
             );
         }
+        let reference: String = request.get_err()?;
+        let parts: Vec<&str> = reference.split('.').collect();
+        let mut check_group: String = String::from("if (message !== undefined");
+        let mut extend_group = false;
+        let mut group: String = String::from("message");
+        for (pos, part) in parts.iter().enumerate() {
+            if pos < parts.len() - 1 {
+                group = format!("{}.{}", group, part);
+                check_group = format!("{} && {} !== undefined", check_group, group);
+                extend_group = true;
+            }
+        }
+        check_group = if extend_group {
+            format!("{} && {}.[[error]] !== undefined)", check_group, group)
+        } else {
+            String::from("if ([[group]].[[error]] !== undefined)")
+        };
         output = format!(
             "{}{}",
             output,
-            r#"else if (message.[[error]] !== undefined) {
-    this._handlers.err !== undefined && this._handlers.err(message.[[error]]);
-    return resolve(message.[[error]]);
+            r#"else [[check_group]] {
+    this._handlers.err !== undefined && this._handlers.err([[group]].[[error]]);
+    return resolve([[group]].[[error]]);
 } else {
     return reject(new Error(`No message in "[[group]]" group.`));
 }"#
-            .replace("[[error]]", &request.get_err()?)
+            .replace("[[check_group]]", &check_group)
+            .replace("[[error]]", parts[parts.len() - 1])
             .replace("[[group]]", &group)
         );
         Ok(output)

@@ -27,7 +27,7 @@ export class Producer {
         PROTOCOL:
             "F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE",
         WORKFLOW:
-            "C19CFFACFEEDA5DF4D6624B67AD931E53457EF5CB1F8765D81301B2E2D1C984F",
+            "E7D70BA4B25E620214D8F4D926E5162ACE2D1C6A9758DDEDEDCBAEC35FF91FC5",
     };
     private readonly _server: Server;
     private readonly _subscriptions: { [key: string]: Subscription } = {};

@@ -3,6 +3,7 @@ pub mod render_broadcast_mod;
 pub mod render_cargo;
 pub mod render_consumer;
 pub mod render_controller;
+pub mod render_options;
 pub mod render_protocol;
 pub mod render_static;
 
@@ -66,6 +67,7 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_broadcast_mod::Render::new()).render(base, &broadcasts)?;
         (render_controller::Render::new()).render(base, store)?;
         (render_consumer::Render::new()).render(base, store, protocol, &broadcasts)?;
+        (render_options::Render::new()).render(base, store)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
         (render_static::Render::new()).render(base)?;
         (render_cargo::Render::new()).render(base)?;

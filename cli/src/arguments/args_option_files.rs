@@ -104,10 +104,15 @@ impl ArgsOptionFiles {
 
     fn set_dest_consumer(&mut self, path: PathBuf) {
         if !path.exists() {
-            self.set_err(format!(
-                "Consumer destination doesn't exist. Path: {}",
-                path.as_path().display().to_string()
-            ));
+            if let Err(err) = fs::create_dir(path.clone()) {
+                self.set_err(format!(
+                    "Consumer destination doesn't exist. Fail to create dest path: {}; error: {}",
+                    path.as_path().display().to_string(),
+                    err.to_string()
+                ));
+            } else {
+                self.dest_consumer = Some(path);
+            }
         } else {
             self.dest_consumer = Some(path);
         }

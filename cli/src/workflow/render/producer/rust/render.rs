@@ -3,6 +3,7 @@ pub mod render_beacon_emitters_mod;
 pub mod render_beacon_impl;
 pub mod render_beacon_impl_mod;
 pub mod render_cargo;
+pub mod render_consumer;
 pub mod render_event_emitter;
 pub mod render_event_emitters_mod;
 pub mod render_event_impl;
@@ -59,6 +60,7 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_static::Render::new()).render(base, &store.events)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
         (render_identification::Render::new()).render(base, store, &protocol)?;
+        (render_consumer::Render::new()).render(base, store)?;
         (render_mod::Render::new()).render(base, store, &protocol)?;
         (render_cargo::Render::new()).render(base)?;
         Ok(String::new())

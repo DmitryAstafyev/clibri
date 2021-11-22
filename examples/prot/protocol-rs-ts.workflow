@@ -6,13 +6,6 @@
    Consumer: typescript;
 }
 
-#UserLogin.Request !UserLogin.Err {
-#   (Accept    > UserLogin.Accepted) > Events.UserConnected;
-#                                    > Events.Message;
-#                                    > Events.AdminConnected?;
-#   (Deny      > UserLogin.Denied);
-#}
-
 UserLogin.Request !UserLogin.Err {
    (Accept    > UserLogin.Accepted) > Events.UserConnected;
                                     > Events.Message;
@@ -38,6 +31,7 @@ Messages.Request !Messages.Err {
    > Events.UserDisconnected;
 }
 
+# Broadcast for custom event
 @ServerEvents.UserKickOff {
    > Events.Message;
    > Events.UserDisconnected;
@@ -48,31 +42,9 @@ Messages.Request !Messages.Err {
    > Events.UserConnected?;
 }
 
-# No response required messages from client. It has to be events on producer side
+# No response required messages from client. It's just events on producer side
 @beacons {
     > Beacons.LikeUser;
     > Beacons.LikeMessage;
 }
 
-# If messages are defined in group
-# UserLogin {
-#     Request !Err;
-#     (Accept > Accepted) > Events.UserConnected;
-#                         > Events.Message;
-#                         > Events.AdminConnected?;
-#     (Deny   > Denied);
-# }
-
-# @startuml
-# Consumer -> Producer: UserLogin.Request
-# Producer -->x Consumer: UserLogin.Err
-# alt Accepted
-#     Producer -> Consumer: UserLogin.Accepted
-#     Producer ->]: Events.UserConnected
-#     Producer ->]: Events.Message
-#     Producer -->]: Events.AdminConnected
-# end
-# alt Denied
-#     Producer -> Consumer: Denied
-# end
-# UserLogin.@enduml

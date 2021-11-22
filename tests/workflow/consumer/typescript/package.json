@@ -1,0 +1,28 @@
+{
+  "author": "Dmitry Astafyev (D.Astafyev@outlook.com)",
+  "dependencies": {
+    "clibri": "0.1.2",
+    "clibri-websocket-client": "0.1.3"
+  },
+  "description": "Typescript implementation for clibri's Protocol",
+  "devDependencies": {
+    "source-map-loader": "^2.0.1",
+    "ts-loader": "^8.0.18",
+    "typescript": "^4.2.3",
+    "webpack": "^5.27.2",
+    "webpack-cli": "^4.5.0"
+  },
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "name": "clibri-consumer",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json & ./node_modules/.bin/webpack",
+    "build-ts": "tsc -p ./tsconfig.json"
+  },
+  "types": "./dist/index.d.ts",
+  "version": "0.0.1"
+}

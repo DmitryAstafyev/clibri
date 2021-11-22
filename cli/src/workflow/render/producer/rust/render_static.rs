@@ -15,10 +15,6 @@ mod paths {
         pub const shutdown: &str = "shutdown.rs";
         pub const dest: &str = "events";
     }
-    pub mod consumer {
-        pub const module: &str = "mod.rs";
-        pub const dest: &str = "implementation/consumer";
-    }
     pub mod emitters {
         pub const connected: &str = "connected.rs";
         pub const disconnected: &str = "disconnected.rs";
@@ -101,11 +97,6 @@ impl Render {
         helpers::fs::write(
             self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
             include_str!("./static/events/shutdown.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::consumer::dest, paths::consumer::module)?,
-            include_str!("./static/implementation/consumer/mod.rs").to_owned(),
             true,
         )?;
         helpers::fs::write(

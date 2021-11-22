@@ -31,19 +31,32 @@ impl<E: client::Error> Consumer<E> {
         self.shutdown.clone()
     }
 }"#;
-    pub const BEACON: &str = r#"pub async fn [[name]](
-    &mut self,
+    pub const BEACON: &str = r#"pub async fn beacon_[[name]](
+    &self,
     mut beacon: protocol::[[request]],
 ) -> Result<(), ConsumerError<E>> {
     let sequence = self.api.sequence().await?;
     let uuid = self.api.uuid_as_string().await?;
-    self.api
-        .send(
+    let message = self
+        .api
+        .request(
+            sequence,
             &beacon
                 .pack(sequence, uuid)
                 .map_err(ConsumerError::Protocol)?,
-        )
-        .await
+    )
+    .await?;
+    match message {        
+        protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
+            if let Some(err) = msg.error {
+                Err(ConsumerError::Broadcast(err.to_owned()))
+            } else {
+                Ok(())
+            }
+        _ => Err(ConsumerError::UnexpectedResponse(String::from(
+            "for [[request]] has been gotten wrong response",
+        ))),
+    }
 }"#;
     pub const REQUEST: &str = r#"pub async fn [[name]](
     &mut self,
@@ -225,10 +238,7 @@ pub enum {} {{
             .map(|v| String::from(*v))
             .collect();
         let enum_ref: String = if parts.len() == 1 {
-            format!(
-                "protocol::AvailableMessages::{}(protocol::{}(msg))",
-                parts[0], parts[0]
-            )
+            format!("protocol::AvailableMessages::{}(msg)", parts[0])
         } else {
             //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(protocol::UserLogin::Request::AvailableMessages::Request(request))) => {
             //protocol::AvailableMessages::UserLogin(protocol::UserLogin::AvailableMessages::Request(request))

@@ -1,0 +1,34 @@
+use super::{controller, samples, ClientError, Consumer};
+
+pub async fn execute(consumer: &mut Consumer<ClientError>) -> Result<(), String> {
+    let mut struct_a = false;
+    let mut struct_ac = false;
+    let mut struct_b = false;
+    while !struct_a || !struct_b || !struct_ac {
+        let response = consumer
+            .groupb_structa(samples::group_b::struct_a::get())
+            .await
+            .map_err(|e| e.to_string())?;
+        match response {
+            controller::GroupBStructAResponse::GroupBStructA(res) => {
+                if !samples::group_b::struct_a::equal(res.clone()) {
+                    return Err(format!("Invalid data received: {:?}", res));
+                }
+                struct_a = true;
+            }
+            controller::GroupBStructAResponse::GroupBGroupCStructA(res) => {
+                if !samples::group_b::group_c::struct_a::equal(res.clone()) {
+                    return Err(format!("Invalid data received: {:?}", res));
+                }
+                struct_ac = true;
+            }
+            controller::GroupBStructAResponse::Err(res) => {
+                if !samples::group_b::group_c::struct_b::equal(res.clone()) {
+                    return Err(format!("Invalid data received: {:?}", res));
+                }
+                struct_b = true;
+            }
+        };
+    }
+    Ok(())
+}

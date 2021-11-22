@@ -64,6 +64,16 @@ impl Filter {
             .map(|ident| ident.uuid)
             .collect::<Vec<Uuid>>()
     }
+
+    pub fn all(&self) -> Vec<Uuid> {
+        self.consumers
+            .values()
+            .cloned()
+            .collect::<Vec<Identification>>()
+            .iter()
+            .map(|ident| ident.uuid)
+            .collect::<Vec<Uuid>>()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -139,7 +149,7 @@ impl Identification {
     pub const KEY_OPT_FIELD_CHECK: &str = r#"if let Some([[field]]) = key.[[field]] {
     existing.[[field]] = Some([[field]]);
 }"#;
-    pub const KEY_FIELD_CHECK: &str = "existing.[[field]] = key.[[field]]";
+    pub const KEY_FIELD_CHECK: &str = "existing.[[field]] = key.[[field]];";
 }
 
 pub struct Render {}

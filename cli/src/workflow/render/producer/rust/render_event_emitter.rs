@@ -21,7 +21,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
-    let ([[broadcast_vars]]) =
+    let [[broadcast_vars]] =
         events::[[event_mod]]::emit::<E, C>(event, filter, context, control)
             .await
             .map_err(EmitterError::Emitting)?;
@@ -62,7 +62,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
-    let ([[broadcast_vars]]) =
+    let [[broadcast_vars]] =
         events::[[event_mod]]::emit::<E, C>(identification, filter, context, control)
             .await
             .map_err(EmitterError::Emitting)?;
@@ -175,6 +175,9 @@ impl Render {
                 "[[broadcasts_processing]]",
                 &tools::inject_tabs(1, processing),
             );
+            if event.broadcasts.len() > 1 {
+                vars = format!("({})", vars);
+            }
             output = output.replace("[[broadcast_vars]]", &vars);
         }
         helpers::fs::write(dest, output, true)

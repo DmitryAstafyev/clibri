@@ -18,7 +18,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     filter: &identification::Filter,
     context: &mut Context,
     control: &Control<E, C>,
-) -> Result<([[broadcast_refs]]), String> {
+) -> Result<[[broadcast_refs]], String> {
     panic!("Handler for protocol::[[event]] isn't implemented");
 }"#;
     pub const DEFAULT_MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
@@ -32,7 +32,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     filter: &identification::Filter,
     context: &mut Context,
     control: &Control<E, C>,
-) -> Result<([[broadcast_refs]]), String> {
+) -> Result<[[broadcast_refs]], String> {
     panic!("Handler for protocol::[[event]] isn't implemented");
 }"#;
 }
@@ -82,6 +82,9 @@ impl Render {
                 );
             }
             refs = format!("{}{}{}", refs, if pos == 0 { "" } else { ", " }, type_name);
+        }
+        if event.broadcasts.len() > 1 {
+            refs = format!("({})", refs);
         }
         output = output.replace("[[broadcast_types]]", &types);
         output = output.replace("[[broadcast_refs]]", &refs);
