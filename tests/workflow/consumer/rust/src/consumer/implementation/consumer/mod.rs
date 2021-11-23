@@ -26,8 +26,8 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 pub mod hash {
-    pub const PROTOCOL: &str = "B7810CCA32062120B1EC6994288220DF5F81E0F18E9F052655D32EC93FC2E2EF";
-    pub const WORKFLOW: &str = "83C81FC7F672497BD347C8823555B74E6AB2259F30D68F895199F31E8F4FC1FE";
+    pub const PROTOCOL: &str = "CF4FB13658612FE64ACBFDAD2D42DED0D59ABB9A899EFB15099CB02896B8A646";
+    pub const WORKFLOW: &str = "C055B0290F4EF09272E955952F9FF390DEFF5BCB55749B73D8D4CE82ACEE4A13";
 }
 
 #[derive(Debug)]
@@ -58,7 +58,7 @@ pub enum Emitter<E: client::Error> {
     GroupAStructB(protocol::GroupA::StructB),
     GroupBStructA(protocol::GroupB::StructA),
     GroupBGroupCStructA(protocol::GroupB::GroupC::StructA),
-    StructEmptyB(protocol::StructEmptyB),
+    TriggerBeacons(protocol::TriggerBeacons),
     FinishConsumerTestBroadcast(protocol::FinishConsumerTestBroadcast),
 }
 
@@ -349,8 +349,8 @@ where
             Emitter::GroupBGroupCStructA(msg) => {
                 broadcasts::groupb_groupc_structa::handler(msg, &mut context, consumer.clone()).await;
             },
-            Emitter::StructEmptyB(msg) => {
-                broadcasts::structemptyb::handler(msg, &mut context, consumer.clone()).await;
+            Emitter::TriggerBeacons(msg) => {
+                broadcasts::triggerbeacons::handler(msg, &mut context, consumer.clone()).await;
             },
             Emitter::FinishConsumerTestBroadcast(msg) => {
                 broadcasts::finishconsumertestbroadcast::handler(msg, &mut context, consumer.clone()).await;
@@ -581,8 +581,8 @@ where
                                                             return Err(ConsumerError::APIChannel(err.to_string()));
                                                         }
                                                     },
-                                                    protocol::AvailableMessages::StructEmptyB(msg) => {
-                                                        if let Err(err) = tx_consumer_event.send(Emitter::StructEmptyB(msg)).await {
+                                                    protocol::AvailableMessages::TriggerBeacons(msg) => {
+                                                        if let Err(err) = tx_consumer_event.send(Emitter::TriggerBeacons(msg)).await {
                                                             return Err(ConsumerError::APIChannel(err.to_string()));
                                                         }
                                                     },

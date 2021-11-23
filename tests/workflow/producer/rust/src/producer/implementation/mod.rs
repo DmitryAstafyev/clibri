@@ -32,8 +32,8 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 pub mod hash {
-    pub const PROTOCOL: &str = "B7810CCA32062120B1EC6994288220DF5F81E0F18E9F052655D32EC93FC2E2EF";
-    pub const WORKFLOW: &str = "83C81FC7F672497BD347C8823555B74E6AB2259F30D68F895199F31E8F4FC1FE";
+    pub const PROTOCOL: &str = "CF4FB13658612FE64ACBFDAD2D42DED0D59ABB9A899EFB15099CB02896B8A646";
+    pub const WORKFLOW: &str = "C055B0290F4EF09272E955952F9FF390DEFF5BCB55749B73D8D4CE82ACEE4A13";
 }
 
 #[derive(Error, Debug)]
@@ -75,7 +75,7 @@ pub mod producer {
         GroupBStructA(protocol::GroupB::StructA),
         GroupBGroupCStructA(protocol::GroupB::GroupC::StructA),
         GroupDStructP(protocol::GroupD::StructP),
-        StructUuid(protocol::StructUuid),
+        TriggerBeaconsEmitter(protocol::TriggerBeaconsEmitter),
         FinishConsumerTest(protocol::FinishConsumerTest),
     }
 
@@ -130,12 +130,12 @@ pub mod producer {
                 .send(UnboundedEventsList::GroupDStructP(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn structuuid(
+        pub async fn triggerbeaconsemitter(
             &self,
-            event: protocol::StructUuid,
+            event: protocol::TriggerBeaconsEmitter,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::StructUuid(event))
+                .send(UnboundedEventsList::TriggerBeaconsEmitter(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn finishconsumertest(
@@ -1172,8 +1172,8 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::StructUuid(event) => {
-                            if let Err(err) = emitters::structuuid::emit::<E, C>(
+                        UnboundedEventsList::TriggerBeaconsEmitter(event) => {
+                            if let Err(err) = emitters::triggerbeaconsemitter::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -1183,7 +1183,7 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call structuuid handler; error: {:?}", err,
+                                    "fail call triggerbeaconsemitter handler; error: {:?}", err,
                                 );
                             }
                         },

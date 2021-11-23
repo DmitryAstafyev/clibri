@@ -10,6 +10,6 @@ pub mod groupa_structa;
 pub mod groupa_structb;
 pub mod groupb_structa;
 pub mod groupb_groupc_structa;
-pub mod structemptyb;
+pub mod triggerbeacons;
 pub mod finishconsumertestbroadcast;
 use super::{context::Context, implementation::Consumer, protocol};

@@ -2,7 +2,6 @@ enum EnumA {
     Option_a;
     Option_b;
 }
-
 enum EnumB {
     str Option_str;
     u8 Option_u8;
@@ -16,7 +15,6 @@ enum EnumB {
     f32 Option_f32;
     f64 Option_f64;
 }
-
 enum EnumC {
     str[] Option_str;
     u8[] Option_u8;
@@ -30,7 +28,6 @@ enum EnumC {
     f32[] Option_f32;
     f64[] Option_f64;
 }
-
 struct StructA {
     str field_str;
     str field_str_empty;
@@ -46,7 +43,6 @@ struct StructA {
     f64 field_f64;
     bool field_bool;
 }
-
 struct StructB {
     str[] field_str;
     u8[] field_u8;
@@ -73,10 +69,8 @@ struct StructB {
     f32[] field_f32_empty;
     f64[] field_f64_empty;
     bool[] field_bool_empty;
-    StructA[] field_struct_empty;
-    
+    StructA[] field_struct_empty; 
 }
-
 struct StructC {
     str field_str?;
     u8 field_u8?;
@@ -91,7 +85,6 @@ struct StructC {
     f64 field_f64?;
     bool field_bool?;
 }
-
 struct StructD {
     str[] field_str?;
     u8[] field_u8?;
@@ -106,119 +99,94 @@ struct StructD {
     f64[] field_f64?;
     bool[] field_bool?;
 }
-
 struct StructE {
     EnumA field_a;
     EnumB field_b;
     EnumC field_c;
 }
-
 struct StructF {
     EnumA field_a?;
     EnumB field_b?;
     EnumC field_c?;
 }
-
 struct StructG {
     StructA field_a;
     StructB field_b;
 }
-struct StructUuid {
+struct TriggerBeaconsEmitter {
     str uuid;
 }
 struct StructEmpty {}
 struct StructEmptyA {}
 struct StructEmptyB {}
-
 struct StructJ {
     StructA field_a?;
     StructB field_b?;
     StructEmpty field_c;
 }
-
+struct TriggerBeacons {}
 struct FinishConsumerTest {
     str uuid;
 }
 struct FinishConsumerTestBroadcast {}
-
 struct BeaconA {
    StructA field;
 }
-
 group Beacons {
-
     struct BeaconA {
     }
-
     struct BeaconB {
         StructB field;
     }
-
     group Sub {
         struct BeaconA {
             StructG field;
         }
     }
 }
-
 group GroupA {
-    
     enum EnumA {
         Option_a;
         Option_b;
     }
-
     struct StructA {
         u8 field_u8;
         u16 field_u16;
         EnumA opt;
     }
-
     struct StructB {
         u8 field_u8;
         u16 field_u16;
         StructA strct;
     }
-
 }
-
 group GroupB {
-
     struct StructA {
         u8 field_u8;
         u16 field_u16;
     }
-
     group GroupC {
-
         struct StructA {
             u8 field_u8;
             u16 field_u16;
         }
-
         struct StructB {
             u8 field_u8;
             u16 field_u16;
             StructA strct;
         }
-
     }
-
 }
-
 group GroupD {
-
     struct StructP {
         StructA field_a;
         GroupB.StructA field_b;
         GroupB.GroupC.StructA field_c;
     }
-
     enum EnumP {
         StructA Option_a;
         StructP Option_b;
         GroupB.StructA Option_c;
         GroupB.GroupC.StructA Option_d;
     }
-
 }

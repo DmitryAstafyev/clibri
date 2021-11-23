@@ -3,7 +3,7 @@ pub mod structb;
 pub mod groupb_structa;
 pub mod groupb_groupc_structa;
 pub mod groupd_structp;
-pub mod structuuid;
+pub mod triggerbeaconsemitter;
 pub mod finishconsumertest;
 pub mod connected;
 pub mod disconnected;

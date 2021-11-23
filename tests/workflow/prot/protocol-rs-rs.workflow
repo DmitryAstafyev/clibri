@@ -83,8 +83,8 @@ GroupB.GroupC.StructB !GroupB.GroupC.StructA {
    > GroupB.GroupC.StructB;
 }
 
-@StructUuid {
-   > StructEmptyB;
+@TriggerBeaconsEmitter {
+   > TriggerBeacons;
 }
 
 @FinishConsumerTest {
