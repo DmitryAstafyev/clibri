@@ -3,7 +3,7 @@ use clibri::server;
 use uuid::Uuid;
 
 #[allow(unused_variables)]
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     error: ProducerError<E>,
     uuid: Option<Uuid>,
     context: &mut Context,

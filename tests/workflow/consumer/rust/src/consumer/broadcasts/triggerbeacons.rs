@@ -1,4 +1,5 @@
 use super::{protocol, Consumer, Context};
+use crate::stat::Alias;
 use crate::test::samples;
 use clibri::client;
 
@@ -7,10 +8,7 @@ pub async fn handler<E: client::Error>(
     context: &mut Context,
     consumer: Consumer<E>,
 ) {
-    context.broadcast.check();
-    if let Err(err) = context.broadcast.valid() {
-        panic!("Broadcast error: {}", err);
-    }
+    context.inc_stat(Alias::TriggerBeacons);
     if let Err(err) = consumer.beacon_beacona(samples::beacon_a::get()).await {
         panic!("Beacon sending error: {}", err);
     }

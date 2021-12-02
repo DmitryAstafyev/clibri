@@ -1,6 +1,10 @@
-use super::{controller, samples, ClientError, Consumer};
+use super::{controller, samples, stat, ClientError, Consumer, StatEvent};
+use tokio::sync::mpsc::UnboundedSender;
 
-pub async fn execute(consumer: &mut Consumer<ClientError>) -> Result<(), String> {
+pub async fn execute(
+    consumer: &mut Consumer<ClientError>,
+    tx_stat: &UnboundedSender<StatEvent>,
+) -> Result<(), String> {
     let mut case_b = false;
     let mut case_d = false;
     let mut case_c = false;
@@ -10,6 +14,7 @@ pub async fn execute(consumer: &mut Consumer<ClientError>) -> Result<(), String>
             .groupb_groupc_structb(samples::group_b::group_c::struct_b::get())
             .await
             .map_err(|e| e.to_string())?;
+        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestGroupBGroupCStructB));
         match response {
             controller::GroupBGroupCStructBResponse::CaseB(res) => {
                 if !samples::struct_b::equal(res.clone()) {

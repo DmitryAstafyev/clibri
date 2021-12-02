@@ -14,7 +14,7 @@ mod templates {
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::[[event]],
     filter: &identification::Filter,
     context: &mut Context,
@@ -38,7 +38,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::[[event]],
     filter: &identification::Filter,
     context: &mut Context,
@@ -55,7 +55,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
@@ -79,7 +79,7 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,

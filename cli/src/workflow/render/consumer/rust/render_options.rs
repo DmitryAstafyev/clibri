@@ -10,12 +10,14 @@ mod templates {
 #[derive(Debug, Clone)]
 pub struct Options {
     pub reconnection: ReconnectionStrategy,
+    pub request_timeout: u64,
     pub key: protocol::[[self_key]],
 }
 impl Options {
     pub fn defualt(key: protocol::[[self_key]]) -> Self {
         Options {
             reconnection: ReconnectionStrategy::Reconnect(2000),
+            request_timeout: 20000,
             key,
         }
     }

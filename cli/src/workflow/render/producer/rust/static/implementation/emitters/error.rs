@@ -2,7 +2,7 @@ use super::{events, identification, producer::Control, Context, EmitterError, Pr
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     error: ProducerError<E>,
     uuid: Option<Uuid>,
     context: &mut Context,

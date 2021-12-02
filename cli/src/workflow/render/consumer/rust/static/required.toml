@@ -1,10 +1,10 @@
-clibri = "0.1.1"
-uuid = { version = "0.8.1", features = ["v4"] }
+clibri = "0.1.6"
+uuid = { version = "0.8.2", features = ["v4"] }
 bytes = "1.1.0"
 regex = "1"
-tokio = { version = "1.5.0", features = ["full"] }
+tokio = { version = "1.14.0", features = ["full"] }
 futures = { version = "0.3.14" }
-thiserror = "1.0.26"
+thiserror = "1.0.30"
 log = "0.4.14"
-tokio-util = "0.6.7"
+tokio-util = "0.6.9"
 chrono = "0.4.19"

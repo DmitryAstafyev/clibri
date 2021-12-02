@@ -17,7 +17,7 @@ pub enum Response {[[response_declaration]]
 }
 
 #[allow(unused_variables)]
-pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
@@ -32,7 +32,7 @@ use super::{identification, producer::Control, protocol, Context};
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,

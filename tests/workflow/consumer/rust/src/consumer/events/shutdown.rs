@@ -1,4 +1,5 @@
 use super::{Consumer, ConsumerError, Context};
+use crate::stat::Alias;
 use clibri::client;
 
 pub async fn handler<E: client::Error>(
@@ -6,5 +7,5 @@ pub async fn handler<E: client::Error>(
     context: &mut Context,
     consumer: Consumer<E>,
 ) {
-    println!("handler for event shutdown isn't implemented");
+    context.inc_stat(Alias::Shutdown);
 }

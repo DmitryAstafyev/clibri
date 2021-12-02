@@ -1,11 +1,15 @@
 use super::{api::Api, error::ConsumerError, protocol, protocol::PackingStruct};
 use clibri::client;
 use tokio_util::sync::CancellationToken;
+use tokio::{
+    select,
+    time::{sleep, Duration},
+};
 
 #[derive(Debug, Clone)]
 pub struct Consumer<E: client::Error> {
     api: Api<E>,
-    shutdown: CancellationToken,
+    timeout: u64,
 }
 pub enum StructAResponse {
     CaseB(protocol::StructB),
@@ -57,9 +61,8 @@ pub enum GroupBGroupCStructBResponse {
     Err(protocol::GroupB::GroupC::StructA),
 }
 impl<E: client::Error> Consumer<E> {
-    pub fn new(api: Api<E>) -> Self {
-        let shutdown = api.get_shutdown_token();
-        Consumer { api, shutdown }
+    pub fn new(api: Api<E>, timeout: u64) -> Self {
+        Consumer { api, timeout }
     }    
     pub async fn beacon_beacona(
         &self,
@@ -176,15 +179,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<StructAResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructB(msg) =>
                 Ok(StructAResponse::CaseB(msg)),
@@ -205,15 +211,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<StructCResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructB(msg) =>
                 Ok(StructCResponse::CaseB(msg)),
@@ -234,15 +243,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<StructDResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructA(msg) =>
                 Ok(StructDResponse::Response(msg)),
@@ -259,15 +271,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<StructFResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructF(msg) =>
                 Ok(StructFResponse::Response(msg)),
@@ -284,15 +299,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<StructEmptyResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructEmptyB(msg) =>
                 Ok(StructEmptyResponse::Response(msg)),
@@ -309,15 +327,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<GroupAStructAResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructA(msg) =>
                 Ok(GroupAStructAResponse::RootA(msg)),
@@ -336,15 +357,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<GroupAStructBResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(msg)) =>
                 Ok(GroupAStructBResponse::GroupBStructA(msg)),
@@ -363,15 +387,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<GroupBGroupCStructAResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructB(msg))) =>
                 Ok(GroupBGroupCStructAResponse::Response(msg)),
@@ -388,15 +415,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<GroupBStructAResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(msg)) =>
                 Ok(GroupBStructAResponse::GroupBStructA(msg)),
@@ -415,15 +445,18 @@ impl<E: client::Error> Consumer<E> {
     ) -> Result<GroupBGroupCStructBResponse, ConsumerError<E>> {
         let sequence = self.api.sequence().await?;
         let uuid = self.api.uuid_as_string().await?;
-        let message = self
+        let package = request
+            .pack(sequence, uuid)
+            .map_err(ConsumerError::Protocol)?;
+        let message = select! {
+            message = self
             .api
             .request(
                 sequence,
-                &request
-                    .pack(sequence, uuid)
-                    .map_err(ConsumerError::Protocol)?,
-            )
-            .await?;
+                &package,
+            ) => message,
+            _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+        }?;
         match message {        
             protocol::AvailableMessages::StructB(msg) =>
                 Ok(GroupBGroupCStructBResponse::CaseB(msg)),
@@ -438,11 +471,11 @@ impl<E: client::Error> Consumer<E> {
             ))),
         }
     }
-    pub fn shutdown(&self) {
-        self.shutdown.cancel();
+    pub async fn shutdown(&self) -> Result<(), ConsumerError<E>> {
+        self.api.shutdown().await
     }
 
     pub fn get_shutdown_token(&self) -> CancellationToken {
-        self.shutdown.clone()
+        self.api.get_shutdown_token()
     }
 }

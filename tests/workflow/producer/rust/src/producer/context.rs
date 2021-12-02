@@ -1,7 +1,8 @@
+use super::implementation::{producer::Control, protocol};
+use crate::stat::{Alias, Stat, StatEvent};
+use clibri::server;
 use std::collections::HashMap;
 use uuid::Uuid;
-use super::{implementation::{protocol, producer::{Control}}};
-use clibri::server;
 
 pub struct Requests {
     structa: HashMap<Uuid, u8>,
@@ -117,7 +118,11 @@ impl Beacons {
         *self.beacons_sub_beacona.entry(uuid).or_insert(0) += 1;
         self.beacons_sub_beacona[&uuid]
     }
-    pub async fn check<E: std::error::Error, C: server::Control<E> + Send + Clone>(&self, uuid: Uuid, control: &Control<E, C>) {
+    pub async fn check<E: server::Error, C: server::Control<E> + Send + Clone>(
+        &self,
+        uuid: Uuid,
+        control: &Control<E, C>,
+    ) {
         let mut sum: u8 = 0;
         if let Some(count) = self.beacona.get(&uuid) {
             sum += count;
@@ -131,17 +136,11 @@ impl Beacons {
         if let Some(count) = self.beacons_sub_beacona.get(&uuid) {
             sum += count;
         }
-        if sum == 4 {
-            if let Err(err) = control.events.finishconsumertest(protocol::FinishConsumerTest { uuid: uuid.to_string() }).await {
-                panic!("Sending FinishConsumerTest error: {}", err);
-            }
-        }
     }
 }
 
 pub struct Context {
-    pub requests: Requests,
-    pub beacons: Beacons,
+    pub stats: HashMap<Uuid, Stat>,
 }
 
 impl Default for Context {
@@ -153,10 +152,42 @@ impl Default for Context {
 impl Context {
     pub fn new() -> Self {
         Self {
-            requests: Requests::new(),
-            beacons: Beacons::new(),
+            stats: HashMap::new(),
         }
     }
 
-    
+    pub fn inc_stat(&mut self, uuid: Uuid, alias: Alias) {
+        self.stats
+            .entry(uuid)
+            .or_insert(Stat::new())
+            .apply(StatEvent::Inc(alias));
+    }
+
+    pub fn get_index(&mut self, uuid: Uuid, alias: Alias) -> usize {
+        self.stats
+            .entry(uuid)
+            .or_insert(Stat::new())
+            .get_index(alias)
+    }
+
+    pub async fn check_beacons<E: server::Error, C: server::Control<E> + Send + Clone>(
+        &self,
+        uuid: Uuid,
+        control: &Control<E, C>,
+    ) {
+        let count = self.stats[&uuid].get_beacons_count();
+        if count == 4 {
+            if let Err(err) = control
+                .events
+                .finishconsumertest(protocol::FinishConsumerTest {
+                    uuid: uuid.to_string(),
+                })
+                .await
+            {
+                panic!("Sending FinishConsumerTest error: {}", err);
+            }
+        } else if count > 4 {
+            panic!("Too many beacons has been gotten");
+        }
+    }
 }

@@ -1,6 +1,10 @@
-use super::{controller, samples, ClientError, Consumer};
+use super::{controller, samples, stat, ClientError, Consumer, StatEvent};
+use tokio::sync::mpsc::UnboundedSender;
 
-pub async fn execute(consumer: &mut Consumer<ClientError>) -> Result<(), String> {
+pub async fn execute(
+    consumer: &mut Consumer<ClientError>,
+    tx_stat: &UnboundedSender<StatEvent>,
+) -> Result<(), String> {
     let mut struct_a = false;
     let mut struct_c = false;
     while !struct_a || !struct_c {
@@ -8,6 +12,7 @@ pub async fn execute(consumer: &mut Consumer<ClientError>) -> Result<(), String>
             .structd(samples::struct_d::get())
             .await
             .map_err(|e| e.to_string())?;
+        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestStructD));
         match response {
             controller::StructDResponse::Response(res) => {
                 if !samples::struct_a::equal(res.clone()) {

@@ -6,7 +6,7 @@ use super::{
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn process<E: server::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,

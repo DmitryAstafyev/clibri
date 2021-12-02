@@ -5,7 +5,7 @@ use super::{
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::GroupD::StructP,
     filter: &identification::Filter,
     context: &mut Context,

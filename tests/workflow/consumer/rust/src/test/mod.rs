@@ -1,21 +1,25 @@
-use super::consumer::{implementation::controller, protocol, Consumer};
+use super::{
+    consumer::{implementation::controller, protocol, Consumer},
+    stat,
+    stat::StatEvent,
+};
 use clibri_transport_client::errors::Error as ClientError;
 use std::future::Future;
 use tokio::{
     select,
     time::{sleep, Duration},
 };
+pub mod samples;
+pub mod test_request_groupa_structa;
+pub mod test_request_groupa_structb;
+pub mod test_request_groupb_groupc_structa;
+pub mod test_request_groupb_groupc_structb;
+pub mod test_request_groupb_structa;
 pub mod test_request_structa;
 pub mod test_request_structc;
 pub mod test_request_structd;
-pub mod test_request_structf;
-pub mod test_request_groupb_groupc_structa;
-pub mod test_request_groupa_structb;
-pub mod test_request_groupb_structa;
-pub mod test_request_groupb_groupc_structb;
-pub mod test_request_groupa_structa;
 pub mod test_request_structempty;
-pub mod samples;
+pub mod test_request_structf;
 
 pub async fn executor(
     name: &str,

@@ -6,7 +6,7 @@ use uuid::Uuid;
 type BroadcastTriggerBeacons = (Vec<Uuid>, protocol::TriggerBeacons);
 
 #[allow(unused_variables)]
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::TriggerBeaconsEmitter,
     filter: &identification::Filter,
     context: &mut Context,

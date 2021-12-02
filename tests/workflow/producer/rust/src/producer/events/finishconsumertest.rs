@@ -1,12 +1,13 @@
 use super::{identification, producer::Control, protocol, Context};
+use crate::stat::Alias;
 use clibri::server;
-use uuid::Uuid;
 use std::str::FromStr;
+use uuid::Uuid;
 
 type BroadcastFinishConsumerTestBroadcast = (Vec<Uuid>, protocol::FinishConsumerTestBroadcast);
 
 #[allow(unused_variables)]
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::FinishConsumerTest,
     filter: &identification::Filter,
     context: &mut Context,
@@ -18,4 +19,6 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
             return Err(format!("Fail to parse uuid {}: {:?}", event.uuid, err));
         }
     };
-    Ok((vec![uuid], protocol::FinishConsumerTestBroadcast {}))}
+    context.inc_stat(uuid, Alias::FinishConsumerTestBroadcast);
+    Ok((vec![uuid], protocol::FinishConsumerTestBroadcast {}))
+}

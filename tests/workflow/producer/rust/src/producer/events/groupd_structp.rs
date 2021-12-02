@@ -1,13 +1,13 @@
 use super::{identification, producer::Control, protocol, Context};
+use crate::test::samples;
 use clibri::server;
 use uuid::Uuid;
-use crate::test::samples;
 
 type BroadcastGroupBGroupCStructA = (Vec<Uuid>, protocol::GroupB::GroupC::StructA);
 type BroadcastGroupBGroupCStructB = (Vec<Uuid>, protocol::GroupB::GroupC::StructB);
 
 #[allow(unused_variables)]
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::GroupD::StructP,
     filter: &identification::Filter,
     context: &mut Context,

@@ -40,7 +40,7 @@ pub fn unbound_pack(sequence: &u32, msg: &mut dyn PackingStruct) -> Result<Vec<u
     msg.pack(*sequence, None).map_err(EmitterError::Packing)
 }
 
-pub async fn broadcast<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn broadcast<E: server::Error, C: server::Control<E> + Send + Clone>(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
     control: &producer::Control<E, C>,
 ) -> Result<(), EmitterError> {

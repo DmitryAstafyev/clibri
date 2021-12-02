@@ -44,7 +44,7 @@ pub mod hash {
 }
 
 #[derive(Error, Debug)]
-pub enum ProducerError<E: std::error::Error> {
+pub enum ProducerError<E: server::Error> {
     #[error("server error: `{0}`")]
     ServerError(E),
     #[error("consumer connection error: `{0}`")]
@@ -80,7 +80,7 @@ pub mod producer {
 [[events_list]]
     }
 
-    enum MergedChannel<E: std::error::Error> {
+    enum MergedChannel<E: server::Error> {
         ServerEvents(server::Events<E>),
         UnboundedEventsList(UnboundedEventsList),
     }
@@ -101,7 +101,7 @@ pub mod producer {
     }
 
     impl Manage {
-        pub async fn shutdown<E: std::error::Error>(&self) -> Result<(), ProducerError<E>> {
+        pub async fn shutdown<E: server::Error>(&self) -> Result<(), ProducerError<E>> {
             let (tx_resolver, rx_resolver): (oneshot::Sender<()>, oneshot::Receiver<()>) =
                 oneshot::channel();
             self.tx_manage_channel
@@ -189,7 +189,7 @@ pub mod producer {
     #[derive(Clone, Debug)]
     pub struct Control<E, C>
     where
-        E: std::error::Error,
+        E: server::Error,
         C: server::Control<E> + Send + Clone,
     {
         server_control: C,
@@ -200,7 +200,7 @@ pub mod producer {
 
     impl<E, C> Control<E, C>
     where
-        E: std::error::Error,
+        E: server::Error,
         C: server::Control<E> + Send + Clone,
     {
         pub async fn shutdown(&self) -> Result<(), ProducerError<E>> {
@@ -247,7 +247,7 @@ pub mod producer {
         }
     }
 
-    async fn add_connection<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn add_connection<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         consumers: &mut HashMap<Uuid, Consumer>,
         context: &mut Context,
@@ -284,7 +284,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn remove_connection<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn remove_connection<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         consumers: &mut HashMap<Uuid, Consumer>,
         context: &mut Context,
@@ -322,7 +322,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn disconnect<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn disconnect<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         consumer: &mut Consumer,
         control: &Control<E, C>,
@@ -335,7 +335,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn responsing_err<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn responsing_err<E: server::Error, C: server::Control<E> + Send + Clone>(
         err: String,
         uuid: Uuid,
         mut context: &mut Context,
@@ -378,7 +378,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn process_received_data<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn process_received_data<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         buffer: Vec<u8>,
         consumers: &mut HashMap<Uuid, Consumer>,
@@ -632,7 +632,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn listener<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn listener<E: server::Error, C: server::Control<E> + Send + Clone>(
         mut context: Context,
         mut rx_server_events: UnboundedReceiver<server::Events<E>>,
         mut rx_unbounded_events: UnboundedReceiver<UnboundedEventsList>,
@@ -743,7 +743,7 @@ pub mod producer {
     where
         S: server::Impl<E, C>,
         C: server::Control<E> + Send + Clone,
-        E: std::error::Error + Clone,
+        E: server::Error,
     {
         let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
         let cancel = control.shutdown.child_token();
@@ -768,7 +768,7 @@ pub mod producer {
         }
     }
 
-    async fn manage_task<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+    async fn manage_task<E: server::Error, C: server::Control<E> + Send + Clone>(
         mut rx_manage_channel: UnboundedReceiver<ManageChannel>,
         control: &Control<E, C>,
     ) -> Result<(), ProducerError<E>> {
@@ -797,7 +797,7 @@ pub mod producer {
     ) -> Result<Manage, ProducerError<E>>
     where
         S: server::Impl<E, C> + 'static,
-        E: std::error::Error + Clone + Send + Sync,
+        E: server::Error,
         C: server::Control<E> + Send + Sync + Clone,
     {
         let (tx_manage_channel, rx_manage_channel): (

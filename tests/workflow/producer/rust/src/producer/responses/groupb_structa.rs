@@ -1,9 +1,8 @@
-
 use super::{identification, producer::Control, protocol, Context};
+use crate::stat::Alias;
+use crate::test::samples;
 use clibri::server;
 use uuid::Uuid;
-use crate::test::samples;
-
 
 pub enum Response {
     GroupBStructA(protocol::GroupB::StructA),
@@ -11,19 +10,24 @@ pub enum Response {
 }
 
 #[allow(unused_variables)]
-pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
     identification: &mut identification::Identification,
     filter: &identification::Filter,
     context: &mut Context,
     request: &protocol::GroupB::StructA,
     control: &Control<E, C>,
 ) -> Result<Response, protocol::GroupB::GroupC::StructB> {
-    let index = context.requests.groupb_structa(identification.uuid());
+    let index = context.get_index(identification.uuid(), Alias::GroupBStructA);
     if index == 1 {
+        context.inc_stat(identification.uuid(), Alias::GroupBStructA);
         Ok(Response::GroupBStructA(samples::group_b::struct_a::get()))
     } else if index == 2 {
-        Ok(Response::GroupBGroupCStructA(samples::group_b::group_c::struct_a::get()))
+        context.inc_stat(identification.uuid(), Alias::GroupBGroupCStructA);
+        Ok(Response::GroupBGroupCStructA(
+            samples::group_b::group_c::struct_a::get(),
+        ))
     } else {
+        context.inc_stat(identification.uuid(), Alias::GroupBGroupCStructB);
         Err(samples::group_b::group_c::struct_b::get())
     }
 }

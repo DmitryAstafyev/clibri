@@ -11,24 +11,27 @@ mod templates {
     pub const MODULE: &str = r#"use super::{api::Api, error::ConsumerError, protocol, protocol::PackingStruct};
 use clibri::client;
 use tokio_util::sync::CancellationToken;
+use tokio::{
+    select,
+    time::{sleep, Duration},
+};
 
 #[derive(Debug, Clone)]
 pub struct Consumer<E: client::Error> {
     api: Api<E>,
-    shutdown: CancellationToken,
+    timeout: u64,
 }[[request_enums]]
 impl<E: client::Error> Consumer<E> {
-    pub fn new(api: Api<E>) -> Self {
-        let shutdown = api.get_shutdown_token();
-        Consumer { api, shutdown }
+    pub fn new(api: Api<E>, timeout: u64) -> Self {
+        Consumer { api, timeout }
     }[[beacons]]
 [[requests]]
-    pub fn shutdown(&self) {
-        self.shutdown.cancel();
+    pub async fn shutdown(&self) -> Result<(), ConsumerError<E>> {
+        self.api.shutdown().await
     }
 
     pub fn get_shutdown_token(&self) -> CancellationToken {
-        self.shutdown.clone()
+        self.api.get_shutdown_token()
     }
 }"#;
     pub const BEACON: &str = r#"pub async fn beacon_[[name]](
@@ -64,15 +67,18 @@ impl<E: client::Error> Consumer<E> {
 ) -> Result<[[response]], ConsumerError<E>> {
     let sequence = self.api.sequence().await?;
     let uuid = self.api.uuid_as_string().await?;
-    let message = self
+    let package = request
+        .pack(sequence, uuid)
+        .map_err(ConsumerError::Protocol)?;
+    let message = select! {
+        message = self
         .api
         .request(
             sequence,
-            &request
-                .pack(sequence, uuid)
-                .map_err(ConsumerError::Protocol)?,
-        )
-        .await?;
+            &package,
+        ) => message,
+        _ = sleep(Duration::from_millis(self.timeout)) => Err(ConsumerError::Timeout)
+    }?;
     match message {[[responses]]
         _ => Err(ConsumerError::UnexpectedResponse(String::from(
             "for [[request]] has been gotten wrong response",
