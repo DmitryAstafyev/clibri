@@ -38,11 +38,10 @@ impl Store {
     }
 
     pub fn add_service_struct(&mut self, name: String, mut fields: Vec<Field>) {
-        if (self
+        if !self
             .groups
             .iter()
-            .find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0))
-        .is_none()
+            .any(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0)
         {
             self.sequence += 1;
             self.groups.push(Group::new(
@@ -51,13 +50,28 @@ impl Store {
                 String::from(INTERNAL_SERVICE_GROUP),
             ));
         }
+        let service_group_id: Option<usize> = if let Some(service_group) = self
+            .groups
+            .iter_mut()
+            .find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0)
+        {
+            Some(service_group.id)
+        } else {
+            None
+        };
+        let service_group_path = if let Some(service_group_id) = service_group_id {
+            self.get_path_by_parent(service_group_id)
+        } else {
+            vec![]
+        };
         if let Some(service_group) = self
             .groups
             .iter_mut()
             .find(|i| i.name == INTERNAL_SERVICE_GROUP && i.parent == 0)
         {
             self.sequence += 1;
-            let mut strct: Struct = Struct::new(self.sequence, service_group.id, name);
+            let mut strct: Struct =
+                Struct::new(self.sequence, service_group.id, name, service_group_path);
             for field in fields.iter_mut() {
                 self.sequence += 1;
                 field.id = self.sequence;
@@ -90,6 +104,31 @@ impl Store {
         groups
     }
 
+    pub fn get_path_by_parent(&self, parent_id: usize) -> Vec<String> {
+        let mut path: Vec<String> = vec![];
+        let mut parent = parent_id;
+        if parent == 0 {
+            return path;
+        }
+        let first = if let Some(group) = self.get_group(parent) {
+            group
+        } else if let Some(group) = self.c_group.clone().take() {
+            group
+        } else {
+            return path;
+        };
+        path.push(first.name.clone());
+        parent = first.parent;
+        if parent != 0 {
+            while let Some(group) = self.get_group(parent) {
+                path.push(group.name);
+                parent = group.parent;
+            }
+            path.reverse();
+        }
+        path
+    }
+
     pub fn open_struct(&mut self, name: String) {
         if self.c_struct.is_some() {
             stop!("Struct cannot be defined inside struct");
@@ -99,7 +138,13 @@ impl Store {
         }
         self.sequence += 1;
         self.bind_struct_with_group(self.sequence);
-        self.c_struct = Some(Struct::new(self.sequence, self.get_group_id(), name));
+        let parent = self.get_group_id();
+        self.c_struct = Some(Struct::new(
+            self.sequence,
+            parent,
+            name,
+            self.get_path_by_parent(parent),
+        ));
     }
 
     pub fn open_enum(&mut self, name: String) {
@@ -111,7 +156,13 @@ impl Store {
         }
         self.sequence += 1;
         self.bind_enum_with_group(self.sequence);
-        self.c_enum = Some(Enum::new(self.sequence, self.get_group_id(), name));
+        let parent = self.get_group_id();
+        self.c_enum = Some(Enum::new(
+            self.sequence,
+            parent,
+            name,
+            self.get_path_by_parent(parent),
+        ));
     }
 
     pub fn open_group(&mut self, name: String) {

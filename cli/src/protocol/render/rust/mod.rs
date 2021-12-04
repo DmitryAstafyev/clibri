@@ -473,7 +473,12 @@ impl RustRender {
 
     fn entity_default(&self, entity_id: usize, store: &mut Store, level: u8) -> String {
         if let Some(strct) = store.get_struct(entity_id) {
-            let mut body = format!("{} {{\n", strct.name);
+            let path = if !strct.path.is_empty() {
+                format!("{}::", strct.path.join("::"))
+            } else {
+                String::new()
+            };
+            let mut body = format!("{}{} {{\n", path, strct.name);
             for field in &strct.fields {
                 body = format!(
                     "{}{}{}\n",
@@ -484,19 +489,19 @@ impl RustRender {
             }
             format!("{}{}}}", body, self.spaces(level - 1))
         } else if let Some(enums) = store.get_enum(entity_id) {
-            format!("{}::Defaults", enums.name)
+            let path = if !enums.path.is_empty() {
+                format!("{}::", enums.path.join("::"))
+            } else {
+                String::new()
+            };
+            format!("{}{}::Defaults", path, enums.name)
         } else {
             panic!("Fail to find a struct/enum id: {}", entity_id);
         }
     }
 
     fn field_default(&self, field: &Field, store: &mut Store, level: u8) -> String {
-        let path: String = if field.get_path().is_empty() {
-            String::from("")
-        } else {
-            format!("{}::", field.get_path().join("::"))
-        };
-        let mut body = format!("{}: {}", field.name, path);
+        let mut body = format!("{}: ", field.name);
         if field.repeated && !field.optional {
             body = format!("{}vec![],", body);
         } else if field.optional {

@@ -60,17 +60,19 @@ pub struct Enum {
     pub parent: usize,
     pub name: String,
     pub variants: Vec<EnumItem>,
+    pub path: Vec<String>,
     current: Option<EnumItem>,
 }
 
 impl Enum {
-    pub fn new(id: usize, parent: usize, name: String) -> Self {
+    pub fn new(id: usize, parent: usize, name: String, path: Vec<String>) -> Self {
         Enum {
             id,
             parent,
             name,
             variants: vec![],
             current: None,
+            path,
         }
     }
 
