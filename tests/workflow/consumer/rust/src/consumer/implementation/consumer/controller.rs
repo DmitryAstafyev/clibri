@@ -172,6 +172,33 @@ impl<E: client::Error> Consumer<E> {
             ))),
         }
     }
+    pub async fn beacon_beacons_shutdownserver(
+        &self,
+        mut beacon: protocol::Beacons::ShutdownServer,
+    ) -> Result<(), ConsumerError<E>> {
+        let sequence = self.api.sequence().await?;
+        let uuid = self.api.uuid_as_string().await?;
+        let message = self
+            .api
+            .request(
+                sequence,
+                &beacon
+                    .pack(sequence, uuid)
+                    .map_err(ConsumerError::Protocol)?,
+        )
+        .await?;
+        match message {        
+            protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
+                if let Some(err) = msg.error {
+                    Err(ConsumerError::Broadcast(err.to_owned()))
+                } else {
+                    Ok(())
+                }
+            _ => Err(ConsumerError::UnexpectedResponse(String::from(
+                "for Beacons::ShutdownServer has been gotten wrong response",
+            ))),
+        }
+    }
     
     pub async fn structa(
         &mut self,

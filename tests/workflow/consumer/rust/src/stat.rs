@@ -31,6 +31,7 @@ mod expectations {
     pub const TestRequestStructD: usize = 2;
     pub const TestRequestStructF: usize = 2;
     pub const TestRequestStructRmpty: usize = 2;
+    pub const Error: usize = 0;
 }
 
 #[derive(PartialEq, Hash, PartialOrd)]
@@ -61,6 +62,7 @@ pub enum Alias {
     TestRequestStructD,
     TestRequestStructF,
     TestRequestStructRmpty,
+    Error,
 }
 
 impl Eq for Alias {}
@@ -94,6 +96,7 @@ impl std::fmt::Display for Alias {
             Self::TestRequestStructD => write!(f, "TestRequestStructD"),
             Self::TestRequestStructF => write!(f, "TestRequestStructF"),
             Self::TestRequestStructRmpty => write!(f, "TestRequestStructRmpty"),
+            Self::Error => write!(f, "Error"),
         }
     }
 }
@@ -198,6 +201,7 @@ impl Stat {
             Alias::TestRequestStructRmpty,
             (0, connections * expectations::TestRequestStructRmpty),
         );
+        tests.insert(Alias::Error, (0, connections * expectations::Error));
         Self {
             connections,
             tests,

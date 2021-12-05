@@ -1,32 +1,31 @@
 use console::style;
-use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashMap;
 
+#[allow(non_upper_case_globals)]
 mod expectations {
     pub const BeaconA: usize = 1;
     pub const BeaconsBeaconA: usize = 1;
     pub const BeaconsBeaconB: usize = 1;
     pub const BeaconsSubBeaconA: usize = 1;
     pub const GroupAStructA: usize = 1;
-    pub const GroupAStructB: usize = 1;
-    pub const GroupBGroupCStructA: usize = 1;
-    pub const GroupBGroupCStructB: usize = 2;
-    pub const GroupBStructA: usize = 1;
-    pub const StructA: usize = 1;
-    pub const StructB: usize = 2;
-    pub const StructC: usize = 2;
-    pub const StructD: usize = 3;
+    pub const GroupAStructB: usize = 4;
+    pub const GroupBGroupCStructA: usize = 4;
+    pub const GroupBGroupCStructB: usize = 4;
+    pub const GroupBStructA: usize = 3;
+    pub const StructA: usize = 3;
+    pub const StructB: usize = 6;
+    pub const StructC: usize = 5;
+    pub const StructD: usize = 6;
     pub const StructE: usize = 3;
-    pub const StructF: usize = 2;
+    pub const StructF: usize = 4;
     pub const StructJ: usize = 2;
-    pub const TriggerBeacons: usize = 1;
+    pub const TriggerBeacons: usize = 0;
     pub const FinishConsumerTestBroadcast: usize = 1;
     pub const Connected: usize = 1;
     pub const Disconnected: usize = 1;
-    pub const Shutdown: usize = 1;
-    pub const StructEmpty: usize = 2;
     pub const StructEmptyA: usize = 1;
     pub const StructEmptyB: usize = 1;
+    pub const Error: usize = 0;
 }
 
 #[derive(PartialEq, Hash, Clone)]
@@ -51,10 +50,10 @@ pub enum Alias {
     FinishConsumerTestBroadcast,
     Connected,
     Disconnected,
-    Shutdown,
     StructEmpty,
     StructEmptyA,
     StructEmptyB,
+    Error,
 }
 
 impl Eq for Alias {}
@@ -82,10 +81,10 @@ impl std::fmt::Display for Alias {
             Self::FinishConsumerTestBroadcast => write!(f, "FinishConsumerTestBroadcast"),
             Self::Connected => write!(f, "Connected"),
             Self::Disconnected => write!(f, "Disconnected"),
-            Self::Shutdown => write!(f, "Shutdown"),
             Self::StructEmpty => write!(f, "StructEmpty"),
             Self::StructEmptyA => write!(f, "StructEmptyA"),
             Self::StructEmptyB => write!(f, "StructEmptyB"),
+            Self::Error => write!(f, "Error"),
         }
     }
 }
@@ -95,7 +94,6 @@ pub enum StatEvent {
 }
 
 pub struct Stat {
-    done: usize,
     pub tests: HashMap<Alias, (usize, usize)>,
     pub indexes: HashMap<Alias, usize>,
 }
@@ -135,13 +133,11 @@ impl Stat {
         );
         tests.insert(Alias::Connected, (0, expectations::Connected));
         tests.insert(Alias::Disconnected, (0, expectations::Disconnected));
-        tests.insert(Alias::Shutdown, (0, expectations::Shutdown));
-        tests.insert(Alias::StructEmpty, (0, expectations::StructEmpty));
         tests.insert(Alias::StructEmptyA, (0, expectations::StructEmptyA));
         tests.insert(Alias::StructEmptyB, (0, expectations::StructEmptyB));
+        tests.insert(Alias::Error, (0, expectations::Error));
         Self {
             tests,
-            done: 0,
             indexes: HashMap::new(),
         }
     }
@@ -161,19 +157,25 @@ impl Stat {
         self.indexes[&alias]
     }
 
-    pub fn expectation(&self) -> usize {
-        let mut all: usize = 0;
-        for (_alias, (_current, expectation)) in &self.tests {
-            all += expectation;
-        }
-        all
-    }
-
     pub fn get_beacons_count(&self) -> usize {
         self.tests[&Alias::BeaconA].0
             + self.tests[&Alias::BeaconsBeaconA].0
             + self.tests[&Alias::BeaconsBeaconB].0
             + self.tests[&Alias::BeaconsSubBeaconA].0
+    }
+
+    pub fn merge(&mut self, stat: &Stat) {
+        for (alias, (current, expectation)) in self.tests.iter_mut() {
+            *current += stat.tests[alias].0;
+            *expectation += stat.tests[alias].1;
+        }
+    }
+
+    pub fn drop(&mut self) {
+        for (_, (current, expectation)) in self.tests.iter_mut() {
+            *current = 0;
+            *expectation = 0;
+        }
     }
 }
 

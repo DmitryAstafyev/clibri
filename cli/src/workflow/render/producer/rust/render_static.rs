@@ -46,59 +46,76 @@ impl Render {
     }
 
     pub fn render(&self, base: &Path, events: &[Event]) -> Result<(), String> {
-        if events
-            .iter()
-            .find(|event| match event.get_reference() {
-                Ok(reference) => reference == "connected",
-                Err(_) => false,
-            })
-            .is_none()
-        {
-            helpers::fs::write(
-                self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
-                include_str!("./static/events/connected.rs").to_owned(),
-                true,
-            )?;
+        if !events.iter().any(|event| match event.get_reference() {
+            Ok(reference) => reference == "connected",
+            Err(_) => false,
+        }) {
+            if !self
+                .get_dest_file(base, paths::events::dest, paths::events::connected)?
+                .exists()
+            {
+                helpers::fs::write(
+                    self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
+                    include_str!("./static/events/connected.rs").to_owned(),
+                    true,
+                )?;
+            }
             helpers::fs::write(
                 self.get_dest_file(base, paths::emitters::dest, paths::emitters::connected)?,
                 include_str!("./static/implementation/emitters/connected.rs").to_owned(),
                 true,
             )?;
         }
-        if events
-            .iter()
-            .find(|event| match event.get_reference() {
-                Ok(reference) => reference == "disconnected",
-                Err(_) => false,
-            })
-            .is_none()
-        {
-            helpers::fs::write(
-                self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
-                include_str!("./static/events/disconnected.rs").to_owned(),
-                true,
-            )?;
+        if !events.iter().any(|event| match event.get_reference() {
+            Ok(reference) => reference == "disconnected",
+            Err(_) => false,
+        }) {
+            if !self
+                .get_dest_file(base, paths::events::dest, paths::events::disconnected)?
+                .exists()
+            {
+                helpers::fs::write(
+                    self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
+                    include_str!("./static/events/disconnected.rs").to_owned(),
+                    true,
+                )?;
+            }
             helpers::fs::write(
                 self.get_dest_file(base, paths::emitters::dest, paths::emitters::disconnected)?,
                 include_str!("./static/implementation/emitters/disconnected.rs").to_owned(),
                 true,
             )?;
         }
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::error)?,
-            include_str!("./static/events/error.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::ready)?,
-            include_str!("./static/events/ready.rs").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
-            include_str!("./static/events/shutdown.rs").to_owned(),
-            true,
-        )?;
+        if !self
+            .get_dest_file(base, paths::events::dest, paths::events::error)?
+            .exists()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::error)?,
+                include_str!("./static/events/error.rs").to_owned(),
+                true,
+            )?;
+        }
+        if !self
+            .get_dest_file(base, paths::events::dest, paths::events::ready)?
+            .exists()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::ready)?,
+                include_str!("./static/events/ready.rs").to_owned(),
+                true,
+            )?;
+        }
+        if !self
+            .get_dest_file(base, paths::events::dest, paths::events::shutdown)?
+            .exists()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
+                include_str!("./static/events/shutdown.rs").to_owned(),
+                true,
+            )?;
+        }
         helpers::fs::write(
             self.get_dest_file(base, paths::emitters::dest, paths::emitters::error)?,
             include_str!("./static/implementation/emitters/error.rs").to_owned(),

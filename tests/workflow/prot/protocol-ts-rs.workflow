@@ -6,6 +6,7 @@
    Consumer: rust;
 }
 
+
 StructA !StructE {
    (CaseB    > StructB)    > StructD;
                            > StructF;
@@ -58,27 +59,27 @@ GroupB.GroupC.StructB !GroupB.GroupC.StructA {
    (CaseD    > StructD)    > StructJ;
 }
 
-@StructA {
+@EventA {
    > StructB;
    > StructC;
 }
 
-@StructB {
+@EventB {
    > StructC;
 }
 
-@GroupB.StructA {
+@Events.EventA {
    > StructA;
    > StructB;
 }
 
-@GroupB.GroupC.StructA {
+@Events.EventB {
    > GroupA.StructA;
    > GroupA.StructB;
    > GroupB.StructA;
 }
 
-@GroupD.StructP {
+@Events.Sub.EventA {
    > GroupB.GroupC.StructA;
    > GroupB.GroupC.StructB;
 }
@@ -96,4 +97,5 @@ GroupB.GroupC.StructB !GroupB.GroupC.StructA {
     > Beacons.BeaconA;
     > Beacons.BeaconB;
     > Beacons.Sub.BeaconA;
+    > Beacons.ShutdownServer;
 }

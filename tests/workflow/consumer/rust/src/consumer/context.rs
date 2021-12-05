@@ -6,6 +6,7 @@ pub struct Context {
     pub connected: CancellationToken,
     pub finish: CancellationToken,
     pub broadcast_received: CancellationToken,
+    pub disconnected: CancellationToken,
     broadcasts: usize,
     tx_stat: UnboundedSender<StatEvent>,
 }
@@ -16,6 +17,7 @@ impl Context {
             connected: CancellationToken::new(),
             finish: CancellationToken::new(),
             broadcast_received: CancellationToken::new(),
+            disconnected: CancellationToken::new(),
             broadcasts: 0,
             tx_stat,
         }

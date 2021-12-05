@@ -17,7 +17,7 @@ use tokio::{
 };
 use tokio_util::sync::CancellationToken;
 
-const CONNECTIONS: usize = 100;
+const CONNECTIONS: usize = 5;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -26,10 +26,9 @@ async fn main() -> Result<(), String> {
     let mut jobs = vec![];
     println!("{} creating consumers jobs", style("[test]").bold().dim(),);
     for _ in 0..CONNECTIONS {
-        jobs.push(run("127.0.0.1:8080", tx_stat.clone()));
+        jobs.push(run("127.0.0.1:8080", tx_stat.clone(), false));
     }
     let done = CancellationToken::new();
-
     join!(
         async {
             println!("{} starting consumers jobs", style("[test]").bold().dim(),);
@@ -56,5 +55,34 @@ async fn main() -> Result<(), String> {
             println!("{}", stat);
         }
     );
+    println!(
+        "{} creating consumer to shutdown server",
+        style("[test]").bold().dim(),
+    );
+    let (tx_stat, mut rx_stat): (UnboundedSender<StatEvent>, UnboundedReceiver<StatEvent>) =
+        unbounded_channel();
+    let done = CancellationToken::new();
+    join!(
+        async {
+            println!("{} starting consumer", style("[test]").bold().dim(),);
+            if let Err(err) = run("127.0.0.1:8080", tx_stat.clone(), true).await {
+                eprintln!("{}", err);
+            }
+            done.cancel();
+        },
+        async {
+            let spinner = Spinner::new(&Spinners::Dots9, "Waiting for consumer".to_string());
+            let mut stat = Stat::new(1);
+            while let Some(event) = select! {
+                event = rx_stat.recv() => event,
+                _ = done.cancelled() => None
+            } {
+                stat.apply(event);
+            }
+            spinner.stop();
+            println!("\n{} consumers did all jobs", style("[test]").bold().dim(),);
+        }
+    );
+    println!("{} server is down", style("[test]").bold().dim(),);
     Ok(())
 }

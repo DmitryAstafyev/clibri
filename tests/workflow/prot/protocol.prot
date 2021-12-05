@@ -133,6 +133,9 @@ struct BeaconA {
    StructA field;
 }
 group Beacons {
+    struct ShutdownServer {
+        
+    }
     struct BeaconA {
     }
     struct BeaconB {

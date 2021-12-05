@@ -23,17 +23,16 @@ use thiserror::Error;
 use tokio::{
     join, select,
     sync::{
-        mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+        mpsc::{channel, unbounded_channel, Receiver, Sender, UnboundedReceiver, UnboundedSender},
         oneshot,
     },
-    task,
 };
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 pub mod hash {
-    pub const PROTOCOL: &str = "AA06912C89BAEE92D583EDB002148FF46EB4531B6CDC73AE2DD76108F2064CC3";
-    pub const WORKFLOW: &str = "D828993D4FD69D05382949E5F6E40CA25DB476F58AC4F9D791086BFE61B02104";
+    pub const PROTOCOL: &str = "2FE9D6137375F6B74B81143B6CA65EEAE6124B6C03C78937C4583DF0B0EF757A";
+    pub const WORKFLOW: &str = "94B50A767677D225DE6FDAA072CC1D25F951F69FBC8F42D8D63BBBD2678AF3A8";
 }
 
 #[derive(Error, Debug)]
@@ -65,11 +64,7 @@ use std::marker::PhantomData;
 pub mod producer {
     use super::*;
 
-    pub enum ManageChannel {
-        Shutdown(oneshot::Sender<()>),
-    }
-
-    enum UnboundedEventsList {
+    enum Event {
         EventA(protocol::EventA),
         EventB(protocol::EventB),
         EventsEventA(protocol::Events::EventA),
@@ -81,100 +76,70 @@ pub mod producer {
 
     enum MergedChannel<E: server::Error> {
         ServerEvents(server::Events<E>),
-        UnboundedEventsList(UnboundedEventsList),
+        Event(Event),
     }
 
     #[derive(Clone, Debug)]
-    pub struct UnboundedEvents {
-        tx_unbounded_events: UnboundedSender<UnboundedEventsList>,
+    pub struct Events {
+        tx_events: UnboundedSender<Event>,
     }
 
-    impl UnboundedEvents {
+    impl Events {
         pub async fn eventa(
             &self,
             event: protocol::EventA,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::EventA(event))
+            self.tx_events
+                .send(Event::EventA(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn eventb(
             &self,
             event: protocol::EventB,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::EventB(event))
+            self.tx_events
+                .send(Event::EventB(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn events_eventa(
             &self,
             event: protocol::Events::EventA,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::EventsEventA(event))
+            self.tx_events
+                .send(Event::EventsEventA(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn events_eventb(
             &self,
             event: protocol::Events::EventB,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::EventsEventB(event))
+            self.tx_events
+                .send(Event::EventsEventB(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn events_sub_eventa(
             &self,
             event: protocol::Events::Sub::EventA,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::EventsSubEventA(event))
+            self.tx_events
+                .send(Event::EventsSubEventA(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn triggerbeaconsemitter(
             &self,
             event: protocol::TriggerBeaconsEmitter,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::TriggerBeaconsEmitter(event))
+            self.tx_events
+                .send(Event::TriggerBeaconsEmitter(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn finishconsumertest(
             &self,
             event: protocol::FinishConsumerTest,
         ) -> Result<(), String> {
-            self.tx_unbounded_events
-                .send(UnboundedEventsList::FinishConsumerTest(event))
+            self.tx_events
+                .send(Event::FinishConsumerTest(event))
                 .map_err(|e| e.to_string())
-        }
-    }
-
-    pub struct Manage {
-        tx_manage_channel: UnboundedSender<ManageChannel>,
-        shutdown_tracker_token: CancellationToken,
-        pub events: UnboundedEvents,
-    }
-
-    impl Manage {
-        pub async fn shutdown<E: server::Error>(&self) -> Result<(), ProducerError<E>> {
-            let (tx_resolver, rx_resolver): (oneshot::Sender<()>, oneshot::Receiver<()>) =
-                oneshot::channel();
-            self.tx_manage_channel
-                .send(ManageChannel::Shutdown(tx_resolver))
-                .map_err(|_| {
-                    ProducerError::ChannelError(String::from("Fail to send shutdown command"))
-                })?;
-            rx_resolver
-                .await
-                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
-            Ok(())
-        }
-
-        pub fn is_down(&self) -> bool {
-            self.shutdown_tracker_token.is_cancelled()
-        }
-
-        pub fn get_shutdown_tracker(&self) -> CancellationToken {
-            self.shutdown_tracker_token.clone()
         }
     }
 
@@ -248,8 +213,9 @@ pub mod producer {
     {
         server_control: C,
         shutdown: CancellationToken,
+        tx_shutdown: Sender<oneshot::Sender<()>>,
         phantom: PhantomData<E>,
-        pub events: UnboundedEvents,
+        pub events: Events,
     }
 
     impl<E, C> Control<E, C>
@@ -258,12 +224,19 @@ pub mod producer {
         C: server::Control<E> + Send + Clone,
     {
         pub async fn shutdown(&self) -> Result<(), ProducerError<E>> {
-            self.server_control
-                .shutdown()
+            let (tx_resolver, rx_resolver): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+                oneshot::channel();
+            self.tx_shutdown.send(tx_resolver).await.map_err(|_| {
+                ProducerError::ChannelError(String::from("Fail to send shutdown command"))
+            })?;
+            rx_resolver
                 .await
-                .map_err(ProducerError::ServerError)?;
-            self.shutdown.cancel();
+                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
             Ok(())
+        }
+
+        pub fn get_shutdown_token(&self) -> CancellationToken {
+            self.shutdown.clone()
         }
 
         pub async fn disconnect(&self, uuid: Uuid) -> Result<(), ProducerError<E>> {
@@ -682,7 +655,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -704,7 +677,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -726,7 +699,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -748,7 +721,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -770,7 +743,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -792,7 +765,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -814,7 +787,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -836,7 +809,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -858,7 +831,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -880,7 +853,7 @@ pub mod producer {
                                     &mut context,
                                     request,
                                     header.sequence,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -902,7 +875,7 @@ pub mod producer {
                                     header.sequence,
                                     &filter,
                                     &mut context,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -915,7 +888,7 @@ pub mod producer {
                                         Some(uuid),
                                         &mut context,
                                         Some(client.get_mut_identification()),
-                                        &control,
+                                        control,
                                     )
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
@@ -928,7 +901,7 @@ pub mod producer {
                                     header.sequence,
                                     &filter,
                                     &mut context,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -941,7 +914,7 @@ pub mod producer {
                                         Some(uuid),
                                         &mut context,
                                         Some(client.get_mut_identification()),
-                                        &control,
+                                        control,
                                     )
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
@@ -954,7 +927,7 @@ pub mod producer {
                                     header.sequence,
                                     &filter,
                                     &mut context,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -967,7 +940,7 @@ pub mod producer {
                                         Some(uuid),
                                         &mut context,
                                         Some(client.get_mut_identification()),
-                                        &control,
+                                        control,
                                     )
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
@@ -980,7 +953,7 @@ pub mod producer {
                                     header.sequence,
                                     &filter,
                                     &mut context,
-                                    &control,
+                                    control,
                                 )
                                 .await
                                 {
@@ -993,7 +966,33 @@ pub mod producer {
                                         Some(uuid),
                                         &mut context,
                                         Some(client.get_mut_identification()),
-                                        &control,
+                                        control,
+                                    )
+                                    .await
+                                    .map_err(ProducerError::EventEmitterError)?
+                                }
+                            },
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::ShutdownServer(beacon)) => {
+                                if let Err(err) = beacons_callers::beacons_shutdownserver::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    header.sequence,
+                                    &filter,
+                                    &mut context,
+                                    control,
+                                )
+                                .await
+                                {
+                                    error!(
+                                        target: logs::targets::PRODUCER,
+                                        "handeling beacon BeaconsShutdownServer error: {}", err
+                                    );
+                                    emitters::error::emit::<E, C>(
+                                        ProducerError::BeaconEmitterError(err),
+                                        Some(uuid),
+                                        &mut context,
+                                        Some(client.get_mut_identification()),
+                                        control,
                                     )
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
@@ -1011,93 +1010,96 @@ pub mod producer {
     async fn listener<E: server::Error, C: server::Control<E> + Send + Clone>(
         mut context: Context,
         mut rx_server_events: UnboundedReceiver<server::Events<E>>,
-        mut rx_unbounded_events: UnboundedReceiver<UnboundedEventsList>,
+        mut rx_events: UnboundedReceiver<Event>,
         control: Control<E, C>,
         options: &Options,
-    ) -> Result<(), ProducerError<E>> {
-        debug!(
-            target: logs::targets::PRODUCER,
-            "listener of server's events is started"
-        );
+    ) -> (Control<E, C>, Context, Option<ProducerError<E>>) {
         let mut consumers: HashMap<Uuid, Consumer> = HashMap::new();
-        while let Some(event) = select! {
-            mut msg = rx_server_events.recv() => {
-                msg.take().map(MergedChannel::ServerEvents)
-            },
-            mut msg = rx_unbounded_events.recv() => {
-                msg.take().map(MergedChannel::UnboundedEventsList)
-            }
-        } {
-            match event {
-                MergedChannel::ServerEvents(event) => match event {
-                    server::Events::Ready => emitters::ready::emit(&mut context, &control)
-                        .await
-                        .map_err(ProducerError::EventEmitterError)?,
-                    server::Events::Shutdown => emitters::shutdown::emit(&mut context, &control)
-                        .await
-                        .map_err(ProducerError::EventEmitterError)?,
-                    server::Events::Connected(uuid) => {
-                        add_connection(uuid, &mut consumers, &mut context, &control, options)
-                            .await?
-                    }
-                    server::Events::Disconnected(uuid) => {
-                        remove_connection(uuid, &mut consumers, &mut context, &control).await?
-                    }
-                    server::Events::Received(uuid, buffer) => {
-                        process_received_data(
-                            uuid,
-                            buffer,
-                            &mut consumers,
-                            &mut context,
-                            &control,
-                            options,
-                        )
-                        .await?
-                    }
-                    server::Events::Error(uuid, err) => emitters::error::emit::<E, C>(
-                        ProducerError::ConsumerError(err),
-                        uuid,
-                        &mut context,
-                        if let Some(uuid) = uuid.as_ref() {
-                            consumers
-                                .get_mut(uuid)
-                                .map(|consumer| consumer.get_mut_identification())
-                        } else {
-                            None
-                        },
-                        &control,
-                    )
-                    .await
-                    .map_err(ProducerError::EventEmitterError)?,
-                    server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E, C>(
-                        ProducerError::ConnectionError(err.to_string()),
-                        uuid,
-                        &mut context,
-                        if let Some(uuid) = uuid.as_ref() {
-                            consumers
-                                .get_mut(uuid)
-                                .map(|consumer| consumer.get_mut_identification())
-                        } else {
-                            None
-                        },
-                        &control,
-                    )
-                    .await
-                    .map_err(ProducerError::EventEmitterError)?,
-                    server::Events::ServerError(err) => emitters::error::emit::<E, C>(
-                        ProducerError::ServerError(err),
-                        None,
-                        &mut context,
-                        None,
-                        &control,
-                    )
-                    .await
-                    .map_err(ProducerError::EventEmitterError)?,
+        let cancel = control.shutdown.child_token();
+        let result = async {
+            while let Some(event) = select! {
+                mut msg = rx_server_events.recv() => {
+                    msg.take().map(MergedChannel::ServerEvents)
                 },
-                MergedChannel::UnboundedEventsList(event) => {
-                    let filter = identification::Filter::new(&consumers).await;
-                    match event {
-                        UnboundedEventsList::EventA(event) => {
+                mut msg = rx_events.recv() => {
+                    msg.take().map(MergedChannel::Event)
+                },
+                _ = cancel.cancelled() => None
+            } {
+                match event {
+                    MergedChannel::ServerEvents(event) => match event {
+                        server::Events::Ready => emitters::ready::emit(&mut context, &control)
+                            .await
+                            .map_err(ProducerError::EventEmitterError)?,
+                        server::Events::Shutdown => {
+                            debug!(
+                                target: logs::targets::PRODUCER,
+                                "server down event has been received"
+                            );
+                            break;
+                        }
+                        server::Events::Connected(uuid) => {
+                            add_connection(uuid, &mut consumers, &mut context, &control, options)
+                                .await?
+                        }
+                        server::Events::Disconnected(uuid) => {
+                            remove_connection(uuid, &mut consumers, &mut context, &control).await?
+                        }
+                        server::Events::Received(uuid, buffer) => {
+                            process_received_data(
+                                uuid,
+                                buffer,
+                                &mut consumers,
+                                &mut context,
+                                &control,
+                                options,
+                            )
+                            .await?
+                        }
+                        server::Events::Error(uuid, err) => emitters::error::emit::<E, C>(
+                            ProducerError::ConsumerError(err),
+                            uuid,
+                            &mut context,
+                            if let Some(uuid) = uuid.as_ref() {
+                                consumers
+                                    .get_mut(uuid)
+                                    .map(|consumer| consumer.get_mut_identification())
+                            } else {
+                                None
+                            },
+                            &control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?,
+                        server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E, C>(
+                            ProducerError::ConnectionError(err.to_string()),
+                            uuid,
+                            &mut context,
+                            if let Some(uuid) = uuid.as_ref() {
+                                consumers
+                                    .get_mut(uuid)
+                                    .map(|consumer| consumer.get_mut_identification())
+                            } else {
+                                None
+                            },
+                            &control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?,
+                        server::Events::ServerError(err) => emitters::error::emit::<E, C>(
+                            ProducerError::ServerError(err),
+                            None,
+                            &mut context,
+                            None,
+                            &control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?,
+                    },
+                    MergedChannel::Event(event) => {
+                        let filter = identification::Filter::new(&consumers).await;
+                        match event {
+                            Event::EventA(event) => {
                             if let Err(err) = emitters::eventa::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1112,7 +1114,7 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::EventB(event) => {
+                        Event::EventB(event) => {
                             if let Err(err) = emitters::eventb::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1127,7 +1129,7 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::EventsEventA(event) => {
+                        Event::EventsEventA(event) => {
                             if let Err(err) = emitters::events_eventa::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1142,7 +1144,7 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::EventsEventB(event) => {
+                        Event::EventsEventB(event) => {
                             if let Err(err) = emitters::events_eventb::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1157,7 +1159,7 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::EventsSubEventA(event) => {
+                        Event::EventsSubEventA(event) => {
                             if let Err(err) = emitters::events_sub_eventa::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1172,7 +1174,7 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::TriggerBeaconsEmitter(event) => {
+                        Event::TriggerBeaconsEmitter(event) => {
                             if let Err(err) = emitters::triggerbeaconsemitter::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1187,7 +1189,7 @@ pub mod producer {
                                 );
                             }
                         },
-                        UnboundedEventsList::FinishConsumerTest(event) => {
+                        Event::FinishConsumerTest(event) => {
                             if let Err(err) = emitters::finishconsumertest::emit::<E, C>(
                                 event,
                                 &filter,
@@ -1202,133 +1204,116 @@ pub mod producer {
                                 );
                             }
                         },
+                        }
                     }
                 }
             }
+            Ok::<(), ProducerError<E>>(())
         }
-        debug!(
-            target: logs::targets::PRODUCER,
-            "listener of server's events is finished"
-        );
-        Ok(())
-    }
-
-    async fn main_task<S, C, E>(
-        mut server: S,
-        options: Options,
-        context: Context,
-        control: Control<E, C>,
-        rx_unbounded_events: UnboundedReceiver<UnboundedEventsList>,
-    ) -> Result<(), ProducerError<E>>
-    where
-        S: server::Impl<E, C>,
-        C: server::Control<E> + Send + Clone,
-        E: server::Error,
-    {
-        let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
-        let cancel = control.shutdown.child_token();
-        select! {
-            res = async {
-                debug!(
-                    target: logs::targets::PRODUCER,
-                    "starting server"
-                );
-                server.listen().await.map_err(ProducerError::ServerError)
-            } => res,
-            res = listener(
-                context,
-                rx_server_events,
-                rx_unbounded_events,
-                control,
-                &options,
-            ) => res,
-            _ = cancel.cancelled() => {
-                Ok(())
-            }
-        }
-    }
-
-    async fn manage_task<E: server::Error, C: server::Control<E> + Send + Clone>(
-        mut rx_manage_channel: UnboundedReceiver<ManageChannel>,
-        control: &Control<E, C>,
-    ) -> Result<(), ProducerError<E>> {
-        debug!(target: logs::targets::PRODUCER, "manage_task is started");
-        if let Some(command) = rx_manage_channel.recv().await {
-            match command {
-                ManageChannel::Shutdown(tx_resolver) => {
-                    control.shutdown().await?;
-                    if tx_resolver.send(()).is_err() {
-                        error!(
-                            target: logs::targets::PRODUCER,
-                            "fail to send shutdown confirmation"
-                        );
-                    }
-                }
-            }
-        }
-        debug!(target: logs::targets::PRODUCER, "manage_task is finished");
-        Ok(())
+        .await;
+        (
+            control,
+            context,
+            if let Err(err) = result {
+                Some(err)
+            } else {
+                None
+            },
+        )
     }
 
     pub async fn run<S, C, E>(
-        server: S,
+        mut server: S,
         options: Options,
         context: Context,
-    ) -> Result<Manage, ProducerError<E>>
+    ) -> Result<(), ProducerError<E>>
     where
         S: server::Impl<E, C> + 'static,
         E: server::Error,
         C: server::Control<E> + Send + Sync + Clone,
     {
-        let (tx_manage_channel, rx_manage_channel): (
-            UnboundedSender<ManageChannel>,
-            UnboundedReceiver<ManageChannel>,
-        ) = unbounded_channel();
-        let (tx_unbounded_events, rx_unbounded_events): (
-            UnboundedSender<UnboundedEventsList>,
-            UnboundedReceiver<UnboundedEventsList>,
-        ) = unbounded_channel();
-        let shutdown_tracker_token = CancellationToken::new();
-        let unbounded_events = UnboundedEvents {
-            tx_unbounded_events,
+        let (tx_events, rx_events): (UnboundedSender<Event>, UnboundedReceiver<Event>) =
+            unbounded_channel();
+        let (tx_shutdown, mut rx_shutdown): (
+            Sender<oneshot::Sender<()>>,
+            Receiver<oneshot::Sender<()>>,
+        ) = channel(2);
+        let events = Events { tx_events };
+        let shutdown = CancellationToken::new();
+        let server_control = server.control();
+        let control = Control {
+            server_control: server.control(),
+            shutdown,
+            tx_shutdown,
+            phantom: PhantomData,
+            events,
         };
-        let manage = Manage {
-            tx_manage_channel,
-            shutdown_tracker_token: shutdown_tracker_token.clone(),
-            events: unbounded_events.clone(),
-        };
-        task::spawn(async move {
-            let shutdown = CancellationToken::new();
-            let control = Control {
-                server_control: server.control(),
-                shutdown,
-                phantom: PhantomData,
-                events: unbounded_events,
-            };
-            let (main_task_res, manage_task_res) = join!(
-                main_task(
-                    server,
-                    options,
-                    context,
-                    control.clone(),
-                    rx_unbounded_events
-                ),
-                manage_task::<E, C>(rx_manage_channel, &control),
+        let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
+        let cancel = control.shutdown.clone();
+        let ((server, server_res), (control, mut context, listener_err), shutdown_response) = join!(
+            async {
+                debug!(target: logs::targets::PRODUCER, "server: started");
+                let result = select! {
+                    res = server.listen() => res.map_err(ProducerError::ServerError),
+                    _ = cancel.cancelled() => Ok(())
+                };
+                debug!(target: logs::targets::PRODUCER, "server: finished");
+                cancel.cancel();
+                (server, result)
+            },
+            async {
+                debug!(target: logs::targets::PRODUCER, "listener: started");
+                let result =
+                    listener(context, rx_server_events, rx_events, control, &options).await;
+                debug!(target: logs::targets::PRODUCER, "listener: finished");
+                cancel.cancel();
+                result
+            },
+            async {
+                debug!(
+                    target: logs::targets::PRODUCER,
+                    "shutdown listener: started"
+                );
+                let result = select! {
+                    tx_response = rx_shutdown.recv() => tx_response,
+                    _ = cancel.cancelled() => None,
+                };
+                debug!(
+                    target: logs::targets::PRODUCER,
+                    "shutdown listener: finished"
+                );
+                cancel.cancel();
+                result
+            }
+        );
+        if let Some(tx_response) = shutdown_response {
+            debug!(
+                target: logs::targets::PRODUCER,
+                "shutdown has been requested"
             );
-            if let Err(err) = main_task_res.as_ref() {
-                error!(
-                    target: logs::targets::PRODUCER,
-                    "main task is finished with error: {}", err
-                );
-            }
-            if let Err(err) = manage_task_res.as_ref() {
-                error!(
-                    target: logs::targets::PRODUCER,
-                    "manage task is finished with error: {}", err
-                );
-            }
-            shutdown_tracker_token.cancel();
-        });
-        Ok(manage)
+            server_control
+                .shutdown()
+                .await
+                .map_err(ProducerError::ServerError)?;
+            tx_response.send(()).map_err(|_| {
+                ProducerError::ChannelError(String::from("Fail to send shutdown response"))
+            })?;
+            drop(server);
+            debug!(
+                target: logs::targets::PRODUCER,
+                "shutdown response has been sent"
+            );
+        }
+        emitters::shutdown::emit(&mut context, &control)
+            .await
+            .map_err(ProducerError::EventEmitterError)?;
+        if server_res.is_err() {
+            server_res
+        } else if let Some(err) = listener_err {
+            Err(err)
+        } else {
+            Ok(())
+        }
     }
+
 }

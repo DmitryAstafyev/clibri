@@ -96,4 +96,5 @@ GroupB.GroupC.StructB !GroupB.GroupC.StructA {
     > Beacons.BeaconA;
     > Beacons.BeaconB;
     > Beacons.Sub.BeaconA;
+    > Beacons.ShutdownServer;
 }
