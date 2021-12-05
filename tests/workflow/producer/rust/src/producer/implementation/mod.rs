@@ -32,8 +32,8 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 pub mod hash {
-    pub const PROTOCOL: &str = "CF4FB13658612FE64ACBFDAD2D42DED0D59ABB9A899EFB15099CB02896B8A646";
-    pub const WORKFLOW: &str = "C055B0290F4EF09272E955952F9FF390DEFF5BCB55749B73D8D4CE82ACEE4A13";
+    pub const PROTOCOL: &str = "AA06912C89BAEE92D583EDB002148FF46EB4531B6CDC73AE2DD76108F2064CC3";
+    pub const WORKFLOW: &str = "D828993D4FD69D05382949E5F6E40CA25DB476F58AC4F9D791086BFE61B02104";
 }
 
 #[derive(Error, Debug)]
@@ -70,11 +70,11 @@ pub mod producer {
     }
 
     enum UnboundedEventsList {
-        StructA(protocol::StructA),
-        StructB(protocol::StructB),
-        GroupBStructA(protocol::GroupB::StructA),
-        GroupBGroupCStructA(protocol::GroupB::GroupC::StructA),
-        GroupDStructP(protocol::GroupD::StructP),
+        EventA(protocol::EventA),
+        EventB(protocol::EventB),
+        EventsEventA(protocol::Events::EventA),
+        EventsEventB(protocol::Events::EventB),
+        EventsSubEventA(protocol::Events::Sub::EventA),
         TriggerBeaconsEmitter(protocol::TriggerBeaconsEmitter),
         FinishConsumerTest(protocol::FinishConsumerTest),
     }
@@ -90,44 +90,44 @@ pub mod producer {
     }
 
     impl UnboundedEvents {
-        pub async fn structa(
+        pub async fn eventa(
             &self,
-            event: protocol::StructA,
+            event: protocol::EventA,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::StructA(event))
+                .send(UnboundedEventsList::EventA(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn structb(
+        pub async fn eventb(
             &self,
-            event: protocol::StructB,
+            event: protocol::EventB,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::StructB(event))
+                .send(UnboundedEventsList::EventB(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn groupb_structa(
+        pub async fn events_eventa(
             &self,
-            event: protocol::GroupB::StructA,
+            event: protocol::Events::EventA,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::GroupBStructA(event))
+                .send(UnboundedEventsList::EventsEventA(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn groupb_groupc_structa(
+        pub async fn events_eventb(
             &self,
-            event: protocol::GroupB::GroupC::StructA,
+            event: protocol::Events::EventB,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::GroupBGroupCStructA(event))
+                .send(UnboundedEventsList::EventsEventB(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn groupd_structp(
+        pub async fn events_sub_eventa(
             &self,
-            event: protocol::GroupD::StructP,
+            event: protocol::Events::Sub::EventA,
         ) -> Result<(), String> {
             self.tx_unbounded_events
-                .send(UnboundedEventsList::GroupDStructP(event))
+                .send(UnboundedEventsList::EventsSubEventA(event))
                 .map_err(|e| e.to_string())
         }
         pub async fn triggerbeaconsemitter(
@@ -1097,8 +1097,8 @@ pub mod producer {
                 MergedChannel::UnboundedEventsList(event) => {
                     let filter = identification::Filter::new(&consumers).await;
                     match event {
-                        UnboundedEventsList::StructA(event) => {
-                            if let Err(err) = emitters::structa::emit::<E, C>(
+                        UnboundedEventsList::EventA(event) => {
+                            if let Err(err) = emitters::eventa::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -1108,12 +1108,12 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call structa handler; error: {:?}", err,
+                                    "fail call eventa handler; error: {:?}", err,
                                 );
                             }
                         },
-                        UnboundedEventsList::StructB(event) => {
-                            if let Err(err) = emitters::structb::emit::<E, C>(
+                        UnboundedEventsList::EventB(event) => {
+                            if let Err(err) = emitters::eventb::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -1123,12 +1123,12 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call structb handler; error: {:?}", err,
+                                    "fail call eventb handler; error: {:?}", err,
                                 );
                             }
                         },
-                        UnboundedEventsList::GroupBStructA(event) => {
-                            if let Err(err) = emitters::groupb_structa::emit::<E, C>(
+                        UnboundedEventsList::EventsEventA(event) => {
+                            if let Err(err) = emitters::events_eventa::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -1138,12 +1138,12 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call groupb_structa handler; error: {:?}", err,
+                                    "fail call events_eventa handler; error: {:?}", err,
                                 );
                             }
                         },
-                        UnboundedEventsList::GroupBGroupCStructA(event) => {
-                            if let Err(err) = emitters::groupb_groupc_structa::emit::<E, C>(
+                        UnboundedEventsList::EventsEventB(event) => {
+                            if let Err(err) = emitters::events_eventb::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -1153,12 +1153,12 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call groupb_groupc_structa handler; error: {:?}", err,
+                                    "fail call events_eventb handler; error: {:?}", err,
                                 );
                             }
                         },
-                        UnboundedEventsList::GroupDStructP(event) => {
-                            if let Err(err) = emitters::groupd_structp::emit::<E, C>(
+                        UnboundedEventsList::EventsSubEventA(event) => {
+                            if let Err(err) = emitters::events_sub_eventa::emit::<E, C>(
                                 event,
                                 &filter,
                                 &mut context,
@@ -1168,7 +1168,7 @@ pub mod producer {
                             {
                                 warn!(
                                     target: logs::targets::PRODUCER,
-                                    "fail call groupd_structp handler; error: {:?}", err,
+                                    "fail call events_sub_eventa handler; error: {:?}", err,
                                 );
                             }
                         },

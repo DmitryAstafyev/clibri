@@ -2918,7 +2918,7 @@ pub mod GroupA {
             StructExampleA {
                 field_u8: 0,
                 field_u16: 0,
-                opt: EnumExampleA::Defaults,
+                opt: GroupA::EnumExampleA::Defaults,
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -2977,10 +2977,10 @@ pub mod GroupA {
             StructExampleB {
                 field_u8: 0,
                 field_u16: 0,
-                strct: StructExampleA {
+                strct: GroupA::StructExampleA {
                     field_u8: 0,
                     field_u16: 0,
-                    opt: EnumExampleA::Defaults,
+                    opt: GroupA::EnumExampleA::Defaults,
                 },
             }
         }
@@ -3160,7 +3160,7 @@ pub mod GroupB {
                 StructExampleB {
                     field_u8: 0,
                     field_u16: 0,
-                    strct: StructExampleA {
+                    strct: GroupB::GroupC::StructExampleA {
                         field_u8: 0,
                         field_u16: 0,
                     },

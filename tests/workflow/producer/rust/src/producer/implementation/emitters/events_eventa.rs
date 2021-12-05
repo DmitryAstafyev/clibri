@@ -5,20 +5,24 @@ use super::{
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    event: protocol::StructUuid,
+pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+    event: protocol::Events::EventA,
     filter: &identification::Filter,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
-    let mut broadcast_structemptyb =
-        events::structuuid::emit::<E, C>(event, filter, context, control)
+    let (mut broadcast_structa, mut broadcast_structb) =
+        events::events_eventa::emit::<E, C>(event, filter, context, control)
             .await
             .map_err(EmitterError::Emitting)?;
     broadcasting.push((
-        broadcast_structemptyb.0,
-        unbound_pack(&0, &mut broadcast_structemptyb.1)?,
+        broadcast_structa.0,
+        unbound_pack(&0, &mut broadcast_structa.1)?,
+    ));
+    broadcasting.push((
+        broadcast_structb.0,
+        unbound_pack(&0, &mut broadcast_structb.1)?,
     ));
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;

@@ -31,7 +31,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
         context.inc_stat(identification.uuid(), Alias::StructB);
         Ok(Response::RootB(samples::struct_b::get()))
     } else {
-        context.inc_stat(identification.uuid(), Alias::StructB);
+        context.inc_stat(identification.uuid(), Alias::GroupAStructB);
         Err(samples::group_a::struct_b::get())
     }
 }

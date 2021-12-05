@@ -24,7 +24,7 @@ impl Context {
     pub fn inc_stat(&mut self, alias: Alias) {
         self.broadcasts += 1;
         self.tx_stat.send(StatEvent::Inc(alias));
-        if self.broadcasts >= 18 {
+        if self.broadcasts >= 19 {
             self.broadcast_received.cancel();
         }
     }

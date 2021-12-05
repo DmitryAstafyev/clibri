@@ -180,7 +180,12 @@ impl Stat {
 impl std::fmt::Display for Stat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = format!("{}\n", "=".repeat(70));
+        let mut tests = vec![];
         for (alias, (current, expectation)) in &self.tests {
+            tests.push((alias.to_string(), current, expectation));
+        }
+        tests.sort();
+        for (alias, current, expectation) in &tests {
             let mut alias = alias.to_string();
             let filler = 60 - alias.len();
             alias = format!(

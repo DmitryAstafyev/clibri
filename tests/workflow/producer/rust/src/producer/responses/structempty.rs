@@ -16,33 +16,61 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
         context.inc_stat(identification.uuid(), Alias::StructEmptyB);
         Ok(samples::struct_empty_b::get())
     } else {
-        // if let Err(err) = control.events.structa(samples::struct_a::get()).await {
-        //     panic!("Fail to emit control.events.structa: {}", err);
-        // }
-        // if let Err(err) = control.events.structb(samples::struct_b::get()).await {
-        //     panic!("Fail to emit control.events.structb: {}", err);
-        // }
-        // if let Err(err) = control
-        //     .events
-        //     .groupb_structa(samples::group_b::struct_a::get())
-        //     .await
-        // {
-        //     panic!("Fail to emit control.events.groupb_structa: {}", err);
-        // }
-        // if let Err(err) = control
-        //     .events
-        //     .groupb_groupc_structa(samples::group_b::group_c::struct_a::get())
-        //     .await
-        // {
-        //     panic!("Fail to emit control.events.groupb_groupc_structa: {}", err);
-        // }
-        // if let Err(err) = control
-        //     .events
-        //     .groupd_structp(samples::group_d::struct_p::get())
-        //     .await
-        // {
-        //     panic!("Fail to emit control.events.groupd_structp: {}", err);
-        // }
+        if let Err(err) = control
+            .events
+            .eventa(protocol::EventA {
+                uuid: identification.uuid().to_string(),
+                field_a: samples::struct_b::get(),
+                field_b: samples::struct_c::get(),
+            })
+            .await
+        {
+            panic!("Fail to emit control.events.eventa: {}", err);
+        }
+        if let Err(err) = control
+            .events
+            .eventb(protocol::EventB {
+                uuid: identification.uuid().to_string(),
+                field_a: samples::struct_c::get(),
+            })
+            .await
+        {
+            panic!("Fail to emit control.events.eventb: {}", err);
+        }
+        if let Err(err) = control
+            .events
+            .events_eventa(protocol::Events::EventA {
+                uuid: identification.uuid().to_string(),
+                field_a: samples::struct_a::get(),
+                field_b: samples::struct_b::get(),
+            })
+            .await
+        {
+            panic!("Fail to emit control.events.events_eventa: {}", err);
+        }
+        if let Err(err) = control
+            .events
+            .events_eventb(protocol::Events::EventB {
+                uuid: identification.uuid().to_string(),
+                field_a: samples::group_a::struct_a::get(),
+                field_b: samples::group_a::struct_b::get(),
+                field_c: samples::group_b::struct_a::get(),
+            })
+            .await
+        {
+            panic!("Fail to emit control.events.events_eventb: {}", err);
+        }
+        if let Err(err) = control
+            .events
+            .events_sub_eventa(protocol::Events::Sub::EventA {
+                uuid: identification.uuid().to_string(),
+                field_a: samples::group_b::group_c::struct_a::get(),
+                field_b: samples::group_b::group_c::struct_b::get(),
+            })
+            .await
+        {
+            panic!("Fail to emit control.events.events_sub_eventa: {}", err);
+        }
         context.inc_stat(identification.uuid(), Alias::StructEmptyA);
         Err(samples::struct_empty_a::get())
     }

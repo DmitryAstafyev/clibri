@@ -190,3 +190,32 @@ group GroupD {
         GroupB.GroupC.StructA Option_d;
     }
 }
+struct EventA {
+    str uuid;
+    StructB field_a;
+    StructC field_b;
+}
+struct EventB {
+    str uuid;
+    StructC field_a;
+}
+group Events {
+    struct EventA {
+        str uuid;
+        StructA field_a;
+        StructB field_b;
+    }
+    struct EventB {
+        str uuid;
+        GroupA.StructA field_a;
+        GroupA.StructB field_b;
+        GroupB.StructA field_c;
+    }
+    group Sub {
+        struct EventA {
+            str uuid;
+            GroupB.GroupC.StructA field_a;
+            GroupB.GroupC.StructB field_b;
+        }
+    }
+}

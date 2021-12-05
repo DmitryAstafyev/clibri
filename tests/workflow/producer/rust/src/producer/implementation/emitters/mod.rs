@@ -1,8 +1,8 @@
-pub mod structa;
-pub mod structb;
-pub mod groupb_structa;
-pub mod groupb_groupc_structa;
-pub mod groupd_structp;
+pub mod eventa;
+pub mod eventb;
+pub mod events_eventa;
+pub mod events_eventb;
+pub mod events_sub_eventa;
 pub mod triggerbeaconsemitter;
 pub mod finishconsumertest;
 pub mod connected;

@@ -1498,10 +1498,13 @@ pub enum AvailableMessages {
     FinishConsumerTest(FinishConsumerTest),
     FinishConsumerTestBroadcast(FinishConsumerTestBroadcast),
     BeaconA(BeaconA),
+    EventA(EventA),
+    EventB(EventB),
     Beacons(Beacons::AvailableMessages),
     GroupA(GroupA::AvailableMessages),
     GroupB(GroupB::AvailableMessages),
     GroupD(GroupD::AvailableMessages),
+    Events(Events::AvailableMessages),
     InternalServiceGroup(InternalServiceGroup::AvailableMessages),
 }
 #[derive(Debug, Clone, PartialEq)]
@@ -3097,6 +3100,167 @@ impl StructEncode for BeaconA {
 }
 impl PackingStruct for BeaconA { }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct EventA {
+    pub uuid: String,
+    pub field_a: StructB,
+    pub field_b: StructC,
+}
+#[allow(unused_variables)]
+#[allow(unused_mut)]
+impl StructDecode for EventA {
+    fn get_id() -> u32 {
+        132
+    }
+    fn defaults() -> EventA {
+        EventA {
+            uuid: String::from(""),
+            field_a: StructB {
+                field_str: vec![],
+                field_u8: vec![],
+                field_u16: vec![],
+                field_u32: vec![],
+                field_u64: vec![],
+                field_i8: vec![],
+                field_i16: vec![],
+                field_i32: vec![],
+                field_i64: vec![],
+                field_f32: vec![],
+                field_f64: vec![],
+                field_bool: vec![],
+                field_struct: vec![],
+                field_str_empty: vec![],
+                field_u8_empty: vec![],
+                field_u16_empty: vec![],
+                field_u32_empty: vec![],
+                field_u64_empty: vec![],
+                field_i8_empty: vec![],
+                field_i16_empty: vec![],
+                field_i32_empty: vec![],
+                field_i64_empty: vec![],
+                field_f32_empty: vec![],
+                field_f64_empty: vec![],
+                field_bool_empty: vec![],
+                field_struct_empty: vec![],
+            },
+            field_b: StructC {
+                field_str: None,
+                field_u8: None,
+                field_u16: None,
+                field_u32: None,
+                field_u64: None,
+                field_i8: None,
+                field_i16: None,
+                field_i32: None,
+                field_i64: None,
+                field_f32: None,
+                field_f64: None,
+                field_bool: None,
+            },
+        }
+    }
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+        self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(133)) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.field_a = match StructB::get_from_storage(Source::Storage(&mut storage), Some(134)) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.field_b = match StructC::get_from_storage(Source::Storage(&mut storage), Some(135)) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        Ok(())
+    }
+}
+#[allow(unused_variables)]
+#[allow(unused_mut)]
+impl StructEncode for EventA {
+    fn get_id(&self) -> u32 { 132 }
+    fn get_signature(&self) -> u16 { 0 }
+    fn abduct(&mut self) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        match self.uuid.get_buf_to_store(Some(133)) {
+            Ok(mut buf) => { buffer.append(&mut buf); }
+            Err(e) => { return Err(e) },
+        };
+        match self.field_a.get_buf_to_store(Some(134)) {
+            Ok(mut buf) => { buffer.append(&mut buf); }
+            Err(e) => { return Err(e) },
+        };
+        match self.field_b.get_buf_to_store(Some(135)) {
+            Ok(mut buf) => { buffer.append(&mut buf); }
+            Err(e) => { return Err(e) },
+        };
+        Ok(buffer)
+    }
+}
+impl PackingStruct for EventA { }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct EventB {
+    pub uuid: String,
+    pub field_a: StructC,
+}
+#[allow(unused_variables)]
+#[allow(unused_mut)]
+impl StructDecode for EventB {
+    fn get_id() -> u32 {
+        136
+    }
+    fn defaults() -> EventB {
+        EventB {
+            uuid: String::from(""),
+            field_a: StructC {
+                field_str: None,
+                field_u8: None,
+                field_u16: None,
+                field_u32: None,
+                field_u64: None,
+                field_i8: None,
+                field_i16: None,
+                field_i32: None,
+                field_i64: None,
+                field_f32: None,
+                field_f64: None,
+                field_bool: None,
+            },
+        }
+    }
+    fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+        self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(137)) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        self.field_a = match StructC::get_from_storage(Source::Storage(&mut storage), Some(138)) {
+            Ok(val) => val,
+            Err(e) => { return Err(e) },
+        };
+        Ok(())
+    }
+}
+#[allow(unused_variables)]
+#[allow(unused_mut)]
+impl StructEncode for EventB {
+    fn get_id(&self) -> u32 { 136 }
+    fn get_signature(&self) -> u16 { 0 }
+    fn abduct(&mut self) -> Result<Vec<u8>, String> {
+        let mut buffer: Vec<u8> = vec!();
+        match self.uuid.get_buf_to_store(Some(137)) {
+            Ok(mut buf) => { buffer.append(&mut buf); }
+            Err(e) => { return Err(e) },
+        };
+        match self.field_a.get_buf_to_store(Some(138)) {
+            Ok(mut buf) => { buffer.append(&mut buf); }
+            Err(e) => { return Err(e) },
+        };
+        Ok(buffer)
+    }
+}
+impl PackingStruct for EventB { }
+
 pub mod Beacons {
     use super::*;
     use std::io::Cursor;
@@ -3376,7 +3540,7 @@ pub mod GroupA {
             StructA {
                 field_u8: 0,
                 field_u16: 0,
-                opt: EnumA::Defaults,
+                opt: GroupA::EnumA::Defaults,
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
@@ -3435,10 +3599,10 @@ pub mod GroupA {
             StructB {
                 field_u8: 0,
                 field_u16: 0,
-                strct: StructA {
+                strct: GroupA::StructA {
                     field_u8: 0,
                     field_u16: 0,
-                    opt: EnumA::Defaults,
+                    opt: GroupA::EnumA::Defaults,
                 },
             }
         }
@@ -3618,7 +3782,7 @@ pub mod GroupB {
                 StructB {
                     field_u8: 0,
                     field_u16: 0,
-                    strct: StructA {
+                    strct: GroupB::GroupC::StructA {
                         field_u8: 0,
                         field_u16: 0,
                     },
@@ -3821,6 +3985,283 @@ pub mod GroupD {
 
 }
 
+pub mod Events {
+    use super::*;
+    use std::io::Cursor;
+    use bytes::{ Buf };
+    #[derive(Debug, Clone)]
+    pub enum AvailableMessages {
+        EventA(EventA),
+        EventB(EventB),
+        Sub(Sub::AvailableMessages),
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct EventA {
+        pub uuid: String,
+        pub field_a: StructA,
+        pub field_b: StructB,
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for EventA {
+        fn get_id() -> u32 {
+            140
+        }
+        fn defaults() -> EventA {
+            EventA {
+                uuid: String::from(""),
+                field_a: StructA {
+                    field_str: String::from(""),
+                    field_str_empty: String::from(""),
+                    field_u8: 0,
+                    field_u16: 0,
+                    field_u32: 0,
+                    field_u64: 0,
+                    field_i8: 0,
+                    field_i16: 0,
+                    field_i32: 0,
+                    field_i64: 0,
+                    field_f32: 0.0,
+                    field_f64: 0.0,
+                    field_bool: true,
+                },
+                field_b: StructB {
+                    field_str: vec![],
+                    field_u8: vec![],
+                    field_u16: vec![],
+                    field_u32: vec![],
+                    field_u64: vec![],
+                    field_i8: vec![],
+                    field_i16: vec![],
+                    field_i32: vec![],
+                    field_i64: vec![],
+                    field_f32: vec![],
+                    field_f64: vec![],
+                    field_bool: vec![],
+                    field_struct: vec![],
+                    field_str_empty: vec![],
+                    field_u8_empty: vec![],
+                    field_u16_empty: vec![],
+                    field_u32_empty: vec![],
+                    field_u64_empty: vec![],
+                    field_i8_empty: vec![],
+                    field_i16_empty: vec![],
+                    field_i32_empty: vec![],
+                    field_i64_empty: vec![],
+                    field_f32_empty: vec![],
+                    field_f64_empty: vec![],
+                    field_bool_empty: vec![],
+                    field_struct_empty: vec![],
+                },
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(141)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_a = match StructA::get_from_storage(Source::Storage(&mut storage), Some(142)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_b = match StructB::get_from_storage(Source::Storage(&mut storage), Some(143)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for EventA {
+        fn get_id(&self) -> u32 { 140 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.uuid.get_buf_to_store(Some(141)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.field_a.get_buf_to_store(Some(142)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.field_b.get_buf_to_store(Some(143)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for EventA { }
+
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct EventB {
+        pub uuid: String,
+        pub field_a: GroupA::StructA,
+        pub field_b: GroupA::StructB,
+        pub field_c: GroupB::StructA,
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for EventB {
+        fn get_id() -> u32 {
+            144
+        }
+        fn defaults() -> EventB {
+            EventB {
+                uuid: String::from(""),
+                field_a: GroupA::StructA {
+                    field_u8: 0,
+                    field_u16: 0,
+                    opt: GroupA::EnumA::Defaults,
+                },
+                field_b: GroupA::StructB {
+                    field_u8: 0,
+                    field_u16: 0,
+                    strct: GroupA::StructA {
+                        field_u8: 0,
+                        field_u16: 0,
+                        opt: GroupA::EnumA::Defaults,
+                    },
+                },
+                field_c: GroupB::StructA {
+                    field_u8: 0,
+                    field_u16: 0,
+                },
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(145)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_a = match GroupA::StructA::get_from_storage(Source::Storage(&mut storage), Some(146)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_b = match GroupA::StructB::get_from_storage(Source::Storage(&mut storage), Some(147)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            self.field_c = match GroupB::StructA::get_from_storage(Source::Storage(&mut storage), Some(148)) {
+                Ok(val) => val,
+                Err(e) => { return Err(e) },
+            };
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for EventB {
+        fn get_id(&self) -> u32 { 144 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            match self.uuid.get_buf_to_store(Some(145)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.field_a.get_buf_to_store(Some(146)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.field_b.get_buf_to_store(Some(147)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            match self.field_c.get_buf_to_store(Some(148)) {
+                Ok(mut buf) => { buffer.append(&mut buf); }
+                Err(e) => { return Err(e) },
+            };
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for EventB { }
+
+    pub mod Sub {
+        use super::*;
+        use std::io::Cursor;
+        use bytes::{ Buf };
+        #[derive(Debug, Clone)]
+        pub enum AvailableMessages {
+            EventA(EventA),
+        }
+
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct EventA {
+            pub uuid: String,
+            pub field_a: GroupB::GroupC::StructA,
+            pub field_b: GroupB::GroupC::StructB,
+        }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
+        impl StructDecode for EventA {
+            fn get_id() -> u32 {
+                150
+            }
+            fn defaults() -> EventA {
+                EventA {
+                    uuid: String::from(""),
+                    field_a: GroupB::GroupC::StructA {
+                        field_u8: 0,
+                        field_u16: 0,
+                    },
+                    field_b: GroupB::GroupC::StructB {
+                        field_u8: 0,
+                        field_u16: 0,
+                        strct: GroupB::GroupC::StructA {
+                            field_u8: 0,
+                            field_u16: 0,
+                        },
+                    },
+                }
+            }
+            fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+                self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(151)) {
+                    Ok(val) => val,
+                    Err(e) => { return Err(e) },
+                };
+                self.field_a = match GroupB::GroupC::StructA::get_from_storage(Source::Storage(&mut storage), Some(152)) {
+                    Ok(val) => val,
+                    Err(e) => { return Err(e) },
+                };
+                self.field_b = match GroupB::GroupC::StructB::get_from_storage(Source::Storage(&mut storage), Some(153)) {
+                    Ok(val) => val,
+                    Err(e) => { return Err(e) },
+                };
+                Ok(())
+            }
+        }
+        #[allow(unused_variables)]
+        #[allow(unused_mut)]
+        impl StructEncode for EventA {
+            fn get_id(&self) -> u32 { 150 }
+            fn get_signature(&self) -> u16 { 0 }
+            fn abduct(&mut self) -> Result<Vec<u8>, String> {
+                let mut buffer: Vec<u8> = vec!();
+                match self.uuid.get_buf_to_store(Some(151)) {
+                    Ok(mut buf) => { buffer.append(&mut buf); }
+                    Err(e) => { return Err(e) },
+                };
+                match self.field_a.get_buf_to_store(Some(152)) {
+                    Ok(mut buf) => { buffer.append(&mut buf); }
+                    Err(e) => { return Err(e) },
+                };
+                match self.field_b.get_buf_to_store(Some(153)) {
+                    Ok(mut buf) => { buffer.append(&mut buf); }
+                    Err(e) => { return Err(e) },
+                };
+                Ok(buffer)
+            }
+        }
+        impl PackingStruct for EventA { }
+
+    }
+
+}
+
 pub mod InternalServiceGroup {
     use super::*;
     use std::io::Cursor;
@@ -3841,7 +4282,7 @@ pub mod InternalServiceGroup {
     #[allow(unused_mut)]
     impl StructDecode for SelfKeyResponse {
         fn get_id() -> u32 {
-            133
+            155
         }
         fn defaults() -> SelfKeyResponse {
             SelfKeyResponse {
@@ -3849,7 +4290,7 @@ pub mod InternalServiceGroup {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(134)) {
+            self.uuid = match String::get_from_storage(Source::Storage(&mut storage), Some(156)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -3859,11 +4300,11 @@ pub mod InternalServiceGroup {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for SelfKeyResponse {
-        fn get_id(&self) -> u32 { 133 }
+        fn get_id(&self) -> u32 { 155 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.uuid.get_buf_to_store(Some(134)) {
+            match self.uuid.get_buf_to_store(Some(156)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -3881,7 +4322,7 @@ pub mod InternalServiceGroup {
     #[allow(unused_mut)]
     impl StructDecode for HashRequest {
         fn get_id() -> u32 {
-            135
+            157
         }
         fn defaults() -> HashRequest {
             HashRequest {
@@ -3890,11 +4331,11 @@ pub mod InternalServiceGroup {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.protocol = match String::get_from_storage(Source::Storage(&mut storage), Some(136)) {
+            self.protocol = match String::get_from_storage(Source::Storage(&mut storage), Some(158)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
-            self.workflow = match String::get_from_storage(Source::Storage(&mut storage), Some(137)) {
+            self.workflow = match String::get_from_storage(Source::Storage(&mut storage), Some(159)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -3904,15 +4345,15 @@ pub mod InternalServiceGroup {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for HashRequest {
-        fn get_id(&self) -> u32 { 135 }
+        fn get_id(&self) -> u32 { 157 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.protocol.get_buf_to_store(Some(136)) {
+            match self.protocol.get_buf_to_store(Some(158)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
-            match self.workflow.get_buf_to_store(Some(137)) {
+            match self.workflow.get_buf_to_store(Some(159)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -3929,7 +4370,7 @@ pub mod InternalServiceGroup {
     #[allow(unused_mut)]
     impl StructDecode for HashResponse {
         fn get_id() -> u32 {
-            138
+            160
         }
         fn defaults() -> HashResponse {
             HashResponse {
@@ -3937,7 +4378,7 @@ pub mod InternalServiceGroup {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(139)) {
+            self.error = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(161)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -3947,11 +4388,11 @@ pub mod InternalServiceGroup {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for HashResponse {
-        fn get_id(&self) -> u32 { 138 }
+        fn get_id(&self) -> u32 { 160 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(139)) {
+            match self.error.get_buf_to_store(Some(161)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -3968,7 +4409,7 @@ pub mod InternalServiceGroup {
     #[allow(unused_mut)]
     impl StructDecode for BeaconConfirmation {
         fn get_id() -> u32 {
-            140
+            162
         }
         fn defaults() -> BeaconConfirmation {
             BeaconConfirmation {
@@ -3976,7 +4417,7 @@ pub mod InternalServiceGroup {
             }
         }
         fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
-            self.error = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(141)) {
+            self.error = match Option::<String>::get_from_storage(Source::Storage(&mut storage), Some(163)) {
                 Ok(val) => val,
                 Err(e) => { return Err(e) },
             };
@@ -3986,11 +4427,11 @@ pub mod InternalServiceGroup {
     #[allow(unused_variables)]
     #[allow(unused_mut)]
     impl StructEncode for BeaconConfirmation {
-        fn get_id(&self) -> u32 { 140 }
+        fn get_id(&self) -> u32 { 162 }
         fn get_signature(&self) -> u16 { 0 }
         fn abduct(&mut self) -> Result<Vec<u8>, String> {
             let mut buffer: Vec<u8> = vec!();
-            match self.error.get_buf_to_store(Some(141)) {
+            match self.error.get_buf_to_store(Some(163)) {
                 Ok(mut buf) => { buffer.append(&mut buf); }
                 Err(e) => { return Err(e) },
             };
@@ -4124,19 +4565,39 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
                 Ok(m) => Ok(AvailableMessages::GroupD(GroupD::AvailableMessages::StructP(m))),
                 Err(e) => Err(e),
             },
-            133 => match InternalServiceGroup::SelfKeyResponse::extract(buf.to_vec()) {
+            132 => match EventA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EventA(m)),
+                Err(e) => Err(e),
+            },
+            136 => match EventB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::EventB(m)),
+                Err(e) => Err(e),
+            },
+            140 => match Events::EventA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::Events(Events::AvailableMessages::EventA(m))),
+                Err(e) => Err(e),
+            },
+            144 => match Events::EventB::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::Events(Events::AvailableMessages::EventB(m))),
+                Err(e) => Err(e),
+            },
+            150 => match Events::Sub::EventA::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::Events(Events::AvailableMessages::Sub(Events::Sub::AvailableMessages::EventA(m)))),
+                Err(e) => Err(e),
+            },
+            155 => match InternalServiceGroup::SelfKeyResponse::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::SelfKeyResponse(m))),
                 Err(e) => Err(e),
             },
-            135 => match InternalServiceGroup::HashRequest::extract(buf.to_vec()) {
+            157 => match InternalServiceGroup::HashRequest::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::HashRequest(m))),
                 Err(e) => Err(e),
             },
-            138 => match InternalServiceGroup::HashResponse::extract(buf.to_vec()) {
+            160 => match InternalServiceGroup::HashResponse::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::HashResponse(m))),
                 Err(e) => Err(e),
             },
-            140 => match InternalServiceGroup::BeaconConfirmation::extract(buf.to_vec()) {
+            162 => match InternalServiceGroup::BeaconConfirmation::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::BeaconConfirmation(m))),
                 Err(e) => Err(e),
             },
@@ -4146,4 +4607,4 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
     fn get_signature(&self) -> u16 { 0 }
 }
 
-pub fn hash() -> String { String::from("CF4FB13658612FE64ACBFDAD2D42DED0D59ABB9A899EFB15099CB02896B8A646") }
+pub fn hash() -> String { String::from("AA06912C89BAEE92D583EDB002148FF46EB4531B6CDC73AE2DD76108F2064CC3") }

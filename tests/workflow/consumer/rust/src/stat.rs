@@ -1,5 +1,6 @@
 use console::style;
-use indicatif::{ProgressBar, ProgressStyle};
+use spinners;
+use spinners::{Spinner, Spinners};
 use std::collections::HashMap;
 
 mod expectations {
@@ -33,7 +34,7 @@ mod expectations {
     pub const TestRequestStructRmpty: usize = 2;
 }
 
-#[derive(PartialEq, Hash)]
+#[derive(PartialEq, Hash, PartialOrd)]
 pub enum Alias {
     GroupAStructA,
     GroupAStructB,
@@ -105,7 +106,7 @@ pub enum StatEvent {
 
 pub struct Stat {
     connections: usize,
-    progress: ProgressBar,
+    spinner: Spinner,
     done: usize,
     pub tests: HashMap<Alias, (usize, usize)>,
 }
@@ -203,31 +204,28 @@ impl Stat {
             connections,
             tests,
             done: 0,
-            progress: ProgressBar::new(0),
+            spinner: Spinner::new(
+                &Spinners::Dots9,
+                format!("Waiting for {} consumers", connections),
+            ),
         };
-        instance.progress.set_style(
-            ProgressStyle::default_bar()
-                .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}]"),
-        );
-        instance
-            .progress
-            .set_length((instance.expectation() * connections) as u64);
         instance
     }
 
     pub fn apply(&mut self, event: StatEvent) {
         match event {
             StatEvent::Inc(alias) => {
-                self.progress.inc(1);
                 if let Some((current, _)) = self.tests.get_mut(&alias) {
                     *current += 1;
                 }
             }
             StatEvent::ConsumerDone => {
-                self.progress.tick();
                 self.done += 1;
                 if self.done == self.connections {
-                    self.progress.finish();
+                    println!(
+                        "\n{} all consumers did all jobs",
+                        style("[test]").bold().dim(),
+                    );
                 }
             }
         }
@@ -255,7 +253,12 @@ impl Stat {
 impl std::fmt::Display for Stat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = format!("{}\n", "=".repeat(70));
+        let mut tests = vec![];
         for (alias, (current, expectation)) in &self.tests {
+            tests.push((alias.to_string(), current, expectation));
+        }
+        tests.sort();
+        for (alias, current, expectation) in &tests {
             let mut alias = alias.to_string();
             let filler = 60 - alias.len();
             alias = format!(
