@@ -12,7 +12,9 @@ pub async fn execute(
             .structd(samples::struct_d::get())
             .await
             .map_err(|e| e.to_string())?;
-        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestStructD));
+        tx_stat
+            .send(StatEvent::Inc(stat::Alias::TestRequestStructD))
+            .map_err(|e| e.to_string())?;
         match response {
             controller::StructDResponse::Response(res) => {
                 if !samples::struct_a::equal(res.clone()) {

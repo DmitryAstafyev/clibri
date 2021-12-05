@@ -14,7 +14,9 @@ pub async fn execute(
             .structc(samples::struct_c::get())
             .await
             .map_err(|e| e.to_string())?;
-        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestStructC));
+        tx_stat
+            .send(StatEvent::Inc(stat::Alias::TestRequestStructC))
+            .map_err(|e| e.to_string())?;
         match response {
             controller::StructCResponse::CaseB(res) => {
                 if !samples::struct_b::equal(res.clone()) {

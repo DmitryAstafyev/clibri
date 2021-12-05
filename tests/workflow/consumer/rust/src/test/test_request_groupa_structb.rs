@@ -13,7 +13,9 @@ pub async fn execute(
             .groupa_structb(samples::group_a::struct_b::get())
             .await
             .map_err(|e| e.to_string())?;
-        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestGroupAStructB));
+        tx_stat
+            .send(StatEvent::Inc(stat::Alias::TestRequestGroupAStructB))
+            .map_err(|e| e.to_string())?;
         match response {
             controller::GroupAStructBResponse::GroupBStructA(res) => {
                 if !samples::group_b::struct_a::equal(res.clone()) {

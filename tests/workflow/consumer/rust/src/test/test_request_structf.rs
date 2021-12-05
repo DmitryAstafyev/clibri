@@ -12,7 +12,9 @@ pub async fn execute(
             .structf(samples::struct_f::get())
             .await
             .map_err(|e| e.to_string())?;
-        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestStructF));
+        tx_stat
+            .send(StatEvent::Inc(stat::Alias::TestRequestStructF))
+            .map_err(|e| e.to_string())?;
         match response {
             controller::StructFResponse::Response(res) => {
                 if !samples::struct_f::equal(res.clone()) {

@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
 mod connection;
 mod consumer;
 mod stat;
@@ -6,12 +9,12 @@ mod test;
 use connection::run;
 use console::style;
 use futures::future::join_all;
+use spinners::{Spinner, Spinners};
 use stat::{Stat, StatEvent};
 use tokio::{
     join, select,
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
 };
-
 use tokio_util::sync::CancellationToken;
 
 const CONNECTIONS: usize = 100;
@@ -34,6 +37,10 @@ async fn main() -> Result<(), String> {
             done.cancel();
         },
         async {
+            let spinner = Spinner::new(
+                &Spinners::Dots9,
+                format!("Waiting for {} consumers", CONNECTIONS),
+            );
             let mut stat = Stat::new(CONNECTIONS);
             while let Some(event) = select! {
                 event = rx_stat.recv() => event,
@@ -41,6 +48,11 @@ async fn main() -> Result<(), String> {
             } {
                 stat.apply(event);
             }
+            spinner.stop();
+            println!(
+                "\n{} all consumers did all jobs",
+                style("[test]").bold().dim(),
+            );
             println!("{}", stat);
         }
     );

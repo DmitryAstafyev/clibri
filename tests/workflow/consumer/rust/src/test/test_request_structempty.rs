@@ -12,7 +12,9 @@ pub async fn execute(
             .structempty(samples::struct_empty::get())
             .await
             .map_err(|e| e.to_string())?;
-        tx_stat.send(StatEvent::Inc(stat::Alias::TestRequestStructRmpty));
+        tx_stat
+            .send(StatEvent::Inc(stat::Alias::TestRequestStructRmpty))
+            .map_err(|e| e.to_string())?;
         match response {
             controller::StructEmptyResponse::Response(res) => {
                 if !samples::struct_empty_b::equal(res.clone()) {

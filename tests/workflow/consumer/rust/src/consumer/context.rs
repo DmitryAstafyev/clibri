@@ -23,7 +23,9 @@ impl Context {
 
     pub fn inc_stat(&mut self, alias: Alias) {
         self.broadcasts += 1;
-        self.tx_stat.send(StatEvent::Inc(alias));
+        if self.tx_stat.send(StatEvent::Inc(alias)).is_err() {
+            panic!("Fail to send stat event");
+        }
         if self.broadcasts >= 19 {
             self.broadcast_received.cancel();
         }

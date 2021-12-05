@@ -1,9 +1,6 @@
 use super::{error::ConsumerError, protocol, Auth};
 use clibri::client;
-use tokio::sync::{
-    mpsc::{Sender, UnboundedSender},
-    oneshot,
-};
+use tokio::sync::{mpsc::UnboundedSender, oneshot};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 

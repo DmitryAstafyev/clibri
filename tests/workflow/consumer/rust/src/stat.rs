@@ -1,8 +1,7 @@
 use console::style;
-use spinners;
-use spinners::{Spinner, Spinners};
 use std::collections::HashMap;
 
+#[allow(non_upper_case_globals)]
 mod expectations {
     // Expected broadcasts ============================
     pub const GroupAStructA: usize = 1;
@@ -106,7 +105,6 @@ pub enum StatEvent {
 
 pub struct Stat {
     connections: usize,
-    spinner: Spinner,
     done: usize,
     pub tests: HashMap<Alias, (usize, usize)>,
 }
@@ -200,16 +198,11 @@ impl Stat {
             Alias::TestRequestStructRmpty,
             (0, connections * expectations::TestRequestStructRmpty),
         );
-        let instance = Self {
+        Self {
             connections,
             tests,
             done: 0,
-            spinner: Spinner::new(
-                &Spinners::Dots9,
-                format!("Waiting for {} consumers", connections),
-            ),
-        };
-        instance
+        }
     }
 
     pub fn apply(&mut self, event: StatEvent) {
@@ -221,32 +214,8 @@ impl Stat {
             }
             StatEvent::ConsumerDone => {
                 self.done += 1;
-                if self.done == self.connections {
-                    println!(
-                        "\n{} all consumers did all jobs",
-                        style("[test]").bold().dim(),
-                    );
-                }
             }
         }
-    }
-
-    pub fn is_finished(&self) -> bool {
-        let mut done: usize = 0;
-        for (alias, (current, expectation)) in &self.tests {
-            if current >= expectation {
-                done += 1;
-            }
-        }
-        done == self.tests.len()
-    }
-
-    pub fn expectation(&self) -> usize {
-        let mut all: usize = 0;
-        for (_alias, (_current, expectation)) in &self.tests {
-            all += expectation;
-        }
-        all
     }
 }
 

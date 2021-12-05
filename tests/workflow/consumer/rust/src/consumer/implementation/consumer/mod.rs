@@ -662,9 +662,6 @@ where
                     }
                     client::Event::Disconnected => {
                         uuid = None;
-                        tx_consumer_event
-                            .send(Emitter::Disconnected)
-                            .map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
                     }
                     client::Event::Error(err) => {
                         shortcuts::emit_error::<E>(ConsumerError::Client(err), &tx_consumer_event)

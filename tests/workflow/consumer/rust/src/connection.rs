@@ -100,6 +100,8 @@ pub async fn run(addr: &str, tx_stat: UnboundedSender<StatEvent>) -> Result<(), 
     )
     .await?;
     consumer.shutdown().await.map_err(|e| e.to_string())?;
-    tx_stat.send(StatEvent::ConsumerDone);
+    tx_stat
+        .send(StatEvent::ConsumerDone)
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
