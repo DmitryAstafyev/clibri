@@ -1,69 +1,53 @@
 #![allow(dead_code)]
 use super::{producer, protocol, Consumer};
 use clibri::env::logs;
-use log::warn;
+use log::debug;
 use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct Filter {
-    pub consumers: HashMap<Uuid, Identification>,
+    pub uuids: Vec<Uuid>,
 }
 
 impl Filter {
     pub async fn new(consumers: &HashMap<Uuid, Consumer>) -> Self {
-        let mut identifications: HashMap<Uuid, Identification> = HashMap::new();
-        for consumer in consumers.values() {
-            identifications.insert(consumer.get_uuid(), consumer.get_identification());
-        }
         Self {
-            consumers: identifications,
+            uuids: consumers.keys().cloned().collect(),
         }
     }
 
-    pub fn filter<F>(&self, cb: F) -> Vec<Uuid>
-    where
-        F: Fn(&Identification) -> bool,
-    {
-        self.consumers
-            .values()
-            .cloned()
-            .collect::<Vec<Identification>>()
-            .iter()
-            .filter(|ident| cb(&ident))
-            .map(|ident| ident.uuid)
-            .collect::<Vec<Uuid>>()
-    }
+    // pub fn filter<F>(&self, cb: F) -> Vec<Uuid>
+    // where
+    //     F: Fn(&Identification) -> bool,
+    // {
+    //     self.uuids
+    //         .values()
+    //         .cloned()
+    //         .collect::<Vec<Identification>>()
+    //         .iter()
+    //         .filter(|ident| cb(ident))
+    //         .map(|ident| ident.uuid)
+    //         .collect::<Vec<Uuid>>()
+    // }
 
     pub fn exclude(&self, uuids: Vec<Uuid>) -> Vec<Uuid> {
-        self.consumers
-            .values()
-            .cloned()
-            .collect::<Vec<Identification>>()
+        self.uuids
             .iter()
-            .filter(|ident| uuids.iter().find(|uuid| &ident.uuid == *uuid).is_none())
-            .map(|ident| ident.uuid)
+            .filter(|uuid| !uuids.iter().any(|tuuid| &tuuid == uuid))
+            .cloned()
             .collect::<Vec<Uuid>>()
     }
 
-    pub fn except(&self, uuid: Uuid) -> Vec<Uuid> {
-        self.consumers
-            .values()
-            .cloned()
-            .collect::<Vec<Identification>>()
+    pub fn except(&self, uuid: &Uuid) -> Vec<Uuid> {
+        self.uuids
             .iter()
-            .filter(|ident| ident.uuid != uuid)
-            .map(|ident| ident.uuid)
+            .filter(|tuuid| *tuuid != uuid)
+            .cloned()
             .collect::<Vec<Uuid>>()
     }
 
     pub fn all(&self) -> Vec<Uuid> {
-        self.consumers
-            .values()
-            .cloned()
-            .collect::<Vec<Identification>>()
-            .iter()
-            .map(|ident| ident.uuid)
-            .collect::<Vec<Uuid>>()
+        self.uuids.to_vec()
     }
 }
 
@@ -159,7 +143,7 @@ impl Identification {
             match self.producer_indentification_strategy {
                 producer::ProducerIdentificationStrategy::Ignore => true,
                 producer::ProducerIdentificationStrategy::Log => {
-                    warn!(
+                    debug!(
                         target: logs::targets::PRODUCER,
                         "{}:: client doesn't have producer identification", self.uuid
                     );

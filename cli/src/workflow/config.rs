@@ -17,6 +17,7 @@ pub mod names {
     pub const DEFAULT_SELF_KEY_RESPONSE_STRUCT: &str = "SelfKeyResponse";
     pub const DEFAULT_ASSIGNED_KEY_STRUCT: &str = "AssignedKey";
     pub const BEACON_CONFIRMATION_RESPONSE: &str = "BeaconConfirmation";
+    pub const CONNECT_CONFIRMATION_BEACON: &str = "ConnectConfirmationBeacon";
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -225,6 +226,7 @@ impl Config {
                     true,
                 )],
             );
+            protocol.add_service_struct(names::CONNECT_CONFIRMATION_BEACON.to_owned(), vec![]);
             self.closed = true;
             self.prev = None;
             Ok(())

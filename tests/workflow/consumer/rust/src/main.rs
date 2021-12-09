@@ -17,7 +17,7 @@ use tokio::{
 };
 use tokio_util::sync::CancellationToken;
 
-const CONNECTIONS: usize = 5;
+const CONNECTIONS: usize = 5000;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -63,9 +63,9 @@ async fn main() -> Result<(), String> {
         unbounded_channel();
     let done = CancellationToken::new();
     join!(
-        async {
+        async move {
             println!("{} starting consumer", style("[test]").bold().dim(),);
-            if let Err(err) = run("127.0.0.1:8080", tx_stat.clone(), true).await {
+            if let Err(err) = run("127.0.0.1:8080", tx_stat, true).await {
                 eprintln!("{}", err);
             }
             done.cancel();
@@ -73,10 +73,7 @@ async fn main() -> Result<(), String> {
         async {
             let spinner = Spinner::new(&Spinners::Dots9, "Waiting for consumer".to_string());
             let mut stat = Stat::new(1);
-            while let Some(event) = select! {
-                event = rx_stat.recv() => event,
-                _ = done.cancelled() => None
-            } {
+            while let Some(event) = rx_stat.recv().await {
                 stat.apply(event);
             }
             spinner.stop();

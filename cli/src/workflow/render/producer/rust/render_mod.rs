@@ -254,6 +254,14 @@ pub mod producer {
             );
         }
         consumers.insert(uuid, client);
+        control
+        .send(
+            (protocol::InternalServiceGroup::ConnectConfirmationBeacon {})
+                .pack(0, Some(uuid.to_string()))
+                .map_err(|e| ProducerError::Protocol(uuid, e))?,
+            Some(uuid),
+        )
+        .await?;
         Ok(())
     }
 
@@ -324,11 +332,15 @@ pub mod producer {
                 == ConsumerErrorHandelingStrategy::EmitErrorAndDisconnect
         {
             if let Some(consumer) = consumer.as_deref_mut() {
+                warn!(
+                    target: logs::targets::PRODUCER,
+                    "{}:: consumer would be disconnected because of error: {}", uuid, err
+                );
                 disconnect(uuid, consumer, control).await?;
             } else {
-                error!(
+                warn!(
                     target: logs::targets::PRODUCER,
-                    "{}:: fail to find consumer to disconnect client", uuid
+                    "{}:: consumer isn't found; it wasn't connected", uuid
                 );
             }
         }
@@ -427,7 +439,7 @@ pub mod producer {
                             if let Err(err) = control.send(buffer, Some(uuid)).await {
                                 Err(err.to_string())
                             } else {
-                                warn!(
+                                debug!(
                                     target: logs::targets::PRODUCER,
                                     "{}:: identification response has been sent", uuid,
                                 );
@@ -495,7 +507,7 @@ pub mod producer {
                             if let Err(err) = control.send(buffer, Some(uuid)).await {
                                 Err(err.to_string())
                             } else {
-                                warn!(
+                                debug!(
                                     target: logs::targets::PRODUCER,
                                     "{}:: hash check results has been sent", uuid,
                                 );

@@ -4302,6 +4302,7 @@ pub mod InternalServiceGroup {
         HashRequest(HashRequest),
         HashResponse(HashResponse),
         BeaconConfirmation(BeaconConfirmation),
+        ConnectConfirmationBeacon(ConnectConfirmationBeacon),
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -4470,6 +4471,35 @@ pub mod InternalServiceGroup {
     }
     impl PackingStruct for BeaconConfirmation { }
 
+    #[derive(Debug, Clone, PartialEq)]
+    pub struct ConnectConfirmationBeacon {
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructDecode for ConnectConfirmationBeacon {
+        fn get_id() -> u32 {
+            165
+        }
+        fn defaults() -> ConnectConfirmationBeacon {
+            ConnectConfirmationBeacon {
+            }
+        }
+        fn extract_from_storage(&mut self, mut storage: Storage) -> Result<(), String> {
+            Ok(())
+        }
+    }
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    impl StructEncode for ConnectConfirmationBeacon {
+        fn get_id(&self) -> u32 { 165 }
+        fn get_signature(&self) -> u16 { 0 }
+        fn abduct(&mut self) -> Result<Vec<u8>, String> {
+            let mut buffer: Vec<u8> = vec!();
+            Ok(buffer)
+        }
+    }
+    impl PackingStruct for ConnectConfirmationBeacon { }
+
 }
 
 impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
@@ -4633,6 +4663,10 @@ impl DecodeBuffer<AvailableMessages> for Buffer<AvailableMessages> {
             },
             163 => match InternalServiceGroup::BeaconConfirmation::extract(buf.to_vec()) {
                 Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::BeaconConfirmation(m))),
+                Err(e) => Err(e),
+            },
+            165 => match InternalServiceGroup::ConnectConfirmationBeacon::extract(buf.to_vec()) {
+                Ok(m) => Ok(AvailableMessages::InternalServiceGroup(InternalServiceGroup::AvailableMessages::ConnectConfirmationBeacon(m))),
                 Err(e) => Err(e),
             },
             _ => Err(String::from("No message has been found"))

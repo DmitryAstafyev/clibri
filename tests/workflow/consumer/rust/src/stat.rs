@@ -1,5 +1,15 @@
 use console::style;
 use std::collections::HashMap;
+use std::time::Duration;
+
+mod shortcuts {
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    pub fn get_timestamp() -> Duration {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+    }
+}
 
 #[allow(non_upper_case_globals)]
 mod expectations {
@@ -110,6 +120,7 @@ pub struct Stat {
     connections: usize,
     done: usize,
     pub tests: HashMap<Alias, (usize, usize)>,
+    created: Duration,
 }
 
 impl Stat {
@@ -206,6 +217,7 @@ impl Stat {
             connections,
             tests,
             done: 0,
+            created: shortcuts::get_timestamp(),
         }
     }
 
@@ -218,6 +230,7 @@ impl Stat {
             }
             StatEvent::ConsumerDone => {
                 self.done += 1;
+                println!(">>>>>>>>>>> DONE: {}", self.done);
             }
         }
     }
@@ -225,6 +238,8 @@ impl Stat {
 
 impl std::fmt::Display for Stat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let current = shortcuts::get_timestamp();
+        let duration = current.as_millis() - self.created.as_millis();
         let mut output = format!("{}\n", "=".repeat(70));
         let mut tests = vec![];
         for (alias, (current, expectation)) in &self.tests {
@@ -260,6 +275,12 @@ impl std::fmt::Display for Stat {
                 }
             );
         }
+        output = format!("{}{}\n", output, "=".repeat(70));
+        output = format!(
+            "{}Operation has beek take: {} sec.\n",
+            output,
+            duration / 1000
+        );
         output = format!("{}{}\n", output, "=".repeat(70));
         write!(f, "{}", output)
     }

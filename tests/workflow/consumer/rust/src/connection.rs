@@ -1,5 +1,5 @@
 use super::{
-    consumer::{connect, protocol, protocol::StructDecode, Context, Options},
+    consumer::{connect, protocol, protocol::StructDecode, Context, Options, ReconnectionStrategy},
     stat::StatEvent,
     test,
 };
@@ -12,6 +12,7 @@ use clibri_transport_client::{
 use std::net::SocketAddr;
 use tokio::sync::mpsc::UnboundedSender;
 
+const TEST_TIMEOUT: u64 = 10000;
 pub async fn run(
     addr: &str,
     tx_stat: UnboundedSender<StatEvent>,
@@ -23,7 +24,8 @@ pub async fn run(
     });
     let context = Context::new(tx_stat.clone());
     let disconnected = context.disconnected.clone();
-    let options = Options::defualt(protocol::StructA::defaults());
+    let mut options = Options::defualt(protocol::StructA::defaults());
+    options.reconnection = ReconnectionStrategy::DoNotReconnect;
     let connected = context.connected.child_token();
     let broadcast_received = context.broadcast_received.child_token();
     let finish = context.finish.child_token();
@@ -35,73 +37,73 @@ pub async fn run(
     if !shutdown {
         test::executor(
             "Test StructA Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test StructC Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_structc::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test StructD Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_structd::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupB::StructA Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_groupb_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupA::StructB Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_groupa_structb::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupB::GroupC::StructA Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_groupb_groupc_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupB::GroupC::StructB Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_groupb_groupc_structb::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupA::StructA Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_groupa_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test StructEmpty Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_structempty::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor_no_res(
             "Waiting for broadcast messages",
-            10000,
+            TEST_TIMEOUT,
             broadcast_received.cancelled(),
         )
         .await?;
         test::executor(
             "Test StructF Request",
-            10000,
+            TEST_TIMEOUT,
             test::test_request_structf::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor_no_res(
             "Waiting for last broadcast message",
-            10000,
+            TEST_TIMEOUT,
             finish.cancelled(),
         )
         .await?;
@@ -116,7 +118,7 @@ pub async fn run(
             .map_err(|e| e.to_string())?;
         test::executor_no_res(
             "Waiting disconnection (because server is down)",
-            10000,
+            TEST_TIMEOUT,
             disconnected.cancelled(),
         )
         .await?;
