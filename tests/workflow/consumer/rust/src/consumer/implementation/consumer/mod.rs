@@ -565,6 +565,28 @@ where
                             match buffer.chunk(&income, None) {
                                 Ok(()) => {
                                     while let Some(msg) = buffer.next() {
+                                        if let protocol::AvailableMessages::InternalServiceGroup(
+                                            protocol::InternalServiceGroup::AvailableMessages::ConnectConfirmationBeacon(msg)
+                                        ) = msg.msg {
+                                            debug!(
+                                                target: logs::targets::CONSUMER,
+                                                "producer has been confirmed connection"
+                                            );
+                                            let api_auth = api.clone();
+                                            let options_auth = options.clone();
+                                            let tx_auth_auth = tx_auth.clone();
+                                            spawn(async move {
+                                                if let Err(err) = tx_auth_auth
+                                                    .send(Auth::SetUuid(auth(api_auth, options_auth).await))
+                                                {
+                                                    error!(
+                                                        target: logs::targets::CONSUMER,
+                                                        "fail to send response for consumer auth: {}", err
+                                                    );
+                                                }
+                                            });
+                                            continue;
+                                        }
                                         match api.accept(msg.header.sequence, msg.msg.clone()).await
                                         {
                                             Ok(accepted) => {
@@ -580,45 +602,45 @@ where
                                             }
                                         };
                                         match msg.msg {                                                    
-                                                    protocol::AvailableMessages::StructD(msg) => {
-                                                        tx_consumer_event.send(Emitter::StructD(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::StructF(msg) => {
-                                                        tx_consumer_event.send(Emitter::StructF(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::StructJ(msg) => {
-                                                        tx_consumer_event.send(Emitter::StructJ(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructB(msg))) => {
-                                                        tx_consumer_event.send(Emitter::GroupBGroupCStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::StructB(msg) => {
-                                                        tx_consumer_event.send(Emitter::StructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::StructC(msg) => {
-                                                        tx_consumer_event.send(Emitter::StructC(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::StructA(msg) => {
-                                                        tx_consumer_event.send(Emitter::StructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructA(msg)) => {
-                                                        tx_consumer_event.send(Emitter::GroupAStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructB(msg)) => {
-                                                        tx_consumer_event.send(Emitter::GroupAStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(msg)) => {
-                                                        tx_consumer_event.send(Emitter::GroupBStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructA(msg))) => {
-                                                        tx_consumer_event.send(Emitter::GroupBGroupCStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::TriggerBeacons(msg) => {
-                                                        tx_consumer_event.send(Emitter::TriggerBeacons(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
-                                                    protocol::AvailableMessages::FinishConsumerTestBroadcast(msg) => {
-                                                        tx_consumer_event.send(Emitter::FinishConsumerTestBroadcast(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                                    },
+                                            protocol::AvailableMessages::StructD(msg) => {
+                                                tx_consumer_event.send(Emitter::StructD(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::StructF(msg) => {
+                                                tx_consumer_event.send(Emitter::StructF(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::StructJ(msg) => {
+                                                tx_consumer_event.send(Emitter::StructJ(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructB(msg))) => {
+                                                tx_consumer_event.send(Emitter::GroupBGroupCStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::StructB(msg) => {
+                                                tx_consumer_event.send(Emitter::StructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::StructC(msg) => {
+                                                tx_consumer_event.send(Emitter::StructC(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::StructA(msg) => {
+                                                tx_consumer_event.send(Emitter::StructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructA(msg)) => {
+                                                tx_consumer_event.send(Emitter::GroupAStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructB(msg)) => {
+                                                tx_consumer_event.send(Emitter::GroupAStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(msg)) => {
+                                                tx_consumer_event.send(Emitter::GroupBStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructA(msg))) => {
+                                                tx_consumer_event.send(Emitter::GroupBGroupCStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::TriggerBeacons(msg) => {
+                                                tx_consumer_event.send(Emitter::TriggerBeacons(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
+                                            protocol::AvailableMessages::FinishConsumerTestBroadcast(msg) => {
+                                                tx_consumer_event.send(Emitter::FinishConsumerTestBroadcast(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                            },
                                             _ => {
                                                 shortcuts::emit_error::<E>(
                                                     ConsumerError::UnknownMessage(format!("header: {:?}", msg.header)),
@@ -646,19 +668,10 @@ where
                         }
                     },
                     client::Event::Connected(_) => {
-                        let api_auth = api.clone();
-                        let options_auth = options.clone();
-                        let tx_auth_response_auth = tx_auth.clone();
-                        spawn(async move {
-                            if let Err(err) = tx_auth_response_auth
-                                .send(Auth::SetUuid(auth(api_auth, options_auth).await))
-                            {
-                                error!(
-                                    target: logs::targets::CONSUMER,
-                                    "fail to send response for consumer auth: {}", err
-                                );
-                            }
-                        });
+                        debug!(
+                            target: logs::targets::CONSUMER,
+                            "client is connected; waiting confirmation from producer..."
+                        );
                     }
                     client::Event::Disconnected => {
                         uuid = None;

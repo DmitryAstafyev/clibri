@@ -1,4 +1,4 @@
-use console::style;
+use console::{style, Term};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -119,8 +119,11 @@ pub enum StatEvent {
 pub struct Stat {
     connections: usize,
     done: usize,
+    total_opearations: usize,
+    done_operations: usize,
     pub tests: HashMap<Alias, (usize, usize)>,
     created: Duration,
+    term: Term,
 }
 
 impl Stat {
@@ -213,11 +216,38 @@ impl Stat {
             (0, connections * expectations::TestRequestStructRmpty),
         );
         tests.insert(Alias::Error, (0, connections * expectations::Error));
+        let mut total_opearations = 0;
+        for (_, (_, expectation)) in tests.iter() {
+            total_opearations += expectation;
+        }
         Self {
             connections,
             tests,
             done: 0,
+            total_opearations,
+            done_operations: 0,
             created: shortcuts::get_timestamp(),
+            term: Term::stdout(),
+        }
+    }
+
+    fn report(&self) {
+        println!(
+            "{} {} / {} ({}%) operations done",
+            style("[test]").bold().dim(),
+            self.done_operations,
+            self.total_opearations,
+            (self.done_operations * 100) / self.total_opearations
+        );
+        println!(
+            "{} {}/{} ({}%) clients done job",
+            style("[test]").bold().dim(),
+            self.done,
+            self.connections,
+            (self.done * 100) / self.connections
+        );
+        if let Err(err) = self.term.move_cursor_up(2) {
+            eprintln!("Fail to manipulate console: {}", err);
         }
     }
 
@@ -227,12 +257,16 @@ impl Stat {
                 if let Some((current, _)) = self.tests.get_mut(&alias) {
                     *current += 1;
                 }
+                self.done_operations += 1;
             }
             StatEvent::ConsumerDone => {
+                if let Err(err) = self.term.move_cursor_down(1) {
+                    eprintln!("Fail to manipulate console: {}", err);
+                }
                 self.done += 1;
-                println!(">>>>>>>>>>> DONE: {}", self.done);
             }
         }
+        self.report();
     }
 }
 

@@ -9,7 +9,6 @@ mod test;
 use connection::run;
 use console::style;
 use futures::future::join_all;
-use spinners::{Spinner, Spinners};
 use stat::{Stat, StatEvent};
 use tokio::{
     join, select,
@@ -17,7 +16,7 @@ use tokio::{
 };
 use tokio_util::sync::CancellationToken;
 
-const CONNECTIONS: usize = 5000;
+const CONNECTIONS: usize = 15000;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -36,10 +35,6 @@ async fn main() -> Result<(), String> {
             done.cancel();
         },
         async {
-            let spinner = Spinner::new(
-                &Spinners::Dots9,
-                format!("Waiting for {} consumers", CONNECTIONS),
-            );
             let mut stat = Stat::new(CONNECTIONS);
             while let Some(event) = select! {
                 event = rx_stat.recv() => event,
@@ -47,7 +42,6 @@ async fn main() -> Result<(), String> {
             } {
                 stat.apply(event);
             }
-            spinner.stop();
             println!(
                 "\n{} all consumers did all jobs",
                 style("[test]").bold().dim(),
@@ -71,12 +65,10 @@ async fn main() -> Result<(), String> {
             done.cancel();
         },
         async {
-            let spinner = Spinner::new(&Spinners::Dots9, "Waiting for consumer".to_string());
             let mut stat = Stat::new(1);
             while let Some(event) = rx_stat.recv().await {
                 stat.apply(event);
             }
-            spinner.stop();
             println!("\n{} consumers did all jobs", style("[test]").bold().dim(),);
         }
     );

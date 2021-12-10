@@ -12,7 +12,7 @@ use clibri_transport_client::{
 use std::net::SocketAddr;
 use tokio::sync::mpsc::UnboundedSender;
 
-const TEST_TIMEOUT: u64 = 10000;
+const TEST_TIMEOUT: u64 = 60000;
 pub async fn run(
     addr: &str,
     tx_stat: UnboundedSender<StatEvent>,
