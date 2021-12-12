@@ -43,7 +43,7 @@ impl Storage {
     }
 
     fn id(buf: &[u8], pos: usize) -> Result<(u16, usize), String> {
-        let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
+        let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
         if let Ok(pos) = u64::try_from(pos) {
             cursor.set_position(pos);
         } else {
@@ -54,7 +54,7 @@ impl Storage {
     }
 
     fn body(buf: &[u8], pos: usize) -> Result<(Vec<u8>, usize), String> {
-        let mut cursor: Cursor<&[u8]> = Cursor::new(&buf);
+        let mut cursor: Cursor<&[u8]> = Cursor::new(buf);
         if let Ok(pos) = u64::try_from(pos) {
             cursor.set_position(pos);
         } else {

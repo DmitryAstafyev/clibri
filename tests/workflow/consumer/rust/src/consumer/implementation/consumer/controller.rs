@@ -82,7 +82,7 @@ impl<E: client::Error> Consumer<E> {
         match message {        
             protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
                 if let Some(err) = msg.error {
-                    Err(ConsumerError::Broadcast(err.to_owned()))
+                    Err(ConsumerError::Broadcast(err))
                 } else {
                     Ok(())
                 }
@@ -109,7 +109,7 @@ impl<E: client::Error> Consumer<E> {
         match message {        
             protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
                 if let Some(err) = msg.error {
-                    Err(ConsumerError::Broadcast(err.to_owned()))
+                    Err(ConsumerError::Broadcast(err))
                 } else {
                     Ok(())
                 }
@@ -136,7 +136,7 @@ impl<E: client::Error> Consumer<E> {
         match message {        
             protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
                 if let Some(err) = msg.error {
-                    Err(ConsumerError::Broadcast(err.to_owned()))
+                    Err(ConsumerError::Broadcast(err))
                 } else {
                     Ok(())
                 }
@@ -163,7 +163,7 @@ impl<E: client::Error> Consumer<E> {
         match message {        
             protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
                 if let Some(err) = msg.error {
-                    Err(ConsumerError::Broadcast(err.to_owned()))
+                    Err(ConsumerError::Broadcast(err))
                 } else {
                     Ok(())
                 }
@@ -190,7 +190,7 @@ impl<E: client::Error> Consumer<E> {
         match message {        
             protocol::AvailableMessages::InternalServiceGroup(protocol::InternalServiceGroup::AvailableMessages::BeaconConfirmation(msg)) =>
                 if let Some(err) = msg.error {
-                    Err(ConsumerError::Broadcast(err.to_owned()))
+                    Err(ConsumerError::Broadcast(err))
                 } else {
                     Ok(())
                 }

@@ -16,7 +16,7 @@ use tokio::{
 };
 use tokio_util::sync::CancellationToken;
 
-const CONNECTIONS: usize = 15000;
+const CONNECTIONS: usize = 10000;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {

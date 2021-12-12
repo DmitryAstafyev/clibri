@@ -11,7 +11,6 @@ type BroadcastStructJ = (Vec<Uuid>, protocol::StructJ);
 pub enum Response {
     CaseB((protocol::StructB, BroadcastStructD, BroadcastStructF)),
     CaseC(protocol::StructC),
-
     CaseD((protocol::StructD, BroadcastStructJ)),
 }
 

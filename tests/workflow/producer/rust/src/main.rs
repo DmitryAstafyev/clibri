@@ -1,8 +1,8 @@
-/**
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
- */
+#![allow(clippy::enum_variant_names)]
+
 mod producer;
 mod stat;
 mod test;
@@ -12,6 +12,7 @@ use clibri_transport_server::{
     options::{Listener, Options},
     server::Server,
 };
+use console::style;
 use std::net::SocketAddr;
 
 #[tokio::main]
@@ -22,6 +23,7 @@ async fn main() -> Result<(), String> {
     let server = Server::new(Options {
         listener: Listener::Direct(socket_addr),
     });
+    println!("{} server is created", style("[test]").bold().dim(),);
     let context = producer::Context::new();
     producer::run(server, producer::Options::new(), context)
         .await

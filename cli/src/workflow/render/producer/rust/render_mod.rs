@@ -321,7 +321,7 @@ pub mod producer {
     async fn responsing_err<E: server::Error, C: server::Control<E> + Send + Clone>(
         err: String,
         uuid: Uuid,
-        mut context: &mut Context,
+        context: &mut Context,
         control: &Control<E, C>,
         options: &Options,
         consumer: &mut Option<&mut Consumer>,
@@ -353,7 +353,7 @@ pub mod producer {
             emitters::error::emit::<E, C>(
                 ProducerError::ResponsingError(err),
                 Some(uuid),
-                &mut context,
+                context,
                 consumer
                     .as_deref_mut()
                     .map(|consumer| consumer.get_mut_identification()),
@@ -369,7 +369,7 @@ pub mod producer {
         uuid: Uuid,
         buffer: Vec<u8>,
         consumers: &mut HashMap<Uuid, Consumer>,
-        mut context: &mut Context,
+        context: &mut Context,
         control: &Control<E, C>,
         options: &Options,
     ) -> Result<(), ProducerError<E>> {
@@ -390,7 +390,7 @@ pub mod producer {
                 responsing_err(
                     format!("fail to read chunk of data; error: {}", err),
                     uuid,
-                    &mut context,
+                    context,
                     control,
                     options,
                     &mut Some(consumer),
@@ -407,7 +407,7 @@ pub mod producer {
             responsing_err(
                 String::from("fail to find consumer; message wouldn't be processed"),
                 uuid,
-                &mut context,
+                context,
                 control,
                 options,
                 &mut None,
@@ -453,7 +453,7 @@ pub mod producer {
                         responsing_err(
                             format!("fail to send identification response: {}", err),
                             uuid,
-                            &mut context,
+                            context,
                             control,
                             options,
                             &mut Some(client),
@@ -521,7 +521,7 @@ pub mod producer {
                         responsing_err(
                             format!("fail to send hash check results response: {}", err),
                             uuid,
-                            &mut context,
+                            context,
                             control,
                             options,
                             &mut Some(client),
@@ -533,7 +533,7 @@ pub mod producer {
                         emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
-                            &mut context,
+                            context,
                             Some(client.get_mut_identification()),
                             control,
                         )
@@ -551,7 +551,7 @@ pub mod producer {
                         emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
-                            &mut context,
+                            context,
                             Some(client.get_mut_identification()),
                             control,
                         )
@@ -566,7 +566,7 @@ pub mod producer {
                         emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
-                            &mut context,
+                            context,
                             Some(client.get_mut_identification()),
                             control,
                         )
@@ -599,7 +599,7 @@ pub mod producer {
                             emitters::error::emit::<E, C>(
                                 ProducerError::NoAssignedConsumer(uuid),
                                 Some(uuid),
-                                &mut context,
+                                context,
                                 Some(client.get_mut_identification()),
                                 control,
                             )
@@ -829,7 +829,7 @@ pub mod producer {
     if let Err(err) = handlers::[[module]]::process::<E, C>(
         client.get_mut_identification(),
         &filter,
-        &mut context,
+        context,
         request,
         header.sequence,
         control,
@@ -839,7 +839,7 @@ pub mod producer {
         responsing_err(
             format!("fail to process [[module]]: {}", err),
             uuid,
-            &mut context,
+            context,
             control,
             options,
             &mut Some(client),
@@ -853,7 +853,7 @@ pub mod producer {
         beacon,
         header.sequence,
         &filter,
-        &mut context,
+        context,
         control,
     )
     .await
@@ -865,7 +865,7 @@ pub mod producer {
         emitters::error::emit::<E, C>(
             ProducerError::BeaconEmitterError(err),
             Some(uuid),
-            &mut context,
+            context,
             Some(client.get_mut_identification()),
             control,
         )
