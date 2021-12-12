@@ -602,45 +602,45 @@ where
                                             }
                                         };
                                         match msg.msg {                                                    
-                                            protocol::AvailableMessages::StructD(msg) => {
-                                                tx_consumer_event.send(Emitter::StructD(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::StructF(msg) => {
-                                                tx_consumer_event.send(Emitter::StructF(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::StructJ(msg) => {
-                                                tx_consumer_event.send(Emitter::StructJ(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructB(msg))) => {
-                                                tx_consumer_event.send(Emitter::GroupBGroupCStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::StructB(msg) => {
-                                                tx_consumer_event.send(Emitter::StructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::StructC(msg) => {
-                                                tx_consumer_event.send(Emitter::StructC(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::StructA(msg) => {
-                                                tx_consumer_event.send(Emitter::StructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructA(msg)) => {
-                                                tx_consumer_event.send(Emitter::GroupAStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructB(msg)) => {
-                                                tx_consumer_event.send(Emitter::GroupAStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(msg)) => {
-                                                tx_consumer_event.send(Emitter::GroupBStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructA(msg))) => {
-                                                tx_consumer_event.send(Emitter::GroupBGroupCStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::TriggerBeacons(msg) => {
-                                                tx_consumer_event.send(Emitter::TriggerBeacons(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
-                                            protocol::AvailableMessages::FinishConsumerTestBroadcast(msg) => {
-                                                tx_consumer_event.send(Emitter::FinishConsumerTestBroadcast(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
-                                            },
+                                                    protocol::AvailableMessages::StructD(msg) => {
+                                                        tx_consumer_event.send(Emitter::StructD(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::StructF(msg) => {
+                                                        tx_consumer_event.send(Emitter::StructF(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::StructJ(msg) => {
+                                                        tx_consumer_event.send(Emitter::StructJ(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructB(msg))) => {
+                                                        tx_consumer_event.send(Emitter::GroupBGroupCStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::StructB(msg) => {
+                                                        tx_consumer_event.send(Emitter::StructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::StructC(msg) => {
+                                                        tx_consumer_event.send(Emitter::StructC(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::StructA(msg) => {
+                                                        tx_consumer_event.send(Emitter::StructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructA(msg)) => {
+                                                        tx_consumer_event.send(Emitter::GroupAStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructB(msg)) => {
+                                                        tx_consumer_event.send(Emitter::GroupAStructB(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(msg)) => {
+                                                        tx_consumer_event.send(Emitter::GroupBStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructA(msg))) => {
+                                                        tx_consumer_event.send(Emitter::GroupBGroupCStructA(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::TriggerBeacons(msg) => {
+                                                        tx_consumer_event.send(Emitter::TriggerBeacons(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
+                                                    protocol::AvailableMessages::FinishConsumerTestBroadcast(msg) => {
+                                                        tx_consumer_event.send(Emitter::FinishConsumerTestBroadcast(msg)).map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+                                                    },
                                             _ => {
                                                 shortcuts::emit_error::<E>(
                                                     ConsumerError::UnknownMessage(format!("header: {:?}", msg.header)),

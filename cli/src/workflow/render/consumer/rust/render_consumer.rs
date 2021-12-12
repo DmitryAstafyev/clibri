@@ -523,6 +523,28 @@ where
                             match buffer.chunk(&income, None) {
                                 Ok(()) => {
                                     while let Some(msg) = buffer.next() {
+                                        if let protocol::AvailableMessages::InternalServiceGroup(
+                                            protocol::InternalServiceGroup::AvailableMessages::ConnectConfirmationBeacon(msg)
+                                        ) = msg.msg {
+                                            debug!(
+                                                target: logs::targets::CONSUMER,
+                                                "producer has been confirmed connection"
+                                            );
+                                            let api_auth = api.clone();
+                                            let options_auth = options.clone();
+                                            let tx_auth_auth = tx_auth.clone();
+                                            spawn(async move {
+                                                if let Err(err) = tx_auth_auth
+                                                    .send(Auth::SetUuid(auth(api_auth, options_auth).await))
+                                                {
+                                                    error!(
+                                                        target: logs::targets::CONSUMER,
+                                                        "fail to send response for consumer auth: {}", err
+                                                    );
+                                                }
+                                            });
+                                            continue;
+                                        }
                                         match api.accept(msg.header.sequence, msg.msg.clone()).await
                                         {
                                             Ok(accepted) => {
@@ -565,19 +587,10 @@ where
                         }
                     },
                     client::Event::Connected(_) => {
-                        let api_auth = api.clone();
-                        let options_auth = options.clone();
-                        let tx_auth_response_auth = tx_auth.clone();
-                        spawn(async move {
-                            if let Err(err) = tx_auth_response_auth
-                                .send(Auth::SetUuid(auth(api_auth, options_auth).await))
-                            {
-                                error!(
-                                    target: logs::targets::CONSUMER,
-                                    "fail to send response for consumer auth: {}", err
-                                );
-                            }
-                        });
+                        debug!(
+                            target: logs::targets::CONSUMER,
+                            "client is connected; waiting confirmation from producer..."
+                        );
                     }
                     client::Event::Disconnected => {
                         uuid = None;

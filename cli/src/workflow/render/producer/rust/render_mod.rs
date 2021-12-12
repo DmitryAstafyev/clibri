@@ -64,6 +64,8 @@ pub enum ProducerError<E: server::Error> {
     NoAssignedConsumer(Uuid),
     #[error("fail to add consumer into storage; uuid: `{0}`")]
     FailToAddConsumer(Uuid),
+    #[error("protocol error: {1}; uuid: `{0}`")]
+    Protocol(Uuid, String),
 }
 use std::marker::PhantomData;
 

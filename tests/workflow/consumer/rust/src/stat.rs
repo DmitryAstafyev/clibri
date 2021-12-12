@@ -260,9 +260,6 @@ impl Stat {
                 self.done_operations += 1;
             }
             StatEvent::ConsumerDone => {
-                if let Err(err) = self.term.move_cursor_down(1) {
-                    eprintln!("Fail to manipulate console: {}", err);
-                }
                 self.done += 1;
             }
         }

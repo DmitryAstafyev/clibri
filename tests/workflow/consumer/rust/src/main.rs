@@ -27,6 +27,7 @@ async fn main() -> Result<(), String> {
     for _ in 0..CONNECTIONS {
         jobs.push(run("127.0.0.1:8080", tx_stat.clone(), false));
     }
+    drop(tx_stat);
     let done = CancellationToken::new();
     join!(
         async {
@@ -36,10 +37,7 @@ async fn main() -> Result<(), String> {
         },
         async {
             let mut stat = Stat::new(CONNECTIONS);
-            while let Some(event) = select! {
-                event = rx_stat.recv() => event,
-                _ = done.cancelled() => None
-            } {
+            while let Some(event) = rx_stat.recv().await {
                 stat.apply(event);
             }
             println!(

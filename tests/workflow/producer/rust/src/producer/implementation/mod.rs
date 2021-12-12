@@ -1,20 +1,21 @@
-#[path = "../beacons/mod.rs"]
-pub mod beacons;
-#[path = "./beacons/mod.rs"]
-pub mod beacons_callers;
+
 pub mod consumer;
 pub mod emitters;
-#[path = "../events/mod.rs"]
-pub mod events;
 pub mod handlers;
 pub mod protocol;
+#[path = "./beacons/mod.rs"]
+pub mod beacons_callers;
+#[path = "../beacons/mod.rs"]
+pub mod beacons;
+#[path = "../events/mod.rs"]
+pub mod events;
 #[path = "../responses/mod.rs"]
 pub mod responses;
 
 use super::context;
-use clibri::{env::logs, server};
 use consumer::{identification, Consumer};
 use context::Context;
+use clibri::{env::logs, server};
 use log::{debug, error, trace, warn};
 use protocol::PackingStruct;
 use std::collections::HashMap;
@@ -86,22 +87,34 @@ pub mod producer {
     }
 
     impl Events {
-        pub async fn eventa(&self, event: protocol::EventA) -> Result<(), String> {
+        pub async fn eventa(
+            &self,
+            event: protocol::EventA,
+        ) -> Result<(), String> {
             self.tx_events
                 .send(Event::EventA(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn eventb(&self, event: protocol::EventB) -> Result<(), String> {
+        pub async fn eventb(
+            &self,
+            event: protocol::EventB,
+        ) -> Result<(), String> {
             self.tx_events
                 .send(Event::EventB(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn events_eventa(&self, event: protocol::Events::EventA) -> Result<(), String> {
+        pub async fn events_eventa(
+            &self,
+            event: protocol::Events::EventA,
+        ) -> Result<(), String> {
             self.tx_events
                 .send(Event::EventsEventA(event))
                 .map_err(|e| e.to_string())
         }
-        pub async fn events_eventb(&self, event: protocol::Events::EventB) -> Result<(), String> {
+        pub async fn events_eventb(
+            &self,
+            event: protocol::Events::EventB,
+        ) -> Result<(), String> {
             self.tx_events
                 .send(Event::EventsEventB(event))
                 .map_err(|e| e.to_string())
@@ -298,13 +311,13 @@ pub mod producer {
         }
         consumers.insert(uuid, client);
         control
-            .send(
-                (protocol::InternalServiceGroup::ConnectConfirmationBeacon {})
-                    .pack(0, Some(uuid.to_string()))
-                    .map_err(|e| ProducerError::Protocol(uuid, e))?,
-                Some(uuid),
-            )
-            .await?;
+        .send(
+            (protocol::InternalServiceGroup::ConnectConfirmationBeacon {})
+                .pack(0, Some(uuid.to_string()))
+                .map_err(|e| ProducerError::Protocol(uuid, e))?,
+            Some(uuid),
+        )
+        .await?;
         Ok(())
     }
 
@@ -581,7 +594,7 @@ pub mod producer {
                         .await
                         .map_err(ProducerError::EventEmitterError)?;
                     }
-                }
+                },
                 message => {
                     if !client.is_hash_accepted() {
                         warn!(
@@ -670,7 +683,7 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
+                            },
                             protocol::AvailableMessages::StructC(request) => {
                                 if let Err(err) = handlers::structc::process::<E, C>(
                                     client.get_mut_identification(),
@@ -692,7 +705,7 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
+                            },
                             protocol::AvailableMessages::StructD(request) => {
                                 if let Err(err) = handlers::structd::process::<E, C>(
                                     client.get_mut_identification(),
@@ -714,7 +727,7 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
+                            },
                             protocol::AvailableMessages::StructF(request) => {
                                 if let Err(err) = handlers::structf::process::<E, C>(
                                     client.get_mut_identification(),
@@ -736,7 +749,7 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
+                            },
                             protocol::AvailableMessages::StructEmpty(request) => {
                                 if let Err(err) = handlers::structempty::process::<E, C>(
                                     client.get_mut_identification(),
@@ -758,10 +771,8 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::GroupA(
-                                protocol::GroupA::AvailableMessages::StructA(request),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructA(request)) => {
                                 if let Err(err) = handlers::groupa_structa::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
@@ -782,10 +793,8 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::GroupA(
-                                protocol::GroupA::AvailableMessages::StructB(request),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::GroupA(protocol::GroupA::AvailableMessages::StructB(request)) => {
                                 if let Err(err) = handlers::groupa_structb::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
@@ -806,12 +815,8 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::GroupB(
-                                protocol::GroupB::AvailableMessages::GroupC(
-                                    protocol::GroupB::GroupC::AvailableMessages::StructA(request),
-                                ),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructA(request))) => {
                                 if let Err(err) = handlers::groupb_groupc_structa::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
@@ -832,10 +837,8 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::GroupB(
-                                protocol::GroupB::AvailableMessages::StructA(request),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::StructA(request)) => {
                                 if let Err(err) = handlers::groupb_structa::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
@@ -856,12 +859,8 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
-                            protocol::AvailableMessages::GroupB(
-                                protocol::GroupB::AvailableMessages::GroupC(
-                                    protocol::GroupB::GroupC::AvailableMessages::StructB(request),
-                                ),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::GroupB(protocol::GroupB::AvailableMessages::GroupC(protocol::GroupB::GroupC::AvailableMessages::StructB(request))) => {
                                 if let Err(err) = handlers::groupb_groupc_structb::process::<E, C>(
                                     client.get_mut_identification(),
                                     &filter,
@@ -882,7 +881,7 @@ pub mod producer {
                                     )
                                     .await?
                                 }
-                            }
+                            },
                             protocol::AvailableMessages::BeaconA(beacon) => {
                                 if let Err(err) = beacons_callers::beacona::emit::<E, C>(
                                     client.get_mut_identification(),
@@ -908,10 +907,8 @@ pub mod producer {
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
                                 }
-                            }
-                            protocol::AvailableMessages::Beacons(
-                                protocol::Beacons::AvailableMessages::BeaconA(beacon),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::BeaconA(beacon)) => {
                                 if let Err(err) = beacons_callers::beacons_beacona::emit::<E, C>(
                                     client.get_mut_identification(),
                                     beacon,
@@ -936,10 +933,8 @@ pub mod producer {
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
                                 }
-                            }
-                            protocol::AvailableMessages::Beacons(
-                                protocol::Beacons::AvailableMessages::BeaconB(beacon),
-                            ) => {
+                            },
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::BeaconB(beacon)) => {
                                 if let Err(err) = beacons_callers::beacons_beaconb::emit::<E, C>(
                                     client.get_mut_identification(),
                                     beacon,
@@ -964,22 +959,17 @@ pub mod producer {
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
                                 }
-                            }
-                            protocol::AvailableMessages::Beacons(
-                                protocol::Beacons::AvailableMessages::Sub(
-                                    protocol::Beacons::Sub::AvailableMessages::BeaconA(beacon),
-                                ),
-                            ) => {
-                                if let Err(err) =
-                                    beacons_callers::beacons_sub_beacona::emit::<E, C>(
-                                        client.get_mut_identification(),
-                                        beacon,
-                                        header.sequence,
-                                        &filter,
-                                        &mut context,
-                                        control,
-                                    )
-                                    .await
+                            },
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::Sub(protocol::Beacons::Sub::AvailableMessages::BeaconA(beacon))) => {
+                                if let Err(err) = beacons_callers::beacons_sub_beacona::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    header.sequence,
+                                    &filter,
+                                    &mut context,
+                                    control,
+                                )
+                                .await
                                 {
                                     error!(
                                         target: logs::targets::PRODUCER,
@@ -995,20 +985,17 @@ pub mod producer {
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
                                 }
-                            }
-                            protocol::AvailableMessages::Beacons(
-                                protocol::Beacons::AvailableMessages::ShutdownServer(beacon),
-                            ) => {
-                                if let Err(err) =
-                                    beacons_callers::beacons_shutdownserver::emit::<E, C>(
-                                        client.get_mut_identification(),
-                                        beacon,
-                                        header.sequence,
-                                        &filter,
-                                        &mut context,
-                                        control,
-                                    )
-                                    .await
+                            },
+                            protocol::AvailableMessages::Beacons(protocol::Beacons::AvailableMessages::ShutdownServer(beacon)) => {
+                                if let Err(err) = beacons_callers::beacons_shutdownserver::emit::<E, C>(
+                                    client.get_mut_identification(),
+                                    beacon,
+                                    header.sequence,
+                                    &filter,
+                                    &mut context,
+                                    control,
+                                )
+                                .await
                                 {
                                     error!(
                                         target: logs::targets::PRODUCER,
@@ -1024,7 +1011,7 @@ pub mod producer {
                                     .await
                                     .map_err(ProducerError::EventEmitterError)?
                                 }
-                            }
+                            },
                             _ => {}
                         }
                     }
@@ -1098,23 +1085,21 @@ pub mod producer {
                         )
                         .await
                         .map_err(ProducerError::EventEmitterError)?,
-                        server::Events::ConnectionError(uuid, err) => {
-                            emitters::error::emit::<E, C>(
-                                ProducerError::ConnectionError(err.to_string()),
-                                uuid,
-                                &mut context,
-                                if let Some(uuid) = uuid.as_ref() {
-                                    consumers
-                                        .get_mut(uuid)
-                                        .map(|consumer| consumer.get_mut_identification())
-                                } else {
-                                    None
-                                },
-                                &control,
-                            )
-                            .await
-                            .map_err(ProducerError::EventEmitterError)?
-                        }
+                        server::Events::ConnectionError(uuid, err) => emitters::error::emit::<E, C>(
+                            ProducerError::ConnectionError(err.to_string()),
+                            uuid,
+                            &mut context,
+                            if let Some(uuid) = uuid.as_ref() {
+                                consumers
+                                    .get_mut(uuid)
+                                    .map(|consumer| consumer.get_mut_identification())
+                            } else {
+                                None
+                            },
+                            &control,
+                        )
+                        .await
+                        .map_err(ProducerError::EventEmitterError)?,
                         server::Events::ServerError(err) => emitters::error::emit::<E, C>(
                             ProducerError::ServerError(err),
                             None,
@@ -1129,110 +1114,110 @@ pub mod producer {
                         let filter = identification::Filter::new(&consumers).await;
                         match event {
                             Event::EventA(event) => {
-                                if let Err(err) = emitters::eventa::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call eventa handler; error: {:?}", err,
-                                    );
-                                }
+                            if let Err(err) = emitters::eventa::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call eventa handler; error: {:?}", err,
+                                );
                             }
-                            Event::EventB(event) => {
-                                if let Err(err) = emitters::eventb::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call eventb handler; error: {:?}", err,
-                                    );
-                                }
+                        },
+                        Event::EventB(event) => {
+                            if let Err(err) = emitters::eventb::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call eventb handler; error: {:?}", err,
+                                );
                             }
-                            Event::EventsEventA(event) => {
-                                if let Err(err) = emitters::events_eventa::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call events_eventa handler; error: {:?}", err,
-                                    );
-                                }
+                        },
+                        Event::EventsEventA(event) => {
+                            if let Err(err) = emitters::events_eventa::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call events_eventa handler; error: {:?}", err,
+                                );
                             }
-                            Event::EventsEventB(event) => {
-                                if let Err(err) = emitters::events_eventb::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call events_eventb handler; error: {:?}", err,
-                                    );
-                                }
+                        },
+                        Event::EventsEventB(event) => {
+                            if let Err(err) = emitters::events_eventb::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call events_eventb handler; error: {:?}", err,
+                                );
                             }
-                            Event::EventsSubEventA(event) => {
-                                if let Err(err) = emitters::events_sub_eventa::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call events_sub_eventa handler; error: {:?}", err,
-                                    );
-                                }
+                        },
+                        Event::EventsSubEventA(event) => {
+                            if let Err(err) = emitters::events_sub_eventa::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call events_sub_eventa handler; error: {:?}", err,
+                                );
                             }
-                            Event::TriggerBeaconsEmitter(event) => {
-                                if let Err(err) = emitters::triggerbeaconsemitter::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call triggerbeaconsemitter handler; error: {:?}", err,
-                                    );
-                                }
+                        },
+                        Event::TriggerBeaconsEmitter(event) => {
+                            if let Err(err) = emitters::triggerbeaconsemitter::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call triggerbeaconsemitter handler; error: {:?}", err,
+                                );
                             }
-                            Event::FinishConsumerTest(event) => {
-                                if let Err(err) = emitters::finishconsumertest::emit::<E, C>(
-                                    event,
-                                    &filter,
-                                    &mut context,
-                                    &control,
-                                )
-                                .await
-                                {
-                                    warn!(
-                                        target: logs::targets::PRODUCER,
-                                        "fail call finishconsumertest handler; error: {:?}", err,
-                                    );
-                                }
+                        },
+                        Event::FinishConsumerTest(event) => {
+                            if let Err(err) = emitters::finishconsumertest::emit::<E, C>(
+                                event,
+                                &filter,
+                                &mut context,
+                                &control,
+                            )
+                            .await
+                            {
+                                warn!(
+                                    target: logs::targets::PRODUCER,
+                                    "fail call finishconsumertest handler; error: {:?}", err,
+                                );
                             }
+                        },
                         }
                     }
                 }
@@ -1344,4 +1329,5 @@ pub mod producer {
             Ok(())
         }
     }
+
 }
