@@ -15,6 +15,14 @@ use clibri_transport_server::{
 use console::style;
 use std::net::SocketAddr;
 
+#[macro_export]
+macro_rules! stop {
+    ($($arg:tt)*) => {{
+        eprint!($($arg)*);
+        std::process::exit(1);
+    }}
+}
+
 #[tokio::main]
 async fn main() -> Result<(), String> {
     let socket_addr = "127.0.0.1:8080"

@@ -1,7 +1,7 @@
 #[path = "./protocol.rs"]
 pub mod protocol;
 
-use super::state;
+use super::{state, stop};
 use protocol::PackingMiddleware;
 use protocol::*;
 use std::fs::{create_dir, File};
@@ -24,7 +24,7 @@ impl PackingMiddleware {
                 }
             }
             Err(e) => {
-                panic!("Fail get state due error {}", e);
+                stop!("Fail get state due error {}", e);
             }
         }
     }
@@ -85,7 +85,7 @@ fn check_StructExampleA(entity: StructExampleA) {
         field_bool: true,
     };
     if entity != src {
-        panic!("StructExampleA: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleA: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -166,7 +166,7 @@ fn check_StructExampleB(entity: StructExampleB) {
         field_struct_empty: vec![],
     };
     if entity != src {
-        panic!("StructExampleB: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleB: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -187,7 +187,7 @@ fn check_StructExampleC(entity: StructExampleC) {
         field_bool: None,
     };
     if entity != src {
-        panic!("StructExampleC: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleC: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -208,7 +208,7 @@ fn check_StructExampleD(entity: StructExampleD) {
         field_bool: None,
     };
     if entity != src {
-        panic!("StructExampleD: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleD: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -220,7 +220,7 @@ fn check_StructExampleE(entity: StructExampleE) {
         field_c: EnumExampleC::Option_u8(vec![1]),
     };
     if entity != src {
-        panic!("StructExampleE: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleE: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -232,7 +232,7 @@ fn check_StructExampleF(entity: StructExampleF) {
         field_c: Some(EnumExampleC::Option_u8(vec![1])),
     };
     if entity != src {
-        panic!("StructExampleF: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleF: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -330,7 +330,7 @@ fn check_StructExampleG(entity: StructExampleG) {
         },
     };
     if entity != src {
-        panic!("StructExampleG: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleG: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -356,7 +356,7 @@ fn check_StructExampleJ(entity: StructExampleJ) {
         field_c: StructExampleEmpty {},
     };
     if entity != src {
-        panic!("StructExampleJ: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleJ: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -364,7 +364,7 @@ fn check_StructExampleJ(entity: StructExampleJ) {
 fn check_StructExampleEmpty(entity: StructExampleEmpty) {
     let src = StructExampleEmpty {};
     if entity != src {
-        panic!("StructExampleEmpty: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("StructExampleEmpty: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -376,9 +376,10 @@ fn check_GroupAStructExampleA(entity: GroupA::StructExampleA) {
         opt: GroupA::EnumExampleA::Option_a(String::from("Option_a")),
     };
     if entity != src {
-        panic!(
+        stop!(
             "GroupA::StructExampleA: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -395,9 +396,10 @@ fn check_GroupAStructExampleB(entity: GroupA::StructExampleB) {
         },
     };
     if entity != src {
-        panic!(
+        stop!(
             "GroupA::StructExampleB: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -409,9 +411,10 @@ fn check_GroupBStructExampleA(entity: GroupB::StructExampleA) {
         field_u16: 2,
     };
     if entity != src {
-        panic!(
+        stop!(
             "GroupB::StructExampleA: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -423,9 +426,10 @@ fn check_GroupCStructExampleA(entity: GroupB::GroupC::StructExampleA) {
         field_u16: 2,
     };
     if entity != src {
-        panic!(
+        stop!(
             "GroupB::GroupC::StructExampleA: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -441,9 +445,10 @@ fn check_GroupCStructExampleB(entity: GroupB::GroupC::StructExampleB) {
         },
     };
     if entity != src {
-        panic!(
+        stop!(
             "GroupB::GroupC::StructExampleB: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -476,9 +481,10 @@ fn check_GroupDStructExampleP(entity: GroupD::StructExampleP) {
         },
     };
     if entity != src {
-        panic!(
+        stop!(
             "GroupD::StructExampleP: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -501,9 +507,10 @@ fn check_GroupDEnumExamplePOption_a(entity: GroupD::EnumExampleP) {
         field_bool: true,
     });
     if entity != src {
-        panic!(
+        stop!(
             "GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -536,9 +543,10 @@ fn check_GroupDEnumExamplePOption_b(entity: GroupD::EnumExampleP) {
         },
     });
     if entity != src {
-        panic!(
+        stop!(
             "GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -550,9 +558,10 @@ fn check_GroupDEnumExamplePOption_c(entity: GroupD::EnumExampleP) {
         field_u16: 2,
     });
     if entity != src {
-        panic!(
+        stop!(
             "GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -564,9 +573,10 @@ fn check_GroupDEnumExamplePOption_d(entity: GroupD::EnumExampleP) {
         field_u16: 2,
     });
     if entity != src {
-        panic!(
+        stop!(
             "GroupD::EnumExampleP: failed: \n\t{:?}\n\t{:?})",
-            entity, src
+            entity,
+            src
         )
     }
 }
@@ -575,7 +585,7 @@ fn check_GroupDEnumExamplePOption_d(entity: GroupD::EnumExampleP) {
 fn check_EnumExampleA_a(entity: EnumExampleA) {
     let src = EnumExampleA::Option_a(String::from("Option_a"));
     if entity != src {
-        panic!("EnumExampleA.a: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleA.a: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -583,7 +593,7 @@ fn check_EnumExampleA_a(entity: EnumExampleA) {
 fn check_EnumExampleA_b(entity: EnumExampleA) {
     let src = EnumExampleA::Option_b(String::from("Option_b"));
     if entity != src {
-        panic!("EnumExampleA.b: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleA.b: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -591,7 +601,7 @@ fn check_EnumExampleA_b(entity: EnumExampleA) {
 fn check_EnumExampleB_str(entity: EnumExampleB) {
     let src = EnumExampleB::Option_str(String::from("Option_str"));
     if entity != src {
-        panic!("EnumExampleB.str: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.str: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -599,7 +609,7 @@ fn check_EnumExampleB_str(entity: EnumExampleB) {
 fn check_EnumExampleB_u8(entity: EnumExampleB) {
     let src = EnumExampleB::Option_u8(8);
     if entity != src {
-        panic!("EnumExampleB.u8: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.u8: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -607,7 +617,7 @@ fn check_EnumExampleB_u8(entity: EnumExampleB) {
 fn check_EnumExampleB_u16(entity: EnumExampleB) {
     let src = EnumExampleB::Option_u16(16);
     if entity != src {
-        panic!("EnumExampleB.u16: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.u16: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -615,7 +625,7 @@ fn check_EnumExampleB_u16(entity: EnumExampleB) {
 fn check_EnumExampleB_u32(entity: EnumExampleB) {
     let src = EnumExampleB::Option_u32(32);
     if entity != src {
-        panic!("EnumExampleB.u32: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.u32: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -623,7 +633,7 @@ fn check_EnumExampleB_u32(entity: EnumExampleB) {
 fn check_EnumExampleB_u64(entity: EnumExampleB) {
     let src = EnumExampleB::Option_u64(64);
     if entity != src {
-        panic!("EnumExampleB.u64: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.u64: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -631,7 +641,7 @@ fn check_EnumExampleB_u64(entity: EnumExampleB) {
 fn check_EnumExampleB_i8(entity: EnumExampleB) {
     let src = EnumExampleB::Option_i8(-8);
     if entity != src {
-        panic!("EnumExampleB.i8: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.i8: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -639,7 +649,7 @@ fn check_EnumExampleB_i8(entity: EnumExampleB) {
 fn check_EnumExampleB_i16(entity: EnumExampleB) {
     let src = EnumExampleB::Option_i16(-16);
     if entity != src {
-        panic!("EnumExampleB.i16: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.i16: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -647,7 +657,7 @@ fn check_EnumExampleB_i16(entity: EnumExampleB) {
 fn check_EnumExampleB_i32(entity: EnumExampleB) {
     let src = EnumExampleB::Option_i32(-32);
     if entity != src {
-        panic!("EnumExampleB.i32: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.i32: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -655,7 +665,7 @@ fn check_EnumExampleB_i32(entity: EnumExampleB) {
 fn check_EnumExampleB_i64(entity: EnumExampleB) {
     let src = EnumExampleB::Option_i64(-64);
     if entity != src {
-        panic!("EnumExampleB.i64: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.i64: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -663,7 +673,7 @@ fn check_EnumExampleB_i64(entity: EnumExampleB) {
 fn check_EnumExampleB_f32(entity: EnumExampleB) {
     let src = EnumExampleB::Option_f32(0.02);
     if entity != src {
-        panic!("EnumExampleB.f32: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.f32: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
@@ -671,19 +681,19 @@ fn check_EnumExampleB_f32(entity: EnumExampleB) {
 fn check_EnumExampleB_f64(entity: EnumExampleB) {
     let src = EnumExampleB::Option_f64(0.02);
     if entity != src {
-        panic!("EnumExampleB.f64: failed: \n\t{:?}\n\t{:?})", entity, src)
+        stop!("EnumExampleB.f64: failed: \n\t{:?}\n\t{:?})", entity, src)
     }
 }
 
 pub fn read() -> Result<(), String> {
     let ts_bin = match get_ts_bin_dir() {
         Ok(root) => root,
-        Err(e) => std::panic::panic_any(e),
+        Err(e) => stop!("{}", e),
     };
     let middleware: bool = match state::state.lock() {
         Ok(state) => state.middleware,
         Err(e) => {
-            panic!("Fail get state due error {}", e);
+            stop!("Fail get state due error {}", e);
         }
     };
     if !middleware {
@@ -696,9 +706,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleA.a.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -711,9 +721,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleA.b.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -726,9 +736,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.str.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -741,9 +751,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.u8.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -756,9 +766,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.u16.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -771,9 +781,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.u32.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -786,9 +796,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.u64.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -801,9 +811,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.i8.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -816,9 +826,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.i16.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -831,9 +841,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.i32.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -846,9 +856,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.i64.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -861,9 +871,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.f32.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -876,9 +886,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./EnumExampleB.f64.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -891,9 +901,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleA.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -906,9 +916,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleB.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -921,9 +931,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleC.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -936,9 +946,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleD.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -951,9 +961,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleE.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -966,9 +976,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleF.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -981,9 +991,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleG.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -996,9 +1006,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleJ.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1011,9 +1021,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./StructExampleEmpty.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1026,9 +1036,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./GroupAStructExampleA.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1041,9 +1051,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./GroupAStructExampleB.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1056,9 +1066,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./GroupBStructExampleA.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1071,9 +1081,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./GroupCStructExampleA.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1086,9 +1096,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./GroupCStructExampleB.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1101,9 +1111,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./check_GroupDStructExampleP.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1116,9 +1126,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./check_GroupDEnumExamplePOption_a.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1131,9 +1141,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./check_GroupDEnumExamplePOption_b.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1146,9 +1156,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./check_GroupDEnumExamplePOption_c.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     if !middleware {
@@ -1161,9 +1171,9 @@ pub fn read() -> Result<(), String> {
                         ts_bin.join("./check_GroupDEnumExamplePOption_d.prot.bin")
                     );
                 }
-                Err(e) => std::panic::panic_any(e),
+                Err(e) => stop!("{}", e),
             },
-            Err(e) => std::panic::panic_any(e),
+            Err(e) => stop!("{}", e),
         }
     }
     let target = if !middleware {
@@ -1176,7 +1186,7 @@ pub fn read() -> Result<(), String> {
         Ok(buf) => {
             let mut buffer = Buffer::new();
             if let Err(e) = buffer.chunk(&buf, None) {
-                panic!("Fail to write data into buffer due error: {:?}", e);
+                stop!("Fail to write data into buffer due error: {:?}", e);
             }
             let mut count = 0;
             let mut done = 0;
@@ -1410,11 +1420,11 @@ pub fn read() -> Result<(), String> {
                 target
             );
             if buffer.pending() != 0 || buffer.len() != 0 || count != 32 || count != done {
-                panic!("Fail to read buffer correctly: \n- buffer.pending(): {}\n- buffer.len(): {}\n- count: {}", buffer.pending(), buffer.len(), count);
+                stop!("Fail to read buffer correctly: \n- buffer.pending(): {}\n- buffer.len(): {}\n- count: {}", buffer.pending(), buffer.len(), count);
             }
             println!("[OK]\tPackages: {}; done: {}", count, done);
         }
-        Err(e) => std::panic::panic_any(e),
+        Err(e) => stop!("{}", e),
     }
     Ok(())
 }

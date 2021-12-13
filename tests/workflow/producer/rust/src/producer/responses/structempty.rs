@@ -1,6 +1,5 @@
 use super::{identification, producer::Control, protocol, Context};
-use crate::stat::Alias;
-use crate::test::samples;
+use crate::{stat::Alias, stop, test::samples};
 use clibri::server;
 
 #[allow(unused_variables)]
@@ -25,7 +24,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
             })
             .await
         {
-            panic!("Fail to emit control.events.eventa: {}", err);
+            stop!("Fail to emit control.events.eventa: {}", err);
         }
         if let Err(err) = control
             .events
@@ -35,7 +34,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
             })
             .await
         {
-            panic!("Fail to emit control.events.eventb: {}", err);
+            stop!("Fail to emit control.events.eventb: {}", err);
         }
         if let Err(err) = control
             .events
@@ -46,7 +45,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
             })
             .await
         {
-            panic!("Fail to emit control.events.events_eventa: {}", err);
+            stop!("Fail to emit control.events.events_eventa: {}", err);
         }
         if let Err(err) = control
             .events
@@ -58,7 +57,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
             })
             .await
         {
-            panic!("Fail to emit control.events.events_eventb: {}", err);
+            stop!("Fail to emit control.events.events_eventb: {}", err);
         }
         if let Err(err) = control
             .events
@@ -69,7 +68,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
             })
             .await
         {
-            panic!("Fail to emit control.events.events_sub_eventa: {}", err);
+            stop!("Fail to emit control.events.events_sub_eventa: {}", err);
         }
         context.inc_stat(identification.uuid(), Alias::StructEmptyA);
         Err(samples::struct_empty_a::get())

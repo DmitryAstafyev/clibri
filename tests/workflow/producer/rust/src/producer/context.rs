@@ -1,5 +1,8 @@
 use super::implementation::{producer::Control, protocol};
-use crate::stat::{Alias, Stat, StatEvent};
+use crate::{
+    stat::{Alias, Stat, StatEvent},
+    stop,
+};
 use clibri::server;
 use console::{style, Term};
 use std::collections::HashMap;
@@ -65,7 +68,7 @@ impl Context {
     ) {
         let count = self.stats[&uuid].get_beacons_count();
         if count > 4 {
-            panic!("Too many beacons has been gotten");
+            stop!("Too many beacons has been gotten");
         }
         if count == 4 {
             if let Err(err) = control
@@ -75,7 +78,7 @@ impl Context {
                 })
                 .await
             {
-                panic!("Sending FinishConsumerTest error: {}", err);
+                stop!("Sending FinishConsumerTest error: {}", err);
             }
         }
     }

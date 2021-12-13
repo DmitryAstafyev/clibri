@@ -11,7 +11,6 @@ pub mod workflow;
 macro_rules! stop {
     ($($arg:tt)*) => {{
         eprint!($($arg)*);
-        //eprint!($crate::fmt::format($crate::__export::format_args!($($arg)*)));
         std::process::exit(1);
     }}
 }

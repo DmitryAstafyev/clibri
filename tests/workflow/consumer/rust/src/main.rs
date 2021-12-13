@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+#![allow(unreachable_code)]
+
 mod connection;
 mod consumer;
 mod stat;
@@ -15,6 +17,14 @@ use tokio::{
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
 };
 use tokio_util::sync::CancellationToken;
+
+#[macro_export]
+macro_rules! stop {
+    ($($arg:tt)*) => {{
+        eprint!($($arg)*);
+        std::process::exit(1);
+    }}
+}
 
 const CONNECTIONS: usize = 10000;
 
@@ -32,7 +42,12 @@ async fn main() -> Result<(), String> {
     join!(
         async {
             println!("{} starting consumers jobs", style("[test]").bold().dim(),);
-            join_all(jobs).await;
+            let results = join_all(jobs).await;
+            for result in results {
+                if let Err(err) = result {
+                    stop!("Failed with: {}", err);
+                }
+            }
             done.cancel();
         },
         async {
@@ -45,6 +60,13 @@ async fn main() -> Result<(), String> {
                 style("[test]").bold().dim(),
             );
             println!("{}", stat);
+            let errors = stat.get_errors();
+            if !errors.is_empty() {
+                for error in errors {
+                    eprintln!("{}", error);
+                }
+                stop!("");
+            }
         }
     );
     println!(
@@ -58,7 +80,7 @@ async fn main() -> Result<(), String> {
         async move {
             println!("{} starting consumer", style("[test]").bold().dim(),);
             if let Err(err) = run("127.0.0.1:8080", tx_stat, true).await {
-                eprintln!("{}", err);
+                stop!("{}", err);
             }
             done.cancel();
         },

@@ -1,5 +1,5 @@
 use super::{Consumer, ConsumerError, Context};
-use crate::stat::Alias;
+use crate::{stat::Alias, stop};
 use clibri::client;
 
 pub async fn handler<E: client::Error>(
@@ -7,6 +7,6 @@ pub async fn handler<E: client::Error>(
     context: &mut Context,
     consumer: Consumer<E>,
 ) {
-    eprintln!("{:?}", error);
+    stop!("{:?}", error);
     context.inc_stat(Alias::Error);
 }

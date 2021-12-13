@@ -1,5 +1,5 @@
 use super::{identification, producer::Control, Context, ProducerError};
-use crate::stat::Alias;
+use crate::{stat::Alias, stop};
 use clibri::server;
 use uuid::Uuid;
 
@@ -12,10 +12,9 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     control: &Control<E, C>,
 ) -> Result<(), String> {
     if let Some(uuid) = uuid {
-        eprintln!("Consumer error: {:?}", error);
         context.inc_stat(uuid, Alias::Error);
+        stop!("Consumer error: {:?}", error);
     } else {
-        eprintln!("Producer error: {:?}", error);
+        stop!("Producer error: {:?}", error);
     }
-    Ok(())
 }

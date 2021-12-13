@@ -1,6 +1,5 @@
 use super::{identification, producer::Control, protocol, Context};
-use crate::stat::Alias;
-use crate::test::samples;
+use crate::{stat::Alias, stop, test::samples};
 use clibri::server;
 
 #[allow(unused_variables)]
@@ -23,7 +22,7 @@ pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
             })
             .await
         {
-            panic!("Fail to emit control.events.structuuid: {}", err);
+            stop!("Fail to emit control.events.structuuid: {}", err);
         }
         context.inc_stat(identification.uuid(), Alias::StructE);
         Err(samples::struct_e::get())
