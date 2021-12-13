@@ -269,7 +269,7 @@ impl Stat {
     pub fn get_errors(&self) -> Vec<String> {
         let mut errors = vec![];
         for (alias, (current, expectation)) in &self.tests {
-            if current == expectation {
+            if current != expectation {
                 errors.push(format!("{}: {} / {}", alias, current, expectation));
             }
         }

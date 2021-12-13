@@ -26,7 +26,7 @@ macro_rules! stop {
     }}
 }
 
-const CONNECTIONS: usize = 10000;
+const CONNECTIONS: usize = 1000;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
