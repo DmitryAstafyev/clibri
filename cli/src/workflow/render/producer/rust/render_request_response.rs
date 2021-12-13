@@ -66,10 +66,10 @@ impl Render {
         let request_ref = request.get_request()?;
         let mut output: String = if request.actions.len() > 1 {
             let mut output = templates::MODULE_WITH_CONCLUSION.to_owned();
-            output = output.replace("[[broadcast_types]]", &self.get_broadcast_types(&request)?);
+            output = output.replace("[[broadcast_types]]", &self.get_broadcast_types(request)?);
             output = output.replace(
                 "[[response_declaration]]",
-                &self.get_response_declaration(&request)?,
+                &self.get_response_declaration(request)?,
             );
             output
         } else {

@@ -233,7 +233,7 @@ impl Render {
                         output,
                         templates::HANDLER_SETTER
                             .replace("[[name]]", &name.to_lowercase())
-                            .replace("[[type]]", &name)
+                            .replace("[[type]]", name)
                             .replace("[[reference]]", &(request.get_request()?).replace(".", "")),
                     );
                 } else {

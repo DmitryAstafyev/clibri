@@ -99,4 +99,23 @@ impl Store {
             Err(String::from("Config isn't defined for workflow"))
         }
     }
+
+    fn is_request_exist(&self, req: String) -> Result<bool, String> {
+        for request in &self.requests {
+            if request.get_request()? == req {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        // Beacons and requests should not be in conflict
+        for beacon in &self.beacons {
+            if self.is_request_exist(beacon.reference.clone())? {
+                return Err(format!("Beacon \"{}\" also is used as request. Beacons should use unique structs/enums", beacon.reference));
+            }
+        }
+        Ok(())
+    }
 }

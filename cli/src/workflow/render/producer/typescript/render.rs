@@ -51,9 +51,9 @@ impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
         }
         (render_beacon_emitters_mod::Render::new()).render(base, &store.beacons)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
-        (render_identification::Render::new()).render(base, store, &protocol)?;
+        (render_identification::Render::new()).render(base, store, protocol)?;
         (render_static::Render::new()).render(base, &store.events)?;
-        (render_mod::Render::new()).render(base, store, &protocol)?;
+        (render_mod::Render::new()).render(base, store, protocol)?;
         (render_package::Render::new()).render(base)?;
         Ok(String::new())
     }

@@ -104,12 +104,12 @@ impl Render {
         let request_ref = request.get_request()?;
         let mut output: String = if request.actions.len() > 1 {
             let mut output = templates::MODULE_WITH_CONCLUSION.to_owned();
-            output = output.replace("[[response_mod]]", &self.get_response_mod_name(&request)?);
-            output = output.replace("[[conclusions]]", &self.get_conclusions(&request)?);
+            output = output.replace("[[response_mod]]", &self.get_response_mod_name(request)?);
+            output = output.replace("[[conclusions]]", &self.get_conclusions(request)?);
             output
         } else {
             let mut output = templates::MODULE_NO_CONCLUSION.to_owned();
-            output = output.replace("[[response_mod]]", &self.get_response_mod_name(&request)?);
+            output = output.replace("[[response_mod]]", &self.get_response_mod_name(request)?);
             output
         };
         output = output.replace("[[request]]", &tools::into_rust_path(&request_ref));
@@ -121,7 +121,7 @@ impl Render {
         for (pos, action) in request.actions.iter().enumerate() {
             if action.broadcast.is_empty() {
                 let mut out = templates::CONCLUSION_WITHOUT_BROADCAST.to_owned();
-                out = out.replace("[[response_mod]]", &self.get_response_mod_name(&request)?);
+                out = out.replace("[[response_mod]]", &self.get_response_mod_name(request)?);
                 out = out.replace("[[conclusion]]", &action.get_conclusion()?);
                 output = format!(
                     "{}{}{}",
@@ -135,7 +135,7 @@ impl Render {
                 );
             } else {
                 let mut out = templates::CONCLUSION_WITH_BROADCAST.to_owned();
-                out = out.replace("[[response_mod]]", &self.get_response_mod_name(&request)?);
+                out = out.replace("[[response_mod]]", &self.get_response_mod_name(request)?);
                 out = out.replace("[[conclusion]]", &action.get_conclusion()?);
                 let mut broadcasts_declaration = String::new();
                 let mut broadcasts_processing = String::new();

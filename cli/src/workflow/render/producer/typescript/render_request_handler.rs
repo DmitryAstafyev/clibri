@@ -165,21 +165,18 @@ impl Render {
             let mut output = templates::MODULE_WITH_CONCLUSION.to_owned();
             output = output.replace(
                 "[[required_broadcasts]]",
-                &self.get_required_broadcasts(&request)?,
+                &self.get_required_broadcasts(request)?,
             );
-            output = output.replace("[[expectetions]]", &self.get_expectetions(&request)?);
+            output = output.replace("[[expectetions]]", &self.get_expectetions(request)?);
             output = output.replace(
                 "[[methods_declarations]]",
-                &self.get_methods_declarations(&request)?,
+                &self.get_methods_declarations(request)?,
             );
             output = output.replace(
                 "[[methods_implementations]]",
-                &self.get_methods_implementations(&request)?,
+                &self.get_methods_implementations(request)?,
             );
-            output = output.replace(
-                "[[broadcast_checks]]",
-                &self.get_broadcast_checks(&request)?,
-            );
+            output = output.replace("[[broadcast_checks]]", &self.get_broadcast_checks(request)?);
             output
         } else {
             let mut output = templates::MODULE_NO_CONCLUSION.to_owned();

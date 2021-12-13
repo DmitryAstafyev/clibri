@@ -168,7 +168,11 @@ impl Parser {
             };
             // break;
         }
-        Ok(self.store.clone())
+        if let Err(err) = self.store.validate() {
+            Err(err)
+        } else {
+            Ok(self.store.clone())
+        }
     }
 
     pub fn get_content(&self, target: PathBuf) -> Result<String, String> {

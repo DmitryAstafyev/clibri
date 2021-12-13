@@ -62,7 +62,7 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
     ) -> Result<String, String> {
         let broadcasts = self.get_all_broadcasts(store);
         for broadcast in &broadcasts {
-            (render_broadcast::Render::new()).render(base, &broadcast)?;
+            (render_broadcast::Render::new()).render(base, broadcast)?;
         }
         (render_broadcast_mod::Render::new()).render(base, &broadcasts)?;
         (render_controller::Render::new()).render(base, store)?;

@@ -51,14 +51,10 @@ impl Render {
     }
 
     pub fn render(&self, base: &Path, events: &[Event]) -> Result<(), String> {
-        if events
-            .iter()
-            .find(|event| match event.get_reference() {
-                Ok(reference) => reference == "connected",
-                Err(_) => false,
-            })
-            .is_none()
-        {
+        if !events.iter().any(|event| match event.get_reference() {
+            Ok(reference) => reference == "connected",
+            Err(_) => false,
+        }) {
             helpers::fs::write(
                 self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
                 include_str!("./static/events/connected.ts").to_owned(),
@@ -70,14 +66,10 @@ impl Render {
                 true,
             )?;
         }
-        if events
-            .iter()
-            .find(|event| match event.get_reference() {
-                Ok(reference) => reference == "disconnected",
-                Err(_) => false,
-            })
-            .is_none()
-        {
+        if !events.iter().any(|event| match event.get_reference() {
+            Ok(reference) => reference == "disconnected",
+            Err(_) => false,
+        }) {
             helpers::fs::write(
                 self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
                 include_str!("./static/events/disconnected.ts").to_owned(),

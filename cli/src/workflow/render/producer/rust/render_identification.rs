@@ -163,11 +163,11 @@ impl Render {
         );
         output = output.replace(
             "[[self_key_overwrite]]",
-            &tools::inject_tabs(3, self.self_key_overwrite(&config, protocol)?),
+            &tools::inject_tabs(3, self.self_key_overwrite(config, protocol)?),
         );
         output = output.replace(
             "[[assign_key_overwrite]]",
-            &tools::inject_tabs(3, self.assign_key_overwrite(&config, protocol)?),
+            &tools::inject_tabs(3, self.assign_key_overwrite(config, protocol)?),
         );
         helpers::fs::write(dest, output, true)
     }

@@ -59,9 +59,9 @@ impl ImplementationRender<ProtocolRustRender> for RustRender {
         (render_event_emitters_mod::Render::new()).render(base, &store.events)?;
         (render_static::Render::new()).render(base, &store.events)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;
-        (render_identification::Render::new()).render(base, store, &protocol)?;
+        (render_identification::Render::new()).render(base, store, protocol)?;
         (render_consumer::Render::new()).render(base, store)?;
-        (render_mod::Render::new()).render(base, store, &protocol)?;
+        (render_mod::Render::new()).render(base, store, protocol)?;
         (render_cargo::Render::new()).render(base)?;
         Ok(String::new())
     }

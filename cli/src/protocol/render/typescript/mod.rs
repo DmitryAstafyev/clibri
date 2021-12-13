@@ -77,7 +77,7 @@ impl TypescriptRender {
         body = format!(
             "{}\n{}",
             body,
-            self.struct_map(&strct, &mut store.clone(), level + 1)
+            self.struct_map(strct, &mut store.clone(), level + 1)
         );
 
         body = format!(
@@ -94,9 +94,9 @@ impl TypescriptRender {
         );
         body = format!("{}\n{}}}\n", body, self.spaces(level + 1));
 
-        body = format!("{}\n{}", body, self.struct_validator(&strct, level + 1));
+        body = format!("{}\n{}", body, self.struct_validator(strct, level + 1));
 
-        body = format!("{}\n{}", body, self.struct_from(&strct, level + 1));
+        body = format!("{}\n{}", body, self.struct_from(strct, level + 1));
 
         for field in &strct.fields {
             body = format!(
@@ -140,7 +140,7 @@ impl TypescriptRender {
         body = format!(
             "{}\n{}",
             body,
-            self.struct_constructor(&strct, &mut store.clone(), level + 1)
+            self.struct_constructor(strct, &mut store.clone(), level + 1)
         );
         body = format!("{}\n", body);
         body = format!(

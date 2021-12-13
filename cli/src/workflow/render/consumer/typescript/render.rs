@@ -28,12 +28,12 @@ impl ImplementationRender<ProtocolTypescriptRender> for TypescriptRender {
         protocol_render: ProtocolTypescriptRender,
     ) -> Result<String, String> {
         for request in &store.requests {
-            (render_request::Render::new()).render(base, &request)?;
+            (render_request::Render::new()).render(base, request)?;
         }
         for beacon in &store.beacons {
-            (render_beacon::Render::new()).render(base, &beacon)?;
+            (render_beacon::Render::new()).render(base, beacon)?;
         }
-        (render_consumer::Render::new()).render(base, store, &protocol)?;
+        (render_consumer::Render::new()).render(base, store, protocol)?;
         (render_interfaces_request::Render::new()).render(base)?;
         (render_options::Render::new()).render(base)?;
         (render_protocol::Render::new()).render(base, protocol, &protocol_render)?;

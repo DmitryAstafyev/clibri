@@ -301,7 +301,7 @@ impl Store {
         if let Some(mut c_field) = self.c_field.take() {
             c_field.set_name(name_str.to_string());
             c_field.accept_type(
-                &self,
+                self,
                 if let Some(group) = self.c_group.clone() {
                     group.id
                 } else {
@@ -349,7 +349,7 @@ impl Store {
     pub fn set_enum_name(&mut self, name: &str) {
         if let Some(mut c_enum) = self.c_enum.take() {
             c_enum.accept_type(
-                &self,
+                self,
                 if let Some(group) = self.c_group.clone() {
                     group.id
                 } else {
@@ -407,7 +407,7 @@ impl Store {
     pub fn order(&mut self) -> Result<(), String> {
         let mut parents: Vec<usize> = vec![];
         for strct in &self.structs {
-            if strct.parent != 0 && parents.iter().find(|id| id == &&strct.parent).is_none() {
+            if strct.parent != 0 && !parents.iter().any(|id| id == &strct.parent) {
                 parents.push(strct.parent);
             }
         }

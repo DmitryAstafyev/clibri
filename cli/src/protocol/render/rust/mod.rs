@@ -138,7 +138,7 @@ impl RustRender {
                 body,
                 self.spaces(level + 2),
                 field.name,
-                self.get_decode_type_ref(&field),
+                self.get_decode_type_ref(field),
                 field.id
             );
             body = format!("{}{}Ok(val) => val,\n", body, self.spaces(level + 3));

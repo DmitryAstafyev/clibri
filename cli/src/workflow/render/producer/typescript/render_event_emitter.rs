@@ -143,15 +143,15 @@ impl Render {
             let mut output = templates::MODULE_WITH_BROADCAST.to_owned();
             output = output.replace(
                 "[[required_broadcasts]]",
-                &self.get_required_broadcasts(&event)?,
+                &self.get_required_broadcasts(event)?,
             );
             output = output.replace(
                 "[[methods_declarations]]",
-                &self.get_methods_declarations(&event)?,
+                &self.get_methods_declarations(event)?,
             );
             output = output.replace(
                 "[[methods_implementations]]",
-                &self.get_methods_implementations(&event)?,
+                &self.get_methods_implementations(event)?,
             );
             output
         } else {
@@ -159,7 +159,7 @@ impl Render {
         };
         output = output.replace("[[module]]", &tools::into_ts_path(&event_ref));
         output = output.replace("[[event]]", &event_ref);
-        output = output.replace("[[handler]]", &self.get_handler(&event)?);
+        output = output.replace("[[handler]]", &self.get_handler(event)?);
         helpers::fs::write(dest, output, true)
     }
 
