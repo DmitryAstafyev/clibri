@@ -50,7 +50,7 @@ impl<'c> Filter<'c> {
     {
         self.consumers
             .values()
-            .filter(|consumer| cb(&consumer.get_identification()))
+            .filter(|consumer| cb(consumer.get_identification()))
             .map(|ident| ident.uuid)
             .collect::<Vec<Uuid>>()
     }
