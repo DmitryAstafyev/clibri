@@ -15,6 +15,7 @@ use stat::{Stat, StatEvent};
 use tokio::{
     join, select,
     sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    task,
 };
 use tokio_util::sync::CancellationToken;
 
@@ -26,7 +27,7 @@ macro_rules! stop {
     }}
 }
 
-const CONNECTIONS: usize = 1000;
+const CONNECTIONS: usize = 5000;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -38,37 +39,31 @@ async fn main() -> Result<(), String> {
         jobs.push(run("127.0.0.1:8080", tx_stat.clone(), false));
     }
     drop(tx_stat);
-    let done = CancellationToken::new();
-    join!(
-        async {
-            println!("{} starting consumers jobs", style("[test]").bold().dim(),);
-            let results = join_all(jobs).await;
-            for result in results {
-                if let Err(err) = result {
-                    stop!("Failed with: {}", err);
-                }
-            }
-            done.cancel();
-        },
-        async {
-            let mut stat = Stat::new(CONNECTIONS);
-            while let Some(event) = rx_stat.recv().await {
-                stat.apply(event);
-            }
-            println!(
-                "\n{} all consumers did all jobs",
-                style("[test]").bold().dim(),
-            );
-            println!("{}", stat);
-            let errors = stat.get_errors();
-            if !errors.is_empty() {
-                for error in errors {
-                    eprintln!("{}", error);
-                }
-                stop!("");
-            }
+    task::spawn(async move {
+        let mut stat = Stat::new(CONNECTIONS);
+        while let Some(event) = rx_stat.recv().await {
+            stat.apply(event);
         }
-    );
+        println!(
+            "\n{} all consumers did all jobs",
+            style("[test]").bold().dim(),
+        );
+        println!("{}", stat);
+        let errors = stat.get_errors();
+        if !errors.is_empty() {
+            for error in errors {
+                eprintln!("{}", error);
+            }
+            stop!("");
+        }
+    });
+    println!("{} starting consumers jobs", style("[test]").bold().dim(),);
+    let results = join_all(jobs).await;
+    for result in results {
+        if let Err(err) = result {
+            stop!("Failed with: {}", err);
+        }
+    }
     println!(
         "{} creating consumer to shutdown server",
         style("[test]").bold().dim(),

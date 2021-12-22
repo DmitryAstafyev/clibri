@@ -12,10 +12,10 @@ mod templates {
 use clibri::server;
 
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
+    identification: &identification::Identification,
     beacon: &protocol::[[beacon]],
     sequence: u32,
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {

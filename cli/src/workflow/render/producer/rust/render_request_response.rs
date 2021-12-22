@@ -18,8 +18,8 @@ pub enum Response {[[response_declaration]]
 
 #[allow(unused_variables)]
 pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::[[request]],
     control: &Control<E, C>,
@@ -33,8 +33,8 @@ use clibri::server;
 
 #[allow(unused_variables)]
 pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::[[request]],
     control: &Control<E, C>,

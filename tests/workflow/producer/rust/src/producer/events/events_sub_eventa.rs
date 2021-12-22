@@ -11,7 +11,7 @@ type BroadcastGroupBGroupCStructB = (Vec<Uuid>, protocol::GroupB::GroupC::Struct
 #[allow(unused_variables)]
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::Events::Sub::EventA,
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(BroadcastGroupBGroupCStructA, BroadcastGroupBGroupCStructB), String> {

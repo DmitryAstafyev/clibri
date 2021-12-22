@@ -6,8 +6,8 @@ use super::{
 use clibri::server;
 
 pub async fn process<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::GroupB::GroupC::StructA,
     sequence: u32,

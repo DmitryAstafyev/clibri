@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::EventA,
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {

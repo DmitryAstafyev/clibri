@@ -12,52 +12,54 @@ use super::{producer, protocol, Consumer};
 use clibri::env::logs;
 use log::debug;
 use std::collections::HashMap;
+use tokio::sync::mpsc::{error::SendError, UnboundedSender};
 use uuid::Uuid;
 
-pub struct Filter {
-    pub uuids: Vec<Uuid>,
+pub struct Filter<'c> {
+    consumers: &'c HashMap<Uuid, Consumer>,
 }
 
-impl Filter {
-    pub async fn new(consumers: &HashMap<Uuid, Consumer>) -> Self {
-        Self {
-            uuids: consumers.keys().cloned().collect(),
-        }
+impl<'c> Filter<'c> {
+    pub fn new(consumers: &'c HashMap<Uuid, Consumer>) -> Self {
+        Self { consumers }
     }
 
-    // pub fn filter<F>(&self, cb: F) -> Vec<Uuid>
-    // where
-    //     F: Fn(&Identification) -> bool,
-    // {
-    //     self.uuids
-    //         .values()
-    //         .cloned()
-    //         .collect::<Vec<Identification>>()
-    //         .iter()
-    //         .filter(|ident| cb(ident))
-    //         .map(|ident| ident.uuid)
-    //         .collect::<Vec<Uuid>>()
-    // }
-
     pub fn exclude(&self, uuids: Vec<Uuid>) -> Vec<Uuid> {
-        self.uuids
-            .iter()
+        self.consumers
+            .keys()
             .filter(|uuid| !uuids.iter().any(|tuuid| &tuuid == uuid))
             .cloned()
             .collect::<Vec<Uuid>>()
     }
 
     pub fn except(&self, uuid: &Uuid) -> Vec<Uuid> {
-        self.uuids
-            .iter()
+        self.consumers
+            .keys()
             .filter(|tuuid| *tuuid != uuid)
             .cloned()
             .collect::<Vec<Uuid>>()
     }
 
     pub fn all(&self) -> Vec<Uuid> {
-        self.uuids.to_vec()
+        self.consumers.keys().cloned().collect()
     }
+
+    pub fn filter<F>(&self, cb: F) -> Vec<Uuid>
+    where
+        F: Fn(&Identification) -> bool,
+    {
+        self.consumers
+            .values()
+            .filter(|consumer| cb(&consumer.get_identification()))
+            .map(|ident| ident.uuid)
+            .collect::<Vec<Uuid>>()
+    }
+}
+
+#[derive(Debug)]
+pub enum IdentificationChannel {
+    Key(Uuid, protocol::StructA, bool),
+    Assigned(Uuid, protocol::StructC, bool),
 }
 
 #[derive(Debug, Clone)]
@@ -65,23 +67,47 @@ pub struct Identification {
     uuid: Uuid,
     producer_indentification_strategy: producer::ProducerIdentificationStrategy,
     discredited: bool,
-    key: Option<protocol::[[self_key]]>,
-    assigned: Option<protocol::[[assign_key]]>,
+    tx_ident_change: UnboundedSender<IdentificationChannel>,
+    key: Option<protocol::StructA>,
+    assigned: Option<protocol::StructC>,
 }
 
 impl Identification {
-    pub fn new(uuid: Uuid, options: &producer::Options) -> Self {
+    pub fn new(
+        uuid: Uuid,
+        options: &producer::Options,
+        tx_ident_change: UnboundedSender<IdentificationChannel>,
+    ) -> Self {
         Identification {
             uuid,
             producer_indentification_strategy: options.producer_indentification_strategy.clone(),
             discredited: false,
             key: None,
             assigned: None,
+            tx_ident_change,
         }
     }
 
     pub fn uuid(&self) -> Uuid {
         self.uuid
+    }
+
+    pub fn set_key(
+        &self,
+        key: protocol::[[self_key]],
+        overwrite: bool,
+    ) -> Result<(), SendError<IdentificationChannel>> {
+        self.tx_ident_change
+            .send(IdentificationChannel::Key(self.uuid(), key, overwrite))
+    }
+
+    pub fn set_assign(
+        &self,
+        key: protocol::[[assign_key]],
+        overwrite: bool,
+    ) -> Result<(), SendError<IdentificationChannel>> {
+        self.tx_ident_change
+            .send(IdentificationChannel::Assigned(self.uuid(), key, overwrite))
     }
 
     pub fn key(&mut self, key: protocol::[[self_key]], overwrite: bool) {

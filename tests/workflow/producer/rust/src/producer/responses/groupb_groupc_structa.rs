@@ -4,9 +4,9 @@ use crate::test::samples;
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+pub async fn response<'c, E: server::Error, C: server::Control<E> + Send + Clone>(
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::GroupB::GroupC::StructA,
     control: &Control<E, C>,

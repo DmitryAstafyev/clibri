@@ -15,7 +15,7 @@ use uuid::Uuid;
 #[allow(unused_variables)]
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::[[event]],
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<[[broadcast_refs]], String> {
@@ -28,8 +28,8 @@ use uuid::Uuid;
 [[broadcast_types]]
 #[allow(unused_variables)]
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<[[broadcast_refs]], String> {

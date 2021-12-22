@@ -11,6 +11,7 @@ pub mod identification;
 use super::{producer, protocol};
 use log::error;
 use thiserror::Error;
+use tokio::sync::mpsc::{error::SendError, UnboundedSender};
 use uuid::Uuid;
 
 #[derive(Error, Debug)]
@@ -26,15 +27,21 @@ pub struct Consumer {
     buffer: protocol::Buffer<protocol::AvailableMessages>,
     identification: identification::Identification,
     hash_accepted: bool,
+    confirmed: bool,
 }
 
 impl Consumer {
-    pub fn new(uuid: Uuid, options: &producer::Options) -> Self {
+    pub fn new(
+        uuid: Uuid,
+        options: &producer::Options,
+        tx_ident_change: UnboundedSender<identification::IdentificationChannel>,
+    ) -> Self {
         Self {
             uuid,
             buffer: protocol::Buffer::new(),
-            identification: identification::Identification::new(uuid, options),
+            identification: identification::Identification::new(uuid, options, tx_ident_change),
             hash_accepted: false,
+            confirmed: false,
         }
     }
 
@@ -46,12 +53,21 @@ impl Consumer {
         self.hash_accepted
     }
 
+
+    pub fn is_confirmed(&self) -> bool {
+        self.confirmed
+    }
+
+    pub fn confirm(&mut self) {
+        self.confirmed = true;
+    }
+
     pub fn get_uuid(&self) -> Uuid {
         self.uuid
     }
 
-    pub fn get_identification(&self) -> identification::Identification {
-        self.identification.clone()
+    pub fn get_identification(&self) -> &identification::Identification {
+        &self.identification
     }
 
     pub fn get_mut_identification(&mut self) -> &mut identification::Identification {

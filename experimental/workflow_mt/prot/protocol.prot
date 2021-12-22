@@ -1,0 +1,224 @@
+enum EnumA {
+    Option_a;
+    Option_b;
+}
+enum EnumB {
+    str Option_str;
+    u8 Option_u8;
+    u16 Option_u16;
+    u32 Option_u32;
+    u64 Option_u64;
+    i8 Option_i8;
+    i16 Option_i16;
+    i32 Option_i32;
+    i64 Option_i64;
+    f32 Option_f32;
+    f64 Option_f64;
+}
+enum EnumC {
+    str[] Option_str;
+    u8[] Option_u8;
+    u16[] Option_u16;
+    u32[] Option_u32;
+    u64[] Option_u64;
+    i8[] Option_i8;
+    i16[] Option_i16;
+    i32[] Option_i32;
+    i64[] Option_i64;
+    f32[] Option_f32;
+    f64[] Option_f64;
+}
+struct StructA {
+    str field_str;
+    str field_str_empty;
+    u8 field_u8;
+    u16 field_u16;
+    u32 field_u32;
+    u64 field_u64;
+    i8 field_i8;
+    i16 field_i16;
+    i32 field_i32;
+    i64 field_i64;
+    f32 field_f32;
+    f64 field_f64;
+    bool field_bool;
+}
+struct StructB {
+    str[] field_str;
+    u8[] field_u8;
+    u16[] field_u16;
+    u32[] field_u32;
+    u64[] field_u64;
+    i8[] field_i8;
+    i16[] field_i16;
+    i32[] field_i32;
+    i64[] field_i64;
+    f32[] field_f32;
+    f64[] field_f64;
+    bool[] field_bool;
+    StructA[] field_struct;
+    str[] field_str_empty;
+    u8[] field_u8_empty;
+    u16[] field_u16_empty;
+    u32[] field_u32_empty;
+    u64[] field_u64_empty;
+    i8[] field_i8_empty;
+    i16[] field_i16_empty;
+    i32[] field_i32_empty;
+    i64[] field_i64_empty;
+    f32[] field_f32_empty;
+    f64[] field_f64_empty;
+    bool[] field_bool_empty;
+    StructA[] field_struct_empty; 
+}
+struct StructC {
+    str field_str?;
+    u8 field_u8?;
+    u16 field_u16?;
+    u32 field_u32?;
+    u64 field_u64?;
+    i8 field_i8?;
+    i16 field_i16?;
+    i32 field_i32?;
+    i64 field_i64?;
+    f32 field_f32?;
+    f64 field_f64?;
+    bool field_bool?;
+}
+struct StructD {
+    str[] field_str?;
+    u8[] field_u8?;
+    u16[] field_u16?;
+    u32[] field_u32?;
+    u64[] field_u64?;
+    i8[] field_i8?;
+    i16[] field_i16?;
+    i32[] field_i32?;
+    i64[] field_i64?;
+    f32[] field_f32?;
+    f64[] field_f64?;
+    bool[] field_bool?;
+}
+struct StructE {
+    EnumA field_a;
+    EnumB field_b;
+    EnumC field_c;
+}
+struct StructF {
+    EnumA field_a?;
+    EnumB field_b?;
+    EnumC field_c?;
+}
+struct StructG {
+    StructA field_a;
+    StructB field_b;
+}
+struct TriggerBeaconsEmitter {
+    str uuid;
+}
+struct StructEmpty {}
+struct StructEmptyA {}
+struct StructEmptyB {}
+struct StructJ {
+    StructA field_a?;
+    StructB field_b?;
+    StructEmpty field_c;
+}
+struct TriggerBeacons {}
+struct FinishConsumerTest {
+    str uuid;
+}
+struct FinishConsumerTestBroadcast {}
+struct BeaconA {
+   StructA field;
+}
+group Beacons {
+    struct ShutdownServer {
+        
+    }
+    struct BeaconA {
+    }
+    struct BeaconB {
+        StructB field;
+    }
+    group Sub {
+        struct BeaconA {
+            StructG field;
+        }
+    }
+}
+group GroupA {
+    enum EnumA {
+        Option_a;
+        Option_b;
+    }
+    struct StructA {
+        u8 field_u8;
+        u16 field_u16;
+        EnumA opt;
+    }
+    struct StructB {
+        u8 field_u8;
+        u16 field_u16;
+        StructA strct;
+    }
+}
+group GroupB {
+    struct StructA {
+        u8 field_u8;
+        u16 field_u16;
+    }
+    group GroupC {
+        struct StructA {
+            u8 field_u8;
+            u16 field_u16;
+        }
+        struct StructB {
+            u8 field_u8;
+            u16 field_u16;
+            StructA strct;
+        }
+    }
+}
+group GroupD {
+    struct StructP {
+        StructA field_a;
+        GroupB.StructA field_b;
+        GroupB.GroupC.StructA field_c;
+    }
+    enum EnumP {
+        StructA Option_a;
+        StructP Option_b;
+        GroupB.StructA Option_c;
+        GroupB.GroupC.StructA Option_d;
+    }
+}
+struct EventA {
+    str uuid;
+    StructB field_a;
+    StructC field_b;
+}
+struct EventB {
+    str uuid;
+    StructC field_a;
+}
+group Events {
+    struct EventA {
+        str uuid;
+        StructA field_a;
+        StructB field_b;
+    }
+    struct EventB {
+        str uuid;
+        GroupA.StructA field_a;
+        GroupA.StructB field_b;
+        GroupB.StructA field_c;
+    }
+    group Sub {
+        struct EventA {
+            str uuid;
+            GroupB.GroupC.StructA field_a;
+            GroupB.GroupC.StructB field_b;
+        }
+    }
+}

@@ -6,7 +6,7 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     error: ProducerError<E>,
     uuid: Option<Uuid>,
     context: &mut Context,
-    identification: Option<&mut identification::Identification>,
+    identification: Option<&identification::Identification>,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
     events::error::emit(error, uuid, context, identification, control)

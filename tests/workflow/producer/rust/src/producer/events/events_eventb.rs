@@ -12,7 +12,7 @@ type BroadcastGroupBStructA = (Vec<Uuid>, protocol::GroupB::StructA);
 #[allow(unused_variables)]
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::Events::EventB,
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<

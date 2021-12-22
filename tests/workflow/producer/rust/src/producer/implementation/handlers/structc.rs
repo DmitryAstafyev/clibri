@@ -7,8 +7,8 @@ use clibri::server;
 use uuid::Uuid;
 
 pub async fn process<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::StructC,
     sequence: u32,

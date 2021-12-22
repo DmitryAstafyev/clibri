@@ -9,7 +9,7 @@ type BroadcastFinishConsumerTestBroadcast = (Vec<Uuid>, protocol::FinishConsumer
 #[allow(unused_variables)]
 pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     event: protocol::FinishConsumerTest,
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<BroadcastFinishConsumerTestBroadcast, String> {

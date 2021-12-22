@@ -50,6 +50,8 @@ pub enum ProducerError<E: server::Error> {
     ConnectionError(String),
     #[error("consumer error: `{0}`")]
     ConsumerError(String),
+    #[error("Not confirmed connection")]
+    NotConfirmedConnection,
     #[error("event emitter error: `{0}`")]
     EventEmitterError(emitters::EmitterError),
     #[error("beacon emitter error: `{0}`")]
@@ -80,6 +82,8 @@ pub mod producer {
     enum MergedChannel<E: server::Error> {
         ServerEvents(server::Events<E>),
         Event(Event),
+        Identification(identification::IdentificationChannel),
+        Confirmation(Uuid),
     }
 
     #[derive(Clone, Debug)]
@@ -224,26 +228,28 @@ pub mod producer {
 
     async fn add_connection<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
-        consumers: &mut HashMap<Uuid, Consumer>,
+        consumers: &'_ mut HashMap<Uuid, Consumer>,
         context: &mut Context,
         control: &Control<E, C>,
         options: &Options,
+        tx_ident_change: UnboundedSender<identification::IdentificationChannel>,
+        tx_confirm: UnboundedSender<Uuid>,
     ) -> Result<(), ProducerError<E>> {
         debug!(
             target: logs::targets::PRODUCER,
-            "new client connection: {}", uuid,
+            "new consumer connection: {}", uuid,
         );
         if consumers.contains_key(&uuid) {
             return Err(ProducerError::FailToAddConsumer(uuid));
         }
-        let filter = identification::Filter::new(consumers).await;
-        let mut client = Consumer::new(uuid, options);
+        let filter = identification::Filter::new(consumers);
+        let consumer = Consumer::new(uuid, options, tx_ident_change);
         debug!(
             target: logs::targets::PRODUCER,
             "new connection accepted: {}", uuid,
         );
         if let Err(err) = emitters::connected::emit::<E, C>(
-            client.get_mut_identification(),
+            consumer.get_identification(),
             &filter,
             context,
             control,
@@ -255,32 +261,27 @@ pub mod producer {
                 "fail call connected handler for {}; error: {:?}", uuid, err,
             );
         }
-        consumers.insert(uuid, client);
-        control
-        .send(
-            (protocol::InternalServiceGroup::ConnectConfirmationBeacon {})
-                .pack(0, Some(uuid.to_string()))
-                .map_err(|e| ProducerError::Protocol(uuid, e))?,
-            Some(uuid),
-        )
-        .await?;
+        consumers.insert(uuid, consumer);
+        tx_confirm
+            .send(uuid)
+            .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
         Ok(())
     }
 
     async fn remove_connection<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
-        consumers: &mut HashMap<Uuid, Consumer>,
+        consumers: &'_ mut HashMap<Uuid, Consumer>,
         context: &mut Context,
         control: &Control<E, C>,
     ) -> Result<(), ProducerError<E>> {
         debug!(
             target: logs::targets::PRODUCER,
-            "client disconnected: {}", uuid,
+            "consumer disconnected: {}", uuid,
         );
-        let filter = identification::Filter::new(consumers).await;
-        if let Some(mut client) = consumers.remove(&uuid) {
+        if let Some(consumer) = consumers.remove(&uuid) {
+            let filter = identification::Filter::new(consumers);
             if let Err(err) = emitters::disconnected::emit::<E, C>(
-                client.get_mut_identification(),
+                consumer.get_identification(),
                 &filter,
                 context,
                 control,
@@ -294,12 +295,12 @@ pub mod producer {
             }
             debug!(
                 target: logs::targets::PRODUCER,
-                "client {} has been disconnected", uuid,
+                "consumer {} has been disconnected", uuid,
             );
         } else {
             warn!(
                 target: logs::targets::PRODUCER,
-                "cannot find a client {}; guess it was disconnected already", uuid,
+                "cannot find a consumer {}; guess it was disconnected already", uuid,
             );
         }
         Ok(())
@@ -313,7 +314,7 @@ pub mod producer {
         if consumer.get_identification().is_discredited() {
             return Ok(());
         }
-        consumer.get_identification().discredited();
+        consumer.get_mut_identification().discredited();
         control.disconnect(uuid).await?;
         Ok(())
     }
@@ -356,7 +357,7 @@ pub mod producer {
                 context,
                 consumer
                     .as_deref_mut()
-                    .map(|consumer| consumer.get_mut_identification()),
+                    .map(|consumer| consumer.get_identification()),
                 control,
             )
             .await
@@ -368,7 +369,7 @@ pub mod producer {
     async fn process_received_data<E: server::Error, C: server::Control<E> + Send + Clone>(
         uuid: Uuid,
         buffer: Vec<u8>,
-        consumers: &mut HashMap<Uuid, Consumer>,
+        consumers: &'_ mut HashMap<Uuid, Consumer>,
         context: &mut Context,
         control: &Control<E, C>,
         options: &Options,
@@ -378,14 +379,23 @@ pub mod producer {
             "new chunk of data from {} has been gotten",
             uuid,
         );
-        let filter = identification::Filter::new(consumers).await;
-        let mut messages: consumer::ConsumerMessages = vec![];
-        let mut assigned: bool = false;
-        let mut has_key: bool = false;
-        let mut client: Option<&mut Consumer> = if let Some(consumer) = consumers.get_mut(&uuid) {
+        let (messages, assigned, has_key) = if let Some(consumer) = consumers.get_mut(&uuid) {
+            if !consumer.is_confirmed() {
+                disconnect(uuid, consumer, control).await?;
+                emitters::error::emit::<E, C>(
+                    ProducerError::NotConfirmedConnection,
+                    Some(uuid),
+                    context,
+                    Some(consumer.get_identification()),
+                    control,
+                )
+                .await
+                .map_err(ProducerError::EventEmitterError)?;
+                return Ok(());
+            }
             if consumer.get_identification().is_discredited() {
                 // Consumer is discredited do nothing with it
-                None
+                return Ok(());
             } else if let Err(err) = consumer.chunk(&buffer) {
                 responsing_err(
                     format!("fail to read chunk of data; error: {}", err),
@@ -396,12 +406,13 @@ pub mod producer {
                     &mut Some(consumer),
                 )
                 .await?;
-                None
+                return Ok(());
             } else {
-                messages = consumer.get_messages();
-                assigned = consumer.get_identification().assigned();
-                has_key = consumer.get_identification().has_key();
-                Some(consumer)
+                (
+                    consumer.get_messages(),
+                    consumer.get_identification().assigned(),
+                    consumer.get_identification().has_key(),
+                )
             }
         } else {
             responsing_err(
@@ -413,25 +424,30 @@ pub mod producer {
                 &mut None,
             )
             .await?;
-            None
+            return Ok(());
         };
         if messages.is_empty() {
             return Ok(());
         }
-        let client = if let Some(client) = client.take() {
-            client
-        } else {
-            return Ok(());
-        };
         for (message, header) in messages.iter() {
+            let consumer = if let Some(consumer) = consumers.get_mut(&uuid) {
+                consumer
+            } else {
+                return Ok(());
+            };
             match message {
-                [[indentification_self_enum_ref]] if !client.is_hash_accepted() => {
+                [[indentification_self_enum_ref]] if !consumer.is_hash_accepted() => {
                     trace!(
                         target: logs::targets::PRODUCER,
                         "consumer {} requested identification",
                         uuid,
                     );
-                    let assigned_uuid = client.key(request, true);
+                    let consumer = if let Some(consumer) = consumers.get_mut(&uuid) {
+                        consumer
+                    } else {
+                        return Ok(());
+                    };
+                    let assigned_uuid = consumer.key(request, true);
                     if let Err(err) = match (protocol::[[indentification_self_response]] {
                         uuid: assigned_uuid.clone(),
                     })
@@ -456,7 +472,7 @@ pub mod producer {
                             context,
                             control,
                             options,
-                            &mut Some(client),
+                            &mut Some(consumer),
                         )
                         .await?
                     }
@@ -493,7 +509,7 @@ pub mod producer {
                             "consumer {} hash has been accepted",
                             uuid,
                         );
-                        client.accept_hash();
+                        consumer.accept_hash();
                         true
                     };
                     if let Err(err) = match (protocol::InternalServiceGroup::HashResponse {
@@ -524,17 +540,17 @@ pub mod producer {
                             context,
                             control,
                             options,
-                            &mut Some(client),
+                            &mut Some(consumer),
                         )
                         .await?
                     }
                     if !valid {
-                        disconnect(uuid, client, control).await?;
+                        disconnect(uuid, consumer, control).await?;
                         emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
                             context,
-                            Some(client.get_mut_identification()),
+                            Some(consumer.get_identification()),
                             control,
                         )
                         .await
@@ -542,17 +558,17 @@ pub mod producer {
                     }
                 },
                 message => {
-                    if !client.is_hash_accepted() {
+                    if !consumer.is_hash_accepted() {
                         warn!(
                             target: logs::targets::PRODUCER,
-                            "consumer {} tries to send data, but hash of client invalid", uuid
+                            "consumer {} tries to send data, but hash of consumer invalid", uuid
                         );
-                        disconnect(uuid, client, control).await?;
+                        disconnect(uuid, consumer, control).await?;
                         emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
                             context,
-                            Some(client.get_mut_identification()),
+                            Some(consumer.get_identification()),
                             control,
                         )
                         .await
@@ -562,12 +578,12 @@ pub mod producer {
                             target: logs::targets::PRODUCER,
                             "consumer {} tries to send data, but it doesn't have a key", uuid
                         );
-                        disconnect(uuid, client, control).await?;
+                        disconnect(uuid, consumer, control).await?;
                         emitters::error::emit::<E, C>(
                             ProducerError::NoConsumerKey(uuid),
                             Some(uuid),
                             context,
-                            Some(client.get_mut_identification()),
+                            Some(consumer.get_identification()),
                             control,
                         )
                         .await
@@ -589,7 +605,7 @@ pub mod producer {
                             || options.producer_indentification_strategy
                                 == ProducerIdentificationStrategy::EmitErrorAndDisconnect
                         {
-                            disconnect(uuid, client, control).await?;
+                            disconnect(uuid, consumer, control).await?;
                         }
                         if options.producer_indentification_strategy
                             == ProducerIdentificationStrategy::EmitError
@@ -600,13 +616,19 @@ pub mod producer {
                                 ProducerError::NoAssignedConsumer(uuid),
                                 Some(uuid),
                                 context,
-                                Some(client.get_mut_identification()),
+                                Some(consumer.get_identification()),
                                 control,
                             )
                             .await
                             .map_err(ProducerError::EventEmitterError)?;
                         }
                     } else {
+                        let filter = identification::Filter::new(consumers);
+                        let consumer = if let Some(consumer) = consumers.get(&uuid) {
+                            consumer
+                        } else {
+                            return Ok(());
+                        };
                         match message {
 [[requests]]
 [[beacons]]
@@ -626,6 +648,12 @@ pub mod producer {
         control: Control<E, C>,
         options: &Options,
     ) -> (Control<E, C>, Context, Option<ProducerError<E>>) {
+        let (tx_ident_change, mut rx_ident_change): (
+            UnboundedSender<identification::IdentificationChannel>,
+            UnboundedReceiver<identification::IdentificationChannel>,
+        ) = unbounded_channel();
+        let (tx_confirm, mut rx_confirm): (UnboundedSender<Uuid>, UnboundedReceiver<Uuid>) =
+            unbounded_channel();
         let mut consumers: HashMap<Uuid, Consumer> = HashMap::new();
         let cancel = control.shutdown.child_token();
         let result = async {
@@ -635,6 +663,12 @@ pub mod producer {
                 },
                 mut msg = rx_events.recv() => {
                     msg.take().map(MergedChannel::Event)
+                },
+                mut msg = rx_ident_change.recv() => {
+                    msg.take().map(MergedChannel::Identification)
+                },
+                mut msg = rx_confirm.recv() => {
+                    msg.take().map(MergedChannel::Confirmation)
                 },
                 _ = cancel.cancelled() => None
             } {
@@ -651,8 +685,16 @@ pub mod producer {
                             break;
                         }
                         server::Events::Connected(uuid) => {
-                            add_connection(uuid, &mut consumers, &mut context, &control, options)
-                                .await?
+                            add_connection(
+                                uuid,
+                                &mut consumers,
+                                &mut context,
+                                &control,
+                                options,
+                                tx_ident_change.clone(),
+                                tx_confirm.clone(),
+                            )
+                            .await?
                         }
                         server::Events::Disconnected(uuid) => {
                             remove_connection(uuid, &mut consumers, &mut context, &control).await?
@@ -674,8 +716,8 @@ pub mod producer {
                             &mut context,
                             if let Some(uuid) = uuid.as_ref() {
                                 consumers
-                                    .get_mut(uuid)
-                                    .map(|consumer| consumer.get_mut_identification())
+                                    .get(uuid)
+                                    .map(|consumer| consumer.get_identification())
                             } else {
                                 None
                             },
@@ -689,8 +731,8 @@ pub mod producer {
                             &mut context,
                             if let Some(uuid) = uuid.as_ref() {
                                 consumers
-                                    .get_mut(uuid)
-                                    .map(|consumer| consumer.get_mut_identification())
+                                    .get(uuid)
+                                    .map(|consumer| consumer.get_identification())
                             } else {
                                 None
                             },
@@ -709,9 +751,73 @@ pub mod producer {
                         .map_err(ProducerError::EventEmitterError)?,
                     },
                     MergedChannel::Event(event) => {
-                        let filter = identification::Filter::new(&consumers).await;
+                        let filter = identification::Filter::new(&consumers);
                         match event {
     [[events]]
+                        }
+                    }
+                    MergedChannel::Identification(msg) => match msg {
+                        identification::IdentificationChannel::Key(uuid, key, overwrite) => {
+                            if let Some(consumer) = consumers.get_mut(&uuid) {
+                                consumer.get_mut_identification().key(key, overwrite);
+                            } else {
+                                emitters::error::emit::<E, C>(
+                                    ProducerError::ConsumerError(format!(
+                                        "Fail to find consumer {} to change self-key",
+                                        uuid
+                                    )),
+                                    Some(uuid),
+                                    &mut context,
+                                    None,
+                                    &control,
+                                )
+                                .await
+                                .map_err(ProducerError::EventEmitterError)?;
+                            }
+                        }
+                        identification::IdentificationChannel::Assigned(uuid, key, overwrite) => {
+                            if let Some(consumer) = consumers.get_mut(&uuid) {
+                                consumer.get_mut_identification().assign(key, overwrite);
+                            } else {
+                                emitters::error::emit::<E, C>(
+                                    ProducerError::ConsumerError(format!(
+                                        "Fail to find consumer {} to change assigned-key",
+                                        uuid
+                                    )),
+                                    Some(uuid),
+                                    &mut context,
+                                    None,
+                                    &control,
+                                )
+                                .await
+                                .map_err(ProducerError::EventEmitterError)?;
+                            }
+                        }
+                    },
+                    MergedChannel::Confirmation(uuid) => {
+                        if let Some(consumer) = consumers.get_mut(&uuid) {
+                            consumer.confirm();
+                            control
+                                .send(
+                                    (protocol::InternalServiceGroup::ConnectConfirmationBeacon {})
+                                        .pack(0, Some(uuid.to_string()))
+                                        .map_err(|e| ProducerError::Protocol(uuid, e))?,
+                                    Some(uuid),
+                                )
+                                .await?;
+                        } else {
+                            emitters::error::emit::<E, C>(
+                                ProducerError::ConsumerError(format!(
+                                    "Fail to find consumer {} to confirm connection",
+                                    uuid
+                                )),
+                                Some(uuid),
+                                &mut context,
+                                None,
+                                &control,
+                            )
+                            .await
+                            .map_err(ProducerError::EventEmitterError)?;
                         }
                     }
                 }
@@ -827,7 +933,7 @@ pub mod producer {
 }"#;
     pub const REQUEST: &str = r#"[[ref]] => {
     if let Err(err) = handlers::[[module]]::process::<E, C>(
-        client.get_mut_identification(),
+        consumer.get_identification(),
         &filter,
         context,
         request,
@@ -842,14 +948,14 @@ pub mod producer {
             context,
             control,
             options,
-            &mut Some(client),
+            &mut consumers.get_mut(&uuid),
         )
         .await?
     }
 },"#;
     pub const BEACON: &str = r#"[[ref]] => {
     if let Err(err) = beacons_callers::[[module]]::emit::<E, C>(
-        client.get_mut_identification(),
+        consumer.get_identification(),
         beacon,
         header.sequence,
         &filter,
@@ -866,7 +972,7 @@ pub mod producer {
             ProducerError::BeaconEmitterError(err),
             Some(uuid),
             context,
-            Some(client.get_mut_identification()),
+            Some(consumer.get_identification()),
             control,
         )
         .await
