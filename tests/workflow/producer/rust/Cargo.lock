@@ -126,8 +126,6 @@ dependencies = [
 [[package]]
 name = "clibri_transport_server"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec5880d01b37baee291daf202b1ae4ec145aa244a514df7871f82b4a1588c29f"
 dependencies = [
  "async-trait",
  "bytes",

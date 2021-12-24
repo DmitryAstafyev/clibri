@@ -7,23 +7,30 @@ use clibri_transport_client::{
     client,
     client::Client,
     errors::Error,
-    options::{ConnectionType, Options as ClientOptions},
+    options::{ConnectionType, Distributor, Options as ClientOptions},
 };
 use std::net::SocketAddr;
 use tokio::sync::mpsc::UnboundedSender;
-const TEST_TIMEOUT: u64 = 60000;
+
 pub async fn run(
     addr: &str,
+    timeout: u64,
     tx_stat: UnboundedSender<StatEvent>,
     shutdown: bool,
+    distributor: bool,
 ) -> Result<(), String> {
     let socket_addr = addr.parse::<SocketAddr>().map_err(|e| e.to_string())?;
     let client = Client::new(ClientOptions {
-        connection: ConnectionType::Direct(socket_addr),
+        connection: if !distributor {
+            ConnectionType::Direct(socket_addr)
+        } else {
+            ConnectionType::Distributor(Distributor::new(socket_addr))
+        },
     });
     let context = Context::new(tx_stat.clone());
     let disconnected = context.disconnected.clone();
     let mut options = Options::defualt(protocol::StructA::defaults());
+    options.request_timeout = timeout;
     options.reconnection = ReconnectionStrategy::DoNotReconnect;
     let connected = context.connected.child_token();
     let broadcast_received = context.broadcast_received.child_token();
@@ -36,73 +43,73 @@ pub async fn run(
     if !shutdown {
         test::executor(
             "Test StructA Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test StructC Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_structc::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test StructD Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_structd::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupB::StructA Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_groupb_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupA::StructB Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_groupa_structb::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupB::GroupC::StructA Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_groupb_groupc_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupB::GroupC::StructB Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_groupb_groupc_structb::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test GroupA::StructA Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_groupa_structa::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor(
             "Test StructEmpty Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_structempty::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor_no_res(
             "Waiting for broadcast messages",
-            TEST_TIMEOUT,
+            timeout,
             broadcast_received.cancelled(),
         )
         .await?;
         test::executor(
             "Test StructF Request",
-            TEST_TIMEOUT,
+            timeout,
             test::test_request_structf::execute(&mut consumer, &tx_stat),
         )
         .await?;
         test::executor_no_res(
             "Waiting for last broadcast message",
-            TEST_TIMEOUT,
+            timeout,
             finish.cancelled(),
         )
         .await?;
@@ -117,7 +124,7 @@ pub async fn run(
             .map_err(|e| e.to_string())?;
         test::executor_no_res(
             "Waiting disconnection (because server is down)",
-            TEST_TIMEOUT,
+            timeout,
             disconnected.cancelled(),
         )
         .await?;

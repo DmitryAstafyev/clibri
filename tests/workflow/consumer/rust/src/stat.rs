@@ -44,7 +44,7 @@ mod expectations {
     pub const Error: usize = 0;
 }
 
-#[derive(PartialEq, Hash, PartialOrd)]
+#[derive(PartialEq, Hash, PartialOrd, Debug)]
 pub enum Alias {
     GroupAStructA,
     GroupAStructB,
@@ -111,6 +111,7 @@ impl std::fmt::Display for Alias {
     }
 }
 
+#[derive(Debug)]
 pub enum StatEvent {
     Inc(Alias),
     ConsumerDone,
@@ -118,17 +119,18 @@ pub enum StatEvent {
 
 pub struct Stat {
     connections: usize,
-    connected: usize,
-    done: usize,
+    pub connected: usize,
+    pub done: usize,
     total_opearations: usize,
-    done_operations: usize,
+    pub done_operations: usize,
     pub tests: HashMap<Alias, (usize, usize)>,
     created: Duration,
     term: Term,
+    silence: bool,
 }
 
 impl Stat {
-    pub fn new(connections: usize) -> Self {
+    pub fn new(connections: usize, silence: bool) -> Self {
         let mut tests = HashMap::new();
         tests.insert(
             Alias::GroupAStructA,
@@ -230,10 +232,14 @@ impl Stat {
             done_operations: 0,
             created: shortcuts::get_timestamp(),
             term: Term::stdout(),
+            silence,
         }
     }
 
     fn report(&self) {
+        if self.silence {
+            return;
+        }
         println!(
             "{} {} / {} ({}%) operations done",
             style("[test]").bold().dim(),
