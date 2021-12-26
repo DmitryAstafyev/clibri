@@ -107,8 +107,8 @@ impl std::fmt::Display for Configuration {
             f,
             "{}",
             format!(
-                "- port: {:?}\n- connections: {}\n- threads: {}\n",
-                self.port, self.connections, self.threads
+                "- port: {:?}\n- connections: {}\n- threads: {}\n- operation timeout: {}\n",
+                self.port, self.connections, self.threads, self.timeout
             )
         )
     }
