@@ -1,7 +1,7 @@
 [dependencies]
 bytes = '1.1.0'
 chrono = '0.4.19'
-clibri = '0.1.0'
+clibri = '0.1.7'
 log = '0.4.14'
 regex = '1'
 thiserror = '1.0.26'

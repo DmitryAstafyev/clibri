@@ -1,4 +1,4 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use crate::stat::Alias;
 use crate::test::samples;
 use clibri::server;
@@ -16,35 +16,48 @@ pub enum Response {
 }
 
 #[allow(unused_variables)]
-pub async fn response<'c, E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<'c, E: server::Error, C: server::Control<E>>(
     request: &protocol::StructA,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<Response, protocol::StructE> {
-    let index = context.get_index(identification.uuid(), Alias::StructA);
+    let index = scope
+        .context
+        .get_index(scope.identification.uuid(), Alias::StructA);
     if index == 1 {
-        context.inc_stat(identification.uuid(), Alias::StructB);
-        context.inc_stat(identification.uuid(), Alias::StructD);
-        context.inc_stat(identification.uuid(), Alias::StructF);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructB);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructD);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructF);
         Ok(Response::CaseB((
             samples::struct_b::get(),
-            (vec![identification.uuid()], samples::struct_d::get()),
-            (vec![identification.uuid()], samples::struct_f::get()),
+            (vec![scope.identification.uuid()], samples::struct_d::get()),
+            (vec![scope.identification.uuid()], samples::struct_f::get()),
         )))
     } else if index == 2 {
-        context.inc_stat(identification.uuid(), Alias::StructC);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructC);
         Ok(Response::CaseC(samples::struct_c::get()))
     } else if index == 3 {
-        context.inc_stat(identification.uuid(), Alias::StructD);
-        context.inc_stat(identification.uuid(), Alias::StructJ);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructD);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructJ);
         Ok(Response::CaseD((
             samples::struct_d::get(),
-            (vec![identification.uuid()], samples::struct_j::get()),
+            (vec![scope.identification.uuid()], samples::struct_j::get()),
         )))
     } else {
-        context.inc_stat(identification.uuid(), Alias::StructE);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructE);
         Err(samples::struct_e::get())
     }
 }

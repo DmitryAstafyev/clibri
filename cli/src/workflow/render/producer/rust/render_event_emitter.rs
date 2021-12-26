@@ -9,26 +9,28 @@ use std::{
 mod templates {
     pub const MODULE_WITH_BROADCAST: &str = r#"use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError,
+    EmitterError, scope::{Scope, AnonymousScope},
 };
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     event: protocol::[[event]],
     filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
+    let mut scope: AnonymousScope<'_, E, C> = AnonymousScope::new(context, control, filter);
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let [[broadcast_vars]] =
-        events::[[event_mod]]::emit::<E, C>(event, filter, context, control)
+        events::[[event_mod]]::emit(event, &mut scope)
             .await
             .map_err(EmitterError::Emitting)?;
 [[broadcasts_processing]]
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;
     }
+    scope.call().await;
     Ok(())
 }"#;
     pub const MODULE_WITHOUT_BROADCAST: &str = r#"use super::{
@@ -38,15 +40,18 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     event: protocol::[[event]],
     filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
-    events::[[event_mod]]::emit::<E, C>(event, filter, context, control)
+    let mut scope: AnonymousScope<'_, E, C> = AnonymousScope::new(context, control, filter);
+    events::[[event_mod]]::emit(event, &mut scope)
         .await
-        .map_err(EmitterError::Emitting)
+        .map_err(EmitterError::Emitting)?;
+    scope.call().await;
+    Ok(())
 }"#;
     pub const DEFAULT_MODULE_WITH_BROADCAST: &str = r#"use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
@@ -55,21 +60,23 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     identification: &identification::Identification,
     filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let [[broadcast_vars]] =
-        events::[[event_mod]]::emit::<E, C>(identification, filter, context, control)
+        events::[[event_mod]]::emit(&mut scope)
             .await
             .map_err(EmitterError::Emitting)?;
 [[broadcasts_processing]]
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;
     }
+    scope.call().await;
     Ok(())
 }"#;
     pub const DEFAULT_MODULE_WITHOUT_BROADCAST: &str = r#"use super::{
@@ -79,15 +86,18 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     identification: &identification::Identification,
     filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
-    events::[[event_mod]]::emit::<E, C>(identification, filter, context, control)
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
+    events::[[event_mod]]::emit(&mut scope)
         .await
-        .map_err(EmitterError::Emitting)
+        .map_err(EmitterError::Emitting)?;
+    scope.call().await;
+    Ok(())
 }"#;
 }
 

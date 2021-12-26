@@ -1,4 +1,4 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use crate::stat::Alias;
 use crate::test::samples;
 use clibri::server;
@@ -10,24 +10,29 @@ pub enum Response {
 }
 
 #[allow(unused_variables)]
-pub async fn response<'c, E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<'c, E: server::Error, C: server::Control<E>>(
     request: &protocol::GroupB::StructA,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<Response, protocol::GroupB::GroupC::StructB> {
-    let index = context.get_index(identification.uuid(), Alias::GroupBStructA);
+    let index = scope
+        .context
+        .get_index(scope.identification.uuid(), Alias::GroupBStructA);
     if index == 1 {
-        context.inc_stat(identification.uuid(), Alias::GroupBStructA);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::GroupBStructA);
         Ok(Response::GroupBStructA(samples::group_b::struct_a::get()))
     } else if index == 2 {
-        context.inc_stat(identification.uuid(), Alias::GroupBGroupCStructA);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::GroupBGroupCStructA);
         Ok(Response::GroupBGroupCStructA(
             samples::group_b::group_c::struct_a::get(),
         ))
     } else {
-        context.inc_stat(identification.uuid(), Alias::GroupBGroupCStructB);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::GroupBGroupCStructB);
         Err(samples::group_b::group_c::struct_b::get())
     }
 }

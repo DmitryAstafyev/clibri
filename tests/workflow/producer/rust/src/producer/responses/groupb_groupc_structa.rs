@@ -1,22 +1,25 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use crate::stat::Alias;
 use crate::test::samples;
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn response<'c, E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<'c, E: server::Error, C: server::Control<E>>(
     request: &protocol::GroupB::GroupC::StructA,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<protocol::GroupB::GroupC::StructB, protocol::GroupA::StructB> {
-    let index = context.get_index(identification.uuid(), Alias::GroupBGroupCStructA);
+    let index = scope
+        .context
+        .get_index(scope.identification.uuid(), Alias::GroupBGroupCStructA);
     if index == 1 {
-        context.inc_stat(identification.uuid(), Alias::GroupBGroupCStructB);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::GroupBGroupCStructB);
         Ok(samples::group_b::group_c::struct_b::get())
     } else {
-        context.inc_stat(identification.uuid(), Alias::GroupAStructB);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::GroupAStructB);
         Err(samples::group_a::struct_b::get())
     }
 }

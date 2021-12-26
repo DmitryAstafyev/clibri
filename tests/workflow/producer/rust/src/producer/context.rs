@@ -34,7 +34,7 @@ impl Context {
     pub fn add_stat(&mut self, uuid: Uuid) {
         self.stats.insert(uuid, Stat::new());
         self.connected += 1;
-        self.report();
+        //self.report();
     }
 
     pub fn inc_stat(&mut self, uuid: Uuid, alias: Alias) {
@@ -45,7 +45,7 @@ impl Context {
                 .apply(StatEvent::Inc(alias.clone()));
             if let Alias::Disconnected = alias {
                 self.diconnected += 1;
-                self.report();
+                //self.report();
             }
         }
     }
@@ -61,7 +61,7 @@ impl Context {
         }
     }
 
-    pub async fn check_beacons<E: server::Error, C: server::Control<E> + Send + Clone>(
+    pub async fn check_beacons<E: server::Error, C: server::Control<E>>(
         &self,
         uuid: Uuid,
         control: &Control<E, C>,

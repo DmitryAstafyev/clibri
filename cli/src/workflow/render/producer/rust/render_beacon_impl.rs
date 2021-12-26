@@ -5,16 +5,13 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
+    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context, scope::Scope};
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     beacon: &protocol::[[beacon]],
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<(), String> {
     println!("Handler for protocol::[[beacon]] isn't implemented");
     Ok(())

@@ -41,7 +41,7 @@ enum Port {
 
 const DEFAULT_CONNECTIONS: usize = 1000;
 const DEFAULT_TIMEOUT: u64 = 20000;
-const DEFAULT_THREADS: usize = 20000;
+const DEFAULT_THREADS: usize = 1;
 
 struct Configuration {
     pub port: Port,

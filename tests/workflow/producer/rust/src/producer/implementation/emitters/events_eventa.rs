@@ -1,19 +1,20 @@
 use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError,
+    EmitterError, scope::{Scope, AnonymousScope},
 };
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     event: protocol::Events::EventA,
     filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
+    let mut scope: AnonymousScope<'_, E, C> = AnonymousScope::new(context, control, filter);
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let (mut broadcast_structa, mut broadcast_structb) =
-        events::events_eventa::emit::<E, C>(event, filter, context, control)
+        events::events_eventa::emit(event, &mut scope)
             .await
             .map_err(EmitterError::Emitting)?;
     broadcasting.push((
@@ -27,5 +28,6 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;
     }
+    scope.call().await;
     Ok(())
 }

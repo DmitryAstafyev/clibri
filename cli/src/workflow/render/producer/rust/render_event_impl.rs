@@ -7,17 +7,15 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
+    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context, scope::{Scope, AnonymousScope}};
 use clibri::server;
 use uuid::Uuid;
 
 [[broadcast_types]]
 #[allow(unused_variables)]
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     event: protocol::[[event]],
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
-    control: &Control<E, C>,
+    scope: &mut AnonymousScope<'_, E, C>,
 ) -> Result<[[broadcast_refs]], String> {
     panic!("Handler for protocol::[[event]] isn't implemented");
 }"#;
@@ -27,11 +25,8 @@ use uuid::Uuid;
 
 [[broadcast_types]]
 #[allow(unused_variables)]
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
-    control: &Control<E, C>,
+pub async fn emit<E: server::Error, C: server::Control<E>>(
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<[[broadcast_refs]], String> {
     panic!("Handler for protocol::[[event]] isn't implemented");
 }"#;

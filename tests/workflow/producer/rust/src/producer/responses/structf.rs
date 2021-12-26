@@ -1,30 +1,34 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use crate::{stat::Alias, stop, test::samples};
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn response<'c, E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<'c, E: server::Error, C: server::Control<E>>(
     request: &protocol::StructF,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<protocol::StructF, protocol::StructE> {
-    let index = context.get_index(identification.uuid(), Alias::StructF);
+    let index = scope
+        .context
+        .get_index(scope.identification.uuid(), Alias::StructF);
     if index == 1 {
-        context.inc_stat(identification.uuid(), Alias::StructF);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructF);
         Ok(samples::struct_f::get())
     } else {
-        if let Err(err) = control
+        if let Err(err) = scope
+            .control
             .events
             .triggerbeaconsemitter(protocol::TriggerBeaconsEmitter {
-                uuid: identification.uuid().to_string(),
+                uuid: scope.identification.uuid().to_string(),
             })
             .await
         {
             stop!("Fail to emit control.events.structuuid: {}", err);
         }
-        context.inc_stat(identification.uuid(), Alias::StructE);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructE);
         Err(samples::struct_e::get())
     }
 }

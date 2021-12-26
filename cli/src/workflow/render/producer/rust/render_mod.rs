@@ -18,6 +18,7 @@ pub mod beacons;
 pub mod events;
 #[path = "../responses/mod.rs"]
 pub mod responses;
+pub mod scope;
 
 use super::context;
 use consumer::{identification, Consumer};
@@ -74,6 +75,9 @@ use std::marker::PhantomData;
 #[allow(dead_code)]
 pub mod producer {
     use super::*;
+
+    type ShutdownSender = Sender<Option<oneshot::Sender<()>>>;
+    type ShutdownReceiver = Receiver<Option<oneshot::Sender<()>>>;
 
     enum Event {
 [[events_list]]
@@ -161,11 +165,11 @@ pub mod producer {
     pub struct Control<E, C>
     where
         E: server::Error,
-        C: server::Control<E> + Send + Clone,
+        C: server::Control<E>,
     {
         server_control: C,
         shutdown: CancellationToken,
-        tx_shutdown: Sender<oneshot::Sender<()>>,
+        tx_shutdown: ShutdownSender,
         phantom: PhantomData<E>,
         pub events: Events,
     }
@@ -173,22 +177,27 @@ pub mod producer {
     impl<E, C> Control<E, C>
     where
         E: server::Error,
-        C: server::Control<E> + Send + Clone,
+        C: server::Control<E>,
     {
-        pub async fn shutdown(&self) -> Result<(), ProducerError<E>> {
-            let (tx_resolver, rx_resolver): (oneshot::Sender<()>, oneshot::Receiver<()>) =
-                oneshot::channel();
-            self.tx_shutdown.send(tx_resolver).await.map_err(|_| {
-                ProducerError::ChannelError(String::from("Fail to send shutdown command"))
-            })?;
-            rx_resolver
-                .await
-                .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
+        pub async fn shutdown(&self, wait: bool) -> Result<(), ProducerError<E>> {
+            if wait {
+                let (tx_resolver, rx_resolver): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+                    oneshot::channel();
+                self.tx_shutdown
+                    .send(Some(tx_resolver))
+                    .await
+                    .map_err(|_| {
+                        ProducerError::ChannelError(String::from("Fail to send shutdown command"))
+                    })?;
+                rx_resolver
+                    .await
+                    .map_err(|e| ProducerError::ChannelError(e.to_string()))?;
+            } else {
+                self.tx_shutdown.send(None).await.map_err(|_| {
+                    ProducerError::ChannelError(String::from("Fail to send shutdown command"))
+                })?;
+            }
             Ok(())
-        }
-
-        pub fn get_shutdown_token(&self) -> CancellationToken {
-            self.shutdown.clone()
         }
 
         pub async fn disconnect(&self, uuid: Uuid) -> Result<(), ProducerError<E>> {
@@ -226,7 +235,7 @@ pub mod producer {
         }
     }
 
-    async fn add_connection<E: server::Error, C: server::Control<E> + Send + Clone>(
+    async fn add_connection<E: server::Error, C: server::Control<E>>(
         uuid: Uuid,
         consumers: &'_ mut HashMap<Uuid, Consumer>,
         context: &mut Context,
@@ -268,7 +277,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn remove_connection<E: server::Error, C: server::Control<E> + Send + Clone>(
+    async fn remove_connection<E: server::Error, C: server::Control<E>>(
         uuid: Uuid,
         consumers: &'_ mut HashMap<Uuid, Consumer>,
         context: &mut Context,
@@ -306,7 +315,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn disconnect<E: server::Error, C: server::Control<E> + Send + Clone>(
+    async fn disconnect<E: server::Error, C: server::Control<E>>(
         uuid: Uuid,
         consumer: &mut Consumer,
         control: &Control<E, C>,
@@ -319,7 +328,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn responsing_err<E: server::Error, C: server::Control<E> + Send + Clone>(
+    async fn responsing_err<E: server::Error, C: server::Control<E>>(
         err: String,
         uuid: Uuid,
         context: &mut Context,
@@ -366,7 +375,7 @@ pub mod producer {
         Ok(())
     }
 
-    async fn process_received_data<E: server::Error, C: server::Control<E> + Send + Clone>(
+    async fn process_received_data<E: server::Error, C: server::Control<E>>(
         uuid: Uuid,
         buffer: Vec<u8>,
         consumers: &'_ mut HashMap<Uuid, Consumer>,
@@ -641,13 +650,13 @@ pub mod producer {
         Ok(())
     }
 
-    async fn listener<E: server::Error, C: server::Control<E> + Send + Clone>(
+    async fn listener<E: server::Error, C: server::Control<E>>(
         mut context: Context,
         mut rx_server_events: UnboundedReceiver<server::Events<E>>,
         mut rx_events: UnboundedReceiver<Event>,
         control: Control<E, C>,
         options: &Options,
-    ) -> (Control<E, C>, Context, Option<ProducerError<E>>) {
+    ) -> (Control<E, C>, Context, Result<(), ProducerError<E>>) {
         let (tx_ident_change, mut rx_ident_change): (
             UnboundedSender<identification::IdentificationChannel>,
             UnboundedReceiver<identification::IdentificationChannel>,
@@ -825,15 +834,7 @@ pub mod producer {
             Ok::<(), ProducerError<E>>(())
         }
         .await;
-        (
-            control,
-            context,
-            if let Err(err) = result {
-                Some(err)
-            } else {
-                None
-            },
-        )
+        (control, context, result)
     }
 
     pub async fn run<S, C, E>(
@@ -842,16 +843,13 @@ pub mod producer {
         context: Context,
     ) -> Result<(), ProducerError<E>>
     where
-        S: server::Impl<E, C> + 'static,
+        S: server::Impl<E, C>,
         E: server::Error,
-        C: server::Control<E> + Send + Sync + Clone,
+        C: server::Control<E>,
     {
         let (tx_events, rx_events): (UnboundedSender<Event>, UnboundedReceiver<Event>) =
             unbounded_channel();
-        let (tx_shutdown, mut rx_shutdown): (
-            Sender<oneshot::Sender<()>>,
-            Receiver<oneshot::Sender<()>>,
-        ) = channel(2);
+        let (tx_shutdown, mut rx_shutdown): (ShutdownSender, ShutdownReceiver) = channel(2);
         let events = Events { tx_events };
         let shutdown = CancellationToken::new();
         let server_control = server.control();
@@ -864,7 +862,11 @@ pub mod producer {
         };
         let rx_server_events = server.observer().map_err(ProducerError::ServerError)?;
         let cancel = control.shutdown.clone();
-        let ((server, server_res), (control, mut context, listener_err), shutdown_response) = join!(
+        let (
+            (server, server_res),
+            (control, mut context, listener_res),
+            (shutdown_res, shutdown_response),
+        ) = join!(
             async {
                 debug!(target: logs::targets::PRODUCER, "server: started");
                 let result = select! {
@@ -888,16 +890,20 @@ pub mod producer {
                     target: logs::targets::PRODUCER,
                     "shutdown listener: started"
                 );
-                let result = select! {
+                let shutdown_response = select! {
                     tx_response = rx_shutdown.recv() => tx_response,
                     _ = cancel.cancelled() => None,
                 };
+                let shutdown_res = server_control
+                    .shutdown()
+                    .await
+                    .map_err(ProducerError::ServerError);
                 debug!(
                     target: logs::targets::PRODUCER,
                     "shutdown listener: finished"
                 );
                 cancel.cancel();
-                result
+                (shutdown_res, shutdown_response)
             }
         );
         if let Some(tx_response) = shutdown_response {
@@ -905,13 +911,11 @@ pub mod producer {
                 target: logs::targets::PRODUCER,
                 "shutdown has been requested"
             );
-            server_control
-                .shutdown()
-                .await
-                .map_err(ProducerError::ServerError)?;
-            tx_response.send(()).map_err(|_| {
-                ProducerError::ChannelError(String::from("Fail to send shutdown response"))
-            })?;
+            if let Some(tx_response) = tx_response {
+                tx_response.send(()).map_err(|_| {
+                    ProducerError::ChannelError(String::from("Fail to send shutdown response"))
+                })?;
+            }
             drop(server);
             debug!(
                 target: logs::targets::PRODUCER,
@@ -923,13 +927,12 @@ pub mod producer {
             .map_err(ProducerError::EventEmitterError)?;
         if server_res.is_err() {
             server_res
-        } else if let Some(err) = listener_err {
-            Err(err)
+        } else if listener_res.is_err() {
+            listener_res
         } else {
             Ok(())
         }
     }
-
 }"#;
     pub const REQUEST: &str = r#"[[ref]] => {
     if let Err(err) = handlers::[[module]]::process::<E, C>(

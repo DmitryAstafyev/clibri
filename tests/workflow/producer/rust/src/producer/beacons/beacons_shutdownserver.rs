@@ -1,25 +1,23 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
+use crate::stop;
 use clibri::server;
+use std::pin::Pin;
 use tokio::{
     task,
     time::{sleep, Duration},
 };
 
 #[allow(unused_variables)]
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     beacon: &protocol::Beacons::ShutdownServer,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<(), String> {
-    context.stats.remove(&identification.uuid());
-    let shutdown_token = control.get_shutdown_token();
-    task::spawn(async move {
-        // Shutdown after delay to let server send confirmation of getting
-        // this beacon
-        sleep(Duration::from_millis(1000)).await;
-        shutdown_token.cancel();
-    });
+    scope.context.stats.remove(&scope.identification.uuid());
+    let control = scope.control.clone();
+    scope.deferred(Box::pin(async move {
+        if let Err(err) = control.shutdown(false).await {
+            stop!("Fail to shutdown; error: {:?}", err);
+        }
+    }));
     Ok(())
 }

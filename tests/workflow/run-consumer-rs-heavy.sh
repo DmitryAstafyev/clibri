@@ -8,4 +8,4 @@ cd ../..
 exec 2>&1 # redirect output of stderr to stdout 
 ulimit -n 409600
 export CLIBRI_LOG_LEVEL=warn
-exec ./consumer/rust/target/release/clibri_client_rs --connections=10000 --timeout=600000 --multiple --threads=12
+exec ./consumer/rust/target/release/clibri_client_rs --connections=1000 --timeout=60000 --multiple --threads=3

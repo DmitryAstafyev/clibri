@@ -1,4 +1,4 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::AnonymousScope, Context};
 use crate::stat::Alias;
 use crate::test::samples;
 use clibri::server;
@@ -10,11 +10,9 @@ type BroadcastGroupAStructB = (Vec<Uuid>, protocol::GroupA::StructB);
 type BroadcastGroupBStructA = (Vec<Uuid>, protocol::GroupB::StructA);
 
 #[allow(unused_variables)]
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     event: protocol::Events::EventB,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
-    control: &Control<E, C>,
+    scope: &mut AnonymousScope<'_, E, C>,
 ) -> Result<
     (
         BroadcastGroupAStructA,
@@ -29,9 +27,9 @@ pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
             return Err(format!("Fail to parse uuid {}: {:?}", event.uuid, err));
         }
     };
-    context.inc_stat(uuid, Alias::GroupAStructA);
-    context.inc_stat(uuid, Alias::GroupAStructB);
-    context.inc_stat(uuid, Alias::GroupBStructA);
+    scope.context.inc_stat(uuid, Alias::GroupAStructA);
+    scope.context.inc_stat(uuid, Alias::GroupAStructB);
+    scope.context.inc_stat(uuid, Alias::GroupBStructA);
     Ok((
         (vec![uuid], samples::group_a::struct_a::get()),
         (vec![uuid], samples::group_a::struct_b::get()),

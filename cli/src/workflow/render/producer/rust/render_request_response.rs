@@ -8,7 +8,7 @@ use std::{
 
 mod templates {
     pub const MODULE_WITH_CONCLUSION: &str = r#"
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, Context, scope::Scope};
 use clibri::server;
 use uuid::Uuid;
 
@@ -17,12 +17,9 @@ pub enum Response {[[response_declaration]]
 }
 
 #[allow(unused_variables)]
-pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<E: server::Error, C: server::Control<E>>(
     request: &protocol::[[request]],
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<Response, protocol::[[error]]> {
     panic!("Handler for protocol::[[request]] isn't implemented");
 }
@@ -32,12 +29,9 @@ use super::{identification, producer::Control, protocol, Context};
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn response<E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<E: server::Error, C: server::Control<E>>(
     request: &protocol::[[request]],
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<protocol::[[response]], protocol::[[error]]> {
     panic!("Handler for protocol::[[request]] isn't implemented");
 }

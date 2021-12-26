@@ -1,4 +1,4 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use crate::stat::Alias;
 use crate::test::samples;
 use clibri::server;
@@ -12,26 +12,33 @@ pub enum Response {
 }
 
 #[allow(unused_variables)]
-pub async fn response<'c, E: server::Error, C: server::Control<E> + Send + Clone>(
-    identification: &identification::Identification,
-    filter: &identification::Filter<'_>,
-    context: &mut Context,
+pub async fn response<'c, E: server::Error, C: server::Control<E>>(
     request: &protocol::GroupA::StructA,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<Response, protocol::GroupA::StructB> {
-    let index = context.get_index(identification.uuid(), Alias::GroupAStructA);
+    let index = scope
+        .context
+        .get_index(scope.identification.uuid(), Alias::GroupAStructA);
     if index == 1 {
-        context.inc_stat(identification.uuid(), Alias::StructA);
-        context.inc_stat(identification.uuid(), Alias::StructD);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructA);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructD);
         Ok(Response::RootA((
             samples::struct_a::get(),
-            (vec![identification.uuid()], samples::struct_d::get()),
+            (vec![scope.identification.uuid()], samples::struct_d::get()),
         )))
     } else if index == 2 {
-        context.inc_stat(identification.uuid(), Alias::StructB);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::StructB);
         Ok(Response::RootB(samples::struct_b::get()))
     } else {
-        context.inc_stat(identification.uuid(), Alias::GroupAStructB);
+        scope
+            .context
+            .inc_stat(scope.identification.uuid(), Alias::GroupAStructB);
         Err(samples::group_a::struct_b::get())
     }
 }

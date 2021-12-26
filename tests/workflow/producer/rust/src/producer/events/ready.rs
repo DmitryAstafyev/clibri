@@ -3,7 +3,7 @@ use clibri::server;
 use console::style;
 
 #[allow(unused_variables)]
-pub async fn emit<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn emit<E: server::Error, C: server::Control<E>>(
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), String> {

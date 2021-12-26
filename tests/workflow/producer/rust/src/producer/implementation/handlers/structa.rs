@@ -1,12 +1,12 @@
 
 use super::{
     broadcast, identification, pack, producer::Control, protocol, responses, Context, HandlerError,
-    ProducerError,
+    ProducerError, scope::Scope,
 };
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn process<E: server::Error, C: server::Control<E> + Send + Clone>(
+pub async fn process<E: server::Error, C: server::Control<E>>(
     identification: &identification::Identification,
     filter: &identification::Filter<'_>,
     context: &mut Context,
@@ -14,10 +14,11 @@ pub async fn process<E: server::Error, C: server::Control<E> + Send + Clone>(
     sequence: u32,
     control: &Control<E, C>,
 ) -> Result<(), HandlerError> {
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
     let uuid = identification.uuid();
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let buffer =
-        match responses::structa::response(identification, filter, context, request, control).await {
+        match responses::structa::response(request, &mut scope).await {
             Ok(conclusion) => match conclusion {
                 responses::structa::Response::CaseB((
                     mut response,
@@ -57,5 +58,6 @@ pub async fn process<E: server::Error, C: server::Control<E> + Send + Clone>(
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;
     }
+    scope.call().await;
     Ok(())
 }    
