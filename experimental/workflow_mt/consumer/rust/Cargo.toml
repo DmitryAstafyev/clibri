@@ -2,7 +2,7 @@
 bytes = '1.1.0'
 chrono = '0.4.19'
 clibri = '0.1.7'
-clibri_transport_client = '0.1.8'
+clibri_transport_client = '0.1.9'
 console = '0.15.0'
 log = '0.4.14'
 regex = '1'

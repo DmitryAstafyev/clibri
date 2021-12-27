@@ -8,7 +8,7 @@ thiserror = '1.0.26'
 tokio-util = '0.6.7'
 
 [dependencies.clibri_transport_client]
-version = '0.1.0'
+version = '0.1.9'
 
 [dependencies.futures]
 version = '0.3.14'

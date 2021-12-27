@@ -1,7 +1,7 @@
 [dependencies]
 bytes = '1.1.0'
 clibri = '0.1.1'
-clibri_transport_server = '0.1.7'
+clibri_transport_server = '0.1.8'
 console = '0.15.0'
 log = '0.4.14'
 regex = '1'
