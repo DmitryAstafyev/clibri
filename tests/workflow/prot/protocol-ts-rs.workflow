@@ -6,7 +6,6 @@
    Consumer: rust;
 }
 
-
 StructA !StructE {
    (CaseB    > StructB)    > StructD;
                            > StructF;

@@ -7,6 +7,9 @@
 [submodule "environment/transport/client/typescript"]
 	path = environment/transport/client/typescript
 	url = git@github.com:DmitryAstafyev/clibri.transport.ts.client.git
+[submodule "environment/transport/client/typescript-node"]
+	path = environment/transport/client/typescript-node
+	url = git@github.com:DmitryAstafyev/clibri.transport.ts.client.node.git
 [submodule "environment/transport/server/typescript"]
 	path = environment/transport/server/typescript
 	url = git@github.com:DmitryAstafyev/clibri.transport.ts.server.git
