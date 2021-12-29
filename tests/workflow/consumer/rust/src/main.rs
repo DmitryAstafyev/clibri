@@ -51,12 +51,14 @@ struct Configuration {
     pub threads: usize,
     pub timeout: u64,
     pub sleep: u64,
+    pub silent: bool,
 }
 
 impl Configuration {
     pub fn new() -> Self {
         let args: Vec<String> = env::args().collect();
         Self {
+            silent: args.iter().any(|a| a.to_lowercase() == "--silent"),
             port: if args.iter().any(|a| a.to_lowercase() == "--multiple") {
                 Port::Multiple
             } else {
@@ -143,7 +145,7 @@ async fn single_thread(configuration: Configuration) -> Result<(), String> {
     }
     drop(tx_stat);
     task::spawn(async move {
-        let mut stat = Stat::new(configuration.connections, false);
+        let mut stat = Stat::new(configuration.connections, configuration.silent);
         while let Some(event) = rx_stat.recv().await {
             stat.apply(event);
         }
@@ -309,36 +311,38 @@ async fn multiple_threads(configuration: Configuration) -> Result<(), String> {
                 } else {
                     sum_threads += thread;
                 }
-                println!(
-                    "{} {}/{} ({}%) threads done",
-                    style("[test]").bold().dim(),
-                    sum_threads,
-                    configuration.threads,
-                    (sum_threads * 100) / configuration.threads
-                );
-                println!(
-                    "{} {}/{} ({}%) clients connected",
-                    style("[test]").bold().dim(),
-                    sum_connected,
-                    total_connected,
-                    (sum_connected * 100) / total_connected
-                );
-                println!(
-                    "{} {} / {} ({}%) operations done",
-                    style("[test]").bold().dim(),
-                    sum_done_operations,
-                    total_done_operations,
-                    (sum_done_operations * 100) / total_done_operations
-                );
-                println!(
-                    "{} {} / {} ({}%) clients done job",
-                    style("[test]").bold().dim(),
-                    sum_done,
-                    total_connected,
-                    (sum_done * 100) / total_connected
-                );
-                if let Err(err) = term.move_cursor_up(4) {
-                    eprintln!("Fail to manipulate console: {}", err);
+                if !configuration.silent {
+                    println!(
+                        "{} {}/{} ({}%) threads done",
+                        style("[test]").bold().dim(),
+                        sum_threads,
+                        configuration.threads,
+                        (sum_threads * 100) / configuration.threads
+                    );
+                    println!(
+                        "{} {}/{} ({}%) clients connected",
+                        style("[test]").bold().dim(),
+                        sum_connected,
+                        total_connected,
+                        (sum_connected * 100) / total_connected
+                    );
+                    println!(
+                        "{} {} / {} ({}%) operations done",
+                        style("[test]").bold().dim(),
+                        sum_done_operations,
+                        total_done_operations,
+                        (sum_done_operations * 100) / total_done_operations
+                    );
+                    println!(
+                        "{} {} / {} ({}%) clients done job",
+                        style("[test]").bold().dim(),
+                        sum_done,
+                        total_connected,
+                        (sum_done * 100) / total_connected
+                    );
+                    if let Err(err) = term.move_cursor_up(4) {
+                        eprintln!("Fail to manipulate console: {}", err);
+                    }
                 }
             }
         } => ()

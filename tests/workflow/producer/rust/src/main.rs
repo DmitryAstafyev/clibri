@@ -37,12 +37,14 @@ const DEFAULT_CONNECTIONS_PER_PORT: usize = 5000;
 struct Configuration {
     pub port: Port,
     pub connections: usize,
+    pub silent: bool,
 }
 
 impl Configuration {
     pub fn new() -> Self {
         let args: Vec<String> = env::args().collect();
         Self {
+            silent: args.iter().any(|a| a.to_lowercase() == "--silent"),
             port: if let Some(arg) = args
                 .iter()
                 .find(|a| a.to_lowercase().contains("--multiple"))
@@ -115,7 +117,7 @@ async fn main() -> Result<(), String> {
         },
     });
     println!("{} server is created", style("[test]").bold().dim(),);
-    let context = producer::Context::new();
+    let context = producer::Context::new(configuration.silent);
     producer::run(server, producer::Options::new(), context)
         .await
         .map_err(|e| e.to_string())?;

@@ -13,21 +13,17 @@ pub struct Context {
     connected: usize,
     diconnected: usize,
     term: Term,
-}
-
-impl Default for Context {
-    fn default() -> Self {
-        Self::new()
-    }
+    silent: bool,
 }
 
 impl Context {
-    pub fn new() -> Self {
+    pub fn new(silent: bool) -> Self {
         Self {
             stats: HashMap::new(),
             connected: 0,
             diconnected: 0,
             term: Term::stdout(),
+            silent,
         }
     }
 
@@ -93,15 +89,17 @@ impl Context {
     }
 
     fn report(&self) {
-        println!(
-            "{} {} / {} ({}%) connections done",
-            style("[test]").bold().dim(),
-            self.diconnected,
-            self.connected,
-            (self.diconnected * 100) / self.connected
-        );
-        if let Err(err) = self.term.move_cursor_up(1) {
-            eprintln!("Fail to manipulate console: {}", err);
+        if !self.silent {
+            println!(
+                "{} {} / {} ({}%) connections done",
+                style("[test]").bold().dim(),
+                self.diconnected,
+                self.connected,
+                (self.diconnected * 100) / self.connected
+            );
+            if let Err(err) = self.term.move_cursor_up(1) {
+                eprintln!("Fail to manipulate console: {}", err);
+            }
         }
     }
 }
