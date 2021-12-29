@@ -1,6 +1,6 @@
 use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError, scope::{Scope, AnonymousScope},
+    EmitterError, scope::AnonymousScope,
 };
 use clibri::server;
 use uuid::Uuid;

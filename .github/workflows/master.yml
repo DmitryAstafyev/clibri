@@ -45,6 +45,8 @@ jobs:
               run: rake cli:build --trace
             - name: Protocol test
               run: rake test:protocol:all --trace
+            - name: Workflow test
+              run: rake test:workflow:all --trace
             - name: Generate and build example
               run: rake test:examples:create --trace
     build:

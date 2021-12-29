@@ -22,6 +22,7 @@ use tokio::{
         oneshot,
     },
     task,
+    time::{sleep, Duration},
 };
 use tokio_util::sync::CancellationToken;
 
@@ -42,12 +43,14 @@ enum Port {
 const DEFAULT_CONNECTIONS: usize = 1000;
 const DEFAULT_TIMEOUT: u64 = 20000;
 const DEFAULT_THREADS: usize = 1;
+const DEFAULT_SLEEP: u64 = 0;
 
 struct Configuration {
     pub port: Port,
     pub connections: usize,
     pub threads: usize,
     pub timeout: u64,
+    pub sleep: u64,
 }
 
 impl Configuration {
@@ -58,6 +61,16 @@ impl Configuration {
                 Port::Multiple
             } else {
                 Port::Single
+            },
+            sleep: if let Some(arg) = args.iter().find(|a| a.to_lowercase().contains("--sleep")) {
+                let parts: Vec<&str> = arg.split('=').collect();
+                if parts.len() == 2 {
+                    parts[1].parse::<u64>().unwrap_or(1)
+                } else {
+                    DEFAULT_SLEEP
+                }
+            } else {
+                DEFAULT_SLEEP
             },
             threads: if let Some(arg) = args.iter().find(|a| a.to_lowercase().contains("--threads"))
             {
@@ -335,6 +348,9 @@ async fn multiple_threads(configuration: Configuration) -> Result<(), String> {
 #[tokio::main]
 async fn main() -> Result<(), String> {
     let configuration = Configuration::new();
+    if configuration.sleep > 0 {
+        sleep(Duration::from_millis(configuration.sleep)).await;
+    }
     let distributor = matches!(configuration.port, Port::Multiple);
     let timeout = configuration.timeout;
     println!("Next configuration would be used:\n{}", configuration);

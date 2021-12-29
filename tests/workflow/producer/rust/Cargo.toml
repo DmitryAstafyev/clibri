@@ -2,7 +2,6 @@
 bytes = '1.1.0'
 clibri = '0.1.7'
 clibri_transport_server = '0.1.8'
-# clibri_transport_server = { path = "../../../../environment/transport/server/rust" }
 console = '0.15.0'
 log = '0.4.14'
 regex = '1'

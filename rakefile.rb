@@ -6,6 +6,7 @@ module PATHS
   self::CLI = "./cli"
   self::LIB = "./lib"
   self::PROTOCOL_TEST = "./tests/protocol"
+  self::WORKFLOW_TEST = "./tests/workflow"
   self::EXAMPLES = "./examples"
   self::TRANSPORT = "./environment/transport"
 end
@@ -183,7 +184,63 @@ namespace :test do
 
   end
 
-  task :all => ['cli:build', 'protocol:test']
+  namespace :workflow do
+    desc 'Rust test executor'
+    task :rs_executor do
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}/executor") do
+        sh 'cargo build --release'
+      end
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}") do
+        sh './executor/target/release/clibri_test_executor --producer=./run-producer-rs-gitactions.sh --consumer=./run-consumer-rs-gitactions.sh'
+      end
+    end
+    desc 'Producer - rust / Consumer - rust'
+    task :rs_rs do
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}") do
+        sh '../../cli/target/release/clibri -s ./prot/protocol.prot -wf ./prot/protocol-rs-rs.workflow -cd ./consumer/rust/src/consumer/ -pd ./producer/rust/src/producer/'
+      end
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}/producer/rust") do
+        sh 'cargo build --release'
+      end
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}/consumer/rust") do
+        sh 'cargo build --release'
+      end
+    end
+    desc "Test Producer/Consumer - rust"
+    task :rs_test => ['rs_rs', 'rs_executor']
+
+    desc 'TS test executor'
+    task :ts_executor do
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}/executor") do
+        sh 'cargo build --release'
+      end
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}") do
+        sh './executor/target/release/clibri_test_executor --node --producer=./producer/typescript/dist/index.js --consumer=./consumer/typescript/dist/index.js'
+      end
+    end
+    desc 'Producer - typescript / Consumer - typescript'
+    task :ts_ts do
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}") do
+        sh '../../cli/target/release/clibri -s ./prot/protocol.prot -wf ./prot/protocol-ts-ts.workflow -cd ./consumer/typescript/src/consumer/ -pd ./producer/typescript/src/producer/'
+      end
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}/producer/typescript") do
+        sh 'npm install'
+        sh 'npm run build'
+      end
+      Dir.chdir("#{PATHS::WORKFLOW_TEST}/consumer/typescript") do
+        sh 'npm install'
+        sh 'npm run build'
+      end
+    end
+    desc "Test Producer/Consumer - rust"
+    task :ts_test => ['ts_ts', 'ts_executor']
+
+    desc 'Test All'
+    task :all => ['rs_test', 'ts_test']
+  end
+
+  desc 'Test All'
+  task :all => ['cli:build', 'test:protocol:all', 'test:workflow:all', 'test:examples:create']
     
 end
 
