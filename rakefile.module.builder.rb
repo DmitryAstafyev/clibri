@@ -17,12 +17,14 @@ class Builder
     release_name = "clibri@#{@version}"
     if OS.mac?
       release_name += '-darwin.tgz'
+      Rake.sh "tar -czf ./#{release_name} ./cli/target/release/clibri"
     elsif OS.linux?
       release_name += '-linux.tgz'
+      Rake.sh "tar -czf ./#{release_name} ./cli/target/release/clibri"
     else
       release_name += '-win.tgz'
+      Rake.sh "tar -cvzf ./#{release_name} ./cli/target/release/clibri.exe"
     end
-    Rake.sh "tar -czf ./#{release_name} ./cli/target/release/clibri"
   end
 
 end
