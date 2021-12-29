@@ -10,8 +10,8 @@ export { UserLoginRequest } from './requests/userlogin.request';
 export { UsersRequest } from './requests/users.request';
 export { MessageRequest } from './requests/message.request';
 export { MessagesRequest } from './requests/messages.request';
-export { BeaconsLikeUser } from './beacons/beacons.likeuser';
-export { BeaconsLikeMessage } from './beacons/beacons.likemessage';
+export { BeaconsLikeUser as BeaconBeaconsLikeUser } from './beacons/beacons.likeuser';
+export { BeaconsLikeMessage as BeaconBeaconsLikeMessage } from './beacons/beacons.likemessage';
 
 // tslint:disable-next-line: no-namespace
 export namespace ExtError {
@@ -37,7 +37,7 @@ export namespace ExtError {
 export class Consumer {
 
     public static PROTOCOL_HASH: string = "F63F41ECDA9067B12F9F9CF312473B95E472CC39C08A02CC8C37738EF34DCCBE";
-    public static WORKFLOW_HASH: string = "B17F4AFBCA2CB029B8F8193675C2C964BC3FE87048AC72D3FF13E2599DCE8399";
+    public static WORKFLOW_HASH: string = "E7D70BA4B25E620214D8F4D926E5162ACE2D1C6A9758DDEDEDCBAEC35FF91FC5";
     public static GUID: string = guid();
     public static GUID_SUBS: string = guid();
 
@@ -118,33 +118,39 @@ export class Consumer {
         this._key = key;
         this._options = new Options(`Consumer ${Consumer.GUID}`, options);
         this._logger = this._options.logger;
-        const global = globals();
-        if (global instanceof Error) {
-            throw global;
-        }
-        if (global[Consumer.GUID] !== undefined) {
-            throw new Error(`Attempt to init consumer multiple times`);
-        }
         this._subscriptions.data = this._client.getEvents().data.subscribe(this._onData.bind(this));
         this._subscriptions.connected = this._client.getEvents().connected.subscribe(this._onClientConnected.bind(this));
         this._subscriptions.disconnected = this._client.getEvents().disconnected.subscribe(this._onClientDisconnected.bind(this));
         this._subscriptions.error = this._client.getEvents().error.subscribe(this._onClientError.bind(this));
-        global[Consumer.GUID] = this;
-        if (global[Consumer.GUID_SUBS] !== undefined) {
-            ((subject: Subject<Consumer>) => {
-                subject.emit(this);
-                subject.destroy();
-            })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
-            global[Consumer.GUID_SUBS] = undefined;
+        if (this._options.global) {
+            const global = globals();
+            if (global instanceof Error) {
+                throw global;
+            }
+            if (global[Consumer.GUID] !== undefined) {
+                throw new Error(`Attempt to init consumer multiple times`);
+            }
+            global[Consumer.GUID] = this;
+            if (global[Consumer.GUID_SUBS] !== undefined) {
+                ((subject: Subject<Consumer>) => {
+                    subject.emit(this);
+                    subject.destroy();
+                })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
+                global[Consumer.GUID_SUBS] = undefined;
+            }
         }
     }
 
-    public destroy(): Promise<void> {
-        const global = globals();
-        Object.keys(this._subscriptions).forEach(k => this._subscriptions[k].destroy());
-        global[Consumer.GUID] = undefined;
-        return this._client.destroy();
-    }
+	public destroy(): Promise<void> {
+		Object.keys(this._subscriptions).forEach((k) =>
+			this._subscriptions[k].destroy()
+		);
+		if (this._options.global) {
+			const global = globals();
+			global[Consumer.GUID] = undefined;
+		}
+		return this._client.destroy();
+	}
 
     public request(buffer: ArrayBufferLike, sequence?: number): Promise<Protocol.IAvailableMessages> {
         if (sequence !== undefined && this._pending.has(sequence)) {

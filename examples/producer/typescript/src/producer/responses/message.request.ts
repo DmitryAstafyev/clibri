@@ -6,18 +6,16 @@ import {
 	Filter,
 	Protocol,
 } from "../implementation/responses";
+import { Scope } from "../implementation/scope";
 
 export function response(
 	request: Protocol.Message.Request,
-	consumer: Identification,
-	filter: Filter,
-	context: Context,
-	producer: Producer
+	scope: Scope
 ): Promise<Response> {
-	const msg = context.addMessage(
+	const msg = scope.context.addMessage(
 		new Protocol.Messages.Message({
 			user: request.user,
-			uuid: consumer.uuid(),
+			uuid: scope.consumer.uuid(),
 			message: request.message,
 			timestamp: BigInt(Date.now()),
 		})
@@ -25,10 +23,10 @@ export function response(
 	return Promise.resolve(
 		new Response(
 			new Protocol.Message.Accepted({
-				uuid: consumer.uuid(),
+				uuid: scope.consumer.uuid(),
 			})
 		)
-			.broadcast(filter.except(consumer.uuid()))
+			.broadcast(scope.filter.except(scope.consumer.uuid()))
 			.EventsMessage(
 				new Protocol.Events.Message({
 					uuid: msg.uuid,

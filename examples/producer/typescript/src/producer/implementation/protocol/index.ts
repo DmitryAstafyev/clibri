@@ -6125,6 +6125,7 @@ export namespace InternalServiceGroup {
         HashRequest?: HashRequest,
         HashResponse?: HashResponse,
         BeaconConfirmation?: BeaconConfirmation,
+        ConnectConfirmationBeacon?: ConnectConfirmationBeacon,
     }
 
     export interface ISelfKeyResponse {
@@ -6539,6 +6540,90 @@ export namespace InternalServiceGroup {
         }
     }
 
+    export interface IConnectConfirmationBeacon {
+    }
+    export class ConnectConfirmationBeacon extends Protocol.Convertor<ConnectConfirmationBeacon> implements IConnectConfirmationBeacon, ISigned<ConnectConfirmationBeacon> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+        ];
+
+        public static defaults(): ConnectConfirmationBeacon {
+            return new InternalServiceGroup.ConnectConfirmationBeacon({
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<ConnectConfirmationBeacon>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof ConnectConfirmationBeacon)) {
+                                throw new Error(`Expecting instance of ConnectConfirmationBeacon on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof ConnectConfirmationBeacon ? undefined : new Error(`Expecting instance of ConnectConfirmationBeacon`);
+                }};
+            }
+        }
+
+        public static from(obj: any): ConnectConfirmationBeacon | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = ConnectConfirmationBeacon.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, ConnectConfirmationBeacon.scheme);
+                return error instanceof Error ? error : new ConnectConfirmationBeacon({
+                });
+            }
+        }
+
+        public static getSignature(): string { return 'ConnectConfirmationBeacon'; }
+        public static getId(): number { return 93; }
+
+
+        constructor(params: IConnectConfirmationBeacon)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'ConnectConfirmationBeacon'; }
+
+        public get(): ConnectConfirmationBeacon { return this; }
+
+        public getId(): number { return 93; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | ConnectConfirmationBeacon {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            return this;
+        }
+
+        public defaults(): ConnectConfirmationBeacon {
+            return ConnectConfirmationBeacon.defaults();
+        }
+    }
+
 }
 
 export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvailableMessages>> {
@@ -6691,6 +6776,10 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 instance = InternalServiceGroup.BeaconConfirmation.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { BeaconConfirmation: instance } }, getRef: () => instance };
+            case 93:
+                instance = InternalServiceGroup.ConnectConfirmationBeacon.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { ConnectConfirmationBeacon: instance } }, getRef: () => instance };
             default: throw new Error(`Unknown message id=${header.id}`);
         }
     }

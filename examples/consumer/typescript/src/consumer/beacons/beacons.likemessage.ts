@@ -6,6 +6,7 @@ export type TResponseHandler = () => void;
 export type TErrHandler = (error: Error) => void;
 
 export class BeaconsLikeMessage extends Protocol.Beacons.LikeMessage {
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {
         response: TResponseHandler | undefined;
@@ -14,8 +15,9 @@ export class BeaconsLikeMessage extends Protocol.Beacons.LikeMessage {
         response: undefined,
         err: undefined,
     };
-    constructor(beacon: Protocol.Beacons.ILikeMessage) {
+    constructor(beacon: Protocol.Beacons.ILikeMessage, consumer?: Consumer) {
         super(beacon);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -27,7 +29,8 @@ export class BeaconsLikeMessage extends Protocol.Beacons.LikeMessage {
     }
 
     public send(): Promise<void> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }

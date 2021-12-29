@@ -8,7 +8,7 @@ export type TResponseHandler = (response: Protocol.Messages.Response) => void
 export type TErrHandler = (response: Protocol.Messages.Err) => void
 
 export class MessagesRequest extends Protocol.Messages.Request {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         response: TResponseHandler | undefined;
@@ -17,8 +17,9 @@ export class MessagesRequest extends Protocol.Messages.Request {
         response: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.Messages.IRequest) {
+    constructor(request: Protocol.Messages.IRequest, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -30,7 +31,8 @@ export class MessagesRequest extends Protocol.Messages.Request {
     }
 
     public send(): Promise<TMessagesRequestResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -47,12 +49,12 @@ export class MessagesRequest extends Protocol.Messages.Request {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.Messages === undefined) {
-                            return reject(new Error(`Expecting message from "message.Messages" group.`));
-                        } else if (message.Messages.Response !== undefined) {
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "Messages.Request".`));
+                        } else if (message !== undefined && message.Messages !== undefined && message.Messages.Response !== undefined) {
                             this._handlers.response !== undefined && this._handlers.response(message.Messages.Response);
                             return resolve(message.Messages.Response);
-                        } else if (message.Messages.Err !== undefined) {
+                        } else if (message !== undefined && message.Messages !== undefined && message.Messages.Err !== undefined) {
                             this._handlers.err !== undefined && this._handlers.err(message.Messages.Err);
                             return resolve(message.Messages.Err);
                         } else {

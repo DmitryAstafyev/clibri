@@ -9,7 +9,7 @@ export type TDenyHandler = (response: Protocol.UserLogin.Denied) => void
 export type TErrHandler = (response: Protocol.UserLogin.Err) => void
 
 export class UserLoginRequest extends Protocol.UserLogin.Request {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         accept: TAcceptHandler | undefined;
@@ -20,8 +20,9 @@ export class UserLoginRequest extends Protocol.UserLogin.Request {
         deny: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.UserLogin.IRequest) {
+    constructor(request: Protocol.UserLogin.IRequest, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -34,7 +35,8 @@ export class UserLoginRequest extends Protocol.UserLogin.Request {
     }
 
     public send(): Promise<TUserLoginRequestResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -51,15 +53,15 @@ export class UserLoginRequest extends Protocol.UserLogin.Request {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.UserLogin === undefined) {
-                            return reject(new Error(`Expecting message from "message.UserLogin" group.`));
-                        } else if (message.UserLogin.Accepted !== undefined) {
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "UserLogin.Request".`));
+                        } else if (message !== undefined && message.UserLogin !== undefined && message.UserLogin.Accepted !== undefined) {
                             this._handlers.accept !== undefined && this._handlers.accept(message.UserLogin.Accepted);
                             return resolve(message.UserLogin.Accepted);
-                        } else if (message.UserLogin.Denied !== undefined) {
+                        } else if (message !== undefined && message.UserLogin !== undefined && message.UserLogin.Denied !== undefined) {
                             this._handlers.deny !== undefined && this._handlers.deny(message.UserLogin.Denied);
                             return resolve(message.UserLogin.Denied);
-                        } else if (message.UserLogin.Err !== undefined) {
+                        } else if (message !== undefined && message.UserLogin !== undefined && message.UserLogin.Err !== undefined) {
                             this._handlers.err !== undefined && this._handlers.err(message.UserLogin.Err);
                             return resolve(message.UserLogin.Err);
                         } else {

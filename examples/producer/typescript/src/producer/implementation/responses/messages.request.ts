@@ -1,5 +1,6 @@
 import { Producer, Identification, Filter, Context, Protocol } from "./index";
 import { response } from "../../responses/messages.request";
+import { Scope } from "../scope";
 
 export class Response {
     private _response!: Protocol.Messages.Response | Protocol.Messages.Err;
@@ -21,12 +22,18 @@ export function handler(
     producer: Producer,
     sequence: number
 ): Promise<void> {
-    return response(request, consumer, filter, context, producer).then(
-        (res) => {
-            return producer.send(
-                consumer.uuid(),
-                res.pack(sequence, consumer.uuid())
-            );
-        }
-    );
+	const scope = new Scope(consumer, filter, context, producer);
+	return new Promise((resolve, reject) => {
+		response(request, scope)
+			.then((res) => {
+				producer
+					.send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
+					.then(() => {
+						scope.call();
+						resolve();
+					})
+					.catch(reject);
+			})
+			.catch(reject);
+	});
 }

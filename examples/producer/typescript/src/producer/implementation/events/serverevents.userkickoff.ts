@@ -25,8 +25,8 @@ export class Output {
                 if (
                     self._broadcasts.find(
                         (b) =>
-                            b[1].getSignature() ===
-                            Protocol.Events.Message.getSignature()
+                            b[1].getId() ===
+                            Protocol.Events.Message.getId()
                     ) !== undefined
                 ) {
                     throw new Error(
@@ -40,8 +40,8 @@ export class Output {
                 if (
                     self._broadcasts.find(
                         (b) =>
-                            b[1].getSignature() ===
-                            Protocol.Events.UserDisconnected.getSignature()
+                            b[1].getId() ===
+                            Protocol.Events.UserDisconnected.getId()
                     ) !== undefined
                 ) {
                     throw new Error(
@@ -62,11 +62,11 @@ export class Output {
 			}
 			if (
 				this._broadcasts.find((msg) => {
-					return msg[1].getSignature() === ref.getSignature();
+					return msg[1].getId() === ref.getId();
 				}) === undefined
 			) {
 				error = new Error(
-					`Broadcast ${ref.getSignature()} is required, but hasn't been found`
+					`Broadcast ${ref.getSignature()}/${ref.getId()} is required, but hasn't been found`
 				);
 			}
 		});

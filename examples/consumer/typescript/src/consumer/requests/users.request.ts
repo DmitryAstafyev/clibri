@@ -8,7 +8,7 @@ export type TResponseHandler = (response: Protocol.Users.Response) => void
 export type TErrHandler = (response: Protocol.Users.Err) => void
 
 export class UsersRequest extends Protocol.Users.Request {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         response: TResponseHandler | undefined;
@@ -17,8 +17,9 @@ export class UsersRequest extends Protocol.Users.Request {
         response: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.Users.IRequest) {
+    constructor(request: Protocol.Users.IRequest, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -30,7 +31,8 @@ export class UsersRequest extends Protocol.Users.Request {
     }
 
     public send(): Promise<TUsersRequestResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -47,12 +49,12 @@ export class UsersRequest extends Protocol.Users.Request {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.Users === undefined) {
-                            return reject(new Error(`Expecting message from "message.Users" group.`));
-                        } else if (message.Users.Response !== undefined) {
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "Users.Request".`));
+                        } else if (message !== undefined && message.Users !== undefined && message.Users.Response !== undefined) {
                             this._handlers.response !== undefined && this._handlers.response(message.Users.Response);
                             return resolve(message.Users.Response);
-                        } else if (message.Users.Err !== undefined) {
+                        } else if (message !== undefined && message.Users !== undefined && message.Users.Err !== undefined) {
                             this._handlers.err !== undefined && this._handlers.err(message.Users.Err);
                             return resolve(message.Users.Err);
                         } else {

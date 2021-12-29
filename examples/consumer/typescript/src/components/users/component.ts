@@ -3,7 +3,7 @@ import {
 	Consumer,
 	Protocol,
 	UsersRequest,
-	BeaconsLikeUser,
+	BeaconBeaconsLikeUser,
 } from "../../consumer/index";
 import { Subscription } from "clibri";
 import { StatComponent } from "../stat/component";
@@ -146,7 +146,7 @@ export class UsersComponent extends Component {
 	}
 
 	private _onUserClick(uuid: string) {
-		new BeaconsLikeUser(new Protocol.Beacons.LikeUser({ uuid }))
+		new BeaconBeaconsLikeUser(new Protocol.Beacons.LikeUser({ uuid }))
 			.send()
 			.then(() => {
 				console.log(`Beacon LikeUser has been deliveried`);

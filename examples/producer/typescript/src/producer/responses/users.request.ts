@@ -6,18 +6,16 @@ import {
 	Filter,
 	Protocol,
 } from "../implementation/responses";
+import { Scope } from "../implementation/scope";
 
 export function response(
 	request: Protocol.Users.Request,
-	consumer: Identification,
-	filter: Filter,
-	context: Context,
-	producer: Producer
+	scope: Scope
 ): Promise<Response> {
 	return Promise.resolve(
 		new Response(
 			new Protocol.Users.Response({
-				users: context.getUsers(),
+				users: scope.context.getUsers(),
 			})
 		)
 	);
