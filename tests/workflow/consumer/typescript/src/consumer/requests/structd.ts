@@ -8,7 +8,7 @@ export type TResponseHandler = (response: Protocol.StructA) => void
 export type TErrHandler = (response: Protocol.StructC) => void
 
 export class StructD extends Protocol.StructD {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         response: TResponseHandler | undefined;
@@ -17,8 +17,9 @@ export class StructD extends Protocol.StructD {
         response: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.IStructD) {
+    constructor(request: Protocol.IStructD, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -30,7 +31,8 @@ export class StructD extends Protocol.StructD {
     }
 
     public send(): Promise<TStructDResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -48,8 +50,8 @@ export class StructD extends Protocol.StructD {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
                         if (message === undefined) {
-                            return reject(new Error(`Expecting message from "message" group.`));
-                        } else if (message.StructA !== undefined) {
+                            return reject(new Error(`Expecting message for "StructD".`));
+                        } else if (message !== undefined && message.StructA !== undefined) {
                             this._handlers.response !== undefined && this._handlers.response(message.StructA);
                             return resolve(message.StructA);
                         } else if (message.StructC !== undefined) {

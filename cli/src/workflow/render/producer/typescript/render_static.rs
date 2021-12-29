@@ -28,6 +28,10 @@ mod paths {
         pub const shutdown: &str = "shutdown.ts";
         pub const dest: &str = "implementation/events";
     }
+    pub mod scope {
+        pub const module: &str = "index.ts";
+        pub const dest: &str = "implementation/scope";
+    }
     pub mod index {
         pub const module: &str = "index.ts";
         pub const dest: &str = "";
@@ -55,11 +59,16 @@ impl Render {
             Ok(reference) => reference == "connected",
             Err(_) => false,
         }) {
-            helpers::fs::write(
-                self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
-                include_str!("./static/events/connected.ts").to_owned(),
-                true,
-            )?;
+            if !self
+                .get_dest_file(base, paths::events::dest, paths::events::connected)?
+                .exists()
+            {
+                helpers::fs::write(
+                    self.get_dest_file(base, paths::events::dest, paths::events::connected)?,
+                    include_str!("./static/events/connected.ts").to_owned(),
+                    true,
+                )?;
+            }
             helpers::fs::write(
                 self.get_dest_file(base, paths::emitters::dest, paths::emitters::connected)?,
                 include_str!("./static/implementation/events/connected.ts").to_owned(),
@@ -70,32 +79,52 @@ impl Render {
             Ok(reference) => reference == "disconnected",
             Err(_) => false,
         }) {
-            helpers::fs::write(
-                self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
-                include_str!("./static/events/disconnected.ts").to_owned(),
-                true,
-            )?;
+            if !self
+                .get_dest_file(base, paths::events::dest, paths::events::disconnected)?
+                .exists()
+            {
+                helpers::fs::write(
+                    self.get_dest_file(base, paths::events::dest, paths::events::disconnected)?,
+                    include_str!("./static/events/disconnected.ts").to_owned(),
+                    true,
+                )?;
+            }
             helpers::fs::write(
                 self.get_dest_file(base, paths::emitters::dest, paths::emitters::disconnected)?,
                 include_str!("./static/implementation/events/disconnected.ts").to_owned(),
                 true,
             )?;
         }
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::error)?,
-            include_str!("./static/events/error.ts").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::ready)?,
-            include_str!("./static/events/ready.ts").to_owned(),
-            true,
-        )?;
-        helpers::fs::write(
-            self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
-            include_str!("./static/events/shutdown.ts").to_owned(),
-            true,
-        )?;
+        if !self
+            .get_dest_file(base, paths::events::dest, paths::events::error)?
+            .exists()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::error)?,
+                include_str!("./static/events/error.ts").to_owned(),
+                true,
+            )?;
+        }
+        if !self
+            .get_dest_file(base, paths::events::dest, paths::events::ready)?
+            .exists()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::ready)?,
+                include_str!("./static/events/ready.ts").to_owned(),
+                true,
+            )?;
+        }
+        if !self
+            .get_dest_file(base, paths::events::dest, paths::events::shutdown)?
+            .exists()
+        {
+            helpers::fs::write(
+                self.get_dest_file(base, paths::events::dest, paths::events::shutdown)?,
+                include_str!("./static/events/shutdown.ts").to_owned(),
+                true,
+            )?;
+        }
         helpers::fs::write(
             self.get_dest_file(base, paths::consumer::dest, paths::consumer::module)?,
             include_str!("./static/implementation/consumer/index.ts").to_owned(),
@@ -104,6 +133,11 @@ impl Render {
         helpers::fs::write(
             self.get_dest_file(base, paths::consumer::dest, paths::consumer::filter)?,
             include_str!("./static/implementation/consumer/filter.ts").to_owned(),
+            true,
+        )?;
+        helpers::fs::write(
+            self.get_dest_file(base, paths::scope::dest, paths::scope::module)?,
+            include_str!("./static/implementation/scope/index.ts").to_owned(),
             true,
         )?;
         helpers::fs::write(

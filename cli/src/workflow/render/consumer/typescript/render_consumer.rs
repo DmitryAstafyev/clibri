@@ -115,33 +115,39 @@ export class Consumer {
         this._key = key;
         this._options = new Options(`Consumer ${Consumer.GUID}`, options);
         this._logger = this._options.logger;
-        const global = globals();
-        if (global instanceof Error) {
-            throw global;
-        }
-        if (global[Consumer.GUID] !== undefined) {
-            throw new Error(`Attempt to init consumer multiple times`);
-        }
         this._subscriptions.data = this._client.getEvents().data.subscribe(this._onData.bind(this));
         this._subscriptions.connected = this._client.getEvents().connected.subscribe(this._onClientConnected.bind(this));
         this._subscriptions.disconnected = this._client.getEvents().disconnected.subscribe(this._onClientDisconnected.bind(this));
         this._subscriptions.error = this._client.getEvents().error.subscribe(this._onClientError.bind(this));
-        global[Consumer.GUID] = this;
-        if (global[Consumer.GUID_SUBS] !== undefined) {
-            ((subject: Subject<Consumer>) => {
-                subject.emit(this);
-                subject.destroy();
-            })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
-            global[Consumer.GUID_SUBS] = undefined;
+        if (this._options.global) {
+            const global = globals();
+            if (global instanceof Error) {
+                throw global;
+            }
+            if (global[Consumer.GUID] !== undefined) {
+                throw new Error(`Attempt to init consumer multiple times`);
+            }
+            global[Consumer.GUID] = this;
+            if (global[Consumer.GUID_SUBS] !== undefined) {
+                ((subject: Subject<Consumer>) => {
+                    subject.emit(this);
+                    subject.destroy();
+                })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
+                global[Consumer.GUID_SUBS] = undefined;
+            }
         }
     }
 
-    public destroy(): Promise<void> {
-        const global = globals();
-        Object.keys(this._subscriptions).forEach(k => this._subscriptions[k].destroy());
-        global[Consumer.GUID] = undefined;
-        return this._client.destroy();
-    }
+	public destroy(): Promise<void> {
+		Object.keys(this._subscriptions).forEach((k) =>
+			this._subscriptions[k].destroy()
+		);
+		if (this._options.global) {
+			const global = globals();
+			global[Consumer.GUID] = undefined;
+		}
+		return this._client.destroy();
+	}
 
     public request(buffer: ArrayBufferLike, sequence?: number): Promise<Protocol.IAvailableMessages> {
         if (sequence !== undefined && this._pending.has(sequence)) {

@@ -2879,11 +2879,22 @@ export interface IAvailableMessages {
     StructE?: StructE,
     StructF?: StructF,
     StructG?: StructG,
+    TriggerBeaconsEmitter?: TriggerBeaconsEmitter,
     StructEmpty?: StructEmpty,
+    StructEmptyA?: StructEmptyA,
+    StructEmptyB?: StructEmptyB,
     StructJ?: StructJ,
+    TriggerBeacons?: TriggerBeacons,
+    FinishConsumerTest?: FinishConsumerTest,
+    FinishConsumerTestBroadcast?: FinishConsumerTestBroadcast,
+    BeaconA?: BeaconA,
+    EventA?: EventA,
+    EventB?: EventB,
+    Beacons?: Beacons.IAvailableMessages,
     GroupA?: GroupA.IAvailableMessages,
     GroupB?: GroupB.IAvailableMessages,
     GroupD?: GroupD.IAvailableMessages,
+    Events?: Events.IAvailableMessages,
     InternalServiceGroup?: InternalServiceGroup.IAvailableMessages,
 }
 export interface IEnumA {
@@ -5116,6 +5127,102 @@ export class StructG extends Protocol.Convertor<StructG> implements IStructG, IS
     }
 }
 
+export interface ITriggerBeaconsEmitter {
+    uuid: string;
+}
+export class TriggerBeaconsEmitter extends Protocol.Convertor<TriggerBeaconsEmitter> implements ITriggerBeaconsEmitter, ISigned<TriggerBeaconsEmitter> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+    ];
+
+    public static defaults(): TriggerBeaconsEmitter {
+        return new TriggerBeaconsEmitter({
+            uuid: '',
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<TriggerBeaconsEmitter>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof TriggerBeaconsEmitter)) {
+                            throw new Error(`Expecting instance of TriggerBeaconsEmitter on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof TriggerBeaconsEmitter ? undefined : new Error(`Expecting instance of TriggerBeaconsEmitter`);
+            }};
+        }
+    }
+
+    public static from(obj: any): TriggerBeaconsEmitter | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = TriggerBeaconsEmitter.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, TriggerBeaconsEmitter.scheme);
+            return error instanceof Error ? error : new TriggerBeaconsEmitter({
+                uuid: obj.uuid,
+            });
+        }
+    }
+
+    public uuid!: string;
+    public static getSignature(): string { return 'TriggerBeaconsEmitter'; }
+    public static getId(): number { return 82; }
+
+
+    constructor(params: ITriggerBeaconsEmitter)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'TriggerBeaconsEmitter'; }
+
+    public get(): TriggerBeaconsEmitter { return this; }
+
+    public getId(): number { return 82; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+            () => this.getBufferFromBuf<string>(83, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | TriggerBeaconsEmitter {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        const uuid: string | Error = this.getValue<string>(storage, 83, Protocol.Primitives.StrUTF8.decode);
+        if (uuid instanceof Error) {
+            return uuid;
+        } else {
+            this.uuid = uuid;
+        }
+        return this;
+    }
+
+    public defaults(): TriggerBeaconsEmitter {
+        return TriggerBeaconsEmitter.defaults();
+    }
+}
+
 export interface IStructEmpty {
 }
 export class StructEmpty extends Protocol.Convertor<StructEmpty> implements IStructEmpty, ISigned<StructEmpty> {
@@ -5164,7 +5271,7 @@ export class StructEmpty extends Protocol.Convertor<StructEmpty> implements IStr
     }
 
     public static getSignature(): string { return 'StructEmpty'; }
-    public static getId(): number { return 82; }
+    public static getId(): number { return 84; }
 
 
     constructor(params: IStructEmpty)  {
@@ -5180,7 +5287,7 @@ export class StructEmpty extends Protocol.Convertor<StructEmpty> implements IStr
 
     public get(): StructEmpty { return this; }
 
-    public getId(): number { return 82; }
+    public getId(): number { return 84; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
@@ -5197,6 +5304,174 @@ export class StructEmpty extends Protocol.Convertor<StructEmpty> implements IStr
 
     public defaults(): StructEmpty {
         return StructEmpty.defaults();
+    }
+}
+
+export interface IStructEmptyA {
+}
+export class StructEmptyA extends Protocol.Convertor<StructEmptyA> implements IStructEmptyA, ISigned<StructEmptyA> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+    ];
+
+    public static defaults(): StructEmptyA {
+        return new StructEmptyA({
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<StructEmptyA>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof StructEmptyA)) {
+                            throw new Error(`Expecting instance of StructEmptyA on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof StructEmptyA ? undefined : new Error(`Expecting instance of StructEmptyA`);
+            }};
+        }
+    }
+
+    public static from(obj: any): StructEmptyA | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructEmptyA.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructEmptyA.scheme);
+            return error instanceof Error ? error : new StructEmptyA({
+            });
+        }
+    }
+
+    public static getSignature(): string { return 'StructEmptyA'; }
+    public static getId(): number { return 85; }
+
+
+    constructor(params: IStructEmptyA)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'StructEmptyA'; }
+
+    public get(): StructEmptyA { return this; }
+
+    public getId(): number { return 85; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | StructEmptyA {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        return this;
+    }
+
+    public defaults(): StructEmptyA {
+        return StructEmptyA.defaults();
+    }
+}
+
+export interface IStructEmptyB {
+}
+export class StructEmptyB extends Protocol.Convertor<StructEmptyB> implements IStructEmptyB, ISigned<StructEmptyB> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+    ];
+
+    public static defaults(): StructEmptyB {
+        return new StructEmptyB({
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<StructEmptyB>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof StructEmptyB)) {
+                            throw new Error(`Expecting instance of StructEmptyB on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof StructEmptyB ? undefined : new Error(`Expecting instance of StructEmptyB`);
+            }};
+        }
+    }
+
+    public static from(obj: any): StructEmptyB | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = StructEmptyB.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, StructEmptyB.scheme);
+            return error instanceof Error ? error : new StructEmptyB({
+            });
+        }
+    }
+
+    public static getSignature(): string { return 'StructEmptyB'; }
+    public static getId(): number { return 86; }
+
+
+    constructor(params: IStructEmptyB)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'StructEmptyB'; }
+
+    public get(): StructEmptyB { return this; }
+
+    public getId(): number { return 86; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | StructEmptyB {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        return this;
+    }
+
+    public defaults(): StructEmptyB {
+        return StructEmptyB.defaults();
     }
 }
 
@@ -5264,7 +5539,7 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
     public field_b!: StructB | undefined;
     public field_c!: StructEmpty;
     public static getSignature(): string { return 'StructJ'; }
-    public static getId(): number { return 83; }
+    public static getId(): number { return 87; }
 
 
     constructor(params: IStructJ)  {
@@ -5280,13 +5555,13 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
 
     public get(): StructJ { return this; }
 
-    public getId(): number { return 83; }
+    public getId(): number { return 87; }
 
     public encode(): ArrayBufferLike {
         return this.collect([
-            () => {if (this.field_a === undefined) { return this.getBuffer(84, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_a.encode(); return this.getBuffer(84, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => {if (this.field_b === undefined) { return this.getBuffer(85, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_b.encode(); return this.getBuffer(85, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-            () => { const buffer = this.field_c.encode(); return this.getBuffer(86, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_a === undefined) { return this.getBuffer(88, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_a.encode(); return this.getBuffer(88, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => {if (this.field_b === undefined) { return this.getBuffer(89, Protocol.ESize.u8, 0, new Uint8Array()); } const buffer = this.field_b.encode(); return this.getBuffer(89, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this.field_c.encode(); return this.getBuffer(90, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
         ]);
     }
 
@@ -5295,9 +5570,9 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
         if (storage instanceof Error) {
             return storage;
         }
-        const field_aBuf: ArrayBufferLike | undefined = storage.get(84);
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(88);
         if (field_aBuf === undefined) {
-            return new Error(`Fail to get property field_a (id=84)`);
+            return new Error(`Fail to get property field_a (id=88)`);
         }
         if (field_aBuf.byteLength === 0) {
             this.field_a = undefined;
@@ -5317,9 +5592,9 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
                 field_f64: 0,
                 field_bool: true,
             });
-            const field_aBuf: ArrayBufferLike | undefined = storage.get(84);
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(88);
             if (field_aBuf === undefined) {
-                return new Error(`Fail to find field "field_a" (id=84).`);
+                return new Error(`Fail to find field "field_a" (id=88).`);
             }
             const field_aErr: Error | StructA = field_a.decode(field_aBuf);
             if (field_aErr instanceof Error) {
@@ -5328,9 +5603,9 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
                 this.field_a = field_a;
             }
         }
-        const field_bBuf: ArrayBufferLike | undefined = storage.get(85);
+        const field_bBuf: ArrayBufferLike | undefined = storage.get(89);
         if (field_bBuf === undefined) {
-            return new Error(`Fail to get property field_b (id=85)`);
+            return new Error(`Fail to get property field_b (id=89)`);
         }
         if (field_bBuf.byteLength === 0) {
             this.field_b = undefined;
@@ -5363,9 +5638,9 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
                 field_bool_empty: [],
                 field_struct_empty: [],
             });
-            const field_bBuf: ArrayBufferLike | undefined = storage.get(85);
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(89);
             if (field_bBuf === undefined) {
-                return new Error(`Fail to find field "field_b" (id=85).`);
+                return new Error(`Fail to find field "field_b" (id=89).`);
             }
             const field_bErr: Error | StructB = field_b.decode(field_bBuf);
             if (field_bErr instanceof Error) {
@@ -5376,9 +5651,9 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
         }
         const field_c: StructEmpty = new StructEmpty({
         });
-        const field_cBuf: ArrayBufferLike | undefined = storage.get(86);
+        const field_cBuf: ArrayBufferLike | undefined = storage.get(90);
         if (field_cBuf === undefined) {
-            return new Error(`Fail to find field "field_c" (id=86).`);
+            return new Error(`Fail to find field "field_c" (id=90).`);
         }
         const field_cErr: Error | StructEmpty = field_c.decode(field_cBuf);
         if (field_cErr instanceof Error) {
@@ -5392,6 +5667,1277 @@ export class StructJ extends Protocol.Convertor<StructJ> implements IStructJ, IS
     public defaults(): StructJ {
         return StructJ.defaults();
     }
+}
+
+export interface ITriggerBeacons {
+}
+export class TriggerBeacons extends Protocol.Convertor<TriggerBeacons> implements ITriggerBeacons, ISigned<TriggerBeacons> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+    ];
+
+    public static defaults(): TriggerBeacons {
+        return new TriggerBeacons({
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<TriggerBeacons>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof TriggerBeacons)) {
+                            throw new Error(`Expecting instance of TriggerBeacons on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof TriggerBeacons ? undefined : new Error(`Expecting instance of TriggerBeacons`);
+            }};
+        }
+    }
+
+    public static from(obj: any): TriggerBeacons | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = TriggerBeacons.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, TriggerBeacons.scheme);
+            return error instanceof Error ? error : new TriggerBeacons({
+            });
+        }
+    }
+
+    public static getSignature(): string { return 'TriggerBeacons'; }
+    public static getId(): number { return 91; }
+
+
+    constructor(params: ITriggerBeacons)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'TriggerBeacons'; }
+
+    public get(): TriggerBeacons { return this; }
+
+    public getId(): number { return 91; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | TriggerBeacons {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        return this;
+    }
+
+    public defaults(): TriggerBeacons {
+        return TriggerBeacons.defaults();
+    }
+}
+
+export interface IFinishConsumerTest {
+    uuid: string;
+}
+export class FinishConsumerTest extends Protocol.Convertor<FinishConsumerTest> implements IFinishConsumerTest, ISigned<FinishConsumerTest> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+    ];
+
+    public static defaults(): FinishConsumerTest {
+        return new FinishConsumerTest({
+            uuid: '',
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<FinishConsumerTest>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof FinishConsumerTest)) {
+                            throw new Error(`Expecting instance of FinishConsumerTest on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof FinishConsumerTest ? undefined : new Error(`Expecting instance of FinishConsumerTest`);
+            }};
+        }
+    }
+
+    public static from(obj: any): FinishConsumerTest | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = FinishConsumerTest.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, FinishConsumerTest.scheme);
+            return error instanceof Error ? error : new FinishConsumerTest({
+                uuid: obj.uuid,
+            });
+        }
+    }
+
+    public uuid!: string;
+    public static getSignature(): string { return 'FinishConsumerTest'; }
+    public static getId(): number { return 92; }
+
+
+    constructor(params: IFinishConsumerTest)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'FinishConsumerTest'; }
+
+    public get(): FinishConsumerTest { return this; }
+
+    public getId(): number { return 92; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+            () => this.getBufferFromBuf<string>(93, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | FinishConsumerTest {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        const uuid: string | Error = this.getValue<string>(storage, 93, Protocol.Primitives.StrUTF8.decode);
+        if (uuid instanceof Error) {
+            return uuid;
+        } else {
+            this.uuid = uuid;
+        }
+        return this;
+    }
+
+    public defaults(): FinishConsumerTest {
+        return FinishConsumerTest.defaults();
+    }
+}
+
+export interface IFinishConsumerTestBroadcast {
+}
+export class FinishConsumerTestBroadcast extends Protocol.Convertor<FinishConsumerTestBroadcast> implements IFinishConsumerTestBroadcast, ISigned<FinishConsumerTestBroadcast> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+    ];
+
+    public static defaults(): FinishConsumerTestBroadcast {
+        return new FinishConsumerTestBroadcast({
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<FinishConsumerTestBroadcast>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof FinishConsumerTestBroadcast)) {
+                            throw new Error(`Expecting instance of FinishConsumerTestBroadcast on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof FinishConsumerTestBroadcast ? undefined : new Error(`Expecting instance of FinishConsumerTestBroadcast`);
+            }};
+        }
+    }
+
+    public static from(obj: any): FinishConsumerTestBroadcast | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = FinishConsumerTestBroadcast.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, FinishConsumerTestBroadcast.scheme);
+            return error instanceof Error ? error : new FinishConsumerTestBroadcast({
+            });
+        }
+    }
+
+    public static getSignature(): string { return 'FinishConsumerTestBroadcast'; }
+    public static getId(): number { return 94; }
+
+
+    constructor(params: IFinishConsumerTestBroadcast)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'FinishConsumerTestBroadcast'; }
+
+    public get(): FinishConsumerTestBroadcast { return this; }
+
+    public getId(): number { return 94; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | FinishConsumerTestBroadcast {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        return this;
+    }
+
+    public defaults(): FinishConsumerTestBroadcast {
+        return FinishConsumerTestBroadcast.defaults();
+    }
+}
+
+export interface IBeaconA {
+    field: StructA;
+}
+export class BeaconA extends Protocol.Convertor<BeaconA> implements IBeaconA, ISigned<BeaconA> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'field', types: StructA.getValidator(false), optional: false },
+    ];
+
+    public static defaults(): BeaconA {
+        return new BeaconA({
+            field: new StructA({
+                field_str: '',
+                field_str_empty: '',
+                field_u8: 0,
+                field_u16: 0,
+                field_u32: 0,
+                field_u64: BigInt(0),
+                field_i8: 0,
+                field_i16: 0,
+                field_i32: 0,
+                field_i64: BigInt(0),
+                field_f32: 0,
+                field_f64: 0,
+                field_bool: true,
+            }),
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<BeaconA>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof BeaconA)) {
+                            throw new Error(`Expecting instance of BeaconA on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof BeaconA ? undefined : new Error(`Expecting instance of BeaconA`);
+            }};
+        }
+    }
+
+    public static from(obj: any): BeaconA | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = BeaconA.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, BeaconA.scheme);
+            return error instanceof Error ? error : new BeaconA({
+                field: obj.field,
+            });
+        }
+    }
+
+    public field!: StructA;
+    public static getSignature(): string { return 'BeaconA'; }
+    public static getId(): number { return 95; }
+
+
+    constructor(params: IBeaconA)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'BeaconA'; }
+
+    public get(): BeaconA { return this; }
+
+    public getId(): number { return 95; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+            () => { const buffer = this.field.encode(); return this.getBuffer(96, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | BeaconA {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        const field: StructA = new StructA({
+            field_str: '',
+            field_str_empty: '',
+            field_u8: 0,
+            field_u16: 0,
+            field_u32: 0,
+            field_u64: BigInt(0),
+            field_i8: 0,
+            field_i16: 0,
+            field_i32: 0,
+            field_i64: BigInt(0),
+            field_f32: 0,
+            field_f64: 0,
+            field_bool: true,
+        });
+        const fieldBuf: ArrayBufferLike | undefined = storage.get(96);
+        if (fieldBuf === undefined) {
+            return new Error(`Fail to find field "field" (id=96).`);
+        }
+        const fieldErr: Error | StructA = field.decode(fieldBuf);
+        if (fieldErr instanceof Error) {
+            return fieldErr;
+        } else {
+            this.field = field;
+        }
+        return this;
+    }
+
+    public defaults(): BeaconA {
+        return BeaconA.defaults();
+    }
+}
+
+export interface IEventA {
+    uuid: string;
+    field_a: StructB;
+    field_b: StructC;
+}
+export class EventA extends Protocol.Convertor<EventA> implements IEventA, ISigned<EventA> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+        { prop: 'field_a', types: StructB.getValidator(false), optional: false },
+        { prop: 'field_b', types: StructC.getValidator(false), optional: false },
+    ];
+
+    public static defaults(): EventA {
+        return new EventA({
+            uuid: '',
+            field_a: new StructB({
+                field_str: [],
+                field_u8: [],
+                field_u16: [],
+                field_u32: [],
+                field_u64: [],
+                field_i8: [],
+                field_i16: [],
+                field_i32: [],
+                field_i64: [],
+                field_f32: [],
+                field_f64: [],
+                field_bool: [],
+                field_struct: [],
+                field_str_empty: [],
+                field_u8_empty: [],
+                field_u16_empty: [],
+                field_u32_empty: [],
+                field_u64_empty: [],
+                field_i8_empty: [],
+                field_i16_empty: [],
+                field_i32_empty: [],
+                field_i64_empty: [],
+                field_f32_empty: [],
+                field_f64_empty: [],
+                field_bool_empty: [],
+                field_struct_empty: [],
+            }),
+            field_b: new StructC({
+                field_str: undefined,
+                field_u8: undefined,
+                field_u16: undefined,
+                field_u32: undefined,
+                field_u64: undefined,
+                field_i8: undefined,
+                field_i16: undefined,
+                field_i32: undefined,
+                field_i64: undefined,
+                field_f32: undefined,
+                field_f64: undefined,
+                field_bool: undefined,
+            }),
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<EventA>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof EventA)) {
+                            throw new Error(`Expecting instance of EventA on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof EventA ? undefined : new Error(`Expecting instance of EventA`);
+            }};
+        }
+    }
+
+    public static from(obj: any): EventA | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = EventA.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, EventA.scheme);
+            return error instanceof Error ? error : new EventA({
+                uuid: obj.uuid,
+                field_a: obj.field_a,
+                field_b: obj.field_b,
+            });
+        }
+    }
+
+    public uuid!: string;
+    public field_a!: StructB;
+    public field_b!: StructC;
+    public static getSignature(): string { return 'EventA'; }
+    public static getId(): number { return 133; }
+
+
+    constructor(params: IEventA)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'EventA'; }
+
+    public get(): EventA { return this; }
+
+    public getId(): number { return 133; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+            () => this.getBufferFromBuf<string>(134, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+            () => { const buffer = this.field_a.encode(); return this.getBuffer(135, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            () => { const buffer = this.field_b.encode(); return this.getBuffer(136, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | EventA {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        const uuid: string | Error = this.getValue<string>(storage, 134, Protocol.Primitives.StrUTF8.decode);
+        if (uuid instanceof Error) {
+            return uuid;
+        } else {
+            this.uuid = uuid;
+        }
+        const field_a: StructB = new StructB({
+            field_str: [],
+            field_u8: [],
+            field_u16: [],
+            field_u32: [],
+            field_u64: [],
+            field_i8: [],
+            field_i16: [],
+            field_i32: [],
+            field_i64: [],
+            field_f32: [],
+            field_f64: [],
+            field_bool: [],
+            field_struct: [],
+            field_str_empty: [],
+            field_u8_empty: [],
+            field_u16_empty: [],
+            field_u32_empty: [],
+            field_u64_empty: [],
+            field_i8_empty: [],
+            field_i16_empty: [],
+            field_i32_empty: [],
+            field_i64_empty: [],
+            field_f32_empty: [],
+            field_f64_empty: [],
+            field_bool_empty: [],
+            field_struct_empty: [],
+        });
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(135);
+        if (field_aBuf === undefined) {
+            return new Error(`Fail to find field "field_a" (id=135).`);
+        }
+        const field_aErr: Error | StructB = field_a.decode(field_aBuf);
+        if (field_aErr instanceof Error) {
+            return field_aErr;
+        } else {
+            this.field_a = field_a;
+        }
+        const field_b: StructC = new StructC({
+            field_str: undefined,
+            field_u8: undefined,
+            field_u16: undefined,
+            field_u32: undefined,
+            field_u64: undefined,
+            field_i8: undefined,
+            field_i16: undefined,
+            field_i32: undefined,
+            field_i64: undefined,
+            field_f32: undefined,
+            field_f64: undefined,
+            field_bool: undefined,
+        });
+        const field_bBuf: ArrayBufferLike | undefined = storage.get(136);
+        if (field_bBuf === undefined) {
+            return new Error(`Fail to find field "field_b" (id=136).`);
+        }
+        const field_bErr: Error | StructC = field_b.decode(field_bBuf);
+        if (field_bErr instanceof Error) {
+            return field_bErr;
+        } else {
+            this.field_b = field_b;
+        }
+        return this;
+    }
+
+    public defaults(): EventA {
+        return EventA.defaults();
+    }
+}
+
+export interface IEventB {
+    uuid: string;
+    field_a: StructC;
+}
+export class EventB extends Protocol.Convertor<EventB> implements IEventB, ISigned<EventB> {
+
+    public static scheme: Protocol.IPropScheme[] = [
+        { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+        { prop: 'field_a', types: StructC.getValidator(false), optional: false },
+    ];
+
+    public static defaults(): EventB {
+        return new EventB({
+            uuid: '',
+            field_a: new StructC({
+                field_str: undefined,
+                field_u8: undefined,
+                field_u16: undefined,
+                field_u32: undefined,
+                field_u64: undefined,
+                field_i8: undefined,
+                field_i16: undefined,
+                field_i32: undefined,
+                field_i64: undefined,
+                field_f32: undefined,
+                field_f64: undefined,
+                field_bool: undefined,
+            }),
+        });
+    }
+
+    public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+        if (array) {
+            return { validate(obj: any): Error | undefined {
+                if (!(obj instanceof Array)) {
+                    return new Error(`Expecting Array<EventB>`);
+                }
+                try {
+                    obj.forEach((o, index: number) => {
+                        if (!(o instanceof EventB)) {
+                            throw new Error(`Expecting instance of EventB on index #${index}`);
+                        }
+                    });
+                } catch (err) {
+                    return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                }
+            }};
+        } else {
+            return { validate(obj: any): Error | undefined {
+                return obj instanceof EventB ? undefined : new Error(`Expecting instance of EventB`);
+            }};
+        }
+    }
+
+    public static from(obj: any): EventB | Error {
+        if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+            const inst = EventB.defaults();
+            const err = inst.decode(obj);
+            return err instanceof Error ? err : inst;
+        } else {
+            const error: Error | undefined = Protocol.validate(obj, EventB.scheme);
+            return error instanceof Error ? error : new EventB({
+                uuid: obj.uuid,
+                field_a: obj.field_a,
+            });
+        }
+    }
+
+    public uuid!: string;
+    public field_a!: StructC;
+    public static getSignature(): string { return 'EventB'; }
+    public static getId(): number { return 137; }
+
+
+    constructor(params: IEventB)  {
+        super();
+        Object.keys(params).forEach((key: string) => {
+            (this as any)[key] = (params as any)[key];
+        });
+    }
+
+    public signature(): number { return 0; }
+
+    public getSignature(): string { return 'EventB'; }
+
+    public get(): EventB { return this; }
+
+    public getId(): number { return 137; }
+
+    public encode(): ArrayBufferLike {
+        return this.collect([
+            () => this.getBufferFromBuf<string>(138, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+            () => { const buffer = this.field_a.encode(); return this.getBuffer(139, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+        ]);
+    }
+
+    public decode(buffer: ArrayBufferLike): Error | EventB {
+        const storage = this.getStorage(buffer);
+        if (storage instanceof Error) {
+            return storage;
+        }
+        const uuid: string | Error = this.getValue<string>(storage, 138, Protocol.Primitives.StrUTF8.decode);
+        if (uuid instanceof Error) {
+            return uuid;
+        } else {
+            this.uuid = uuid;
+        }
+        const field_a: StructC = new StructC({
+            field_str: undefined,
+            field_u8: undefined,
+            field_u16: undefined,
+            field_u32: undefined,
+            field_u64: undefined,
+            field_i8: undefined,
+            field_i16: undefined,
+            field_i32: undefined,
+            field_i64: undefined,
+            field_f32: undefined,
+            field_f64: undefined,
+            field_bool: undefined,
+        });
+        const field_aBuf: ArrayBufferLike | undefined = storage.get(139);
+        if (field_aBuf === undefined) {
+            return new Error(`Fail to find field "field_a" (id=139).`);
+        }
+        const field_aErr: Error | StructC = field_a.decode(field_aBuf);
+        if (field_aErr instanceof Error) {
+            return field_aErr;
+        } else {
+            this.field_a = field_a;
+        }
+        return this;
+    }
+
+    public defaults(): EventB {
+        return EventB.defaults();
+    }
+}
+
+export namespace Beacons {
+    export interface IAvailableMessages {
+        ShutdownServer?: ShutdownServer,
+        BeaconA?: BeaconA,
+        BeaconB?: BeaconB,
+        Sub?: Sub.IAvailableMessages,
+    }
+
+    export interface IShutdownServer {
+    }
+    export class ShutdownServer extends Protocol.Convertor<ShutdownServer> implements IShutdownServer, ISigned<ShutdownServer> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+        ];
+
+        public static defaults(): ShutdownServer {
+            return new Beacons.ShutdownServer({
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<ShutdownServer>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof ShutdownServer)) {
+                                throw new Error(`Expecting instance of ShutdownServer on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof ShutdownServer ? undefined : new Error(`Expecting instance of ShutdownServer`);
+                }};
+            }
+        }
+
+        public static from(obj: any): ShutdownServer | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = ShutdownServer.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, ShutdownServer.scheme);
+                return error instanceof Error ? error : new ShutdownServer({
+                });
+            }
+        }
+
+        public static getSignature(): string { return 'ShutdownServer'; }
+        public static getId(): number { return 98; }
+
+
+        constructor(params: IShutdownServer)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'ShutdownServer'; }
+
+        public get(): ShutdownServer { return this; }
+
+        public getId(): number { return 98; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | ShutdownServer {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            return this;
+        }
+
+        public defaults(): ShutdownServer {
+            return ShutdownServer.defaults();
+        }
+    }
+
+    export interface IBeaconA {
+    }
+    export class BeaconA extends Protocol.Convertor<BeaconA> implements IBeaconA, ISigned<BeaconA> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+        ];
+
+        public static defaults(): BeaconA {
+            return new Beacons.BeaconA({
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<BeaconA>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof BeaconA)) {
+                                throw new Error(`Expecting instance of BeaconA on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof BeaconA ? undefined : new Error(`Expecting instance of BeaconA`);
+                }};
+            }
+        }
+
+        public static from(obj: any): BeaconA | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = BeaconA.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, BeaconA.scheme);
+                return error instanceof Error ? error : new BeaconA({
+                });
+            }
+        }
+
+        public static getSignature(): string { return 'BeaconA'; }
+        public static getId(): number { return 99; }
+
+
+        constructor(params: IBeaconA)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'BeaconA'; }
+
+        public get(): BeaconA { return this; }
+
+        public getId(): number { return 99; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | BeaconA {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            return this;
+        }
+
+        public defaults(): BeaconA {
+            return BeaconA.defaults();
+        }
+    }
+
+    export interface IBeaconB {
+        field: StructB;
+    }
+    export class BeaconB extends Protocol.Convertor<BeaconB> implements IBeaconB, ISigned<BeaconB> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'field', types: StructB.getValidator(false), optional: false },
+        ];
+
+        public static defaults(): BeaconB {
+            return new Beacons.BeaconB({
+                field: new StructB({
+                    field_str: [],
+                    field_u8: [],
+                    field_u16: [],
+                    field_u32: [],
+                    field_u64: [],
+                    field_i8: [],
+                    field_i16: [],
+                    field_i32: [],
+                    field_i64: [],
+                    field_f32: [],
+                    field_f64: [],
+                    field_bool: [],
+                    field_struct: [],
+                    field_str_empty: [],
+                    field_u8_empty: [],
+                    field_u16_empty: [],
+                    field_u32_empty: [],
+                    field_u64_empty: [],
+                    field_i8_empty: [],
+                    field_i16_empty: [],
+                    field_i32_empty: [],
+                    field_i64_empty: [],
+                    field_f32_empty: [],
+                    field_f64_empty: [],
+                    field_bool_empty: [],
+                    field_struct_empty: [],
+                }),
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<BeaconB>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof BeaconB)) {
+                                throw new Error(`Expecting instance of BeaconB on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof BeaconB ? undefined : new Error(`Expecting instance of BeaconB`);
+                }};
+            }
+        }
+
+        public static from(obj: any): BeaconB | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = BeaconB.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, BeaconB.scheme);
+                return error instanceof Error ? error : new BeaconB({
+                    field: obj.field,
+                });
+            }
+        }
+
+        public field!: StructB;
+        public static getSignature(): string { return 'BeaconB'; }
+        public static getId(): number { return 100; }
+
+
+        constructor(params: IBeaconB)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'BeaconB'; }
+
+        public get(): BeaconB { return this; }
+
+        public getId(): number { return 100; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+                () => { const buffer = this.field.encode(); return this.getBuffer(101, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | BeaconB {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            const field: StructB = new StructB({
+                field_str: [],
+                field_u8: [],
+                field_u16: [],
+                field_u32: [],
+                field_u64: [],
+                field_i8: [],
+                field_i16: [],
+                field_i32: [],
+                field_i64: [],
+                field_f32: [],
+                field_f64: [],
+                field_bool: [],
+                field_struct: [],
+                field_str_empty: [],
+                field_u8_empty: [],
+                field_u16_empty: [],
+                field_u32_empty: [],
+                field_u64_empty: [],
+                field_i8_empty: [],
+                field_i16_empty: [],
+                field_i32_empty: [],
+                field_i64_empty: [],
+                field_f32_empty: [],
+                field_f64_empty: [],
+                field_bool_empty: [],
+                field_struct_empty: [],
+            });
+            const fieldBuf: ArrayBufferLike | undefined = storage.get(101);
+            if (fieldBuf === undefined) {
+                return new Error(`Fail to find field "field" (id=101).`);
+            }
+            const fieldErr: Error | StructB = field.decode(fieldBuf);
+            if (fieldErr instanceof Error) {
+                return fieldErr;
+            } else {
+                this.field = field;
+            }
+            return this;
+        }
+
+        public defaults(): BeaconB {
+            return BeaconB.defaults();
+        }
+    }
+
+    export namespace Sub {
+        export interface IAvailableMessages {
+            BeaconA?: BeaconA,
+        }
+
+        export interface IBeaconA {
+            field: StructG;
+        }
+        export class BeaconA extends Protocol.Convertor<BeaconA> implements IBeaconA, ISigned<BeaconA> {
+
+            public static scheme: Protocol.IPropScheme[] = [
+                { prop: 'field', types: StructG.getValidator(false), optional: false },
+            ];
+
+            public static defaults(): BeaconA {
+                return new Beacons.Sub.BeaconA({
+                    field: new StructG({
+                        field_a: new StructA({
+                            field_str: '',
+                            field_str_empty: '',
+                            field_u8: 0,
+                            field_u16: 0,
+                            field_u32: 0,
+                            field_u64: BigInt(0),
+                            field_i8: 0,
+                            field_i16: 0,
+                            field_i32: 0,
+                            field_i64: BigInt(0),
+                            field_f32: 0,
+                            field_f64: 0,
+                            field_bool: true,
+                        }),
+                        field_b: new StructB({
+                            field_str: [],
+                            field_u8: [],
+                            field_u16: [],
+                            field_u32: [],
+                            field_u64: [],
+                            field_i8: [],
+                            field_i16: [],
+                            field_i32: [],
+                            field_i64: [],
+                            field_f32: [],
+                            field_f64: [],
+                            field_bool: [],
+                            field_struct: [],
+                            field_str_empty: [],
+                            field_u8_empty: [],
+                            field_u16_empty: [],
+                            field_u32_empty: [],
+                            field_u64_empty: [],
+                            field_i8_empty: [],
+                            field_i16_empty: [],
+                            field_i32_empty: [],
+                            field_i64_empty: [],
+                            field_f32_empty: [],
+                            field_f64_empty: [],
+                            field_bool_empty: [],
+                            field_struct_empty: [],
+                        }),
+                    }),
+                });
+            }
+
+            public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+                if (array) {
+                    return { validate(obj: any): Error | undefined {
+                        if (!(obj instanceof Array)) {
+                            return new Error(`Expecting Array<BeaconA>`);
+                        }
+                        try {
+                            obj.forEach((o, index: number) => {
+                                if (!(o instanceof BeaconA)) {
+                                    throw new Error(`Expecting instance of BeaconA on index #${index}`);
+                                }
+                            });
+                        } catch (err) {
+                            return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                        }
+                    }};
+                } else {
+                    return { validate(obj: any): Error | undefined {
+                        return obj instanceof BeaconA ? undefined : new Error(`Expecting instance of BeaconA`);
+                    }};
+                }
+            }
+
+            public static from(obj: any): BeaconA | Error {
+                if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                    const inst = BeaconA.defaults();
+                    const err = inst.decode(obj);
+                    return err instanceof Error ? err : inst;
+                } else {
+                    const error: Error | undefined = Protocol.validate(obj, BeaconA.scheme);
+                    return error instanceof Error ? error : new BeaconA({
+                        field: obj.field,
+                    });
+                }
+            }
+
+            public field!: StructG;
+            public static getSignature(): string { return 'BeaconA'; }
+            public static getId(): number { return 103; }
+
+
+            constructor(params: IBeaconA)  {
+                super();
+                Object.keys(params).forEach((key: string) => {
+                    (this as any)[key] = (params as any)[key];
+                });
+            }
+
+            public signature(): number { return 0; }
+
+            public getSignature(): string { return 'BeaconA'; }
+
+            public get(): BeaconA { return this; }
+
+            public getId(): number { return 103; }
+
+            public encode(): ArrayBufferLike {
+                return this.collect([
+                    () => { const buffer = this.field.encode(); return this.getBuffer(104, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                ]);
+            }
+
+            public decode(buffer: ArrayBufferLike): Error | BeaconA {
+                const storage = this.getStorage(buffer);
+                if (storage instanceof Error) {
+                    return storage;
+                }
+                const field: StructG = new StructG({
+                    field_a: new StructA({
+                        field_str: '',
+                        field_str_empty: '',
+                        field_u8: 0,
+                        field_u16: 0,
+                        field_u32: 0,
+                        field_u64: BigInt(0),
+                        field_i8: 0,
+                        field_i16: 0,
+                        field_i32: 0,
+                        field_i64: BigInt(0),
+                        field_f32: 0,
+                        field_f64: 0,
+                        field_bool: true,
+                    }),
+                    field_b: new StructB({
+                        field_str: [],
+                        field_u8: [],
+                        field_u16: [],
+                        field_u32: [],
+                        field_u64: [],
+                        field_i8: [],
+                        field_i16: [],
+                        field_i32: [],
+                        field_i64: [],
+                        field_f32: [],
+                        field_f64: [],
+                        field_bool: [],
+                        field_struct: [],
+                        field_str_empty: [],
+                        field_u8_empty: [],
+                        field_u16_empty: [],
+                        field_u32_empty: [],
+                        field_u64_empty: [],
+                        field_i8_empty: [],
+                        field_i16_empty: [],
+                        field_i32_empty: [],
+                        field_i64_empty: [],
+                        field_f32_empty: [],
+                        field_f64_empty: [],
+                        field_bool_empty: [],
+                        field_struct_empty: [],
+                    }),
+                });
+                const fieldBuf: ArrayBufferLike | undefined = storage.get(104);
+                if (fieldBuf === undefined) {
+                    return new Error(`Fail to find field "field" (id=104).`);
+                }
+                const fieldErr: Error | StructG = field.decode(fieldBuf);
+                if (fieldErr instanceof Error) {
+                    return fieldErr;
+                } else {
+                    this.field = field;
+                }
+                return this;
+            }
+
+            public defaults(): BeaconA {
+                return BeaconA.defaults();
+            }
+        }
+
+    }
+
 }
 
 export namespace GroupA {
@@ -5417,12 +6963,12 @@ export namespace GroupA {
             }
             return err instanceof Error ? err : inst.get();
         }
-        public static getId(): number { return 88; }
+        public static getId(): number { return 106; }
         public from(obj: any): IEnumA | Error {
             return EnumA.from(obj);
         }
         public signature(): number { return 0; }
-        public getId(): number { return 88; }
+        public getId(): number { return 106; }
         public getAllowed(): string[] {
             return [
                 Protocol.Primitives.StrUTF8.getSignature(),
@@ -5530,7 +7076,7 @@ export namespace GroupA {
         public opt!: IEnumA;
         private _opt: Primitives.Enum;
         public static getSignature(): string { return 'StructA'; }
-        public static getId(): number { return 89; }
+        public static getId(): number { return 107; }
 
 
         constructor(params: IStructA)  {
@@ -5548,13 +7094,13 @@ export namespace GroupA {
 
         public get(): StructA { return this; }
 
-        public getId(): number { return 89; }
+        public getId(): number { return 107; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(90, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                () => this.getBuffer(91, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-                () => { const buffer = this._opt.encode(); return this.getBuffer(92, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => this.getBuffer(108, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                () => this.getBuffer(109, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                () => { const buffer = this._opt.encode(); return this.getBuffer(110, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
 
@@ -5563,20 +7109,20 @@ export namespace GroupA {
             if (storage instanceof Error) {
                 return storage;
             }
-            const field_u8: number | Error = this.getValue<number>(storage, 90, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 108, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
-            const field_u16: number | Error = this.getValue<number>(storage, 91, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 109, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
                 this.field_u16 = field_u16;
             }
             this.opt = {};
-            const optBuf: ArrayBufferLike | undefined = storage.get(92);
+            const optBuf: ArrayBufferLike | undefined = storage.get(110);
             if (optBuf === undefined) {
                 return new Error(`Fail to get property "opt"`);
             }
@@ -5663,7 +7209,7 @@ export namespace GroupA {
         public field_u16!: number;
         public strct!: GroupA.StructA;
         public static getSignature(): string { return 'StructB'; }
-        public static getId(): number { return 93; }
+        public static getId(): number { return 111; }
 
 
         constructor(params: IStructB)  {
@@ -5679,13 +7225,13 @@ export namespace GroupA {
 
         public get(): StructB { return this; }
 
-        public getId(): number { return 93; }
+        public getId(): number { return 111; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(94, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                () => this.getBuffer(95, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-                () => { const buffer = this.strct.encode(); return this.getBuffer(96, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => this.getBuffer(112, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                () => this.getBuffer(113, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                () => { const buffer = this.strct.encode(); return this.getBuffer(114, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
 
@@ -5694,13 +7240,13 @@ export namespace GroupA {
             if (storage instanceof Error) {
                 return storage;
             }
-            const field_u8: number | Error = this.getValue<number>(storage, 94, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 112, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
-            const field_u16: number | Error = this.getValue<number>(storage, 95, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 113, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
@@ -5711,9 +7257,9 @@ export namespace GroupA {
                 field_u16: 0,
                 opt: {},
             });
-            const strctBuf: ArrayBufferLike | undefined = storage.get(96);
+            const strctBuf: ArrayBufferLike | undefined = storage.get(114);
             if (strctBuf === undefined) {
-                return new Error(`Fail to find field "strct" (id=96).`);
+                return new Error(`Fail to find field "strct" (id=114).`);
             }
             const strctErr: Error | StructA = strct.decode(strctBuf);
             if (strctErr instanceof Error) {
@@ -5795,7 +7341,7 @@ export namespace GroupB {
         public field_u8!: number;
         public field_u16!: number;
         public static getSignature(): string { return 'StructA'; }
-        public static getId(): number { return 98; }
+        public static getId(): number { return 116; }
 
 
         constructor(params: IStructA)  {
@@ -5811,12 +7357,12 @@ export namespace GroupB {
 
         public get(): StructA { return this; }
 
-        public getId(): number { return 98; }
+        public getId(): number { return 116; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBuffer(99, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                () => this.getBuffer(100, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                () => this.getBuffer(117, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                () => this.getBuffer(118, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
             ]);
         }
 
@@ -5825,13 +7371,13 @@ export namespace GroupB {
             if (storage instanceof Error) {
                 return storage;
             }
-            const field_u8: number | Error = this.getValue<number>(storage, 99, Protocol.Primitives.u8.decode);
+            const field_u8: number | Error = this.getValue<number>(storage, 117, Protocol.Primitives.u8.decode);
             if (field_u8 instanceof Error) {
                 return field_u8;
             } else {
                 this.field_u8 = field_u8;
             }
-            const field_u16: number | Error = this.getValue<number>(storage, 100, Protocol.Primitives.u16.decode);
+            const field_u16: number | Error = this.getValue<number>(storage, 118, Protocol.Primitives.u16.decode);
             if (field_u16 instanceof Error) {
                 return field_u16;
             } else {
@@ -5909,7 +7455,7 @@ export namespace GroupB {
             public field_u8!: number;
             public field_u16!: number;
             public static getSignature(): string { return 'StructA'; }
-            public static getId(): number { return 102; }
+            public static getId(): number { return 120; }
 
 
             constructor(params: IStructA)  {
@@ -5925,12 +7471,12 @@ export namespace GroupB {
 
             public get(): StructA { return this; }
 
-            public getId(): number { return 102; }
+            public getId(): number { return 120; }
 
             public encode(): ArrayBufferLike {
                 return this.collect([
-                    () => this.getBuffer(103, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                    () => this.getBuffer(104, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                    () => this.getBuffer(121, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                    () => this.getBuffer(122, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
                 ]);
             }
 
@@ -5939,13 +7485,13 @@ export namespace GroupB {
                 if (storage instanceof Error) {
                     return storage;
                 }
-                const field_u8: number | Error = this.getValue<number>(storage, 103, Protocol.Primitives.u8.decode);
+                const field_u8: number | Error = this.getValue<number>(storage, 121, Protocol.Primitives.u8.decode);
                 if (field_u8 instanceof Error) {
                     return field_u8;
                 } else {
                     this.field_u8 = field_u8;
                 }
-                const field_u16: number | Error = this.getValue<number>(storage, 104, Protocol.Primitives.u16.decode);
+                const field_u16: number | Error = this.getValue<number>(storage, 122, Protocol.Primitives.u16.decode);
                 if (field_u16 instanceof Error) {
                     return field_u16;
                 } else {
@@ -6025,7 +7571,7 @@ export namespace GroupB {
             public field_u16!: number;
             public strct!: GroupB.GroupC.StructA;
             public static getSignature(): string { return 'StructB'; }
-            public static getId(): number { return 105; }
+            public static getId(): number { return 123; }
 
 
             constructor(params: IStructB)  {
@@ -6041,13 +7587,13 @@ export namespace GroupB {
 
             public get(): StructB { return this; }
 
-            public getId(): number { return 105; }
+            public getId(): number { return 123; }
 
             public encode(): ArrayBufferLike {
                 return this.collect([
-                    () => this.getBuffer(106, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
-                    () => this.getBuffer(107, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
-                    () => { const buffer = this.strct.encode(); return this.getBuffer(108, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                    () => this.getBuffer(124, Protocol.ESize.u8, Protocol.Primitives.u8.getSize(), Protocol.Primitives.u8.encode(this.field_u8)),
+                    () => this.getBuffer(125, Protocol.ESize.u8, Protocol.Primitives.u16.getSize(), Protocol.Primitives.u16.encode(this.field_u16)),
+                    () => { const buffer = this.strct.encode(); return this.getBuffer(126, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
                 ]);
             }
 
@@ -6056,13 +7602,13 @@ export namespace GroupB {
                 if (storage instanceof Error) {
                     return storage;
                 }
-                const field_u8: number | Error = this.getValue<number>(storage, 106, Protocol.Primitives.u8.decode);
+                const field_u8: number | Error = this.getValue<number>(storage, 124, Protocol.Primitives.u8.decode);
                 if (field_u8 instanceof Error) {
                     return field_u8;
                 } else {
                     this.field_u8 = field_u8;
                 }
-                const field_u16: number | Error = this.getValue<number>(storage, 107, Protocol.Primitives.u16.decode);
+                const field_u16: number | Error = this.getValue<number>(storage, 125, Protocol.Primitives.u16.decode);
                 if (field_u16 instanceof Error) {
                     return field_u16;
                 } else {
@@ -6072,9 +7618,9 @@ export namespace GroupB {
                     field_u8: 0,
                     field_u16: 0,
                 });
-                const strctBuf: ArrayBufferLike | undefined = storage.get(108);
+                const strctBuf: ArrayBufferLike | undefined = storage.get(126);
                 if (strctBuf === undefined) {
-                    return new Error(`Fail to find field "strct" (id=108).`);
+                    return new Error(`Fail to find field "strct" (id=126).`);
                 }
                 const strctErr: Error | StructA = strct.decode(strctBuf);
                 if (strctErr instanceof Error) {
@@ -6118,12 +7664,12 @@ export namespace GroupD {
             }
             return err instanceof Error ? err : inst.get();
         }
-        public static getId(): number { return 114; }
+        public static getId(): number { return 132; }
         public from(obj: any): IEnumP | Error {
             return EnumP.from(obj);
         }
         public signature(): number { return 0; }
-        public getId(): number { return 114; }
+        public getId(): number { return 132; }
         public getAllowed(): string[] {
             return [
                 StructA.getSignature(),
@@ -6265,7 +7811,7 @@ export namespace GroupD {
         public field_b!: GroupB.StructA;
         public field_c!: GroupB.GroupC.StructA;
         public static getSignature(): string { return 'StructP'; }
-        public static getId(): number { return 110; }
+        public static getId(): number { return 128; }
 
 
         constructor(params: IStructP)  {
@@ -6281,13 +7827,13 @@ export namespace GroupD {
 
         public get(): StructP { return this; }
 
-        public getId(): number { return 110; }
+        public getId(): number { return 128; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => { const buffer = this.field_a.encode(); return this.getBuffer(111, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-                () => { const buffer = this.field_b.encode(); return this.getBuffer(112, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
-                () => { const buffer = this.field_c.encode(); return this.getBuffer(113, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_a.encode(); return this.getBuffer(129, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_b.encode(); return this.getBuffer(130, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_c.encode(); return this.getBuffer(131, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
             ]);
         }
 
@@ -6311,9 +7857,9 @@ export namespace GroupD {
                 field_f64: 0,
                 field_bool: true,
             });
-            const field_aBuf: ArrayBufferLike | undefined = storage.get(111);
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(129);
             if (field_aBuf === undefined) {
-                return new Error(`Fail to find field "field_a" (id=111).`);
+                return new Error(`Fail to find field "field_a" (id=129).`);
             }
             const field_aErr: Error | StructA = field_a.decode(field_aBuf);
             if (field_aErr instanceof Error) {
@@ -6325,9 +7871,9 @@ export namespace GroupD {
                 field_u8: 0,
                 field_u16: 0,
             });
-            const field_bBuf: ArrayBufferLike | undefined = storage.get(112);
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(130);
             if (field_bBuf === undefined) {
-                return new Error(`Fail to find field "field_b" (id=112).`);
+                return new Error(`Fail to find field "field_b" (id=130).`);
             }
             const field_bErr: Error | GroupB.StructA = field_b.decode(field_bBuf);
             if (field_bErr instanceof Error) {
@@ -6339,9 +7885,9 @@ export namespace GroupD {
                 field_u8: 0,
                 field_u16: 0,
             });
-            const field_cBuf: ArrayBufferLike | undefined = storage.get(113);
+            const field_cBuf: ArrayBufferLike | undefined = storage.get(131);
             if (field_cBuf === undefined) {
-                return new Error(`Fail to find field "field_c" (id=113).`);
+                return new Error(`Fail to find field "field_c" (id=131).`);
             }
             const field_cErr: Error | GroupB.GroupC.StructA = field_c.decode(field_cBuf);
             if (field_cErr instanceof Error) {
@@ -6359,12 +7905,568 @@ export namespace GroupD {
 
 }
 
+export namespace Events {
+    export interface IAvailableMessages {
+        EventA?: EventA,
+        EventB?: EventB,
+        Sub?: Sub.IAvailableMessages,
+    }
+
+    export interface IEventA {
+        uuid: string;
+        field_a: StructA;
+        field_b: StructB;
+    }
+    export class EventA extends Protocol.Convertor<EventA> implements IEventA, ISigned<EventA> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+            { prop: 'field_a', types: StructA.getValidator(false), optional: false },
+            { prop: 'field_b', types: StructB.getValidator(false), optional: false },
+        ];
+
+        public static defaults(): EventA {
+            return new Events.EventA({
+                uuid: '',
+                field_a: new StructA({
+                    field_str: '',
+                    field_str_empty: '',
+                    field_u8: 0,
+                    field_u16: 0,
+                    field_u32: 0,
+                    field_u64: BigInt(0),
+                    field_i8: 0,
+                    field_i16: 0,
+                    field_i32: 0,
+                    field_i64: BigInt(0),
+                    field_f32: 0,
+                    field_f64: 0,
+                    field_bool: true,
+                }),
+                field_b: new StructB({
+                    field_str: [],
+                    field_u8: [],
+                    field_u16: [],
+                    field_u32: [],
+                    field_u64: [],
+                    field_i8: [],
+                    field_i16: [],
+                    field_i32: [],
+                    field_i64: [],
+                    field_f32: [],
+                    field_f64: [],
+                    field_bool: [],
+                    field_struct: [],
+                    field_str_empty: [],
+                    field_u8_empty: [],
+                    field_u16_empty: [],
+                    field_u32_empty: [],
+                    field_u64_empty: [],
+                    field_i8_empty: [],
+                    field_i16_empty: [],
+                    field_i32_empty: [],
+                    field_i64_empty: [],
+                    field_f32_empty: [],
+                    field_f64_empty: [],
+                    field_bool_empty: [],
+                    field_struct_empty: [],
+                }),
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<EventA>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof EventA)) {
+                                throw new Error(`Expecting instance of EventA on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof EventA ? undefined : new Error(`Expecting instance of EventA`);
+                }};
+            }
+        }
+
+        public static from(obj: any): EventA | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = EventA.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, EventA.scheme);
+                return error instanceof Error ? error : new EventA({
+                    uuid: obj.uuid,
+                    field_a: obj.field_a,
+                    field_b: obj.field_b,
+                });
+            }
+        }
+
+        public uuid!: string;
+        public field_a!: StructA;
+        public field_b!: StructB;
+        public static getSignature(): string { return 'EventA'; }
+        public static getId(): number { return 141; }
+
+
+        constructor(params: IEventA)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'EventA'; }
+
+        public get(): EventA { return this; }
+
+        public getId(): number { return 141; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+                () => this.getBufferFromBuf<string>(142, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => { const buffer = this.field_a.encode(); return this.getBuffer(143, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_b.encode(); return this.getBuffer(144, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | EventA {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            const uuid: string | Error = this.getValue<string>(storage, 142, Protocol.Primitives.StrUTF8.decode);
+            if (uuid instanceof Error) {
+                return uuid;
+            } else {
+                this.uuid = uuid;
+            }
+            const field_a: StructA = new StructA({
+                field_str: '',
+                field_str_empty: '',
+                field_u8: 0,
+                field_u16: 0,
+                field_u32: 0,
+                field_u64: BigInt(0),
+                field_i8: 0,
+                field_i16: 0,
+                field_i32: 0,
+                field_i64: BigInt(0),
+                field_f32: 0,
+                field_f64: 0,
+                field_bool: true,
+            });
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(143);
+            if (field_aBuf === undefined) {
+                return new Error(`Fail to find field "field_a" (id=143).`);
+            }
+            const field_aErr: Error | StructA = field_a.decode(field_aBuf);
+            if (field_aErr instanceof Error) {
+                return field_aErr;
+            } else {
+                this.field_a = field_a;
+            }
+            const field_b: StructB = new StructB({
+                field_str: [],
+                field_u8: [],
+                field_u16: [],
+                field_u32: [],
+                field_u64: [],
+                field_i8: [],
+                field_i16: [],
+                field_i32: [],
+                field_i64: [],
+                field_f32: [],
+                field_f64: [],
+                field_bool: [],
+                field_struct: [],
+                field_str_empty: [],
+                field_u8_empty: [],
+                field_u16_empty: [],
+                field_u32_empty: [],
+                field_u64_empty: [],
+                field_i8_empty: [],
+                field_i16_empty: [],
+                field_i32_empty: [],
+                field_i64_empty: [],
+                field_f32_empty: [],
+                field_f64_empty: [],
+                field_bool_empty: [],
+                field_struct_empty: [],
+            });
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(144);
+            if (field_bBuf === undefined) {
+                return new Error(`Fail to find field "field_b" (id=144).`);
+            }
+            const field_bErr: Error | StructB = field_b.decode(field_bBuf);
+            if (field_bErr instanceof Error) {
+                return field_bErr;
+            } else {
+                this.field_b = field_b;
+            }
+            return this;
+        }
+
+        public defaults(): EventA {
+            return EventA.defaults();
+        }
+    }
+
+    export interface IEventB {
+        uuid: string;
+        field_a: GroupA.StructA;
+        field_b: GroupA.StructB;
+        field_c: GroupB.StructA;
+    }
+    export class EventB extends Protocol.Convertor<EventB> implements IEventB, ISigned<EventB> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+            { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+            { prop: 'field_a', types: GroupA.StructA.getValidator(false), optional: false },
+            { prop: 'field_b', types: GroupA.StructB.getValidator(false), optional: false },
+            { prop: 'field_c', types: GroupB.StructA.getValidator(false), optional: false },
+        ];
+
+        public static defaults(): EventB {
+            return new Events.EventB({
+                uuid: '',
+                field_a: new GroupA.StructA({
+                    field_u8: 0,
+                    field_u16: 0,
+                    opt: {},
+                }),
+                field_b: new GroupA.StructB({
+                    field_u8: 0,
+                    field_u16: 0,
+                    strct: new GroupA.StructA({
+                        field_u8: 0,
+                        field_u16: 0,
+                        opt: {},
+                    }),
+                }),
+                field_c: new GroupB.StructA({
+                    field_u8: 0,
+                    field_u16: 0,
+                }),
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<EventB>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof EventB)) {
+                                throw new Error(`Expecting instance of EventB on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof EventB ? undefined : new Error(`Expecting instance of EventB`);
+                }};
+            }
+        }
+
+        public static from(obj: any): EventB | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = EventB.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, EventB.scheme);
+                return error instanceof Error ? error : new EventB({
+                    uuid: obj.uuid,
+                    field_a: obj.field_a,
+                    field_b: obj.field_b,
+                    field_c: obj.field_c,
+                });
+            }
+        }
+
+        public uuid!: string;
+        public field_a!: GroupA.StructA;
+        public field_b!: GroupA.StructB;
+        public field_c!: GroupB.StructA;
+        public static getSignature(): string { return 'EventB'; }
+        public static getId(): number { return 145; }
+
+
+        constructor(params: IEventB)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'EventB'; }
+
+        public get(): EventB { return this; }
+
+        public getId(): number { return 145; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+                () => this.getBufferFromBuf<string>(146, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => { const buffer = this.field_a.encode(); return this.getBuffer(147, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_b.encode(); return this.getBuffer(148, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                () => { const buffer = this.field_c.encode(); return this.getBuffer(149, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | EventB {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            const uuid: string | Error = this.getValue<string>(storage, 146, Protocol.Primitives.StrUTF8.decode);
+            if (uuid instanceof Error) {
+                return uuid;
+            } else {
+                this.uuid = uuid;
+            }
+            const field_a: GroupA.StructA = new GroupA.StructA({
+                field_u8: 0,
+                field_u16: 0,
+                opt: {},
+            });
+            const field_aBuf: ArrayBufferLike | undefined = storage.get(147);
+            if (field_aBuf === undefined) {
+                return new Error(`Fail to find field "field_a" (id=147).`);
+            }
+            const field_aErr: Error | GroupA.StructA = field_a.decode(field_aBuf);
+            if (field_aErr instanceof Error) {
+                return field_aErr;
+            } else {
+                this.field_a = field_a;
+            }
+            const field_b: GroupA.StructB = new GroupA.StructB({
+                field_u8: 0,
+                field_u16: 0,
+                strct: new GroupA.StructA({
+                    field_u8: 0,
+                    field_u16: 0,
+                    opt: {},
+                }),
+            });
+            const field_bBuf: ArrayBufferLike | undefined = storage.get(148);
+            if (field_bBuf === undefined) {
+                return new Error(`Fail to find field "field_b" (id=148).`);
+            }
+            const field_bErr: Error | GroupA.StructB = field_b.decode(field_bBuf);
+            if (field_bErr instanceof Error) {
+                return field_bErr;
+            } else {
+                this.field_b = field_b;
+            }
+            const field_c: GroupB.StructA = new GroupB.StructA({
+                field_u8: 0,
+                field_u16: 0,
+            });
+            const field_cBuf: ArrayBufferLike | undefined = storage.get(149);
+            if (field_cBuf === undefined) {
+                return new Error(`Fail to find field "field_c" (id=149).`);
+            }
+            const field_cErr: Error | GroupB.StructA = field_c.decode(field_cBuf);
+            if (field_cErr instanceof Error) {
+                return field_cErr;
+            } else {
+                this.field_c = field_c;
+            }
+            return this;
+        }
+
+        public defaults(): EventB {
+            return EventB.defaults();
+        }
+    }
+
+    export namespace Sub {
+        export interface IAvailableMessages {
+            EventA?: EventA,
+        }
+
+        export interface IEventA {
+            uuid: string;
+            field_a: GroupB.GroupC.StructA;
+            field_b: GroupB.GroupC.StructB;
+        }
+        export class EventA extends Protocol.Convertor<EventA> implements IEventA, ISigned<EventA> {
+
+            public static scheme: Protocol.IPropScheme[] = [
+                { prop: 'uuid', types: Protocol.Primitives.StrUTF8, optional: false, },
+                { prop: 'field_a', types: GroupB.GroupC.StructA.getValidator(false), optional: false },
+                { prop: 'field_b', types: GroupB.GroupC.StructB.getValidator(false), optional: false },
+            ];
+
+            public static defaults(): EventA {
+                return new Events.Sub.EventA({
+                    uuid: '',
+                    field_a: new GroupB.GroupC.StructA({
+                        field_u8: 0,
+                        field_u16: 0,
+                    }),
+                    field_b: new GroupB.GroupC.StructB({
+                        field_u8: 0,
+                        field_u16: 0,
+                        strct: new GroupB.GroupC.StructA({
+                            field_u8: 0,
+                            field_u16: 0,
+                        }),
+                    }),
+                });
+            }
+
+            public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+                if (array) {
+                    return { validate(obj: any): Error | undefined {
+                        if (!(obj instanceof Array)) {
+                            return new Error(`Expecting Array<EventA>`);
+                        }
+                        try {
+                            obj.forEach((o, index: number) => {
+                                if (!(o instanceof EventA)) {
+                                    throw new Error(`Expecting instance of EventA on index #${index}`);
+                                }
+                            });
+                        } catch (err) {
+                            return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                        }
+                    }};
+                } else {
+                    return { validate(obj: any): Error | undefined {
+                        return obj instanceof EventA ? undefined : new Error(`Expecting instance of EventA`);
+                    }};
+                }
+            }
+
+            public static from(obj: any): EventA | Error {
+                if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                    const inst = EventA.defaults();
+                    const err = inst.decode(obj);
+                    return err instanceof Error ? err : inst;
+                } else {
+                    const error: Error | undefined = Protocol.validate(obj, EventA.scheme);
+                    return error instanceof Error ? error : new EventA({
+                        uuid: obj.uuid,
+                        field_a: obj.field_a,
+                        field_b: obj.field_b,
+                    });
+                }
+            }
+
+            public uuid!: string;
+            public field_a!: GroupB.GroupC.StructA;
+            public field_b!: GroupB.GroupC.StructB;
+            public static getSignature(): string { return 'EventA'; }
+            public static getId(): number { return 151; }
+
+
+            constructor(params: IEventA)  {
+                super();
+                Object.keys(params).forEach((key: string) => {
+                    (this as any)[key] = (params as any)[key];
+                });
+            }
+
+            public signature(): number { return 0; }
+
+            public getSignature(): string { return 'EventA'; }
+
+            public get(): EventA { return this; }
+
+            public getId(): number { return 151; }
+
+            public encode(): ArrayBufferLike {
+                return this.collect([
+                    () => this.getBufferFromBuf<string>(152, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                    () => { const buffer = this.field_a.encode(); return this.getBuffer(153, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                    () => { const buffer = this.field_b.encode(); return this.getBuffer(154, Protocol.ESize.u64, BigInt(buffer.byteLength), buffer); },
+                ]);
+            }
+
+            public decode(buffer: ArrayBufferLike): Error | EventA {
+                const storage = this.getStorage(buffer);
+                if (storage instanceof Error) {
+                    return storage;
+                }
+                const uuid: string | Error = this.getValue<string>(storage, 152, Protocol.Primitives.StrUTF8.decode);
+                if (uuid instanceof Error) {
+                    return uuid;
+                } else {
+                    this.uuid = uuid;
+                }
+                const field_a: GroupB.GroupC.StructA = new GroupB.GroupC.StructA({
+                    field_u8: 0,
+                    field_u16: 0,
+                });
+                const field_aBuf: ArrayBufferLike | undefined = storage.get(153);
+                if (field_aBuf === undefined) {
+                    return new Error(`Fail to find field "field_a" (id=153).`);
+                }
+                const field_aErr: Error | GroupB.GroupC.StructA = field_a.decode(field_aBuf);
+                if (field_aErr instanceof Error) {
+                    return field_aErr;
+                } else {
+                    this.field_a = field_a;
+                }
+                const field_b: GroupB.GroupC.StructB = new GroupB.GroupC.StructB({
+                    field_u8: 0,
+                    field_u16: 0,
+                    strct: new GroupB.GroupC.StructA({
+                        field_u8: 0,
+                        field_u16: 0,
+                    }),
+                });
+                const field_bBuf: ArrayBufferLike | undefined = storage.get(154);
+                if (field_bBuf === undefined) {
+                    return new Error(`Fail to find field "field_b" (id=154).`);
+                }
+                const field_bErr: Error | GroupB.GroupC.StructB = field_b.decode(field_bBuf);
+                if (field_bErr instanceof Error) {
+                    return field_bErr;
+                } else {
+                    this.field_b = field_b;
+                }
+                return this;
+            }
+
+            public defaults(): EventA {
+                return EventA.defaults();
+            }
+        }
+
+    }
+
+}
+
 export namespace InternalServiceGroup {
     export interface IAvailableMessages {
         SelfKeyResponse?: SelfKeyResponse,
         HashRequest?: HashRequest,
         HashResponse?: HashResponse,
         BeaconConfirmation?: BeaconConfirmation,
+        ConnectConfirmationBeacon?: ConnectConfirmationBeacon,
     }
 
     export interface ISelfKeyResponse {
@@ -6420,7 +8522,7 @@ export namespace InternalServiceGroup {
 
         public uuid!: string;
         public static getSignature(): string { return 'SelfKeyResponse'; }
-        public static getId(): number { return 116; }
+        public static getId(): number { return 156; }
 
 
         constructor(params: ISelfKeyResponse)  {
@@ -6436,11 +8538,11 @@ export namespace InternalServiceGroup {
 
         public get(): SelfKeyResponse { return this; }
 
-        public getId(): number { return 116; }
+        public getId(): number { return 156; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(117, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
+                () => this.getBufferFromBuf<string>(157, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.uuid),
             ]);
         }
 
@@ -6449,7 +8551,7 @@ export namespace InternalServiceGroup {
             if (storage instanceof Error) {
                 return storage;
             }
-            const uuid: string | Error = this.getValue<string>(storage, 117, Protocol.Primitives.StrUTF8.decode);
+            const uuid: string | Error = this.getValue<string>(storage, 157, Protocol.Primitives.StrUTF8.decode);
             if (uuid instanceof Error) {
                 return uuid;
             } else {
@@ -6521,7 +8623,7 @@ export namespace InternalServiceGroup {
         public protocol!: string;
         public workflow!: string;
         public static getSignature(): string { return 'HashRequest'; }
-        public static getId(): number { return 118; }
+        public static getId(): number { return 158; }
 
 
         constructor(params: IHashRequest)  {
@@ -6537,12 +8639,12 @@ export namespace InternalServiceGroup {
 
         public get(): HashRequest { return this; }
 
-        public getId(): number { return 118; }
+        public getId(): number { return 158; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.getBufferFromBuf<string>(119, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.protocol),
-                () => this.getBufferFromBuf<string>(120, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.workflow),
+                () => this.getBufferFromBuf<string>(159, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.protocol),
+                () => this.getBufferFromBuf<string>(160, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.workflow),
             ]);
         }
 
@@ -6551,13 +8653,13 @@ export namespace InternalServiceGroup {
             if (storage instanceof Error) {
                 return storage;
             }
-            const protocol: string | Error = this.getValue<string>(storage, 119, Protocol.Primitives.StrUTF8.decode);
+            const protocol: string | Error = this.getValue<string>(storage, 159, Protocol.Primitives.StrUTF8.decode);
             if (protocol instanceof Error) {
                 return protocol;
             } else {
                 this.protocol = protocol;
             }
-            const workflow: string | Error = this.getValue<string>(storage, 120, Protocol.Primitives.StrUTF8.decode);
+            const workflow: string | Error = this.getValue<string>(storage, 160, Protocol.Primitives.StrUTF8.decode);
             if (workflow instanceof Error) {
                 return workflow;
             } else {
@@ -6624,7 +8726,7 @@ export namespace InternalServiceGroup {
 
         public error!: string | undefined;
         public static getSignature(): string { return 'HashResponse'; }
-        public static getId(): number { return 121; }
+        public static getId(): number { return 161; }
 
 
         constructor(params: IHashResponse)  {
@@ -6640,11 +8742,11 @@ export namespace InternalServiceGroup {
 
         public get(): HashResponse { return this; }
 
-        public getId(): number { return 121; }
+        public getId(): number { return 161; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.error === undefined ? this.getBuffer(122, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(122, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.error === undefined ? this.getBuffer(162, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(162, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -6653,14 +8755,14 @@ export namespace InternalServiceGroup {
             if (storage instanceof Error) {
                 return storage;
             }
-            const errorBuf: ArrayBufferLike | undefined = storage.get(122);
+            const errorBuf: ArrayBufferLike | undefined = storage.get(162);
             if (errorBuf === undefined) {
-                return new Error(`Fail to get property error (id=122)`);
+                return new Error(`Fail to get property error (id=162)`);
             }
             if (errorBuf.byteLength === 0) {
                 this.error = undefined;
             } else {
-                const error: string | Error = this.getValue<string>(storage, 122, Protocol.Primitives.StrUTF8.decode);
+                const error: string | Error = this.getValue<string>(storage, 162, Protocol.Primitives.StrUTF8.decode);
                 if (error instanceof Error) {
                     return error;
                 } else {
@@ -6728,7 +8830,7 @@ export namespace InternalServiceGroup {
 
         public error!: string | undefined;
         public static getSignature(): string { return 'BeaconConfirmation'; }
-        public static getId(): number { return 123; }
+        public static getId(): number { return 163; }
 
 
         constructor(params: IBeaconConfirmation)  {
@@ -6744,11 +8846,11 @@ export namespace InternalServiceGroup {
 
         public get(): BeaconConfirmation { return this; }
 
-        public getId(): number { return 123; }
+        public getId(): number { return 163; }
 
         public encode(): ArrayBufferLike {
             return this.collect([
-                () => this.error === undefined ? this.getBuffer(124, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(124, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
+                () => this.error === undefined ? this.getBuffer(164, Protocol.ESize.u8, 0, new Uint8Array()) : this.getBufferFromBuf<string>(164, Protocol.ESize.u64, Protocol.Primitives.StrUTF8.encode, this.error),
             ]);
         }
 
@@ -6757,14 +8859,14 @@ export namespace InternalServiceGroup {
             if (storage instanceof Error) {
                 return storage;
             }
-            const errorBuf: ArrayBufferLike | undefined = storage.get(124);
+            const errorBuf: ArrayBufferLike | undefined = storage.get(164);
             if (errorBuf === undefined) {
-                return new Error(`Fail to get property error (id=124)`);
+                return new Error(`Fail to get property error (id=164)`);
             }
             if (errorBuf.byteLength === 0) {
                 this.error = undefined;
             } else {
-                const error: string | Error = this.getValue<string>(storage, 124, Protocol.Primitives.StrUTF8.decode);
+                const error: string | Error = this.getValue<string>(storage, 164, Protocol.Primitives.StrUTF8.decode);
                 if (error instanceof Error) {
                     return error;
                 } else {
@@ -6776,6 +8878,90 @@ export namespace InternalServiceGroup {
 
         public defaults(): BeaconConfirmation {
             return BeaconConfirmation.defaults();
+        }
+    }
+
+    export interface IConnectConfirmationBeacon {
+    }
+    export class ConnectConfirmationBeacon extends Protocol.Convertor<ConnectConfirmationBeacon> implements IConnectConfirmationBeacon, ISigned<ConnectConfirmationBeacon> {
+
+        public static scheme: Protocol.IPropScheme[] = [
+        ];
+
+        public static defaults(): ConnectConfirmationBeacon {
+            return new InternalServiceGroup.ConnectConfirmationBeacon({
+            });
+        }
+
+        public static getValidator(array: boolean): { validate(value: any): Error | undefined } {
+            if (array) {
+                return { validate(obj: any): Error | undefined {
+                    if (!(obj instanceof Array)) {
+                        return new Error(`Expecting Array<ConnectConfirmationBeacon>`);
+                    }
+                    try {
+                        obj.forEach((o, index: number) => {
+                            if (!(o instanceof ConnectConfirmationBeacon)) {
+                                throw new Error(`Expecting instance of ConnectConfirmationBeacon on index #${index}`);
+                            }
+                        });
+                    } catch (err) {
+                        return err instanceof Error ? err : new Error(`Unknown error: ${err}`);
+                    }
+                }};
+            } else {
+                return { validate(obj: any): Error | undefined {
+                    return obj instanceof ConnectConfirmationBeacon ? undefined : new Error(`Expecting instance of ConnectConfirmationBeacon`);
+                }};
+            }
+        }
+
+        public static from(obj: any): ConnectConfirmationBeacon | Error {
+            if (obj instanceof Buffer || obj instanceof ArrayBuffer || obj instanceof Uint8Array) {
+                const inst = ConnectConfirmationBeacon.defaults();
+                const err = inst.decode(obj);
+                return err instanceof Error ? err : inst;
+            } else {
+                const error: Error | undefined = Protocol.validate(obj, ConnectConfirmationBeacon.scheme);
+                return error instanceof Error ? error : new ConnectConfirmationBeacon({
+                });
+            }
+        }
+
+        public static getSignature(): string { return 'ConnectConfirmationBeacon'; }
+        public static getId(): number { return 165; }
+
+
+        constructor(params: IConnectConfirmationBeacon)  {
+            super();
+            Object.keys(params).forEach((key: string) => {
+                (this as any)[key] = (params as any)[key];
+            });
+        }
+
+        public signature(): number { return 0; }
+
+        public getSignature(): string { return 'ConnectConfirmationBeacon'; }
+
+        public get(): ConnectConfirmationBeacon { return this; }
+
+        public getId(): number { return 165; }
+
+        public encode(): ArrayBufferLike {
+            return this.collect([
+            ]);
+        }
+
+        public decode(buffer: ArrayBufferLike): Error | ConnectConfirmationBeacon {
+            const storage = this.getStorage(buffer);
+            if (storage instanceof Error) {
+                return storage;
+            }
+            return this;
+        }
+
+        public defaults(): ConnectConfirmationBeacon {
+            return ConnectConfirmationBeacon.defaults();
         }
     }
 
@@ -6809,14 +8995,14 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EnumC: instance }, getRef: () => instance };
-            case 88:
+            case 106:
                 instance = new GroupA.EnumA();
                 err = instance.decode(buffer);
                 if (err instanceof Error) { return err; }
                 enum_instance = instance.get();
                 instance = enum_instance;
                 return { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { EnumA: instance } }, getRef: () => instance };
-            case 114:
+            case 132:
                 instance = new GroupD.EnumP();
                 err = instance.decode(buffer);
                 if (err instanceof Error) { return err; }
@@ -6852,56 +9038,124 @@ export class BufferReaderMessages extends BufferReader<IAvailableMessage<IAvaila
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructG: instance }, getRef: () => instance };
             case 82:
+                instance = TriggerBeaconsEmitter.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { TriggerBeaconsEmitter: instance }, getRef: () => instance };
+            case 84:
                 instance = StructEmpty.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructEmpty: instance }, getRef: () => instance };
-            case 83:
+            case 85:
+                instance = StructEmptyA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructEmptyA: instance }, getRef: () => instance };
+            case 86:
+                instance = StructEmptyB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructEmptyB: instance }, getRef: () => instance };
+            case 87:
                 instance = StructJ.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { StructJ: instance }, getRef: () => instance };
-            case 89:
+            case 91:
+                instance = TriggerBeacons.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { TriggerBeacons: instance }, getRef: () => instance };
+            case 92:
+                instance = FinishConsumerTest.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { FinishConsumerTest: instance }, getRef: () => instance };
+            case 94:
+                instance = FinishConsumerTestBroadcast.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { FinishConsumerTestBroadcast: instance }, getRef: () => instance };
+            case 95:
+                instance = BeaconA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { BeaconA: instance }, getRef: () => instance };
+            case 98:
+                instance = Beacons.ShutdownServer.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Beacons: { ShutdownServer: instance } }, getRef: () => instance };
+            case 99:
+                instance = Beacons.BeaconA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Beacons: { BeaconA: instance } }, getRef: () => instance };
+            case 100:
+                instance = Beacons.BeaconB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Beacons: { BeaconB: instance } }, getRef: () => instance };
+            case 103:
+                instance = Beacons.Sub.BeaconA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Beacons: { Sub: { BeaconA: instance } } }, getRef: () => instance };
+            case 107:
                 instance = GroupA.StructA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructA: instance } }, getRef: () => instance };
-            case 93:
+            case 111:
                 instance = GroupA.StructB.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupA: { StructB: instance } }, getRef: () => instance };
-            case 98:
+            case 116:
                 instance = GroupB.StructA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { StructA: instance } }, getRef: () => instance };
-            case 102:
+            case 120:
                 instance = GroupB.GroupC.StructA.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructA: instance } } }, getRef: () => instance };
-            case 105:
+            case 123:
                 instance = GroupB.GroupC.StructB.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupB: { GroupC: { StructB: instance } } }, getRef: () => instance };
-            case 110:
+            case 128:
                 instance = GroupD.StructP.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { GroupD: { StructP: instance } }, getRef: () => instance };
-            case 116:
+            case 133:
+                instance = EventA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EventA: instance }, getRef: () => instance };
+            case 137:
+                instance = EventB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { EventB: instance }, getRef: () => instance };
+            case 141:
+                instance = Events.EventA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Events: { EventA: instance } }, getRef: () => instance };
+            case 145:
+                instance = Events.EventB.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Events: { EventB: instance } }, getRef: () => instance };
+            case 151:
+                instance = Events.Sub.EventA.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { Events: { Sub: { EventA: instance } } }, getRef: () => instance };
+            case 156:
                 instance = InternalServiceGroup.SelfKeyResponse.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { SelfKeyResponse: instance } }, getRef: () => instance };
-            case 118:
+            case 158:
                 instance = InternalServiceGroup.HashRequest.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { HashRequest: instance } }, getRef: () => instance };
-            case 121:
+            case 161:
                 instance = InternalServiceGroup.HashResponse.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { HashResponse: instance } }, getRef: () => instance };
-            case 123:
+            case 163:
                 instance = InternalServiceGroup.BeaconConfirmation.defaults();
                 err = instance.decode(buffer);
                 return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { BeaconConfirmation: instance } }, getRef: () => instance };
+            case 165:
+                instance = InternalServiceGroup.ConnectConfirmationBeacon.defaults();
+                err = instance.decode(buffer);
+                return err instanceof Error ? err : { header: { id: header.id, sequence: header.sequence, timestamp: header.ts }, msg: { InternalServiceGroup: { ConnectConfirmationBeacon: instance } }, getRef: () => instance };
             default: throw new Error(`Unknown message id=${header.id}`);
         }
     }
 }
 
-export function hash(): string { return `3866462310227764BF9F29517C27840E42ED4F0FB6D2208426C15DF29AFF29E5`; }
+export function hash(): string { return `2FE9D6137375F6B74B81143B6CA65EEAE6124B6C03C78937C4583DF0B0EF757A`; }

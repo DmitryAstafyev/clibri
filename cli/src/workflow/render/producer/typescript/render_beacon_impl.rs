@@ -12,14 +12,9 @@ mod templates {
     Filter,
     Protocol,
 } from "../implementation/beacons";
+import { Scope } from "../implementation/scope";
 
-export function emit(
-    beacon: Protocol.[[beacon]],
-    consumer: Identification,
-    filter: Filter,
-    context: Context,
-    producer: Producer
-): Promise<void> {
+export function emit(beacon: Protocol.[[beacon]], scope: Scope): Promise<void> {
     return Promise.reject(
         new Error(`Handler for Protocol.[[beacon]] isn't implemented.`)
     );

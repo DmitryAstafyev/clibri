@@ -10,7 +10,7 @@ export type TCaseDHandler = (response: Protocol.StructD) => void
 export type TErrHandler = (response: Protocol.StructE) => void
 
 export class StructA extends Protocol.StructA {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         caseb: TCaseBHandler | undefined;
@@ -23,8 +23,9 @@ export class StructA extends Protocol.StructA {
         cased: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.IStructA) {
+    constructor(request: Protocol.IStructA, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -38,7 +39,8 @@ export class StructA extends Protocol.StructA {
     }
 
     public send(): Promise<TStructAResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -56,7 +58,7 @@ export class StructA extends Protocol.StructA {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
                         if (message === undefined) {
-                            return reject(new Error(`Expecting message from "message" group.`));
+                            return reject(new Error(`Expecting message for "StructA".`));
                         } else if (message.StructB !== undefined) {
                             this._handlers.caseb !== undefined && this._handlers.caseb(message.StructB);
                             return resolve(message.StructB);

@@ -25,9 +25,9 @@ export class Producer {
         WORKFLOW: string;
     } = {
         PROTOCOL:
-            "3866462310227764BF9F29517C27840E42ED4F0FB6D2208426C15DF29AFF29E5",
+            "2FE9D6137375F6B74B81143B6CA65EEAE6124B6C03C78937C4583DF0B0EF757A",
         WORKFLOW:
-            "762B9AC5C68559FCEF1ED3A33DD4CADB0DB807715F9DEB84612C85CCC046C887",
+            "429F4C595CF69B2A040303F3A7F626CB1188AEB79DBC9DB8AB314ABA1601C1C9",
     };
     private readonly _server: Server;
     private readonly _subscriptions: { [key: string]: Subscription } = {};
@@ -37,17 +37,21 @@ export class Producer {
     private readonly _context: Context;
 
     public readonly events: {        
-        structA: Subject<Protocol.StructA>;
-        structB: Subject<Protocol.StructB>;
-        groupBStructA: Subject<Protocol.GroupB.StructA>;
-        groupBGroupCStructA: Subject<Protocol.GroupB.GroupC.StructA>;
-        groupDStructP: Subject<Protocol.GroupD.StructP>;
+        eventA: Subject<Protocol.EventA>;
+        eventB: Subject<Protocol.EventB>;
+        eventsEventA: Subject<Protocol.Events.EventA>;
+        eventsEventB: Subject<Protocol.Events.EventB>;
+        eventsSubEventA: Subject<Protocol.Events.Sub.EventA>;
+        triggerBeaconsEmitter: Subject<Protocol.TriggerBeaconsEmitter>;
+        finishConsumerTest: Subject<Protocol.FinishConsumerTest>;
     } = {        
-        structA: new Subject<Protocol.StructA>(),
-        structB: new Subject<Protocol.StructB>(),
-        groupBStructA: new Subject<Protocol.GroupB.StructA>(),
-        groupBGroupCStructA: new Subject<Protocol.GroupB.GroupC.StructA>(),
-        groupDStructP: new Subject<Protocol.GroupD.StructP>(),
+        eventA: new Subject<Protocol.EventA>(),
+        eventB: new Subject<Protocol.EventB>(),
+        eventsEventA: new Subject<Protocol.Events.EventA>(),
+        eventsEventB: new Subject<Protocol.Events.EventB>(),
+        eventsSubEventA: new Subject<Protocol.Events.Sub.EventA>(),
+        triggerBeaconsEmitter: new Subject<Protocol.TriggerBeaconsEmitter>(),
+        finishConsumerTest: new Subject<Protocol.FinishConsumerTest>(),
     };
 
     constructor(server: Server, context: Context, options?: Options) {
@@ -73,10 +77,10 @@ export class Producer {
         this._subscriptions.received = this._server
             .getEvents()
             .received.subscribe(this._onClientReceived.bind(this));        
-        this._subscriptions.structAHandlerSub = this.events.structA.subscribe(
-            (event: Protocol.StructA) => {
+        this._subscriptions.eventAHandlerSub = this.events.eventA.subscribe(
+            (event: Protocol.EventA) => {
                 this._checkErr(
-                    Events.structAHandler(
+                    Events.eventAHandler(
                         event,
                         new Filter(this._consumers),
                         this._context,
@@ -85,10 +89,10 @@ export class Producer {
                 );
             }
         );
-        this._subscriptions.structBHandlerSub = this.events.structB.subscribe(
-            (event: Protocol.StructB) => {
+        this._subscriptions.eventBHandlerSub = this.events.eventB.subscribe(
+            (event: Protocol.EventB) => {
                 this._checkErr(
-                    Events.structBHandler(
+                    Events.eventBHandler(
                         event,
                         new Filter(this._consumers),
                         this._context,
@@ -97,10 +101,10 @@ export class Producer {
                 );
             }
         );
-        this._subscriptions.groupBStructAHandlerSub = this.events.groupBStructA.subscribe(
-            (event: Protocol.GroupB.StructA) => {
+        this._subscriptions.eventsEventAHandlerSub = this.events.eventsEventA.subscribe(
+            (event: Protocol.Events.EventA) => {
                 this._checkErr(
-                    Events.groupBStructAHandler(
+                    Events.eventsEventAHandler(
                         event,
                         new Filter(this._consumers),
                         this._context,
@@ -109,10 +113,10 @@ export class Producer {
                 );
             }
         );
-        this._subscriptions.groupBGroupCStructAHandlerSub = this.events.groupBGroupCStructA.subscribe(
-            (event: Protocol.GroupB.GroupC.StructA) => {
+        this._subscriptions.eventsEventBHandlerSub = this.events.eventsEventB.subscribe(
+            (event: Protocol.Events.EventB) => {
                 this._checkErr(
-                    Events.groupBGroupCStructAHandler(
+                    Events.eventsEventBHandler(
                         event,
                         new Filter(this._consumers),
                         this._context,
@@ -121,10 +125,34 @@ export class Producer {
                 );
             }
         );
-        this._subscriptions.groupDStructPHandlerSub = this.events.groupDStructP.subscribe(
-            (event: Protocol.GroupD.StructP) => {
+        this._subscriptions.eventsSubEventAHandlerSub = this.events.eventsSubEventA.subscribe(
+            (event: Protocol.Events.Sub.EventA) => {
                 this._checkErr(
-                    Events.groupDStructPHandler(
+                    Events.eventsSubEventAHandler(
+                        event,
+                        new Filter(this._consumers),
+                        this._context,
+                        this
+                    )
+                );
+            }
+        );
+        this._subscriptions.triggerBeaconsEmitterHandlerSub = this.events.triggerBeaconsEmitter.subscribe(
+            (event: Protocol.TriggerBeaconsEmitter) => {
+                this._checkErr(
+                    Events.triggerBeaconsEmitterHandler(
+                        event,
+                        new Filter(this._consumers),
+                        this._context,
+                        this
+                    )
+                );
+            }
+        );
+        this._subscriptions.finishConsumerTestHandlerSub = this.events.finishConsumerTest.subscribe(
+            (event: Protocol.FinishConsumerTest) => {
+                this._checkErr(
+                    Events.finishConsumerTestHandler(
                         event,
                         new Filter(this._consumers),
                         this._context,
@@ -314,7 +342,7 @@ export class Producer {
                 message.msg,
                 "StructA"
             );
-            if (extracted.exist) {
+            if (extracted.exist && !consumer.isHashAccepted()) {
                 this._logger.debug(
                     `consumer ${event.uuid} requested identification`
                 );
@@ -549,6 +577,22 @@ export class Producer {
                 );
                 continue;
             }
+            extracted = this._extract(message.msg, "StructEmpty");
+            if (extracted.exist) {
+                this._checkErrAndResponse(
+                    Responses.structEmptyHandler(
+                        extracted.body<Protocol.StructEmpty>(),
+                        consumer.getIdentification(),
+                        new Filter(this._consumers),
+                        this._context,
+                        this,
+                        message.header.sequence
+                    ),
+                    event.uuid,
+                    consumer
+                );
+                continue;
+            }
             extracted = this._extract(message.msg, "GroupA.StructA");
             if (extracted.exist) {
                 this._checkErrAndResponse(
@@ -629,11 +673,11 @@ export class Producer {
                 );
                 continue;
             }            
-            extracted = this._extract(message.msg, "StructA");
+            extracted = this._extract(message.msg, "BeaconA");
             if (extracted.exist) {
                 this._checkErrAndResponse(
-                    Beacons.structAHandler(
-                        extracted.body<Protocol.StructA>(),
+                    Beacons.beaconAHandler(
+                        extracted.body<Protocol.BeaconA>(),
                         consumer.getIdentification(),
                         new Filter(this._consumers),
                         this._context,
@@ -643,12 +687,13 @@ export class Producer {
                     event.uuid,
                     consumer
                 );
+                continue;
             }
-            extracted = this._extract(message.msg, "StructB");
+            extracted = this._extract(message.msg, "Beacons.BeaconA");
             if (extracted.exist) {
                 this._checkErrAndResponse(
-                    Beacons.structBHandler(
-                        extracted.body<Protocol.StructB>(),
+                    Beacons.beaconsBeaconAHandler(
+                        extracted.body<Protocol.Beacons.BeaconA>(),
                         consumer.getIdentification(),
                         new Filter(this._consumers),
                         this._context,
@@ -658,12 +703,13 @@ export class Producer {
                     event.uuid,
                     consumer
                 );
+                continue;
             }
-            extracted = this._extract(message.msg, "GroupA.StructA");
+            extracted = this._extract(message.msg, "Beacons.BeaconB");
             if (extracted.exist) {
                 this._checkErrAndResponse(
-                    Beacons.groupAStructAHandler(
-                        extracted.body<Protocol.GroupA.StructA>(),
+                    Beacons.beaconsBeaconBHandler(
+                        extracted.body<Protocol.Beacons.BeaconB>(),
                         consumer.getIdentification(),
                         new Filter(this._consumers),
                         this._context,
@@ -673,12 +719,13 @@ export class Producer {
                     event.uuid,
                     consumer
                 );
+                continue;
             }
-            extracted = this._extract(message.msg, "GroupB.GroupC.StructA");
+            extracted = this._extract(message.msg, "Beacons.Sub.BeaconA");
             if (extracted.exist) {
                 this._checkErrAndResponse(
-                    Beacons.groupBGroupCStructAHandler(
-                        extracted.body<Protocol.GroupB.GroupC.StructA>(),
+                    Beacons.beaconsSubBeaconAHandler(
+                        extracted.body<Protocol.Beacons.Sub.BeaconA>(),
                         consumer.getIdentification(),
                         new Filter(this._consumers),
                         this._context,
@@ -688,6 +735,23 @@ export class Producer {
                     event.uuid,
                     consumer
                 );
+                continue;
+            }
+            extracted = this._extract(message.msg, "Beacons.ShutdownServer");
+            if (extracted.exist) {
+                this._checkErrAndResponse(
+                    Beacons.beaconsShutdownServerHandler(
+                        extracted.body<Protocol.Beacons.ShutdownServer>(),
+                        consumer.getIdentification(),
+                        new Filter(this._consumers),
+                        this._context,
+                        this,
+                        message.header.sequence
+                    ),
+                    event.uuid,
+                    consumer
+                );
+                continue;
             }
             this._receivingErr(
                 new Error(
@@ -696,16 +760,18 @@ export class Producer {
                 event.uuid,
                 consumer
             );
-            this._logger.err(
-                `Unknown message header: ${JSON.stringify(message.header)}`
-            );
-            const msgStrBody = JSON.stringify(message.msg);
-            this._logger.verb(
-                `Unknown message body: ${msgStrBody.substr(
-                    0,
-                    msgStrBody.length > 500 ? 500 : msgStrBody.length
-                )}`
-            );
+			this._logger.err(
+				`Unknown message header: id=${message.header.id}; sequence=${message.header.sequence}`
+			);
+			try {
+				const msgStrBody = JSON.stringify(message.msg);
+				this._logger.verb(
+					`Unknown message body: ${msgStrBody.substr(
+						0,
+						msgStrBody.length > 500 ? 500 : msgStrBody.length
+					)}`
+				);
+			} catch (_) {}
             break;
         } while (true);
     }

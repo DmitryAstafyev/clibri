@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "declaration": true,
+    "module": "CommonJS",
+    "target": "ESNEXT",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "strict": true,
+    "typeRoots": [
+      "node_modules/@types"
+    ],
+    "lib": [
+      "ESNEXT.BigInt",
+      "ESNEXT",
+      "DOM"
+    ]
+  },
+  "files": [
+    "src/index.ts",
+  ]
+}

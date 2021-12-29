@@ -10,7 +10,7 @@ export type TCaseDHandler = (response: Protocol.StructD) => void
 export type TErrHandler = (response: Protocol.GroupB.GroupC.StructA) => void
 
 export class GroupBGroupCStructB extends Protocol.GroupB.GroupC.StructB {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         caseb: TCaseBHandler | undefined;
@@ -23,8 +23,9 @@ export class GroupBGroupCStructB extends Protocol.GroupB.GroupC.StructB {
         cased: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.GroupB.GroupC.IStructB) {
+    constructor(request: Protocol.GroupB.GroupC.IStructB, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -38,7 +39,8 @@ export class GroupBGroupCStructB extends Protocol.GroupB.GroupC.StructB {
     }
 
     public send(): Promise<TGroupBGroupCStructBResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -55,8 +57,8 @@ export class GroupBGroupCStructB extends Protocol.GroupB.GroupC.StructB {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.GroupB === undefined || message.GroupB.GroupC === undefined) {
-                            return reject(new Error(`Expecting message from "message.GroupB.GroupC" group.`));
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "GroupB.GroupC.StructB".`));
                         } else if (message.StructB !== undefined) {
                             this._handlers.caseb !== undefined && this._handlers.caseb(message.StructB);
                             return resolve(message.StructB);

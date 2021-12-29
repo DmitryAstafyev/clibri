@@ -1,34 +1,53 @@
-import { Consumer, Protocol, StructA } from "./consumer/index";
-import { Connection } from "clibri-websocket-client";
+// tslint:disable: max-classes-per-file
+import {
+	Consumer,
+	BeaconBeaconsShutdownServer,
+	Protocol,
+} from "./consumer/index";
+import { Subscription, Logger, ELogLevel } from "clibri";
+import { Stat, Alias } from "./stat";
+import { Client } from "./client";
+import { Connection } from "clibri-websocket-client-node";
+import { panic } from "./tools";
+
+Logger.setGlobalLevel(ELogLevel.warn);
+
+class Options {
+	public connections: number = 100;
+	constructor() {
+		process.argv.forEach((arg: string) => {
+			if (arg.toLowerCase().includes("--connections")) {
+				const connections = parseInt(arg.split("=")[1], 10);
+				if (isFinite(connections) && !isNaN(connections)) {
+					this.connections = connections;
+				}
+			}
+		});
+	}
+}
 
 class Application {
-	private _connection!: Connection;
-	private _consumer!: Consumer;
+	private _subscriptions: { [key: string]: Subscription } = {};
+	private _stat: Stat = new Stat(true);
+	private _started = Date.now();
 
 	constructor() {
-		this._connection = new Connection(`ws://127.0.0.1:8080`);
-		this._consumer = new Consumer(this._connection, {
-			field_bool: true,
-			field_f32: 0.1,
-			field_f64: 0.2,
-			field_i8: -1,
-			field_i16: -2,
-			field_i32: -3,
-			field_i64: -BigInt(4),
-			field_u8: 1,
-			field_u16: 2,
-			field_u32: 3,
-			field_u64: BigInt(4),
-			field_str: "",
-			field_str_empty: "",
-		});
-		this._consumer.connected.subscribe(this._onConnected.bind(this));
-		this._consumer.disconnected.subscribe(this._onDisconnected.bind(this));
-		this._consumer.ready.subscribe(this._onReady.bind(this));
+		const options = new Options();
+		let done: number = 0;
+		for (let i = 0; i < options.connections; i += 1) {
+			const client = new Client(`ws://127.0.0.1:8080`);
+			client.done.subscribe((stat: Stat) => {
+				done += 1;
+				this._stat.merge(stat);
+				if (done === options.connections) {
+					this._finish();
+				}
+			});
+		}
 	}
 
-	private _onConnected() {
-		const structA = new StructA({
+	private _finish() {
+		const consumer = new Consumer(new Connection(`ws://127.0.0.1:8080`), {
 			field_bool: true,
 			field_f32: 0.1,
 			field_f64: 0.2,
@@ -43,54 +62,43 @@ class Application {
 			field_str: "",
 			field_str_empty: "",
 		});
-		structA.caseb((response: Protocol.StructD) => {
-			console.log(`DONE`);
-			this._consumer
-				.destroy()
-				.then(() => {
-					console.log(`Consumer has been destroyed`);
+		consumer.ready.subscribe(() => {
+			const shutdown = new BeaconBeaconsShutdownServer(
+				Protocol.Beacons.ShutdownServer.defaults()
+			);
+			shutdown
+				.send()
+				.catch((error: Error) => {
+					panic(
+						`Fail to send a shutdown signal to server: ${error.message}`
+					);
 				})
-				.catch((err: Error) => {
-					console.log(`Fail to destroy: ${err.message}`);
+				.finally(() => {
+					consumer
+						.destroy()
+						.catch((error: Error) => {
+							panic(`Fail to destroy consumer: ${error.message}`);
+						})
+						.finally(() => {
+							const finished = Date.now() - this._started;
+							console.log(`=`.repeat(90));
+							this._stat.print();
+							console.log(`=`.repeat(90));
+							console.log(
+								`Done in ${finished / 1000}s (${finished}ms)`
+							);
+							console.log(`=`.repeat(90));
+							const errors = this._stat.getErrors();
+							errors.forEach((err: string) => {
+								console.error(err);
+							});
+							if (errors.length > 0) {
+								panic("Test results are negative");
+							}
+						});
 				});
 		});
-		structA.send().catch((err: Error) => {
-			console.log(err);
-		});
 	}
-
-	private _onDisconnected() {}
-
-	private _onReady() {}
-
-	// private _onLoginInput(username: string) {
-	// 	this._components.login.umount();
-	// 	const login: UserLoginRequest = new UserLoginRequest({
-	// 		username: username,
-	// 	});
-	// 	login
-	// 		.accept((response: Protocol.UserLogin.Accepted) => {
-	// 			this._components.users.mount();
-	// 			this._components.messages.setUuid(response.uuid);
-	// 			this._components.messages.mount();
-	// 			this._components.sender.setUsername(username);
-	// 			this._components.sender.setMessagesRef(
-	// 				this._components.messages
-	// 			);
-	// 			this._components.sender.setUuid(response.uuid);
-	// 			this._components.sender.mount();
-	// 			this._components.stat.mount();
-	// 		})
-	// 		.deny((response: Protocol.UserLogin.Denied) => {
-	// 			// console.log(response);
-	// 		})
-	// 		.err((response: Protocol.UserLogin.Err) => {
-	// 			// console.log(response);
-	// 		});
-	// 	login.send().catch((err: Error) => {
-	// 		console.error(err);
-	// 	});
-	// }
 }
 
 const app: Application = new Application();

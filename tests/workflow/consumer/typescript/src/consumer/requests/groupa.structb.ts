@@ -9,7 +9,7 @@ export type TGroupBGroupCStructAHandler = (response: Protocol.GroupB.GroupC.Stru
 export type TErrHandler = (response: Protocol.GroupA.StructB) => void
 
 export class GroupAStructB extends Protocol.GroupA.StructB {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         groupbstructa: TGroupBStructAHandler | undefined;
@@ -20,8 +20,9 @@ export class GroupAStructB extends Protocol.GroupA.StructB {
         groupbgroupcstructa: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.GroupA.IStructB) {
+    constructor(request: Protocol.GroupA.IStructB, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -34,7 +35,8 @@ export class GroupAStructB extends Protocol.GroupA.StructB {
     }
 
     public send(): Promise<TGroupAStructBResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -51,8 +53,8 @@ export class GroupAStructB extends Protocol.GroupA.StructB {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.GroupA === undefined) {
-                            return reject(new Error(`Expecting message from "message.GroupA" group.`));
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "GroupA.StructB".`));
                         } else if (message !== undefined && message.GroupB !== undefined && message.GroupB.StructA !== undefined) {
                             this._handlers.groupbstructa !== undefined && this._handlers.groupbstructa(message.GroupB.StructA);
                             return resolve(message.GroupB.StructA);

@@ -9,7 +9,7 @@ export type TRootBHandler = (response: Protocol.StructB) => void
 export type TErrHandler = (response: Protocol.GroupA.StructB) => void
 
 export class GroupAStructA extends Protocol.GroupA.StructA {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         roota: TRootAHandler | undefined;
@@ -20,8 +20,9 @@ export class GroupAStructA extends Protocol.GroupA.StructA {
         rootb: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.GroupA.IStructA) {
+    constructor(request: Protocol.GroupA.IStructA, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -34,7 +35,8 @@ export class GroupAStructA extends Protocol.GroupA.StructA {
     }
 
     public send(): Promise<TGroupAStructAResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -51,8 +53,8 @@ export class GroupAStructA extends Protocol.GroupA.StructA {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.GroupA === undefined) {
-                            return reject(new Error(`Expecting message from "message.GroupA" group.`));
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "GroupA.StructA".`));
                         } else if (message.StructA !== undefined) {
                             this._handlers.roota !== undefined && this._handlers.roota(message.StructA);
                             return resolve(message.StructA);

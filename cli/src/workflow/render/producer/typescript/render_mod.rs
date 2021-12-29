@@ -251,7 +251,7 @@ export class Producer {
                 message.msg,
                 "[[self_key]]"
             );
-            if (extracted.exist) {
+            if (extracted.exist && !consumer.isHashAccepted()) {
                 this._logger.debug(
                     `consumer ${event.uuid} requested identification`
                 );
@@ -429,16 +429,18 @@ export class Producer {
                 event.uuid,
                 consumer
             );
-            this._logger.err(
-                `Unknown message header: ${JSON.stringify(message.header)}`
-            );
-            const msgStrBody = JSON.stringify(message.msg);
-            this._logger.verb(
-                `Unknown message body: ${msgStrBody.substr(
-                    0,
-                    msgStrBody.length > 500 ? 500 : msgStrBody.length
-                )}`
-            );
+			this._logger.err(
+				`Unknown message header: id=${message.header.id}; sequence=${message.header.sequence}`
+			);
+			try {
+				const msgStrBody = JSON.stringify(message.msg);
+				this._logger.verb(
+					`Unknown message body: ${msgStrBody.substr(
+						0,
+						msgStrBody.length > 500 ? 500 : msgStrBody.length
+					)}`
+				);
+			} catch (_) {}
             break;
         } while (true);
     }
@@ -587,6 +589,7 @@ if (extracted.exist) {
         event.uuid,
         consumer
     );
+    continue;
 }"#;
     pub const EVENT_SUBSCRIPTION: &str = r#"this._subscriptions.[[handler]]Sub = this.events.[[event]].subscribe(
     (event: Protocol.[[ref]]) => {

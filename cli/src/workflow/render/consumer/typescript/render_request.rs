@@ -13,11 +13,12 @@ import { ERequestState } from '../interfaces/request';
 [[types_declarations]]
 
 export class [[reference]] extends Protocol.[[struct_ref]] {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
 [[handlers]]
-    constructor(request: Protocol.[[struct_interface]]) {
+    constructor(request: Protocol.[[struct_interface]], consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -28,7 +29,8 @@ export class [[reference]] extends Protocol.[[struct_ref]] {
     }
 
     public send(): Promise<[[resolver]]> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -255,20 +257,11 @@ impl Render {
 
     fn get_response_handler(&self, request: &Request) -> Result<String, String> {
         let reference: String = request.get_request()?;
-        let parts: Vec<&str> = reference.split('.').collect();
-        let mut check_group: String = String::from("if (message === undefined");
-        let mut group: String = String::from("message");
-        for (pos, part) in parts.iter().enumerate() {
-            if pos < parts.len() - 1 {
-                group = format!("{}.{}", group, part);
-                check_group = format!("{} || {} === undefined", check_group, group);
-            }
-        }
         let mut output: String = format!(
-            r#"{}) {{
-    return reject(new Error(`Expecting message from "{}" group.`));
+            r#"if (message === undefined) {{
+    return reject(new Error(`Expecting message for "{}".`));
 }} "#,
-            check_group, group
+            reference
         );
         if request.actions.len() > 1 {
             for action in &request.actions {
@@ -303,14 +296,25 @@ impl Render {
                 );
             }
         } else {
+            let reference: String = request.get_response()?;
+            let parts: Vec<&str> = reference.split('.').collect();
+            let mut check_group: String = String::from("else if (message !== undefined");
+            let mut extend_group = false;
+            let mut group: String = String::from("message");
+            for (pos, part) in parts.iter().enumerate() {
+                group = format!("{}.{}", group, part);
+                check_group = format!("{} && {} !== undefined", check_group, group);
+            }
+            check_group = format!("{})", check_group);
             output = format!(
-                "{}{}",
+                "{}{}{}",
                 output,
-                r#"else if (message.[[response]] !== undefined) {
+                check_group.replace("[[response]]", &reference),
+                r#" {
     this._handlers.response !== undefined && this._handlers.response(message.[[response]]);
     return resolve(message.[[response]]);
 } "#
-                .replace("[[response]]", &request.get_response()?)
+                .replace("[[response]]", &reference)
             );
         }
         let reference: String = request.get_err()?;

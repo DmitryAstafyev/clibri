@@ -14,6 +14,7 @@ mod templates {
     Protocol,
 } from "./index";
 import { response } from "../../responses/[[module]]";
+import { Scope } from "../scope";
 
 export class Response {[[required_broadcasts]]
     private _response!: [[expectetions]];
@@ -54,24 +55,30 @@ export function handler(
     producer: Producer,
     sequence: number
 ): Promise<void> {
-    return response(request, consumer, filter, context, producer).then(
-        (res) => {
-            const error: Error | undefined = res.error();
-            if (error instanceof Error) {
-                return Promise.reject(error);
-            }
-            return producer
-                .send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
-                .then(() => {
-                    return broadcastAll(producer, res.broadcasts());
-                });
-        }
-    );
+	return new Promise((resolve, reject) => {
+        const scope = new Scope(consumer, filter, context, producer);
+		response(request, scope)
+			.then((res) => {
+				const error: Error | undefined = res.error();
+				if (error instanceof Error) {
+					return reject(error);
+				}
+				producer
+					.send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
+					.then(() => {
+						broadcastAll(producer, res.broadcasts()).then(() => {
+                            scope.call();
+                            resolve();
+                        }).catch(reject);
+					}).catch(reject);
+			})
+			.catch(reject);
+	});
 }"#;
     pub const BROADCAST_IMPL: &str = r#"[[name]](msg: Protocol.[[reference]]): Response {
     if (
-        self._response.getSignature() !==
-        Protocol.[[conclusion]].getSignature()
+        self._response.getId() !==
+        Protocol.[[conclusion]].getId()
     ) {
         throw new Error(
             `Message "Protocol.[[reference]]" can be used only with "Protocol.[[conclusion]]"`
@@ -80,8 +87,8 @@ export function handler(
     if (
         self._broadcasts.find(
             (b) =>
-                b[1].getSignature() ===
-                Protocol.[[reference]].getSignature()
+                b[1].getId() ===
+                Protocol.[[reference]].getId()
         ) !== undefined
     ) {
         throw new Error(
@@ -93,8 +100,8 @@ export function handler(
 },"#;
     pub const BROADCAST_CHECK: &str = r#"if (
     error === undefined &&
-    this._response.getSignature() ===
-    Protocol.[[conclusion]].getSignature()
+    this._response.getId() ===
+    Protocol.[[conclusion]].getId()
 ) {
     Response.REQUIRED_[[requered_conclusion]].forEach((ref) => {
         if (error !== undefined) {
@@ -102,17 +109,18 @@ export function handler(
         }
         if (
             this._broadcasts.find((msg) => {
-                return msg[1].getSignature() === ref.getSignature();
+                return msg[1].getId() === ref.getId();
             }) === undefined
         ) {
             error = new Error(
-                `Broadcast ${ref.getSignature()} is required, but hasn't been found`
+                `Broadcast ${ref.getSignature()}/${ref.getId()} is required for ${this._response.getSignature()}/${this._response.getId()}, but hasn't been found`
             );
         }
     });
 }"#;
     pub const MODULE_NO_CONCLUSION: &str = r#"import { Producer, Identification, Filter, Context, Protocol } from "./index";
 import { response } from "../../responses/[[module]]";
+import { Scope } from "../scope";
 
 export class Response {
     private _response!: [[expectetions]];
@@ -134,14 +142,20 @@ export function handler(
     producer: Producer,
     sequence: number
 ): Promise<void> {
-    return response(request, consumer, filter, context, producer).then(
-        (res) => {
-            return producer.send(
-                consumer.uuid(),
-                res.pack(sequence, consumer.uuid())
-            );
-        }
-    );
+	const scope = new Scope(consumer, filter, context, producer);
+	return new Promise((resolve, reject) => {
+		response(request, scope)
+			.then((res) => {
+				producer
+					.send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
+					.then(() => {
+						scope.call();
+						resolve();
+					})
+					.catch(reject);
+			})
+			.catch(reject);
+	});
 }"#;
 }
 

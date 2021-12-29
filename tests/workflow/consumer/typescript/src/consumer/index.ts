@@ -10,15 +10,17 @@ export { StructA } from './requests/structa';
 export { StructC } from './requests/structc';
 export { StructD } from './requests/structd';
 export { StructF } from './requests/structf';
+export { StructEmpty } from './requests/structempty';
 export { GroupAStructA } from './requests/groupa.structa';
 export { GroupAStructB } from './requests/groupa.structb';
 export { GroupBGroupCStructA } from './requests/groupb.groupc.structa';
 export { GroupBStructA } from './requests/groupb.structa';
 export { GroupBGroupCStructB } from './requests/groupb.groupc.structb';
-export { StructA as BeaconStructA } from './beacons/structa';
-export { StructB as BeaconStructB } from './beacons/structb';
-export { GroupAStructA as BeaconGroupAStructA } from './beacons/groupa.structa';
-export { GroupBGroupCStructA as BeaconGroupBGroupCStructA } from './beacons/groupb.groupc.structa';
+export { BeaconA as BeaconBeaconA } from './beacons/beacona';
+export { BeaconsBeaconA as BeaconBeaconsBeaconA } from './beacons/beacons.beacona';
+export { BeaconsBeaconB as BeaconBeaconsBeaconB } from './beacons/beacons.beaconb';
+export { BeaconsSubBeaconA as BeaconBeaconsSubBeaconA } from './beacons/beacons.sub.beacona';
+export { BeaconsShutdownServer as BeaconBeaconsShutdownServer } from './beacons/beacons.shutdownserver';
 
 // tslint:disable-next-line: no-namespace
 export namespace ExtError {
@@ -43,8 +45,8 @@ export namespace ExtError {
 
 export class Consumer {
 
-    public static PROTOCOL_HASH: string = "3866462310227764BF9F29517C27840E42ED4F0FB6D2208426C15DF29AFF29E5";
-    public static WORKFLOW_HASH: string = "762B9AC5C68559FCEF1ED3A33DD4CADB0DB807715F9DEB84612C85CCC046C887";
+    public static PROTOCOL_HASH: string = "2FE9D6137375F6B74B81143B6CA65EEAE6124B6C03C78937C4583DF0B0EF757A";
+    public static WORKFLOW_HASH: string = "429F4C595CF69B2A040303F3A7F626CB1188AEB79DBC9DB8AB314ABA1601C1C9";
     public static GUID: string = guid();
     public static GUID_SUBS: string = guid();
 
@@ -99,6 +101,8 @@ export class Consumer {
         GroupAStructB: Subject<Protocol.GroupA.StructB>,
         GroupBStructA: Subject<Protocol.GroupB.StructA>,
         GroupBGroupCStructA: Subject<Protocol.GroupB.GroupC.StructA>,
+        TriggerBeacons: Subject<Protocol.TriggerBeacons>,
+        FinishConsumerTestBroadcast: Subject<Protocol.FinishConsumerTestBroadcast>,
     } = {        
         StructD: new Subject<Protocol.StructD>(),
         StructF: new Subject<Protocol.StructF>(),
@@ -111,6 +115,8 @@ export class Consumer {
         GroupAStructB: new Subject<Protocol.GroupA.StructB>(),
         GroupBStructA: new Subject<Protocol.GroupB.StructA>(),
         GroupBGroupCStructA: new Subject<Protocol.GroupB.GroupC.StructA>(),
+        TriggerBeacons: new Subject<Protocol.TriggerBeacons>(),
+        FinishConsumerTestBroadcast: new Subject<Protocol.FinishConsumerTestBroadcast>(),
     };
 
     public get uuid(): string {
@@ -141,33 +147,39 @@ export class Consumer {
         this._key = key;
         this._options = new Options(`Consumer ${Consumer.GUID}`, options);
         this._logger = this._options.logger;
-        const global = globals();
-        if (global instanceof Error) {
-            throw global;
-        }
-        if (global[Consumer.GUID] !== undefined) {
-            throw new Error(`Attempt to init consumer multiple times`);
-        }
         this._subscriptions.data = this._client.getEvents().data.subscribe(this._onData.bind(this));
         this._subscriptions.connected = this._client.getEvents().connected.subscribe(this._onClientConnected.bind(this));
         this._subscriptions.disconnected = this._client.getEvents().disconnected.subscribe(this._onClientDisconnected.bind(this));
         this._subscriptions.error = this._client.getEvents().error.subscribe(this._onClientError.bind(this));
-        global[Consumer.GUID] = this;
-        if (global[Consumer.GUID_SUBS] !== undefined) {
-            ((subject: Subject<Consumer>) => {
-                subject.emit(this);
-                subject.destroy();
-            })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
-            global[Consumer.GUID_SUBS] = undefined;
+        if (this._options.global) {
+            const global = globals();
+            if (global instanceof Error) {
+                throw global;
+            }
+            if (global[Consumer.GUID] !== undefined) {
+                throw new Error(`Attempt to init consumer multiple times`);
+            }
+            global[Consumer.GUID] = this;
+            if (global[Consumer.GUID_SUBS] !== undefined) {
+                ((subject: Subject<Consumer>) => {
+                    subject.emit(this);
+                    subject.destroy();
+                })((global[Consumer.GUID_SUBS] as Subject<Consumer>));
+                global[Consumer.GUID_SUBS] = undefined;
+            }
         }
     }
 
-    public destroy(): Promise<void> {
-        const global = globals();
-        Object.keys(this._subscriptions).forEach(k => this._subscriptions[k].destroy());
-        global[Consumer.GUID] = undefined;
-        return this._client.destroy();
-    }
+	public destroy(): Promise<void> {
+		Object.keys(this._subscriptions).forEach((k) =>
+			this._subscriptions[k].destroy()
+		);
+		if (this._options.global) {
+			const global = globals();
+			global[Consumer.GUID] = undefined;
+		}
+		return this._client.destroy();
+	}
 
     public request(buffer: ArrayBufferLike, sequence?: number): Promise<Protocol.IAvailableMessages> {
         if (sequence !== undefined && this._pending.has(sequence)) {
@@ -310,6 +322,12 @@ export class Consumer {
                         break;
                     case Protocol.GroupB.GroupC.StructA.getId():
                         this.broadcast.GroupBGroupCStructA.emit(msg.getRef<Protocol.GroupB.GroupC.StructA>());
+                        break;
+                    case Protocol.TriggerBeacons.getId():
+                        this.broadcast.TriggerBeacons.emit(msg.getRef<Protocol.TriggerBeacons>());
+                        break;
+                    case Protocol.FinishConsumerTestBroadcast.getId():
+                        this.broadcast.FinishConsumerTestBroadcast.emit(msg.getRef<Protocol.FinishConsumerTestBroadcast>());
                         break;
                     default:
                         this._logger.warn(`Has been gotten unexpected message ID=${id};`)

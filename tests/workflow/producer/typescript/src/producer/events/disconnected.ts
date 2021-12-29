@@ -5,6 +5,7 @@ import {
 	Context,
 	Protocol,
 } from "../implementation/events";
+import { Alias } from "../../stat";
 
 export function emit(
 	consumer: Identification,
@@ -12,7 +13,8 @@ export function emit(
 	context: Context,
 	producer: Producer
 ): Promise<void> {
-	return Promise.reject(
-		new Error(`Handler for event "disconnected" isn't implemented`)
-	);
+	const stat = context.getStat(consumer.uuid());
+	stat.case(Alias.Disconnected);
+	context.disconnected(consumer.uuid());
+	return Promise.resolve();
 }

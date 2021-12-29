@@ -8,7 +8,7 @@ export type TResponseHandler = (response: Protocol.GroupB.GroupC.StructB) => voi
 export type TErrHandler = (response: Protocol.GroupA.StructB) => void
 
 export class GroupBGroupCStructA extends Protocol.GroupB.GroupC.StructA {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         response: TResponseHandler | undefined;
@@ -17,8 +17,9 @@ export class GroupBGroupCStructA extends Protocol.GroupB.GroupC.StructA {
         response: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.GroupB.GroupC.IStructA) {
+    constructor(request: Protocol.GroupB.GroupC.IStructA, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -30,7 +31,8 @@ export class GroupBGroupCStructA extends Protocol.GroupB.GroupC.StructA {
     }
 
     public send(): Promise<TGroupBGroupCStructAResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -47,9 +49,9 @@ export class GroupBGroupCStructA extends Protocol.GroupB.GroupC.StructA {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.GroupB === undefined || message.GroupB.GroupC === undefined) {
-                            return reject(new Error(`Expecting message from "message.GroupB.GroupC" group.`));
-                        } else if (message.GroupB.GroupC.StructB !== undefined) {
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "GroupB.GroupC.StructA".`));
+                        } else if (message !== undefined && message.GroupB !== undefined && message.GroupB.GroupC !== undefined && message.GroupB.GroupC.StructB !== undefined) {
                             this._handlers.response !== undefined && this._handlers.response(message.GroupB.GroupC.StructB);
                             return resolve(message.GroupB.GroupC.StructB);
                         } else if (message !== undefined && message.GroupA !== undefined && message.GroupA.StructB !== undefined) {

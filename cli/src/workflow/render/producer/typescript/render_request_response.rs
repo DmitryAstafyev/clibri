@@ -13,14 +13,9 @@ import {
     Filter,
     Protocol,
 } from "../implementation/responses";
+import { Scope } from "../implementation/scope";
 
-export function response(
-    request: Protocol.[[request]],
-    consumer: Identification,
-    filter: Filter,
-    context: Context,
-    producer: Producer
-): Promise<Response> {
+export function response(request: Protocol.[[request]], scope: Scope): Promise<Response> {
     return Promise.reject(
     	new Error(`Handler for Protocol.[[request]] isn't implemented.`)
     );

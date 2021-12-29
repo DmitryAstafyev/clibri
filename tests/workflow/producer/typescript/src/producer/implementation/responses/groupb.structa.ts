@@ -7,13 +7,14 @@ import {
     Protocol,
 } from "./index";
 import { response } from "../../responses/groupb.structa";
+import { Scope } from "../scope";
 
 export class Response {    
-    private _response!: Protocol.GroupB.StructA | Protocol.GroupB.GroupC.StructA | Protocol.GroupB.GroupC.StructA;
+    private _response!: Protocol.GroupB.StructA | Protocol.GroupB.GroupC.StructA | Protocol.GroupB.GroupC.StructB;
     private _broadcasts: Array<[string[], Protocol.Convertor<any>]> = [];
 
     constructor(
-        res: Protocol.GroupB.StructA | Protocol.GroupB.GroupC.StructA | Protocol.GroupB.GroupC.StructA
+        res: Protocol.GroupB.StructA | Protocol.GroupB.GroupC.StructA | Protocol.GroupB.GroupC.StructB
     ) {
         this._response = res;
     }
@@ -47,17 +48,23 @@ export function handler(
     producer: Producer,
     sequence: number
 ): Promise<void> {
-    return response(request, consumer, filter, context, producer).then(
-        (res) => {
-            const error: Error | undefined = res.error();
-            if (error instanceof Error) {
-                return Promise.reject(error);
-            }
-            return producer
-                .send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
-                .then(() => {
-                    return broadcastAll(producer, res.broadcasts());
-                });
-        }
-    );
+	return new Promise((resolve, reject) => {
+        const scope = new Scope(consumer, filter, context, producer);
+		response(request, scope)
+			.then((res) => {
+				const error: Error | undefined = res.error();
+				if (error instanceof Error) {
+					return reject(error);
+				}
+				producer
+					.send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
+					.then(() => {
+						broadcastAll(producer, res.broadcasts()).then(() => {
+                            scope.call();
+                            resolve();
+                        }).catch(reject);
+					}).catch(reject);
+			})
+			.catch(reject);
+	});
 }

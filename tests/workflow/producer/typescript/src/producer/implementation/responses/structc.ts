@@ -7,6 +7,7 @@ import {
     Protocol,
 } from "./index";
 import { response } from "../../responses/structc";
+import { Scope } from "../scope";
 
 export class Response {    
     private _response!: Protocol.StructB | Protocol.StructF | Protocol.StructD | Protocol.StructE;
@@ -47,17 +48,23 @@ export function handler(
     producer: Producer,
     sequence: number
 ): Promise<void> {
-    return response(request, consumer, filter, context, producer).then(
-        (res) => {
-            const error: Error | undefined = res.error();
-            if (error instanceof Error) {
-                return Promise.reject(error);
-            }
-            return producer
-                .send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
-                .then(() => {
-                    return broadcastAll(producer, res.broadcasts());
-                });
-        }
-    );
+	return new Promise((resolve, reject) => {
+        const scope = new Scope(consumer, filter, context, producer);
+		response(request, scope)
+			.then((res) => {
+				const error: Error | undefined = res.error();
+				if (error instanceof Error) {
+					return reject(error);
+				}
+				producer
+					.send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
+					.then(() => {
+						broadcastAll(producer, res.broadcasts()).then(() => {
+                            scope.call();
+                            resolve();
+                        }).catch(reject);
+					}).catch(reject);
+			})
+			.catch(reject);
+	});
 }

@@ -3,13 +3,13 @@ import * as Protocol from '../protocol/protocol';
 import { Consumer } from '../index';
 import { ERequestState } from '../interfaces/request';
 
-export type TGroupBStructAResolver = Protocol.GroupB.GroupC.StructA | Protocol.GroupB.StructA | Protocol.GroupB.GroupC.StructA;
+export type TGroupBStructAResolver = Protocol.GroupB.GroupC.StructB | Protocol.GroupB.StructA | Protocol.GroupB.GroupC.StructA;
 export type TGroupBStructAHandler = (response: Protocol.GroupB.StructA) => void
 export type TGroupBGroupCStructAHandler = (response: Protocol.GroupB.GroupC.StructA) => void
-export type TErrHandler = (response: Protocol.GroupB.GroupC.StructA) => void
+export type TErrHandler = (response: Protocol.GroupB.GroupC.StructB) => void
 
 export class GroupBStructA extends Protocol.GroupB.StructA {
-
+    private _consumer: Consumer | undefined;
     private _state: ERequestState = ERequestState.Ready;
     private _handlers: {    
         groupbstructa: TGroupBStructAHandler | undefined;
@@ -20,8 +20,9 @@ export class GroupBStructA extends Protocol.GroupB.StructA {
         groupbgroupcstructa: undefined,
         err: undefined,
     };
-    constructor(request: Protocol.GroupB.IStructA) {
+    constructor(request: Protocol.GroupB.IStructA, consumer?: Consumer) {
         super(request);
+        this._consumer = consumer;
     }
 
     public destroy() {
@@ -34,7 +35,8 @@ export class GroupBStructA extends Protocol.GroupB.StructA {
     }
 
     public send(): Promise<TGroupBStructAResolver> {
-        const consumer: Consumer | Error = Consumer.get();
+		const consumer: Consumer | Error =
+			this._consumer !== undefined ? this._consumer : Consumer.get();
         if (consumer instanceof Error) {
             return Promise.reject(consumer);
         }
@@ -51,17 +53,17 @@ export class GroupBStructA extends Protocol.GroupB.StructA {
                 switch (this._state) {
                     case ERequestState.Pending:
                         this._state = ERequestState.Ready;
-                        if (message === undefined || message.GroupB === undefined) {
-                            return reject(new Error(`Expecting message from "message.GroupB" group.`));
+                        if (message === undefined) {
+                            return reject(new Error(`Expecting message for "GroupB.StructA".`));
                         } else if (message !== undefined && message.GroupB !== undefined && message.GroupB.StructA !== undefined) {
                             this._handlers.groupbstructa !== undefined && this._handlers.groupbstructa(message.GroupB.StructA);
                             return resolve(message.GroupB.StructA);
                         } else if (message !== undefined && message.GroupB !== undefined && message.GroupB.GroupC !== undefined && message.GroupB.GroupC.StructA !== undefined) {
                             this._handlers.groupbgroupcstructa !== undefined && this._handlers.groupbgroupcstructa(message.GroupB.GroupC.StructA);
                             return resolve(message.GroupB.GroupC.StructA);
-                        } else if (message !== undefined && message.GroupB !== undefined && message.GroupB.GroupC !== undefined && message.GroupB.GroupC.StructA !== undefined) {
-                            this._handlers.err !== undefined && this._handlers.err(message.GroupB.GroupC.StructA);
-                            return resolve(message.GroupB.GroupC.StructA);
+                        } else if (message !== undefined && message.GroupB !== undefined && message.GroupB.GroupC !== undefined && message.GroupB.GroupC.StructB !== undefined) {
+                            this._handlers.err !== undefined && this._handlers.err(message.GroupB.GroupC.StructB);
+                            return resolve(message.GroupB.GroupC.StructB);
                         } else {
                             return reject(new Error(`No message in "message.GroupB.GroupC" group.`));
                         }

@@ -5,6 +5,7 @@ import {
 	Context,
 	Protocol,
 } from "../implementation/events";
+import { Alias } from "../../stat";
 
 export function emit(
 	consumer: Identification,
@@ -12,7 +13,8 @@ export function emit(
 	context: Context,
 	producer: Producer
 ): Promise<void> {
-	return Promise.reject(
-		new Error(`Handler for event "connected" isn't implemented`)
-	);
+	context.connected(consumer.uuid());
+	const stat = context.getStat(consumer.uuid());
+	stat.case(Alias.Connected);
+	return Promise.resolve();
 }

@@ -7,6 +7,7 @@ import {
     Protocol,
 } from "./index";
 import { response } from "../../responses/groupa.structb";
+import { Scope } from "../scope";
 
 export class Response {    
     static REQUIRED_GROUPBSTRUCTA = [    
@@ -28,8 +29,8 @@ export class Response {
         return {            
             GroupBGroupCStructB(msg: Protocol.GroupB.GroupC.StructB): Response {
                 if (
-                    self._response.getSignature() !==
-                    Protocol.GroupB.StructA.getSignature()
+                    self._response.getId() !==
+                    Protocol.GroupB.StructA.getId()
                 ) {
                     throw new Error(
                         `Message "Protocol.GroupB.GroupC.StructB" can be used only with "Protocol.GroupB.StructA"`
@@ -38,8 +39,8 @@ export class Response {
                 if (
                     self._broadcasts.find(
                         (b) =>
-                            b[1].getSignature() ===
-                            Protocol.GroupB.GroupC.StructB.getSignature()
+                            b[1].getId() ===
+                            Protocol.GroupB.GroupC.StructB.getId()
                     ) !== undefined
                 ) {
                     throw new Error(
@@ -56,8 +57,8 @@ export class Response {
         let error: Error | undefined;        
         if (
             error === undefined &&
-            this._response.getSignature() ===
-            Protocol.GroupB.StructA.getSignature()
+            this._response.getId() ===
+            Protocol.GroupB.StructA.getId()
         ) {
             Response.REQUIRED_GROUPBSTRUCTA.forEach((ref) => {
                 if (error !== undefined) {
@@ -65,11 +66,11 @@ export class Response {
                 }
                 if (
                     this._broadcasts.find((msg) => {
-                        return msg[1].getSignature() === ref.getSignature();
+                        return msg[1].getId() === ref.getId();
                     }) === undefined
                 ) {
                     error = new Error(
-                        `Broadcast ${ref.getSignature()} is required, but hasn't been found`
+                        `Broadcast ${ref.getSignature()}/${ref.getId()} is required for ${this._response.getSignature()}/${this._response.getId()}, but hasn't been found`
                     );
                 }
             });
@@ -94,17 +95,23 @@ export function handler(
     producer: Producer,
     sequence: number
 ): Promise<void> {
-    return response(request, consumer, filter, context, producer).then(
-        (res) => {
-            const error: Error | undefined = res.error();
-            if (error instanceof Error) {
-                return Promise.reject(error);
-            }
-            return producer
-                .send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
-                .then(() => {
-                    return broadcastAll(producer, res.broadcasts());
-                });
-        }
-    );
+	return new Promise((resolve, reject) => {
+        const scope = new Scope(consumer, filter, context, producer);
+		response(request, scope)
+			.then((res) => {
+				const error: Error | undefined = res.error();
+				if (error instanceof Error) {
+					return reject(error);
+				}
+				producer
+					.send(consumer.uuid(), res.pack(sequence, consumer.uuid()))
+					.then(() => {
+						broadcastAll(producer, res.broadcasts()).then(() => {
+                            scope.call();
+                            resolve();
+                        }).catch(reject);
+					}).catch(reject);
+			})
+			.catch(reject);
+	});
 }
