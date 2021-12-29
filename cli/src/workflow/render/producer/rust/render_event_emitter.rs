@@ -9,7 +9,7 @@ use std::{
 mod templates {
     pub const MODULE_WITH_BROADCAST: &str = r#"use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError, scope::{Scope, AnonymousScope},
+    EmitterError, scope::AnonymousScope,
 };
 use clibri::server;
 use uuid::Uuid;
@@ -35,7 +35,7 @@ pub async fn emit<E: server::Error, C: server::Control<E>>(
 }"#;
     pub const MODULE_WITHOUT_BROADCAST: &str = r#"use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError,
+    EmitterError, scope::AnonymousScope,
 };
 use clibri::server;
 use uuid::Uuid;
@@ -55,7 +55,7 @@ pub async fn emit<E: server::Error, C: server::Control<E>>(
 }"#;
     pub const DEFAULT_MODULE_WITH_BROADCAST: &str = r#"use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError,
+    EmitterError, scope::Scope,
 };
 use clibri::server;
 use uuid::Uuid;
@@ -81,7 +81,7 @@ pub async fn emit<E: server::Error, C: server::Control<E>>(
 }"#;
     pub const DEFAULT_MODULE_WITHOUT_BROADCAST: &str = r#"use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError,
+    EmitterError, scope::Scope,
 };
 use clibri::server;
 use uuid::Uuid;

@@ -58,8 +58,8 @@ impl<'c> Filter<'c> {
 
 #[derive(Debug)]
 pub enum IdentificationChannel {
-    Key(Uuid, protocol::StructA, bool),
-    Assigned(Uuid, protocol::StructC, bool),
+    Key(Uuid, protocol::[[self_key]], bool),
+    Assigned(Uuid, protocol::[[assign_key]], bool),
 }
 
 #[derive(Debug, Clone)]
@@ -68,8 +68,8 @@ pub struct Identification {
     producer_indentification_strategy: producer::ProducerIdentificationStrategy,
     discredited: bool,
     tx_ident_change: UnboundedSender<IdentificationChannel>,
-    key: Option<protocol::StructA>,
-    assigned: Option<protocol::StructC>,
+    key: Option<protocol::[[self_key]]>,
+    assigned: Option<protocol::[[assign_key]]>,
 }
 
 impl Identification {

@@ -7,7 +7,7 @@ use std::{
 };
 
 mod templates {
-    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context, scope::{Scope, AnonymousScope}};
+    pub const MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context, scope::AnonymousScope};
 use clibri::server;
 use uuid::Uuid;
 
@@ -19,7 +19,7 @@ pub async fn emit<E: server::Error, C: server::Control<E>>(
 ) -> Result<[[broadcast_refs]], String> {
     panic!("Handler for protocol::[[event]] isn't implemented");
 }"#;
-    pub const DEFAULT_MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context};
+    pub const DEFAULT_MODULE: &str = r#"use super::{identification, producer::Control, protocol, Context, scope::Scope};
 use clibri::server;
 use uuid::Uuid;
 

@@ -1,19 +1,20 @@
 use super::{
     broadcast, events, identification, producer::Control, protocol, unbound_pack, Context,
-    EmitterError,
+    EmitterError, scope::Scope,
 };
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+pub async fn emit<E: server::Error, C: server::Control<E>>(
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let (mut broadcast_events_message, mut broadcast_events_userdisconnected) =
-        events::disconnected::emit::<E, C>(identification, filter, context, control)
+        events::disconnected::emit(&mut scope)
             .await
             .map_err(EmitterError::Emitting)?;
     if let Some(mut broadcast_message) = broadcast_events_message.take() {
@@ -29,5 +30,6 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;
     }
+    scope.call().await;
     Ok(())
 }

@@ -299,9 +299,8 @@ impl Render {
             let reference: String = request.get_response()?;
             let parts: Vec<&str> = reference.split('.').collect();
             let mut check_group: String = String::from("else if (message !== undefined");
-            let mut extend_group = false;
             let mut group: String = String::from("message");
-            for (pos, part) in parts.iter().enumerate() {
+            for (_pos, part) in parts.iter().enumerate() {
                 group = format!("{}.{}", group, part);
                 check_group = format!("{} && {} !== undefined", check_group, group);
             }

@@ -26,7 +26,7 @@ pub fn pack(
         .map_err(HandlerError::Packing)
 }
 
-pub async fn broadcast<E: std::error::Error, C: server::Control<E> + Send + Clone>(
+pub async fn broadcast<E: server::Error, C: server::Control<E> + Send + Clone>(
     broadcasting: &mut (Vec<Uuid>, Vec<u8>),
     control: &producer::Control<E, C>,
 ) -> Result<(), HandlerError> {

@@ -1,23 +1,24 @@
 
 use super::{
     broadcast, identification, pack, producer::Control, protocol, responses, Context, HandlerError,
-    ProducerError,
+    ProducerError, scope::Scope,
 };
 use clibri::server;
 use uuid::Uuid;
 
-pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+pub async fn process<E: server::Error, C: server::Control<E>>(
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::UserLogin::Request,
     sequence: u32,
     control: &Control<E, C>,
 ) -> Result<(), HandlerError> {
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
     let uuid = identification.uuid();
     let mut broadcasting: Vec<(Vec<Uuid>, Vec<u8>)> = vec![];
     let buffer =
-        match responses::userlogin_request::response(identification, filter, context, request, control).await {
+        match responses::userlogin_request::response(request, &mut scope).await {
             Ok(conclusion) => match conclusion {
                 responses::userlogin_request::Response::Accept((
                     mut response,
@@ -47,5 +48,6 @@ pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>
     for msg in broadcasting.iter_mut() {
         broadcast::<E, C>(msg, control).await?;
     }
+    scope.call().await;
     Ok(())
 }    

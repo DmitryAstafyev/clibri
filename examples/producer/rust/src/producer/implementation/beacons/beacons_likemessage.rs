@@ -1,18 +1,19 @@
 use super::{
     beacons, identification, pack, producer::Control, protocol, Context, EmitterError,
-    ProducerError,
+    ProducerError, scope::Scope,
 };
 use clibri::server;
 
-pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
+pub async fn emit<E: server::Error, C: server::Control<E>>(
+    identification: &identification::Identification,
     beacon: &protocol::Beacons::LikeMessage,
     sequence: u32,
-    filter: &identification::Filter,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     control: &Control<E, C>,
 ) -> Result<(), EmitterError> {
-    beacons::beacons_likemessage::emit::<E, C>(identification, beacon, filter, context, control)
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
+    beacons::beacons_likemessage::emit(beacon, &mut scope)
         .await
         .map_err(EmitterError::Emitting)?;
     let mut response = protocol::InternalServiceGroup::BeaconConfirmation { error: None };
@@ -21,5 +22,6 @@ pub async fn emit<E: std::error::Error, C: server::Control<E> + Send + Clone>(
         .send(buffer, Some(identification.uuid()))
         .await
         .map_err(|e: ProducerError<E>| EmitterError::Emitting(e.to_string()))?;
+    scope.call().await;
     Ok(())
 }

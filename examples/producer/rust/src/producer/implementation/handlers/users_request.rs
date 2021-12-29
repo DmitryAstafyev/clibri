@@ -1,27 +1,21 @@
 
 use super::{
     identification, pack, producer::Control, protocol, responses, Context, HandlerError,
-    ProducerError,
+    ProducerError, scope::Scope,
 };
 use clibri::server;
 
-pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
+pub async fn process<E: server::Error, C: server::Control<E>>(
+    identification: &identification::Identification,
+    filter: &identification::Filter<'_>,
     context: &mut Context,
     request: &protocol::Users::Request,
     sequence: u32,
     control: &Control<E, C>,
 ) -> Result<(), HandlerError> {
+    let mut scope: Scope<'_, E, C> = Scope::new(context, control, identification, filter);
     let uuid = identification.uuid();
-    let buffer = match responses::users_request::response(
-        identification,
-        filter,
-        context,
-        request,
-        control,
-    )
-    .await
+    let buffer = match responses::users_request::response(request, &mut scope).await
     {
         Ok(mut response) => pack(&sequence, &uuid, &mut response)?,
         Err(mut error) => pack(&sequence, &uuid, &mut error)?,
@@ -29,5 +23,7 @@ pub async fn process<E: std::error::Error, C: server::Control<E> + Send + Clone>
     control
         .send(buffer, Some(uuid))
         .await
-        .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))
+        .map_err(|e: ProducerError<E>| HandlerError::Processing(e.to_string()))?;
+    scope.call().await;
+    Ok(())
 }

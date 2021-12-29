@@ -23,12 +23,18 @@ pub enum ConsumerError<E: client::Error> {
     Pending(String),
     #[error("API channel error: `{0}`")]
     APIChannel(String),
+    #[error("Client channel error: `{0}`")]
+    ClientChannel(String),
     #[error("fail to get response")]
     GettingResponse,
     #[error("fail to parse uuid")]
     Uuid,
+    #[error("Invalid sequence: `{0}`")]
+    Sequence(String),
     #[error("client error: `{0}`")]
     Client(E),
     #[error("No client available")]
     NoClient,
+    #[error("Timeout")]
+    Timeout,
 }

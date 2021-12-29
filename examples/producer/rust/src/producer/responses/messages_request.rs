@@ -1,15 +1,12 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use clibri::server;
 
 #[allow(unused_variables)]
-pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
-    context: &mut Context,
+pub async fn response<E: server::Error, C: server::Control<E>>(
     request: &protocol::Messages::Request,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<protocol::Messages::Response, protocol::Messages::Err> {
     Ok(protocol::Messages::Response {
-        messages: context.get_messages(),
+        messages: scope.context.get_messages(),
     })
 }

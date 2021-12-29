@@ -1,9 +1,6 @@
 use super::{error::ConsumerError, protocol, Auth};
 use clibri::client;
-use tokio::sync::{
-    mpsc::{Sender, UnboundedSender},
-    oneshot,
-};
+use tokio::sync::{mpsc::UnboundedSender, oneshot};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -14,18 +11,19 @@ pub enum Channel {
     AcceptIncome((u32, protocol::AvailableMessages, oneshot::Sender<bool>)),
     Uuid(oneshot::Sender<Option<Uuid>>),
     Sequence(oneshot::Sender<u32>),
+    Shutdown(oneshot::Sender<()>),
 }
 
 #[derive(Debug, Clone)]
 pub struct Api<E: client::Error> {
     tx_client_api: UnboundedSender<Channel>,
-    tx_auth: Sender<Auth<E>>,
+    tx_auth: UnboundedSender<Auth<E>>,
     shutdown: CancellationToken,
     uuid: Option<Uuid>,
 }
 
 impl<E: client::Error> Api<E> {
-    pub fn new(tx_client_api: UnboundedSender<Channel>, tx_auth: Sender<Auth<E>>) -> Self {
+    pub fn new(tx_client_api: UnboundedSender<Channel>, tx_auth: UnboundedSender<Auth<E>>) -> Self {
         Api {
             tx_client_api,
             tx_auth,
@@ -109,8 +107,15 @@ impl<E: client::Error> Api<E> {
         }
     }
 
-    pub fn shutdown(&self) {
-        self.shutdown.cancel();
+    pub async fn shutdown(&self) -> Result<(), ConsumerError<E>> {
+        let (tx_response, rx_response): (oneshot::Sender<()>, oneshot::Receiver<()>) =
+            oneshot::channel();
+        self.tx_client_api
+            .send(Channel::Shutdown(tx_response))
+            .map_err(|e| ConsumerError::APIChannel(e.to_string()))?;
+        rx_response
+            .await
+            .map_err(|e| ConsumerError::APIChannel(e.to_string()))
     }
 
     pub fn get_shutdown_token(&self) -> CancellationToken {

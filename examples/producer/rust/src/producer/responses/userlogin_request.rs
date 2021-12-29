@@ -1,4 +1,4 @@
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, scope::Scope, Context};
 use clibri::server;
 use uuid::Uuid;
 
@@ -17,21 +17,19 @@ pub enum Response {
 }
 
 #[allow(unused_variables)]
-pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone>(
-    identification: &mut identification::Identification,
-    filter: &identification::Filter,
-    context: &mut Context,
+pub async fn response<E: server::Error, C: server::Control<E>>(
     request: &protocol::UserLogin::Request,
-    control: &Control<E, C>,
+    scope: &mut Scope<'_, E, C>,
 ) -> Result<Response, protocol::UserLogin::Err> {
-    let uuid = identification.uuid();
-    if context.is_user_exist(&request.username).await {
+    let uuid = scope.identification.uuid();
+    if scope.context.is_user_exist(&request.username).await {
         Ok(Response::Deny(protocol::UserLogin::Denied {
             reason: String::from("User has been login already"),
         }))
     } else {
-        context.add_user(uuid, &request.username).await;
-        let msg = context
+        scope.context.add_user(uuid, &request.username).await;
+        let msg = scope
+            .context
             .add_message(
                 &request.username,
                 format!("User {} has been join to chat", request.username),
@@ -42,13 +40,13 @@ pub async fn response<E: std::error::Error, C: server::Control<E> + Send + Clone
                 uuid: uuid.to_string(),
             },
             (
-                filter.except(uuid),
+                scope.filter.except(&uuid),
                 protocol::Events::UserConnected {
                     username: request.username.clone(),
                     uuid: uuid.to_string(),
                 },
             ),
-            (filter.except(uuid), msg),
+            (scope.filter.except(&uuid), msg),
         )))
     }
 }

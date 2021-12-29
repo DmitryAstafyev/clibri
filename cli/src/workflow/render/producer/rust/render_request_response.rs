@@ -25,7 +25,7 @@ pub async fn response<E: server::Error, C: server::Control<E>>(
 }
 "#;
     pub const MODULE_NO_CONCLUSION: &str = r#"
-use super::{identification, producer::Control, protocol, Context};
+use super::{identification, producer::Control, protocol, Context, scope::Scope};
 use clibri::server;
 
 #[allow(unused_variables)]
