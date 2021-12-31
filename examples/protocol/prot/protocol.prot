@@ -1,0 +1,195 @@
+enum EnumExampleA {
+    Option_a;
+    Option_b;
+}
+
+enum EnumExampleB {
+    str Option_str;
+    u8 Option_u8;
+    u16 Option_u16;
+    u32 Option_u32;
+    u64 Option_u64;
+    i8 Option_i8;
+    i16 Option_i16;
+    i32 Option_i32;
+    i64 Option_i64;
+    f32 Option_f32;
+    f64 Option_f64;
+}
+
+enum EnumExampleC {
+    str[] Option_str;
+    u8[] Option_u8;
+    u16[] Option_u16;
+    u32[] Option_u32;
+    u64[] Option_u64;
+    i8[] Option_i8;
+    i16[] Option_i16;
+    i32[] Option_i32;
+    i64[] Option_i64;
+    f32[] Option_f32;
+    f64[] Option_f64;
+}
+
+struct StructExampleA {
+    str field_str;
+    str field_str_empty;
+    u8 field_u8;
+    u16 field_u16;
+    u32 field_u32;
+    u64 field_u64;
+    i8 field_i8;
+    i16 field_i16;
+    i32 field_i32;
+    i64 field_i64;
+    f32 field_f32;
+    f64 field_f64;
+    bool field_bool;
+}
+
+struct StructExampleB {
+    str[] field_str;
+    u8[] field_u8;
+    u16[] field_u16;
+    u32[] field_u32;
+    u64[] field_u64;
+    i8[] field_i8;
+    i16[] field_i16;
+    i32[] field_i32;
+    i64[] field_i64;
+    f32[] field_f32;
+    f64[] field_f64;
+    bool[] field_bool;
+    StructExampleA[] field_struct;
+    str[] field_str_empty;
+    u8[] field_u8_empty;
+    u16[] field_u16_empty;
+    u32[] field_u32_empty;
+    u64[] field_u64_empty;
+    i8[] field_i8_empty;
+    i16[] field_i16_empty;
+    i32[] field_i32_empty;
+    i64[] field_i64_empty;
+    f32[] field_f32_empty;
+    f64[] field_f64_empty;
+    bool[] field_bool_empty;
+    StructExampleA[] field_struct_empty;
+}
+
+struct StructExampleC {
+    str field_str?;
+    u8 field_u8?;
+    u16 field_u16?;
+    u32 field_u32?;
+    u64 field_u64?;
+    i8 field_i8?;
+    i16 field_i16?;
+    i32 field_i32?;
+    i64 field_i64?;
+    f32 field_f32?;
+    f64 field_f64?;
+    bool field_bool?;
+}
+
+struct StructExampleD {
+    str[] field_str?;
+    u8[] field_u8?;
+    u16[] field_u16?;
+    u32[] field_u32?;
+    u64[] field_u64?;
+    i8[] field_i8?;
+    i16[] field_i16?;
+    i32[] field_i32?;
+    i64[] field_i64?;
+    f32[] field_f32?;
+    f64[] field_f64?;
+    bool[] field_bool?;
+}
+
+struct StructExampleE {
+    EnumExampleA field_a;
+    EnumExampleB field_b;
+    EnumExampleC field_c;
+}
+
+struct StructExampleF {
+    EnumExampleA field_a?;
+    EnumExampleB field_b?;
+    EnumExampleC field_c?;
+}
+
+struct StructExampleG {
+    StructExampleA field_a;
+    StructExampleB field_b;
+}
+
+struct StructExampleEmpty {
+}
+
+struct StructExampleJ {
+    StructExampleA field_a?;
+    StructExampleB field_b?;
+    StructExampleEmpty field_c;
+}
+
+group GroupA {
+    
+    enum EnumExampleA {
+        Option_a;
+        Option_b;
+    }
+
+    struct StructExampleA {
+        u8 field_u8;
+        u16 field_u16;
+        EnumExampleA opt;
+    }
+
+    struct StructExampleB {
+        u8 field_u8;
+        u16 field_u16;
+        StructExampleA strct;
+    }
+
+}
+
+group GroupB {
+
+    struct StructExampleA {
+        u8 field_u8;
+        u16 field_u16;
+    }
+
+    group GroupC {
+
+        struct StructExampleA {
+            u8 field_u8;
+            u16 field_u16;
+        }
+
+        struct StructExampleB {
+            u8 field_u8;
+            u16 field_u16;
+            StructExampleA strct;
+        }
+
+    }
+
+}
+
+group GroupD {
+
+    struct StructExampleP {
+        StructExampleA field_a;
+        GroupB.StructExampleA field_b;
+        GroupB.GroupC.StructExampleA field_c;
+    }
+
+    enum EnumExampleP {
+        StructExampleA Option_a;
+        StructExampleP Option_b;
+        GroupB.StructExampleA Option_c;
+        GroupB.GroupC.StructExampleA Option_d;
+    }
+
+}
