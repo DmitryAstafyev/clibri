@@ -39,4 +39,12 @@ export class Filter {
 				return identification.uuid();
 			});
 	}
+
+	public all(): string[] {
+		return Array.from(this._identifications.values()).map(
+			(identification: Identification) => {
+				return identification.uuid();
+			}
+		);
+	}
 }

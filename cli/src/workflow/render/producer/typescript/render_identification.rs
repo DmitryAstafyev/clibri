@@ -31,6 +31,14 @@ export class Identification {
     public uuid(): string {
         return this._uuid;
     }
+    
+    public getKey(): Protocol.[[self_key]] | undefined {
+        return this._key;
+    }
+
+    public getAssigned(): Protocol.[[assign_key]] | undefined {
+        return this._assigned;
+    }    
 
     public key(
         key: Protocol.[[self_key]],
