@@ -68,8 +68,8 @@ pub struct Identification {
     producer_indentification_strategy: producer::ProducerIdentificationStrategy,
     discredited: bool,
     tx_ident_change: UnboundedSender<IdentificationChannel>,
-    key: Option<protocol::[[self_key]]>,
-    assigned: Option<protocol::[[assign_key]]>,
+    pub key: Option<protocol::[[self_key]]>,
+    pub assigned: Option<protocol::[[assign_key]]>,
 }
 
 impl Identification {

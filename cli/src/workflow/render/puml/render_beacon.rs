@@ -3,8 +3,7 @@ use super::{helpers::render as tools, workflow::beacon::Broadcast};
 mod templates {
     pub const MODULE: &str = r#"group Beacons
     Consumer -> Producer: Connected Event
-    Consumer -> Producer: Disconnected Event
-    Controller -> Producer: Direct call[[broadcasts]]
+    Consumer -> Producer: Disconnected Event[[broadcasts]]
 end"#;
 }
 

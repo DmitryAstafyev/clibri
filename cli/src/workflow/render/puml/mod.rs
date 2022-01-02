@@ -13,7 +13,6 @@ mod templates {
     pub const MODULE: &str = r#"@startuml
 
     collections Consumers as Consumers
-    control Controller as Controller
     [[content]]
 @enduml"#;
 }
